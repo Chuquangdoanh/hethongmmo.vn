@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 
@@ -33,10 +33,13 @@ export default function CourseCategoryCombobox({ value, onChange, placeholder, r
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void fetchCategories(); }, [fetchCategories]);
   // Refetch on every dropdown open — picks up categories added in /admin/course-categories
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (open) void fetchCategories(); }, [open, fetchCategories]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setQuery(value); }, [value]);
 
   useEffect(() => {

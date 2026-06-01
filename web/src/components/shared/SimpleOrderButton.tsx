@@ -208,9 +208,6 @@ export default function SimpleOrderButton({
                 : "Đăng nhập để mua"}
         </button>
         {error && <p className="text-xs text-[#EF4444]">{error}</p>}
-        {!isLoggedIn && (
-          <p className="text-[10px] text-[#71717A] text-center">Bạn cần đăng nhập để mua</p>
-        )}
       </div>
     </>
   );

@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+/* eslint-disable react-hooks/refs */
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -45,6 +46,7 @@ export default function NavigationProgress() {
 
   if (phase === "idle") return null;
 
+  // eslint-disable-next-line react-hooks/purity
   const { color, shadow } = colorRef.current;
 
   return (

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -56,6 +56,7 @@ export default function CourseSlider({ courses }: { courses?: CourseCardData[] }
 
   // Reset cursor khi list thay đổi độ dài để tránh out-of-bounds
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCur(0);
   }, [total]);
 

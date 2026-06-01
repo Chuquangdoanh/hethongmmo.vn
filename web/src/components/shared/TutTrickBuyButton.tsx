@@ -425,9 +425,7 @@ export default function TutTrickBuyButton({ item, isLoggedIn, variant = "default
         >
           {btnLabel}
         </button>
-        {!isLoggedIn && (
-          <p className="text-[10px] text-[#71717A] text-center">Bạn cần đăng nhập để mua</p>
-        )}
+       
       </div>
     </>
   );

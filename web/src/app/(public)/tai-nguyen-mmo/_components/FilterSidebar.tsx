@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -34,6 +34,7 @@ export function FilterSidebar({ categories, totalCount }: FilterSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchParamsRef = useRef(searchParams);
+  // eslint-disable-next-line react-hooks/refs
   searchParamsRef.current = searchParams;
 
   const activeCategory = searchParams.get("category") ?? "";
@@ -44,6 +45,7 @@ export function FilterSidebar({ categories, totalCount }: FilterSidebarProps) {
   const [searchValue, setSearchValue] = useState(qParam);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setSearchValue(qParam); }, [qParam]);
 
   useEffect(() => {

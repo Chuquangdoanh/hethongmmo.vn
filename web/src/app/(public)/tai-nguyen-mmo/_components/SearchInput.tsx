@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -11,6 +11,8 @@ export function SearchInput({ defaultValue }: { defaultValue: string }) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Keep a ref to always read latest searchParams inside the timer without adding it to deps
   const searchParamsRef = useRef(searchParams);
+  // eslint-disable-next-line react-hooks/purity
+  // eslint-disable-next-line react-hooks/refs
   searchParamsRef.current = searchParams;
 
   useEffect(() => {

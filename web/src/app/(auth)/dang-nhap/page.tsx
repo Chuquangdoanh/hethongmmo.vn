@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import LoginForm from "./LoginForm";
 
-export const metadata: Metadata = { title: "Đăng nhập — chuquangdoanh.net" };
+export const metadata: Metadata = { title: "Đăng nhập — hethongmmo.vn" };
 
 export default async function DangNhapPage() {
   const session = await auth();

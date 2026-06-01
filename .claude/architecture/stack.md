@@ -1,4 +1,4 @@
-# Tech Stack — chuquangdoanh.net
+﻿# Tech Stack — hethongmmo.vn
 
 ## Core
 
@@ -100,7 +100,7 @@ SEPAY_IP_WHITELIST=             # comma-separated IPs
 
 # Resend
 RESEND_API_KEY=
-RESEND_FROM=noreply@chuquangdoanh.net
+RESEND_FROM=noreply@hethongmmo.vn
 
 # Storage (Cloudflare R2)
 S3_ENDPOINT=

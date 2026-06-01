@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -18,6 +18,7 @@ export default function AuthTabs() {
   // Server render: activePath = "" → tất cả tab inactive (nhất quán).
   // Sau mount: activePath = pathname → tab đúng sáng lên.
   const [activePath, setActivePath] = useState("");
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setActivePath(pathname); }, [pathname]);
 
   return (

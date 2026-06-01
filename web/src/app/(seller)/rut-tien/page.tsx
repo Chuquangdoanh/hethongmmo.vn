@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
@@ -37,6 +37,7 @@ export default async function RutTienPage() {
   const feePercent = tierCfg.fee_percent;
   const minAmount = tierCfg.min_withdrawal;
 
+  // eslint-disable-next-line react-hooks/purity
   const holdDate = new Date(Date.now() - holdDays * 24 * 60 * 60 * 1000);
 
   type ShopRow = { shop_locked: boolean };

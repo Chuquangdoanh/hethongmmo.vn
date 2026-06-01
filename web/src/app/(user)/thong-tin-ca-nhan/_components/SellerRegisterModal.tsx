@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -87,6 +87,7 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void fetchCategories(); }, [fetchCategories]);
 
   function handleOpen() {

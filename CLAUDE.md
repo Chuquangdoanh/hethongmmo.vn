@@ -1,4 +1,4 @@
-# CLAUDE.md — chuquangdoanh.net
+﻿# CLAUDE.md — hethongmmo.vn
 
 Hướng dẫn cho AI assistant khi làm việc với dự án này.
 Đọc tài liệu trong `.claude/` trước khi bắt đầu bất kỳ task nào.

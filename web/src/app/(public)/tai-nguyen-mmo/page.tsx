@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { auth } from "@/auth";
@@ -237,6 +237,7 @@ export default async function TaiNguyenMmoPage({
     iconUrl: categoryIconMap.get(name) ?? null,
   }));
 
+  // eslint-disable-next-line react-hooks/purity
   const fourteenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   // Strip HTML tags from description

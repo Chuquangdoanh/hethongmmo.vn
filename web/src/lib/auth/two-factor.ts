@@ -1,8 +1,8 @@
-import * as OTPAuth from "otpauth";
+﻿import * as OTPAuth from "otpauth";
 import { randomBytes } from "crypto";
 import { encrypt, decrypt } from "@/lib/security/encryption";
 
-const ISSUER = "chuquangdoanh.net";
+const ISSUER = "hethongmmo.vn";
 
 /**
  * Generates a new TOTP secret for 2FA setup.

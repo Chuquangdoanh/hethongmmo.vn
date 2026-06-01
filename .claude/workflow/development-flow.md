@@ -1,4 +1,4 @@
-# Development Flow — chuquangdoanh.net
+﻿# Development Flow — hethongmmo.vn
 
 ## Vòng lặp làm việc chuẩn
 
@@ -101,8 +101,8 @@ Client Component ("use client")
 | Môi trường | Branch | URL |
 |-----------|--------|-----|
 | Local dev | * | http://localhost:3000 |
-| Staging | develop | https://staging.chuquangdoanh.net |
-| Production | main / tag v*.*.* | https://chuquangdoanh.net |
+| Staging | develop | https://staging.hethongmmo.vn |
+| Production | main / tag v*.*.* | https://hethongmmo.vn |
 
 ## Secrets management
 

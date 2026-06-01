@@ -1,9 +1,9 @@
-import { Resend } from "resend";
+﻿import { Resend } from "resend";
 import { logger } from "@/lib/utils/logger";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 
-const FROM = process.env.EMAIL_FROM ?? "noreply@chuquangdoanh.net";
-const APP_URL = process.env.APP_URL ?? "https://chuquangdoanh.net";
+const FROM = process.env.EMAIL_FROM ?? "noreply@hethongmmo.vn";
+const APP_URL = process.env.APP_URL ?? "https://hethongmmo.vn";
 
 export interface EmailResult {
   success: boolean;
@@ -30,7 +30,7 @@ function baseTemplate(content: string, preheader = ""): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>chuquangdoanh.net</title>
+  <title>hethongmmo.vn</title>
 </head>
 <body style="margin:0;padding:0;background:#0A0A0F;font-family:'Helvetica Neue',Arial,sans-serif;color:#F4F4F5;">
   <span style="display:none;max-height:0;overflow:hidden;color:#0A0A0F;">${escapeHtml(preheader)}</span>
@@ -42,7 +42,7 @@ function baseTemplate(content: string, preheader = ""): string {
         <tr>
           <td style="padding:32px 40px;border-bottom:1px solid #2A2A38;">
             <h1 style="margin:0;font-size:22px;font-weight:700;background:linear-gradient(90deg,#A855F7,#7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-              chuquangdoanh.net
+              hethongmmo.vn
             </h1>
             <p style="margin:4px 0 0;font-size:12px;color:#71717A;">Nền tảng dịch vụ MMO uy tín</p>
           </td>
@@ -58,7 +58,7 @@ function baseTemplate(content: string, preheader = ""): string {
               Email này được gửi tự động, vui lòng không trả lời.<br>
               Cần hỗ trợ? Liên hệ <a href="${APP_URL}/lien-he" style="color:#A855F7;text-decoration:none;">${APP_URL}/lien-he</a>
             </p>
-            <p style="margin:8px 0 0;font-size:11px;color:#52525B;">© 2026 chuquangdoanh.net. All rights reserved.</p>
+            <p style="margin:8px 0 0;font-size:11px;color:#52525B;">© 2026 hethongmmo.vn. All rights reserved.</p>
           </td>
         </tr>
       </table>
@@ -138,12 +138,12 @@ export async function sendOtpEmail({
       </div>
     </div>
     <p style="color:#71717A;font-size:13px;margin:0;line-height:1.7;">
-      ⚠️ <strong style="color:#F59E0B;">KHÔNG</strong> chia sẻ mã này với bất kỳ ai, kể cả nhân viên chuquangdoanh.net.
+      ⚠️ <strong style="color:#F59E0B;">KHÔNG</strong> chia sẻ mã này với bất kỳ ai, kể cả nhân viên hethongmmo.vn.
     </p>`;
 
   return sendEmail(
     to,
-    "Mã xác minh OTP - chuquangdoanh.net",
+    "Mã xác minh OTP - hethongmmo.vn",
     baseTemplate(content, `Mã OTP xác minh ${purposeText} — có hiệu lực ${expiresInMin} phút`),
     `Mã OTP của bạn: ${code} (hiệu lực ${expiresInMin} phút). Không chia sẻ mã này với ai.`,
   );
@@ -247,12 +247,12 @@ export async function sendOrderEmail({
     </table>
     ${contentBlock}
     <p style="margin:24px 0 0;color:#71717A;font-size:12px;line-height:1.7;">
-      Lưu thông tin quan trọng này cẩn thận. chuquangdoanh.net không chịu trách nhiệm nếu bạn mất nội dung này.
+      Lưu thông tin quan trọng này cẩn thận. hethongmmo.vn không chịu trách nhiệm nếu bạn mất nội dung này.
     </p>`;
 
   return sendEmail(
     to,
-    `Đơn hàng ${escapeHtml(orderCode)} - chuquangdoanh.net`,
+    `Đơn hàng ${escapeHtml(orderCode)} - hethongmmo.vn`,
     baseTemplate(content, `Đơn hàng ${orderCode}: ${itemName}`),
   );
 }
@@ -420,8 +420,8 @@ export async function sendPasswordResetEmail({
 
   return sendEmail(
     to,
-    "Đặt lại mật khẩu - chuquangdoanh.net",
-    baseTemplate(content, "Yêu cầu đặt lại mật khẩu tài khoản chuquangdoanh.net"),
+    "Đặt lại mật khẩu - hethongmmo.vn",
+    baseTemplate(content, "Yêu cầu đặt lại mật khẩu tài khoản hethongmmo.vn"),
     `Đặt lại mật khẩu: ${resetUrl} (hiệu lực 30 phút)`,
   );
 }

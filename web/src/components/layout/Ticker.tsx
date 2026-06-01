@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -113,6 +113,7 @@ export default function Ticker() {
   useEffect(() => {
     if (items.length === 0) return;
     const vw = window.innerWidth;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCopies(Math.max(2, Math.ceil(vw / Math.max(1, items.length * EST_ITEM_W)) + 1));
   }, [items]);
 

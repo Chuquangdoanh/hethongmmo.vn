@@ -1,4 +1,4 @@
-<!-- COMPLETED: 2026-05 — Storage + Email hoàn thành -->
+﻿<!-- COMPLETED: 2026-05 — Storage + Email hoàn thành -->
 <!-- R2 presigned URL, avatar upload, email templates với Resend đều đã có. -->
 
 # Phase 2E — Storage & Email
@@ -50,7 +50,7 @@ Tất cả dùng **Resend SDK** — không template engine ngoài.
 - Inline CSS, dark theme `#14141F` background, `#7C3AED` brand color
 - Plain HTML string (không dùng React Email hay MJML)
 - Footer: "Không reply email này", unsubscribe note
-- `from`: `noreply@chuquangdoanh.net` (cấu hình `RESEND_FROM`)
+- `from`: `noreply@hethongmmo.vn` (cấu hình `RESEND_FROM`)
 
 ## Env vars cần thiết
 
@@ -59,8 +59,8 @@ S3_ENDPOINT=https://<account>.r2.cloudflarestorage.com
 S3_ACCESS_KEY_ID=
 S3_SECRET_ACCESS_KEY=
 S3_BUCKET=chuquangdoanh
-S3_PUBLIC_URL=https://cdn.chuquangdoanh.net
+S3_PUBLIC_URL=https://cdn.hethongmmo.vn
 
 RESEND_API_KEY=
-RESEND_FROM=noreply@chuquangdoanh.net
+RESEND_FROM=noreply@hethongmmo.vn
 ```

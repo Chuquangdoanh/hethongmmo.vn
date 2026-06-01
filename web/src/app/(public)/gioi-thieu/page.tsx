@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Giới thiệu",
-  description: "Tìm hiểu về chuquangdoanh.net — nền tảng MMO dịch vụ số #1 Việt Nam.",
+  description: "Tìm hiểu về hethongmmo.vn — nền tảng MMO dịch vụ số #1 Việt Nam.",
 };
 
 const VALUES = [
@@ -41,7 +41,7 @@ export default function GioiThieuPage() {
         <h1 className="text-3xl md:text-4xl font-bold text-[#0f172a] mb-4">
           Về{" "}
           <span className="text-[#0066ff]">
-            chuquangdoanh.net
+            hethongmmo.vn
           </span>
         </h1>
         <p className="text-[#64748b] text-base leading-relaxed max-w-2xl mx-auto">

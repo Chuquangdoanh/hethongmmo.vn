@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -69,7 +69,7 @@ export default function RestrictButton({ productId, productName, isRestricted }:
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-sm font-bold text-gray-800 mb-1">Hạn chế sản phẩm</h3>
-            <p className="text-xs text-gray-500 mb-4 truncate">"{productName}"</p>
+            <p className="text-xs text-gray-500 mb-4 truncate">&quot;{productName}&quot;</p>
             <div className="mb-4">
               <label className="text-[11px] font-medium text-gray-500 block mb-1">Lý do (tuỳ chọn)</label>
               <textarea

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -257,6 +257,7 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
   const [error, setError] = useState("");
   const [result, setResult] = useState<OrderResult | null>(null);
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
 
   function handleClick() {
@@ -334,9 +335,7 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
 
         
 
-        {!props.isLoggedIn && (
-          <p className="text-[10px] text-[#71717A] text-center">Bạn cần đăng nhập để mua</p>
-        )}
+        
       </div>
     </>
   );

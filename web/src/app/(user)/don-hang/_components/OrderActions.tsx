@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -165,6 +165,7 @@ function ComplaintPopup({
 export default function OrderActions({ orderId, itemName, isDone, hasComplaint, allowComplaint, orderCreatedAt }: Props) {
   const [isWithin24h, setIsWithin24h] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsWithin24h(Date.now() - new Date(orderCreatedAt).getTime() < 24 * 60 * 60 * 1000);
   }, [orderCreatedAt]);
   const router = useRouter();

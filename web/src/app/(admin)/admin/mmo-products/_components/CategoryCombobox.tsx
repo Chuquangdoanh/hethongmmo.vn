@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 
@@ -35,10 +35,14 @@ export default function CategoryCombobox({ value, onChange, placeholder, require
 
   // Fetch on mount AND every time dropdown opens — so new categories from
   // /admin/resource-categories appear immediately without page reload.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void fetchCategories(); }, [fetchCategories]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (open) void fetchCategories(); }, [open, fetchCategories]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   // Sync query khi value thay đổi từ bên ngoài
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setQuery(value); }, [value]);
 
   // Đóng dropdown khi click ngoài

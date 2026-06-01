@@ -1,4 +1,4 @@
-# chuquangdoanh.net
+﻿# hethongmmo.vn
 
 Nền tảng dịch vụ MMO (Make Money Online) dành cho thị trường Việt Nam. Hỗ trợ tăng tương tác mạng xã hội, khóa học online, tài nguyên MMO và marketplace người bán — với hệ thống ví tích hợp nạp tiền tự động qua SePay.
 
@@ -85,7 +85,7 @@ DATABASE_URL="postgresql://app_user:password@localhost:5432/hethongmmo"
 
 # Auth.js
 AUTH_SECRET="<random 32+ bytes>"
-NEXTAUTH_URL="https://chuquangdoanh.net"
+NEXTAUTH_URL="https://hethongmmo.vn"
 
 # Mã hóa dữ liệu nhạy cảm (AES-256-GCM)
 ENCRYPTION_KEY="<64-char hex string — 32 bytes>"
@@ -95,14 +95,14 @@ SEPAY_WEBHOOK_SECRET="<webhook secret>"
 
 # Email (Resend)
 RESEND_API_KEY="re_xxxxxxxxxxxx"
-RESEND_FROM="noreply@chuquangdoanh.net"
+RESEND_FROM="noreply@hethongmmo.vn"
 
 # Cloudflare R2 Storage
 S3_ENDPOINT="https://<account-id>.r2.cloudflarestorage.com"
 S3_ACCESS_KEY_ID="<access key>"
 S3_SECRET_ACCESS_KEY="<secret key>"
 S3_BUCKET="hethongmmo"
-S3_PUBLIC_URL="https://cdn.chuquangdoanh.net"
+S3_PUBLIC_URL="https://cdn.hethongmmo.vn"
 
 # Redis (Upstash)
 REDIS_URL="rediss://:<password>@<host>:6380"

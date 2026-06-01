@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import RegisterForm from "./RegisterForm";
 
-export const metadata: Metadata = { title: "Đăng ký — chuquangdoanh.net" };
+export const metadata: Metadata = { title: "Đăng ký — hethongmmo.vn" };
 
 export default async function DangKyPage() {
   const session = await auth();

@@ -65,7 +65,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <aside className="w-56 shrink-0 border-r border-gray-200 bg-white flex flex-col">
         <div className="px-4 py-5 border-b border-gray-200">
           <Link href="/" className="text-sm font-bold text-[#A855F7]">
-            chuquangdoanh.net
+            hethongmmo.vn
           </Link>
           <p className="text-[10px] text-gray-500 mt-0.5">Admin Panel</p>
         </div>

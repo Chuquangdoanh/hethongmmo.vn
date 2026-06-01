@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -194,7 +194,7 @@ export default function ProductActions({ productId, productName, isRestricted, s
               </div>
               <h3 className="text-base font-bold text-gray-800">Xóa sản phẩm?</h3>
             </div>
-            <p className="text-sm text-gray-500 mb-1 truncate">"{productName}"</p>
+            <p className="text-sm text-gray-500 mb-1 truncate">&quot;{productName}&quot;</p>
             <p className="text-xs text-gray-400 mb-5">Hành động này không thể hoàn tác.</p>
             {error && (
               <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">

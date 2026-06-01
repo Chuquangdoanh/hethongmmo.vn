@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
@@ -131,7 +131,7 @@ export default async function SystemProfilePage({
                 Nền tảng
               </span>
             </div>
-            <p className="text-xs text-[#64748b]">Nhà cung cấp tài nguyên MMO chính thức của chuquangdoanh.net</p>
+            <p className="text-xs text-[#64748b]">Nhà cung cấp tài nguyên MMO chính thức của hethongmmo.vn</p>
 
             {/* Stats */}
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4">

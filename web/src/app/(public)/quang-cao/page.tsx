@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckCircle, Phone, Zap, ShieldCheck, Star } from "lucide-react";
 import AdServiceTabs from "./_components/AdServiceTabs";
@@ -137,7 +137,7 @@ export default function QuangCaoAdsPage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/images/hethongmmo.png"
-                  alt="Đội ngũ chuquangdoanh.net"
+                  alt="Đội ngũ hethongmmo.vn"
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
               </div>

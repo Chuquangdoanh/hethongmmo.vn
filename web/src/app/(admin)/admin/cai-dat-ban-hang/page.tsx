@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { getSellerConfig, DEFAULT_SLOT_PACKAGES, DEFAULT_TIER_CONFIG } from "@/lib/services/seller.service";
 import SellerSettingsForm from "./SellerSettingsForm";
 
@@ -52,7 +52,7 @@ export default async function SellerSettingsPage() {
             <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold shrink-0">3</span>
             <div>
               <p className="font-medium text-gray-700">Admin chuyển khoản thủ công</p>
-              <p className="text-gray-400">Chuyển khoản ngân hàng → bấm "Xác nhận đã chuyển khoản" → trạng thái COMPLETED, seller nhận thông báo.</p>
+              <p className="text-gray-400">Chuyển khoản ngân hàng → bấm &quot;Xác nhận đã chuyển khoản&quot; → trạng thái COMPLETED, seller nhận thông báo.</p>
             </div>
           </div>
         </div>

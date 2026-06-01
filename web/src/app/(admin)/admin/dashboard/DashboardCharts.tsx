@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -44,6 +44,7 @@ export default function DashboardCharts({
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [dateInput, setDateInput] = useState(filterDate ?? todayStr());
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
   const mode: "day" | "month" = filterDate ? "day" : "month";

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
@@ -41,6 +41,7 @@ export default async function BanHangPage() {
   const config = await getSellerConfig();
   const holdDays = config.order_hold_days ?? 3;
   const feePercent = config.withdrawal_fee_percent ?? 5;
+  // eslint-disable-next-line react-hooks/purity
   const holdDate = new Date(Date.now() - holdDays * 24 * 60 * 60 * 1000);
 
   type QualifyingRow = { total: string };

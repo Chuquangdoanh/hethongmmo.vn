@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 
@@ -30,8 +30,11 @@ export default function ServiceCategoryCombobox({ value, onChange, required }: P
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void fetchCategories(); }, [fetchCategories]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   // Refetch khi dropdown mở — phản ánh danh mục mới từ /admin/service-categories
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (open) void fetchCategories(); }, [open, fetchCategories]);
 
   useEffect(() => {

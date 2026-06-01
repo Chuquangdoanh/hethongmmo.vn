@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -26,6 +26,7 @@ export default function NavLinks({ links }: NavLinksProps) {
   // Server render: activePath = "" → tất cả link inactive (nhất quán).
   // Sau mount: activePath = pathname → link đúng được highlight.
   const [activePath, setActivePath] = useState("");
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setActivePath(pathname); }, [pathname]);
 
   const activeLink = links.find((l) =>
@@ -55,7 +56,9 @@ export default function NavLinks({ links }: NavLinksProps) {
 
   /* Position indicator on active link after mount and on pathname change */
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   }, []);
 
   useEffect(() => {
