@@ -44,8 +44,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.REGISTRY_URL }}/chuquangdoanh:${{ github.sha }}
-            ${{ secrets.REGISTRY_URL }}/chuquangdoanh:latest
+            ${{ secrets.REGISTRY_URL }}/hethongmmo:${{ github.sha }}
+            ${{ secrets.REGISTRY_URL }}/hethongmmo:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -60,10 +60,10 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
-            cd /opt/chuquangdoanh
+            cd /opt/hethongmmo
 
             # Record previous image tag for potential rollback
-            PREV_IMAGE=$(docker inspect --format='{{.Config.Image}}' chuquangdoanh-web 2>/dev/null || echo "none")
+            PREV_IMAGE=$(docker inspect --format='{{.Config.Image}}' hethongmmo-web 2>/dev/null || echo "none")
             echo "Previous image: $PREV_IMAGE"
             echo "$PREV_IMAGE" > /tmp/prev-image.txt
 
@@ -71,11 +71,11 @@ jobs:
             export REGISTRY_URL=${{ secrets.REGISTRY_URL }}
 
             # Pull new image
-            docker pull ${REGISTRY_URL}/chuquangdoanh:${IMAGE_TAG}
+            docker pull ${REGISTRY_URL}/hethongmmo:${IMAGE_TAG}
 
             # Run DB migrations (safe — deploy only applies pending, never destructive rollback)
             docker run --rm --env-file .env \
-              ${REGISTRY_URL}/chuquangdoanh:${IMAGE_TAG} \
+              ${REGISTRY_URL}/hethongmmo:${IMAGE_TAG} \
               pnpm prisma migrate deploy
 
             # Rolling update — zero-downtime swap
