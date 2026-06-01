@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "mmo_products" ADD COLUMN     "rating" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "total_orders" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "total_views" INTEGER NOT NULL DEFAULT 0;

@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "develop", "feature/**", "fix/**"]
+  pull_request:
+    branches: ["main", "develop"]
+
+defaults:
+  run:
+    working-directory: web
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: pnpm lint
+
+  typecheck:
+    name: TypeScript check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate
+        run: pnpm prisma generate
+        env:
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_db"
+
+      - name: TypeScript strict check
+        run: pnpm typecheck
+
+  test:
+    name: Unit & Integration tests
+    runs-on: ubuntu-latest
+    env:
+      ENCRYPTION_KEY: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+      AUTH_SECRET: "ci-auth-secret-32-bytes-minimum!!"
+      SEPAY_WEBHOOK_SECRET: "ci-sepay-secret"
+      DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_db"
+      REDIS_URL: "redis://localhost:6379"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate
+        run: pnpm prisma generate
+
+      - name: Run tests
+        run: pnpm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    env:
+      DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_db"
+      AUTH_SECRET: "ci-auth-secret-32-bytes-minimum!!"
+      ENCRYPTION_KEY: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
+      RESEND_API_KEY: "re_placeholder"
+      REDIS_URL: "redis://localhost:6379"
+      S3_ENDPOINT: "https://placeholder.r2.cloudflarestorage.com"
+      S3_ACCESS_KEY_ID: "placeholder"
+      S3_SECRET_ACCESS_KEY: "placeholder"
+      S3_BUCKET: "placeholder"
+      S3_PUBLIC_URL: "https://placeholder.example.com"
+      SEPAY_WEBHOOK_SECRET: "ci-sepay-secret"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate
+        run: pnpm prisma generate
+
+      - name: Build Next.js app
+        run: pnpm build

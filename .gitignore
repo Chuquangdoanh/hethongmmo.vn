@@ -1,0 +1,40 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Next.js
+web/.next/
+web/out/
+web/build/
+
+# Node
+node_modules/
+web/node_modules/
+functions/node_modules/
+
+# Logs
+*.log
+logs/
+
+# Prisma
+web/prisma/generated/
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Secrets
+*.pem
+*.key
+serviceAccountKey.json
+infra/nginx/ssl/
+
+# Docker volumes (local)
+pg_data/
+redis_data/

@@ -1,0 +1,266 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { X, FileText, ShieldCheck, AlertTriangle, CheckCircle, ExternalLink } from "lucide-react";
+
+type ModalId = "rules" | "commitments" | "warnings";
+
+const MODAL_CONFIG: Record<ModalId, { title: string; accent: string; Icon: typeof FileText }> = {
+  rules:       { title: "Quy định hỗ trợ – Bảo hành – Khiếu nại", accent: "#10b981", Icon: FileText      },
+  commitments: { title: "Cam kết của Hệ Thống MMO",                accent: "#10b981", Icon: ShieldCheck   },
+  warnings:    { title: "Lưu ý quan trọng",                        accent: "#f59e0b", Icon: AlertTriangle },
+};
+
+function ModalContent({ id }: { id: ModalId }) {
+  if (id === "rules") {
+    return (
+      <div className="space-y-4 text-sm text-[#94a3b8]">
+        <div className="flex items-start gap-2.5">
+          <CheckCircle size={14} strokeWidth={2.5} className="text-[#10b981] mt-0.5 shrink-0" />
+          <p className="leading-relaxed">
+            Hỗ trợ bảo hành và xử lý khiếu nại trong vòng{" "}
+            <strong className="text-white">24 giờ</strong>{" "}
+            kể từ thời điểm đơn hàng được bàn giao thành công.
+          </p>
+        </div>
+        <div>
+          <p className="text-[11px] text-text-muted font-semibold mb-2 pl-6">Các trường hợp được hỗ trợ:</p>
+          {[
+            "Sai mật khẩu từ trước.",
+            "Sai thông tin đăng nhập.",
+            "Mail lỗi hoặc không truy cập được.",
+            "Link BM lỗi hoặc không đúng mô tả sản phẩm.",
+            "Sản phẩm không đúng nội dung đã cam kết.",
+          ].map((item) => (
+            <div key={item} className="flex items-start gap-2 pl-6 mb-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] mt-1.5 shrink-0" />
+              <p className="text-[13px] leading-relaxed">{item}</p>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-start gap-2.5">
+          <CheckCircle size={14} strokeWidth={2.5} className="text-[#10b981] mt-0.5 shrink-0" />
+          <p className="leading-relaxed">
+            Đơn hàng khiếu nại hợp lệ sẽ được ưu tiên xử lý nhanh bởi Seller và đội ngũ hỗ trợ của{" "}
+            <span className="text-warning font-semibold">Hệ Thống MMO</span>.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (id === "commitments") {
+    return (
+      <div className="space-y-3">
+        {[
+          "Bảo vệ quyền lợi của người mua và nhà bán hàng.",
+          "Hỗ trợ xử lý tranh chấp minh bạch, công bằng.",
+          "Ưu tiên giải quyết nhanh các đơn hàng có khiếu nại hợp lệ.",
+          "Xây dựng môi trường giao dịch MMO an toàn, uy tín và bền vững.",
+          "Nói không với lừa đảo, gian lận và các hành vi gây ảnh hưởng đến cộng đồng.",
+        ].map((item) => (
+          <div key={item} className="flex items-start gap-2.5">
+            <CheckCircle size={14} strokeWidth={2.5} className="text-[#10b981] mt-0.5 shrink-0" />
+            <p className="text-sm text-[#94a3b8] leading-relaxed">{item}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  /* warnings */
+  return (
+    <div className="space-y-4">
+      <div className="space-y-3">
+        {[
+          "Chỉ tiếp nhận khiếu nại trong vòng 24 giờ kể từ thời điểm mua hàng.",
+          "Sau 24 giờ, hệ thống mặc định đơn hàng đã được người mua kiểm tra, xác nhận và sử dụng ổn định.",
+          "Hệ thống có quyền từ chối hỗ trợ đối với các trường hợp khiếu nại quá thời gian quy định nhằm bảo vệ quyền lợi chính đáng của nhà bán hàng.",
+          "Người mua có trách nhiệm kiểm tra đầy đủ thông tin sản phẩm ngay sau khi nhận hàng.",
+        ].map((item) => (
+          <div key={item} className="flex items-start gap-2.5">
+            <AlertTriangle size={13} strokeWidth={2.5} className="text-warning mt-0.5 shrink-0" />
+            <p className="text-sm text-[#94a3b8] leading-relaxed">{item}</p>
+          </div>
+        ))}
+      </div>
+      <div>
+        <p className="text-[11px] text-text-muted font-semibold mb-2">Không chịu trách nhiệm với:</p>
+        {[
+          "Người mua tự thay đổi thông tin tài khoản.",
+          "Chuyển giao, chia sẻ hoặc bán lại tài khoản cho bên thứ ba.",
+          "Tài khoản bị khóa, checkpoint hoặc hạn chế do quá trình sử dụng của người mua.",
+          "Các lỗi phát sinh sau thời gian bảo hành 24 giờ.",
+          "Các trường hợp vi phạm chính sách nền tảng dẫn đến mất quyền truy cập tài khoản.",
+          "Người mua không kiểm tra sản phẩm trong thời gian quy định.",
+        ].map((item) => (
+          <div key={item} className="flex items-start gap-2 mb-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-warning mt-1.5 shrink-0" />
+            <p className="text-[13px] text-[#94a3b8] leading-relaxed">{item}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function CommunityBanner() {
+  const [open, setOpen] = useState<ModalId | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(null); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
+
+  const cfg = open ? MODAL_CONFIG[open] : null;
+
+  return (
+    <>
+      {/* ── BANNER ── */}
+      <div className="bg-[#0d1117] border-b border-[#10b981]/20">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-8">
+
+          {/* Title */}
+          <div className="flex items-center gap-3 mb-8">
+            <span className="h-px flex-1 bg-[#10b981]/20" />
+            <h2 className="text-sm font-extrabold text-white tracking-wider text-center whitespace-nowrap">
+              CỘNG ĐỒNG MMO —{" "}
+              <span className="text-warning">HỆ THỐNG MMO</span>{" "}5.0
+            </h2>
+            <span className="h-px flex-1 bg-[#10b981]/20" />
+          </div>
+
+          {/* Community channels — centered text layout */}
+          <div className="max-w-xl mx-auto text-center space-y-4 mb-8">
+
+            {/* Zalo */}
+            <div>
+              <p className="text-sm font-semibold text-white mb-0.5">
+                🔹 Nhóm Zalo – Cộng đồng Update Biến Chuyển Meta
+              </p>
+              <a
+                href="https://zalo.me/g/dctpdv219"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline underline-offset-2"
+              >
+                https://zalo.me/g/dctpdv219 <ExternalLink size={10} strokeWidth={2} />
+              </a>
+            </div>
+
+            {/* Telegram */}
+            <div>
+              <p className="text-sm font-semibold text-white mb-0.5">🔹 Nhóm Telegram</p>
+              <p className="text-sm text-[#94a3b8]">
+                <span className="text-warning font-extrabold">HỆ THỐNG MMO</span>
+                {" "}- TÀI NGUYÊN SỐ 5.0
+              </p>
+            </div>
+
+            {/* Community */}
+            <div>
+              <p className="text-sm font-semibold text-white mb-0.5">🔹 Cộng Đồng MMO</p>
+              <p className="text-xs text-[#94a3b8] leading-relaxed">
+                Nơi giao lưu, chia sẻ kiến thức, tài nguyên và cập nhật các xu hướng mới nhất về MMO, Facebook Ads, Marketing và kiếm tiền online.
+              </p>
+            </div>
+
+            {/* TikTok */}
+            <div>
+              <p className="text-sm font-semibold text-white mb-0.5">🔹 Kênh TikTok</p>
+              <a
+                href="https://www.tiktok.com/@chuquangdoanhads"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline underline-offset-2"
+              >
+                https://www.tiktok.com/@chuquangdoanhads <ExternalLink size={10} strokeWidth={2} />
+              </a>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 max-w-xl mx-auto mb-6">
+            <span className="h-px flex-1 bg-white/10" />
+            <span className="text-[10px] text-text-muted uppercase tracking-widest font-semibold">Chính sách & cam kết</span>
+            <span className="h-px flex-1 bg-white/10" />
+          </div>
+
+          {/* 3 popup trigger buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => setOpen("rules")}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#10b981]/40 text-xs font-semibold text-[#10b981] bg-[#10b981]/10 hover:bg-[#10b981]/20 hover:border-[#10b981] transition-all"
+            >
+              <FileText size={13} strokeWidth={2} />
+              Quy định hỗ trợ
+            </button>
+            <button
+              onClick={() => setOpen("commitments")}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-warning/40 text-xs font-semibold text-warning bg-warning/10 hover:bg-warning/20 hover:border-warning transition-all"
+            >
+              <ShieldCheck size={13} strokeWidth={2} />
+              Cam kết của <span className="font-extrabold">Hệ Thống MMO</span>
+            </button>
+            <button
+              onClick={() => setOpen("warnings")}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 text-xs font-semibold text-[#94a3b8] bg-white/5 hover:bg-white/10 hover:border-white/40 transition-all"
+            >
+              <AlertTriangle size={13} strokeWidth={2} />
+              Lưu ý quan trọng
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── MODAL POPUP ── */}
+      {open && cfg && (
+        <div
+          className="fixed inset-0 z-9999 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.75)" }}
+          onClick={() => setOpen(null)}
+        >
+          <div
+            className="bg-[#0d1117] border border-white/10 rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: `${cfg.accent}20` }}
+                >
+                  <cfg.Icon size={15} strokeWidth={2} style={{ color: cfg.accent }} />
+                </div>
+                <h3 className="text-sm font-extrabold text-white">{cfg.title}</h3>
+              </div>
+              <button
+                onClick={() => setOpen(null)}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-white/10 text-[#94a3b8] hover:bg-white/20 hover:text-white transition-colors shrink-0"
+              >
+                <X size={14} strokeWidth={2} />
+              </button>
+            </div>
+
+            {/* Modal body */}
+            <div className="px-5 py-5 overflow-y-auto">
+              <ModalContent id={open} />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

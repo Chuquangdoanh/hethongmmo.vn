@@ -1,0 +1,271 @@
+@import "tailwindcss";
+
+@theme {
+  /* Light theme — primary palette */
+  --color-primary:    #0066ff;
+  --color-teal:       #00897b;
+  --color-dark:       #050b1a;
+  --color-dark-2:     #091428;
+  --color-light:      #f8fafc;
+  --color-text-dark:  #0f172a;
+  --color-text-muted: #64748b;
+  --color-border:     #e2e8f0;
+  --color-neon-pink:  #ff2d78;
+  --color-neon-cyan:  #00f5d4;
+  /* Status */
+  --color-success:    #16a34a;
+  --color-warning:    #f59e0b;
+  --color-danger:     #ef4444;
+  /* Legacy dark kept for admin/user dashboard pages */
+  --color-surface:    #14141f;
+  --color-surface-2:  #1f1f2e;
+  --color-accent:     #7c3aed;
+  --color-accent-h:   #a855f7;
+  --color-bg-dark:    #0a0a0f;
+}
+
+*,*::before,*::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  color: #0f172a;
+  line-height: 1.6;
+  background: #ffffff;
+}
+
+img { display: block; max-width: 100%; }
+a  { text-decoration: none; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #0066ff; }
+
+/* ── No-scrollbar utility (dùng cho filter bar scroll-x) ── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ══════════════════════════════════════════
+   KEYFRAMES — ENTRANCE
+══════════════════════════════════════════ */
+@keyframes fadeIn     { from{opacity:0} to{opacity:1} }
+@keyframes fadeUp     { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideLeft  { from{opacity:0;transform:translateX(-60px)} to{opacity:1;transform:translateX(0)} }
+@keyframes slideRight { from{opacity:0;transform:translateX(60px)} to{opacity:1;transform:translateX(0)} }
+@keyframes scaleIn    { from{opacity:0;transform:scale(.88)} to{opacity:1;transform:scale(1)} }
+@keyframes popIn      { 0%{opacity:0;transform:scale(.5)} 70%{transform:scale(1.06)} 100%{opacity:1;transform:scale(1)} }
+
+/* ══════════════════════════════════════════
+   KEYFRAMES — LOOP
+══════════════════════════════════════════ */
+@keyframes float    { 0%,100%{transform:translate(0,0)} 33%{transform:translate(18px,-14px)} 66%{transform:translate(-10px,14px)} }
+@keyframes floatAlt { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-22px,-18px)} }
+@keyframes orbit    { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+@keyframes gradShift {
+  0%  { background-position:0% 50% }
+  50% { background-position:100% 50% }
+  100%{ background-position:0% 50% }
+}
+
+@keyframes pulseNeon {
+  0%,100%{ box-shadow:0 0 12px rgba(0,102,255,.4),0 6px 20px rgba(0,102,255,.25) }
+  50%    { box-shadow:0 0 28px rgba(0,102,255,.7),0 10px 35px rgba(0,102,255,.45) }
+}
+
+@keyframes ping    { 75%,100%{transform:scale(2.4);opacity:0} }
+@keyframes breathe { 0%,100%{opacity:.45} 50%{opacity:1} }
+
+@keyframes shimmer {
+  0%  { background-position:-200% center }
+  100%{ background-position:200% center }
+}
+
+/* ── Marquee ── */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes noti-marquee-rtl {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ── Ticker infinite scroll (GPU-accelerated, no gap) ── */
+@keyframes ticker-scroll {
+  0%   { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+
+/* Pulsing ring quanh LIVE dot */
+@keyframes ticker-ring {
+  0%   { transform: scale(1);   opacity: 0.7; }
+  70%  { transform: scale(2.2); opacity: 0;   }
+  100% { transform: scale(2.2); opacity: 0;   }
+}
+
+/* ── Ticker bar ── */
+@keyframes noti-bar-in {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+@keyframes noti-bar-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ── Skeleton ── */
+@keyframes skeleton-pulse {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.4; }
+}
+
+/* ── Footer ── */
+@keyframes footerFadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+
+@keyframes iconPulse {
+  0%, 80%, 100% { transform: scale(1);    opacity: 1;    }
+  40%            { transform: scale(1.08); opacity: 0.88; }
+}
+
+/* ── Nav / Dropdown ── */
+@keyframes fadeDropdown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDownCard {
+  from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)     scale(1); }
+}
+
+/* ── Mobile floating navbar ── */
+@media (max-width: 767px) {
+  .main-header-shell {
+    padding: 10px 12px 8px !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .main-header-nav {
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.14),
+      0 2px 8px rgba(0, 0, 0, 0.08),
+      0 0 0 1.5px rgba(255, 255, 255, 0.9) !important;
+    padding: 7px 7px 7px 16px !important;
+  }
+}
+
+/* ── Auth status dot ── */
+@keyframes active-status {
+  0%   { background-color: #22c55e; }
+  33%  { background-color: #86efac; }
+  66%  { background-color: #86efac; }
+  100% { background-color: #22c55e; }
+}
+
+/* ── Page transition ── */
+@keyframes pageFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+body { animation: pageFadeIn 0.28s ease-out both; }
+
+/* ══════════════════════════════════════════
+   ANIMATION UTILITIES
+══════════════════════════════════════════ */
+.animate-marquee        { animation: marquee 30s linear infinite; }
+.animate-marquee:hover  { animation-play-state: paused; }
+.skeleton-pulse         { animation: skeleton-pulse 2s ease-in-out infinite; }
+
+/* ── Ticker track: animation-* tách khỏi inline style để tránh React conflict ── */
+/* animation-duration được ghi đè qua ref.style sau khi đo scrollWidth           */
+.ticker-track {
+  animation-name:             ticker-scroll;
+  animation-duration:         30s;
+  animation-timing-function:  linear;
+  animation-iteration-count:  infinite;
+  animation-fill-mode:        none;
+  /* Ngăn flex-shrink co lại theo container — nếu bị co thì translate3d(-50%) sẽ sai */
+  flex-shrink:                0;
+  width:                      max-content;
+}
+
+/* ══════════════════════════════════════════
+   SCROLL-TRIGGER CLASSES
+══════════════════════════════════════════ */
+.anim-fade-up,
+.anim-slide-left,
+.anim-slide-right,
+.anim-scale-in,
+.anim-fade-in { opacity: 0; }
+
+.anim-fade-up.visible    { animation: fadeUp    .7s cubic-bezier(0.4,0,0.2,1) forwards; }
+.anim-slide-left.visible { animation: slideLeft .7s cubic-bezier(0.4,0,0.2,1) forwards; }
+.anim-slide-right.visible{ animation: slideRight .7s cubic-bezier(0.4,0,0.2,1) forwards; }
+.anim-scale-in.visible   { animation: scaleIn   .7s cubic-bezier(0.4,0,0.2,1) forwards; }
+.anim-fade-in.visible    { animation: fadeIn    .6s ease forwards; }
+
+[data-d="1"]{ animation-delay:.1s!important }
+[data-d="2"]{ animation-delay:.2s!important }
+[data-d="3"]{ animation-delay:.3s!important }
+[data-d="4"]{ animation-delay:.4s!important }
+[data-d="5"]{ animation-delay:.5s!important }
+[data-d="6"]{ animation-delay:.6s!important }
+
+/* ══════════════════════════════════════════
+   STICKY CONTACT MENU
+══════════════════════════════════════════ */
+@keyframes scmPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,.55); }
+  60%     { box-shadow: 0 0 0 10px rgba(99,102,241,0); }
+}
+@keyframes scmCardIn {
+  from { opacity:0; transform:translateY(14px) scale(.97); }
+  to   { opacity:1; transform:translateY(0)    scale(1);   }
+}
+@keyframes scmRowIn {
+  from { opacity:0; transform:translateX(10px); }
+  to   { opacity:1; transform:translateX(0);    }
+}
+.scm-card              { animation: scmCardIn .22s cubic-bezier(.22,.68,0,1.2) both; }
+.scm-row               { animation: scmRowIn  .18s ease both; }
+.scm-trigger           { animation: scmPulse  2.6s ease-in-out infinite; }
+.scm-trigger:hover     { animation:none; transform:scale(1.07); }
+.scm-item-link:hover .scm-item-icon       { transform:scale(1.08); }
+.scm-item-link:hover .scm-item-text-title { color:#6366f1; }
+.scm-close-btn:hover   { background:#1e293b !important; }
+
+/* ══════════════════════════════════════════
+   REDUCED MOTION
+══════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

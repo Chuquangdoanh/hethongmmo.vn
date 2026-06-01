@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "OrderStatus" ADD VALUE 'FROZEN';
+
+-- AlterEnum
+ALTER TYPE "TxType" ADD VALUE 'COMPLAINT_DEDUCTION';

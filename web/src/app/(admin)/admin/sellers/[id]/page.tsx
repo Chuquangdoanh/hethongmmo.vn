@@ -1,0 +1,265 @@
+﻿import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/db/prisma";
+import { formatDate, formatVnd } from "@/lib/utils/format";
+import SellerApproveForm from "./SellerApproveForm";
+import ShopLockAdminButton from "./ShopLockAdminButton";
+import SellerTierForm from "./SellerTierForm";
+import ImageZoom from "./ImageZoom";
+
+export const metadata: Metadata = { title: "Duyệt Seller" };
+
+export default async function AdminSellerDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+
+  const request = await prisma.sellerRequest.findUnique({
+    where: { id },
+    include: {
+      user: {
+        select: {
+          id: true, email: true, fullName: true, phone: true,
+          createdAt: true, totalDeposited: true, totalSpent: true,
+          cccdImageUrl: true, portraitImageUrl: true, sellerTier: true,
+        },
+      },
+    },
+  });
+
+  if (!request) notFound();
+
+  type ShopRow = { shop_locked: boolean };
+  const [shopRows, products, orderStats, withdrawalStats] = await Promise.all([
+    prisma.$queryRaw<ShopRow[]>`SELECT shop_locked FROM users WHERE id = ${request.userId}`,
+    prisma.sellerProduct.findMany({
+      where: { sellerId: request.userId, deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        sellerCategory: true,
+        isActive: true,
+        isHidden: true,
+        isRestricted: true,
+        salesCount: true,
+        revenue: true,
+        createdAt: true,
+        _count: { select: { stockItems: { where: { status: "AVAILABLE" } } } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.order.aggregate({
+      where: { sellerId: request.userId, status: "DONE" },
+      _sum: { finalPrice: true },
+      _count: true,
+    }),
+    prisma.sellerWithdrawal.aggregate({
+      where: { sellerId: request.userId, status: "COMPLETED" },
+      _sum: { amount: true, netAmount: true },
+    }),
+  ]);
+  const shopLocked = shopRows[0]?.shop_locked ?? false;
+  const totalRevenue = Number(orderStats._sum.finalPrice ?? 0);
+  const totalOrders  = orderStats._count;
+  const totalWithdrawn    = Number(withdrawalStats._sum.amount    ?? 0);
+  const totalWithdrawnNet = Number(withdrawalStats._sum.netAmount ?? 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Link href="/admin/sellers" className="text-xs text-gray-500 hover:text-gray-500">← Sellers</Link>
+      </div>
+      <h1 className="text-2xl font-bold text-gray-900">Yêu cầu Seller</h1>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          {
+            label: "Tổng doanh số",
+            value: formatVnd(totalRevenue),
+            sub: `${totalOrders.toLocaleString("vi-VN")} đơn hoàn thành`,
+            color: "text-emerald-600",
+            bg: "bg-emerald-50 border-emerald-200",
+            icon: "💰",
+          },
+          {
+            label: "Tổng tiền rút",
+            value: formatVnd(totalWithdrawn),
+            sub: `Sau phí: ${formatVnd(totalWithdrawnNet)}`,
+            color: "text-blue-600",
+            bg: "bg-blue-50 border-blue-200",
+            icon: "🏦",
+          },
+          {
+            label: "Doanh số chưa rút",
+            value: formatVnd(Math.max(0, totalRevenue - totalWithdrawn)),
+            sub: "Còn lại trong ví seller",
+            color: "text-violet-600",
+            bg: "bg-violet-50 border-violet-200",
+            icon: "💳",
+          },
+        ].map(({ label, value, sub, color, bg, icon }) => (
+          <div key={label} className={`rounded-xl border p-5 ${bg}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">{icon}</span>
+              <p className="text-xs font-medium text-gray-500">{label}</p>
+            </div>
+            <p className={`text-xl font-bold ${color}`}>{value}</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{sub}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+        {/* LEFT: applicant info + action + shop lock */}
+        <div className="space-y-6">
+
+          {/* Applicant info */}
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-6">
+            <h2 className="text-sm font-semibold text-gray-900 mb-4">Thông tin người đăng ký</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "Họ tên", value: request.user.fullName },
+                { label: "Email", value: request.user.email },
+                { label: "Điện thoại", value: request.user.phone ?? "—" },
+                { label: "Danh mục đăng ký", value: request.category },
+                { label: "Ngày tạo TK", value: formatDate(request.user.createdAt) },
+                { label: "Tổng nạp", value: `${Number(request.user.totalDeposited).toLocaleString("vi-VN")}đ` },
+                { label: "Ngày đăng ký", value: formatDate(request.createdAt) },
+                { label: "Phí đăng ký", value: `${Number(request.fee).toLocaleString("vi-VN")}đ` },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <p className="text-[10px] text-gray-500 mb-0.5">{label}</p>
+                  <p className="text-sm text-gray-500">{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* ID documents */}
+            {(request.user.cccdImageUrl || request.user.portraitImageUrl) && (
+              <div className="mt-4 flex gap-4">
+                {request.user.cccdImageUrl && (
+                  <div>
+                    <p className="text-[10px] text-gray-500 mb-1">CCCD</p>
+                    <ImageZoom src={request.user.cccdImageUrl} alt="CCCD" />
+                  </div>
+                )}
+                {request.user.portraitImageUrl && (
+                  <div>
+                    <p className="text-[10px] text-gray-500 mb-1">Ảnh chân dung</p>
+                    <ImageZoom src={request.user.portraitImageUrl} alt="Ảnh chân dung" />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Action form */}
+          {request.status === "PENDING" ? (
+            <SellerApproveForm requestId={id} category={request.category} />
+          ) : (
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <p className="text-sm text-gray-500">
+                Yêu cầu đã được xử lý: <span className="text-gray-900 font-medium">{request.status}</span>
+                {request.approvedCategory && ` — Danh mục: ${request.approvedCategory}`}
+                {request.rejectReason && ` — Lý do: ${request.rejectReason}`}
+              </p>
+            </div>
+          )}
+
+          {/* Shop lock management — only for approved sellers */}
+          {request.status === "APPROVED" && (
+            <div className="rounded-xl border border-gray-200 bg-white p-5">
+              <h2 className="text-sm font-semibold text-gray-900 mb-1">Quản lý gian hàng</h2>
+              <p className="text-xs text-gray-500 mb-4">
+                Khóa gian hàng sẽ ẩn toàn bộ sản phẩm khỏi trang công khai và ngăn seller rút tiền.
+              </p>
+              <ShopLockAdminButton requestId={id} locked={shopLocked} />
+            </div>
+          )}
+
+          {/* Seller tier — only for approved sellers */}
+          {request.status === "APPROVED" && (
+            <SellerTierForm
+              sellerId={request.userId}
+              currentTier={request.user.sellerTier}
+            />
+          )}
+
+        </div>
+
+        {/* RIGHT: products table */}
+        <div>
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <h2 className="text-sm font-semibold text-gray-900 mb-4">
+              Sản phẩm ({products.length})
+            </h2>
+            {products.length === 0 ? (
+              <p className="text-sm text-gray-400">Chưa có sản phẩm nào.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="pb-2 text-left text-xs font-medium text-gray-500">Tên sản phẩm</th>
+                      <th className="pb-2 text-left text-xs font-medium text-gray-500">Danh mục</th>
+                      <th className="pb-2 text-right text-xs font-medium text-gray-500">Giá</th>
+                      <th className="pb-2 text-right text-xs font-medium text-gray-500">Tồn kho</th>
+                      <th className="pb-2 text-right text-xs font-medium text-gray-500">Đã bán</th>
+                      <th className="pb-2 text-right text-xs font-medium text-gray-500">Doanh thu</th>
+                      <th className="pb-2 text-center text-xs font-medium text-gray-500">Trạng thái</th>
+                      <th className="pb-2 text-left text-xs font-medium text-gray-500">Ngày tạo</th>
+                      <th className="pb-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {products.map((p) => {
+                      const statusLabel = !p.isActive
+                        ? { text: "Tắt", cls: "bg-gray-100 text-gray-500" }
+                        : p.isRestricted
+                        ? { text: "Hạn chế", cls: "bg-red-50 text-red-600" }
+                        : p.isHidden
+                        ? { text: "Ẩn", cls: "bg-yellow-50 text-yellow-600" }
+                        : { text: "Hoạt động", cls: "bg-green-50 text-green-600" };
+
+                      return (
+                        <tr key={p.id} className="hover:bg-gray-50">
+                          <td className="py-2.5 pr-3 font-medium text-gray-900 max-w-50 truncate">{p.name}</td>
+                          <td className="py-2.5 pr-3 text-gray-500 text-xs">{p.sellerCategory}</td>
+                          <td className="py-2.5 pr-3 text-right text-gray-700">{formatVnd(Number(p.price))}</td>
+                          <td className="py-2.5 pr-3 text-right text-gray-700">{p._count.stockItems}</td>
+                          <td className="py-2.5 pr-3 text-right text-gray-700">{p.salesCount}</td>
+                          <td className="py-2.5 pr-3 text-right text-gray-700">{formatVnd(Number(p.revenue))}</td>
+                          <td className="py-2.5 px-3 text-center">
+                            <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${statusLabel.cls}`}>
+                              {statusLabel.text}
+                            </span>
+                          </td>
+                          <td className="py-2.5 text-xs text-gray-400">{formatDate(p.createdAt)}</td>
+                          <td className="py-2.5 pl-3">
+                            <Link
+                              href={`/admin/san-pham-ban/${p.id}`}
+                              className="text-xs text-blue-600 hover:text-blue-800 whitespace-nowrap"
+                            >
+                              Xem chi tiết →
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}

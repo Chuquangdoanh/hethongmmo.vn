@@ -1,0 +1,178 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/db/prisma";
+import ServiceListWithForm from "./_components/ServiceListWithForm";
+import { Users, TrendingUp, Star, CheckCircle, Headphones } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Hệ Thống MMO",
+  description: "Tăng follow, like, view, sub trên TikTok, Facebook, Instagram, YouTube giá rẻ, uy tín.",
+};
+
+interface WarrantyOption { name: string; price: number; }
+interface DeviceVariant { name: string; price: number; }
+
+function parseJsonArray<T extends { name: string; price: number }>(raw: unknown): T[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item) => {
+    if (item && typeof item === "object" && "name" in item) {
+      const obj = item as Record<string, unknown>;
+      return [{ name: String(obj.name ?? ""), price: Number(obj.price ?? 0) } as T];
+    }
+    return [];
+  });
+}
+
+export default async function DichVuPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
+  const [{ category }, session] = await Promise.all([searchParams, auth()]);
+  const isLoggedIn = !!session?.user;
+
+  const [rawServices, distinctCategories, serviceCategoryDefs] = await Promise.all([
+    prisma.service.findMany({
+      where: {
+        isActive: true,
+        deletedAt: null,
+        ...(category ? { category } : {}),
+      },
+      orderBy: [{ isFeatured: "desc" }, { displayOrder: "asc" }],
+      select: {
+        id: true, slug: true, name: true, thumbnail: true,
+        platform: true, category: true, price: true,
+        successRate: true, processingTime: true,
+        rating: true, totalOrders: true, customerCount: true,
+        totalViews: true, isFeatured: true,
+        description: true, warrantyOptions: true, productList: true,
+        requiresAccountType: true, requiresCccd: true,
+      },
+    }),
+    prisma.service.findMany({
+      where: { isActive: true, deletedAt: null },
+      select: { category: true },
+      distinct: ["category"],
+      orderBy: { category: "asc" },
+    }),
+    prisma.serviceCategory.findMany({
+      select: { name: true, iconUrl: true },
+    }),
+  ]);
+
+  const categoryIconMap = new Map(serviceCategoryDefs.map((c) => [c.name, c.iconUrl]));
+  const availableCategories = distinctCategories.map((s) => s.category).filter(Boolean);
+
+  const services = rawServices.map((s) => ({
+    ...s,
+    price: s.price.toString(),
+    warrantyOptions: parseJsonArray<WarrantyOption>(s.warrantyOptions),
+    deviceVariants: parseJsonArray<DeviceVariant>(s.productList),
+  }));
+
+  // Aggregate stats
+  const totalCustomers = rawServices.reduce((s, v) => s + v.customerCount, 0);
+  const totalOrders    = rawServices.reduce((s, v) => s + v.totalOrders, 0);
+  const avgRating      = rawServices.length > 0
+    ? rawServices.reduce((s, v) => s + v.rating, 0) / rawServices.length
+    : 5;
+  const avgSuccess     = rawServices.length > 0
+    ? rawServices.reduce((s, v) => s + v.successRate, 0) / rawServices.length
+    : 100;
+
+  const OVERVIEW_STATS = [
+    { Icon: Users,       color: "#0066ff", bg: "#dbeafe", value: `${(totalCustomers / 1000).toFixed(0)}K+`, label: "Khách hàng" },
+    { Icon: TrendingUp,  color: "#10b981", bg: "#d1fae5", value: `${totalOrders.toLocaleString("vi-VN")}+`,   label: "Đơn hoàn thành" },
+    { Icon: Star,        color: "#f59e0b", bg: "#fef3c7", value: avgRating.toFixed(1),                         label: "Đánh giá TB" },
+    { Icon: CheckCircle, color: "#7c3aed", bg: "#ede9fe", value: `${Math.round(avgSuccess)}%`,                 label: "Tỷ lệ thành công" },
+    { Icon: Headphones,  color: "#e11d48", bg: "#ffe4e6", value: "24/7",                                       label: "Hỗ trợ kỹ thuật" },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#f4f6f9]">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-10">
+
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-extrabold text-[#0f172a] uppercase tracking-wide mb-2">
+            Đăng ký dịch vụ ngay
+          </h1>
+          <p className="text-sm text-[#64748b]">
+            Chọn dịch vụ bạn cần và điền thông tin để được hỗ trợ nhanh chóng
+          </p>
+        </div>
+
+        {/* ── GC MMO stats bar ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
+          {OVERVIEW_STATS.map(({ Icon, color, bg, value, label }) => (
+            <div key={label} className="bg-white rounded-2xl border border-[#e2e8f0] px-4 py-4 flex items-center gap-3 shadow-sm">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: bg }}>
+                <Icon size={18} strokeWidth={1.75} style={{ color }} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-lg font-extrabold text-[#0f172a] leading-tight">{value}</p>
+                <p className="text-[11px] text-[#64748b] leading-tight">{label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Category filter */}
+        {availableCategories.length > 0 && (
+          <div className="flex items-center justify-center gap-2 flex-wrap mb-6">
+            <Link
+              href="/dich-vu"
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
+                !category
+                  ? "bg-[#EF4444] text-white shadow-sm"
+                  : "bg-white border border-border text-[#475569] hover:border-[#EF4444] hover:text-[#EF4444]"
+              }`}
+            >
+              Tất cả
+            </Link>
+            {availableCategories.map((cat) => {
+              const iconUrl = categoryIconMap.get(cat);
+              return (
+                <Link
+                  key={cat}
+                  href={`/dich-vu?category=${encodeURIComponent(cat)}`}
+                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
+                    category === cat
+                      ? "bg-[#EF4444] text-white shadow-sm"
+                      : "bg-white border border-border text-[#475569] hover:border-[#EF4444] hover:text-[#EF4444]"
+                  }`}
+                >
+                  {iconUrl && (
+                    <span className="flex items-center justify-center w-4 h-4 bg-white rounded-sm p-0.5 shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={iconUrl} alt="" width={14} height={14} loading="lazy" decoding="async" className="w-full h-full object-contain" />
+                    </span>
+                  )}
+                  {cat}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Count */}
+        {services.length > 0 && (
+          <p className="text-center text-xs text-[#94a3b8] mb-8">
+            Hiển thị <strong>{services.length}</strong> dịch vụ
+          </p>
+        )}
+
+        {/* Grid + inline form */}
+        {services.length === 0 ? (
+          <div className="text-center py-20 text-text-muted">
+            <p className="text-4xl mb-4">🔍</p>
+            <p className="font-medium">Không có dịch vụ nào</p>
+          </div>
+        ) : (
+          <ServiceListWithForm services={services} isLoggedIn={isLoggedIn} />
+        )}
+      </div>
+    </div>
+  );
+}
