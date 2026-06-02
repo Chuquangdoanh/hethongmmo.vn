@@ -19,11 +19,17 @@ logs/
 
 # Prisma
 web/prisma/generated/
+web/prisma.config.ts
+
+# Migration script artifacts
+.migration-checkpoint.json
+migration-errors.log
 
 # OS
 .DS_Store
 Thumbs.db
 *.swp
+*.bak
 
 # IDE
 .vscode/settings.json
@@ -33,8 +39,16 @@ Thumbs.db
 *.pem
 *.key
 serviceAccountKey.json
+serviceAccountKey*.json
 infra/nginx/ssl/
+
+# Firebase service account (migration)
+firebase-adminsdk*.json
+*-firebase-adminsdk-*.json
 
 # Docker volumes (local)
 pg_data/
 redis_data/
+
+# Generated Prisma client
+web/src/generated/

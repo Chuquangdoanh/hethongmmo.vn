@@ -1,23 +1,24 @@
 # Multi-stage build — non-root, minimal attack surface
 FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@9 --activate
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # ── deps ──────────────────────────────────────────────────────────────
 FROM base AS deps
 WORKDIR /app
-COPY web/package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+COPY web/package.json web/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --prod
 
 # ── builder ───────────────────────────────────────────────────────────
 FROM base AS builder
 WORKDIR /app
-COPY web/package*.json ./
-RUN npm ci
+COPY web/package.json web/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY web/ .
-RUN npx prisma generate
+RUN pnpm prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+RUN pnpm build
 
 # ── runner ────────────────────────────────────────────────────────────
 FROM base AS runner
