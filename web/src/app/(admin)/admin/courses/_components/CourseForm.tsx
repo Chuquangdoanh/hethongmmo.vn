@@ -6,6 +6,7 @@ import CourseCategoryCombobox from "./CourseCategoryCombobox";
 
 const BADGES = ["NONE", "HOT", "POPULAR", "TREND", "NEW", "VIP"];
 const FORMATS = ["ONLINE", "OFFLINE", "HYBRID"];
+const MAX_CONTENT_ITEMS = 20;
 
 // Dùng cho phần "Biến thể Platform" của khóa học (không liên quan đến danh mục)
 const SOCIAL_PLATFORMS = [
@@ -58,6 +59,8 @@ interface CourseData {
   seoDescription?: string;
   requiresAccountType?: boolean;
   requiresCccd?: boolean;
+  commitments?: string[];
+  registrationProcedure?: string;
 }
 
 const inputCls =
@@ -96,6 +99,11 @@ export default function CourseForm({ initial }: { initial?: CourseData }) {
   const [contentList, setContentList] = useState<string[]>(initial?.contentList ?? []);
   const [newContentItem, setNewContentItem] = useState("");
 
+  const [commitments, setCommitments] = useState<string[]>(initial?.commitments ?? []);
+  const [newCommitment, setNewCommitment] = useState("");
+
+  const [registrationProcedure, setRegistrationProcedure] = useState(initial?.registrationProcedure ?? "");
+
   const [platformVariants, setPlatformVariants] = useState<PlatformVariant[]>(
     initial?.platformVariants ?? [],
   );
@@ -115,12 +123,24 @@ export default function CourseForm({ initial }: { initial?: CourseData }) {
   function addContentItem() {
     const trimmed = newContentItem.trim();
     if (!trimmed) return;
+    if (contentList.length >= MAX_CONTENT_ITEMS) return;
     setContentList((prev) => [...prev, trimmed]);
     setNewContentItem("");
   }
 
   function removeContentItem(idx: number) {
     setContentList((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function addCommitment() {
+    const trimmed = newCommitment.trim();
+    if (!trimmed || commitments.length >= 20) return;
+    setCommitments((prev) => [...prev, trimmed]);
+    setNewCommitment("");
+  }
+
+  function removeCommitment(idx: number) {
+    setCommitments((prev) => prev.filter((_, i) => i !== idx));
   }
 
   function addPresetPlatform(preset: { name: string; icon: string }) {
@@ -195,6 +215,8 @@ export default function CourseForm({ initial }: { initial?: CourseData }) {
       platformVariants,
       requiresAccountType: form.requiresAccountType,
       requiresCccd: form.requiresCccd,
+      commitments,
+      ...(registrationProcedure.trim() ? { registrationProcedure: registrationProcedure.trim() } : { registrationProcedure: null }),
     };
 
     setLoading(true);
@@ -352,30 +374,47 @@ export default function CourseForm({ initial }: { initial?: CourseData }) {
 
         {/* ── Danh sách nội dung ── */}
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-900">Danh sách nội dung khóa học</h2>
-          <div className="flex gap-2">
-            <input
-              type="text"
+          <h2 className="text-sm font-semibold text-gray-900">
+            Danh sách nội dung khóa học
+            <span className="ml-2 text-xs font-normal text-gray-400">({contentList.length}/{MAX_CONTENT_ITEMS})</span>
+          </h2>
+          <div className="space-y-1.5">
+            <div className="flex gap-2 items-start">
+            <textarea
               value={newContentItem}
-              onChange={(e) => setNewContentItem(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addContentItem(); } }}
-              placeholder="Thêm mục nội dung..."
-              className={inputCls + " flex-1"}
+              onChange={(e) => setNewContentItem(e.target.value.slice(0, 2000))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                  e.preventDefault();
+                  addContentItem();
+                }
+              }}
+              placeholder={"Thêm mục nội dung...\nVD:\n1. Nội dung\n   a. Chi tiết a\n   b. Chi tiết b\n\nCtrl+Enter để thêm"}
+              maxLength={2000}
+              rows={4}
+              disabled={contentList.length >= MAX_CONTENT_ITEMS}
+              className={inputCls + " flex-1 resize-none overflow-y-auto"}
             />
             <button
               type="button"
               onClick={addContentItem}
-              className="px-4 py-2 rounded-lg bg-[#7C3AED]/20 text-[#A855F7] text-sm hover:bg-[#7C3AED]/30 transition-colors whitespace-nowrap"
+              disabled={contentList.length >= MAX_CONTENT_ITEMS}
+              className="px-4 py-2 rounded-lg bg-[#7C3AED]/20 text-[#A855F7] text-sm hover:bg-[#7C3AED]/30 transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
             >
               + Thêm
             </button>
           </div>
+            <p className="text-[11px] text-gray-400 text-right">{newContentItem.length}/2000 ký tự</p>
+          </div>
+          {contentList.length >= MAX_CONTENT_ITEMS && (
+            <p className="text-xs text-amber-600">Đã đạt giới hạn {MAX_CONTENT_ITEMS} mục nội dung.</p>
+          )}
           {contentList.length > 0 ? (
             <ul className="space-y-2">
               {contentList.map((item, i) => (
-                <li key={i} className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 text-sm text-gray-900">
-                  <span className="text-[#7C3AED] shrink-0">✓</span>
-                  <span className="flex-1">{item}</span>
+                <li key={i} className="flex items-start gap-2 bg-white rounded-lg px-3 py-2 text-sm text-gray-900">
+                  <span className="text-[#7C3AED] shrink-0 mt-0.5">✓</span>
+                  <span className="flex-1 whitespace-pre-wrap wrap-break-word max-h-24 overflow-y-auto">{item}</span>
                   <button
                     type="button"
                     onClick={() => removeContentItem(i)}
@@ -389,6 +428,60 @@ export default function CourseForm({ initial }: { initial?: CourseData }) {
           ) : (
             <p className="text-xs text-gray-500">Chưa có nội dung nào. Nhập và nhấn Enter hoặc bấm + Thêm.</p>
           )}
+        </div>
+
+        {/* ── Cam kết khóa học ── */}
+        <div className="rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] p-5 space-y-4">
+          <h2 className="text-sm font-semibold text-[#065f46]">
+            Cam kết khóa học
+            <span className="ml-2 text-xs font-normal text-[#16a34a]">({commitments.length}/20)</span>
+          </h2>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newCommitment}
+              onChange={(e) => setNewCommitment(e.target.value.slice(0, 500))}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCommitment(); } }}
+              placeholder="VD: Hoàn tiền 100% nếu không hài lòng trong 7 ngày..."
+              disabled={commitments.length >= 20}
+              className={inputCls + " flex-1"}
+            />
+            <button
+              type="button"
+              onClick={addCommitment}
+              disabled={commitments.length >= 20}
+              className="px-4 py-2 rounded-lg bg-[#16a34a]/20 text-[#16a34a] text-sm hover:bg-[#16a34a]/30 transition-colors whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              + Thêm
+            </button>
+          </div>
+          {commitments.length > 0 ? (
+            <ul className="space-y-2">
+              {commitments.map((item, i) => (
+                <li key={i} className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 text-sm text-gray-900">
+                  <span className="text-[#16a34a] shrink-0">✓</span>
+                  <span className="flex-1">{item}</span>
+                  <button type="button" onClick={() => removeCommitment(i)} className="text-gray-400 hover:text-[#EF4444] text-xs shrink-0">✕</button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs text-[#16a34a]/70">Chưa có cam kết. Nhập và nhấn Enter hoặc bấm + Thêm.</p>
+          )}
+        </div>
+
+        {/* ── Thủ tục đăng ký ── */}
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-4">
+          <h2 className="text-sm font-semibold text-gray-900">Thủ tục đăng ký</h2>
+          <p className="text-[11px] text-gray-400">Mô tả các bước, điều kiện cần thiết để đăng ký khóa học. Xuống dòng để tạo bước mới.</p>
+          <textarea
+            rows={5}
+            value={registrationProcedure}
+            onChange={(e) => setRegistrationProcedure(e.target.value.slice(0, 5000))}
+            className={inputCls + " resize-none"}
+            placeholder="VD: Bước 1: Điền thông tin đăng ký...\nBước 2: Chuyển khoản học phí..."
+          />
+          <p className="text-[11px] text-gray-400 text-right">{registrationProcedure.length}/5000 ký tự</p>
         </div>
 
         {/* ── Biến thể Platform ── */}

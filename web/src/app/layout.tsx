@@ -13,8 +13,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "Hệ Thống MMO",
-    template: "%s | DJ MEDIA",
+    default: "Hệ Thống MMO | DJ MEDIA",
+    template: "%s | Hệ Thống MMO | DJ MEDIA",
   },
   description: "Dịch vụ MXH, khóa học MMO, tài nguyên và marketplace số 1 Việt Nam",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://hethongmmo.vn"),

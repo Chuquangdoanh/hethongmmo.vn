@@ -40,8 +40,8 @@ export default function ServiceOrderForm({
   const cccdInputRef = useRef<HTMLInputElement>(null);
   const isICloud = platform === "ICLOUD";
   const hasDeviceVariants = deviceVariants.length > 0;
-  const showAccountType = !isICloud && requiresAccountType;
-  const showCccd = !isICloud && requiresCccd;
+  const showAccountType = requiresAccountType;
+  const showCccd = requiresCccd;
 
   const [deviceVariant, setDeviceVariant] = useState<string>(
     deviceVariants.length === 1 ? (deviceVariants[0]?.name ?? "") : ""
@@ -219,6 +219,7 @@ export default function ServiceOrderForm({
               ? "border-[#EF4444] bg-[#fff5f5] focus:border-[#EF4444]"
               : "border-[#e2e8f0] bg-[#f8fafc] focus:border-[#0066ff]"
           }`}
+          suppressHydrationWarning
         />
         {fieldErrors.link && (
           <p className="mt-1.5 text-xs text-[#EF4444] flex items-center gap-1">
@@ -241,6 +242,7 @@ export default function ServiceOrderForm({
                 ? "border-[#EF4444] bg-[#fff5f5] focus:border-[#EF4444]"
                 : "border-[#e2e8f0] bg-[#f8fafc] focus:border-[#0066ff]"
             }`}
+            suppressHydrationWarning
           />
           {fieldErrors.phone && (
             <p className="mt-1.5 text-xs text-[#EF4444] flex items-center gap-1">

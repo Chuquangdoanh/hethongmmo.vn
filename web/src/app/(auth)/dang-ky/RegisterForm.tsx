@@ -92,6 +92,7 @@ export default function RegisterForm() {
             value={form.fullName} onChange={set("fullName")} required
             className={inputCls} style={{ paddingLeft: 38 }}
             placeholder="Nhập họ và tên của bạn"
+            suppressHydrationWarning
           />
         </div>
       </div>
@@ -108,6 +109,7 @@ export default function RegisterForm() {
             value={form.phone} onChange={set("phone")} required
             className={inputCls} style={{ paddingLeft: 38 }}
             placeholder="Nhập số điện thoại"
+            suppressHydrationWarning
           />
         </div>
       </div>
@@ -124,6 +126,7 @@ export default function RegisterForm() {
             value={form.email} onChange={set("email")} required
             className={inputCls} style={{ paddingLeft: 38 }}
             placeholder="Nhập email của bạn"
+            suppressHydrationWarning
           />
         </div>
       </div>
@@ -140,6 +143,7 @@ export default function RegisterForm() {
             value={form.password} onChange={set("password")} required minLength={8}
             className={inputCls} style={{ paddingLeft: 38, paddingRight: 40 }}
             placeholder="Tối thiểu 12 ký tự"
+            suppressHydrationWarning
           />
           <button
             type="button" tabIndex={-1} onClick={() => setShowPassword((v) => !v)}
@@ -169,6 +173,7 @@ export default function RegisterForm() {
             value={form.confirmPassword} onChange={set("confirmPassword")} required
             className={inputCls} style={{ paddingLeft: 38, paddingRight: 40 }}
             placeholder="Nhập lại mật khẩu"
+            suppressHydrationWarning
           />
           <button
             type="button" tabIndex={-1} onClick={() => setShowConfirm((v) => !v)}
@@ -191,6 +196,7 @@ export default function RegisterForm() {
         <input
           type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)}
           style={{ marginTop: 2, accentColor: "#0066ff", width: 15, height: 15, flexShrink: 0, cursor: "pointer" }}
+          suppressHydrationWarning
         />
         <span style={{ fontSize: 13, color: "#4b5563", lineHeight: 1.5 }}>
           Tôi đồng ý với{" "}

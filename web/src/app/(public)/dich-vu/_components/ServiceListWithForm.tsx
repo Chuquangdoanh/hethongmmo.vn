@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { formatVnd } from "@/lib/utils/format";
 import { randomUUID } from "@/lib/utils/uuid";
 import {
-  Users, Clock, TrendingUp, Eye, CheckCircle, Zap,
+  Users, Clock, CheckCircle, Zap,
   Star, ShoppingCart, Upload, X,
   Phone, Link2, Smartphone, Mail, KeyRound,
   Shield, AlertTriangle, Tag, MessageSquare, Send,
-  ChevronRight, BadgeCheck,
+  BadgeCheck, Package,
 } from "lucide-react";
+import TestimonialsSection, { type TestimonialItem } from "@/components/shared/TestimonialsSection";
 
 const PLATFORM_LABELS: Record<string, string> = {
   FACEBOOK: "Facebook", TIKTOK: "TikTok", INSTAGRAM: "Instagram",
@@ -18,9 +19,15 @@ const PLATFORM_LABELS: Record<string, string> = {
   TELEGRAM: "Telegram", TWITTER: "Twitter (X)", ICLOUD: "iCloud", OTHER: "Khác",
 };
 const PLATFORM_ICONS: Record<string, string> = {
-  FACEBOOK: "🔵", TIKTOK: "🎵", INSTAGRAM: "📸", YOUTUBE: "▶️",
-  GOOGLE: "🔍", ZALO: "💬", TELEGRAM: "✈️", TWITTER: "🐦",
-  ICLOUD: "☁️", OTHER: "🌐",
+  FACEBOOK:  "https://svgl.app/library/facebook-icon.svg",
+  TIKTOK:    "https://svgl.app/library/tiktok-icon-light.svg",
+  GOOGLE:    "https://svgl.app/library/google.svg",
+  INSTAGRAM: "https://svgl.app/library/instagram-icon.svg",
+  YOUTUBE:   "https://svgl.app/library/youtube.svg",
+  ICLOUD:    "https://svgl.app/library/icloud.svg",
+  ZALO:      "https://svgl.app/library/zalo.svg",
+  TELEGRAM:  "https://svgl.app/library/telegram.svg",
+  TWITTER:   "https://svgl.app/library/x.svg",
 };
 
 interface WarrantyOption { name: string; price: number; }
@@ -48,16 +55,30 @@ interface ServiceItem {
   requiresCccd: boolean;
 }
 
-function StarRating({ rating }: { rating: number }) {
-  const full = Math.round(rating);
+function ThumbnailPreview({ src, alt }: { src: string; alt: string }) {
+  const [open, setOpen] = useState(false);
   return (
-    <span className="inline-flex gap-0.5">
-      {[1,2,3,4,5].map((s) => (
-        <svg key={s} className={`w-3.5 h-3.5 ${s <= full ? "text-[#F59E0B]" : "text-[#d1d5db]"}`} fill="currentColor" viewBox="0 0 20 20">
-          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-        </svg>
-      ))}
-    </span>
+    <>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold border border-[#e2e8f0] text-[#475569] hover:border-[#0066ff] hover:text-[#0066ff] transition-colors"
+      >
+        🖼 Xem ảnh
+      </button>
+      {open && (
+        <div className="fixed inset-0 z-1100 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+          <div className="relative z-10 max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => setOpen(false)} className="absolute -top-10 right-0 text-white/70 hover:text-white text-sm font-semibold">
+              ✕ Đóng
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt={alt} className="w-full h-auto rounded-xl shadow-2xl max-h-[80vh] object-contain" />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -70,59 +91,97 @@ function ServiceCard({
   isSelected: boolean;
   onSelect: () => void;
 }) {
-  const price = Number(service.price);
+  const price    = Number(service.price);
   const minPrice = service.deviceVariants.length > 0
-    ? Math.min(...service.deviceVariants.map(v => v.price))
+    ? Math.min(...service.deviceVariants.map((v) => v.price))
     : price;
   const hasVariants = service.deviceVariants.length > 0;
 
   return (
-    <div className={`bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-lg transition-all flex flex-col group ${isSelected ? "border-[#0d9488] ring-2 ring-[#0d9488]/20" : "border-[#e2e8f0] hover:border-[#0066ff]"}`}>
-      {/* Thumbnail */}
-      <div className="relative aspect-video bg-[#f1f5f9] overflow-hidden">
-        {service.thumbnail ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={service.thumbnail} alt={service.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-        ) : (
-          <div className="flex items-center justify-center h-full text-5xl">{PLATFORM_ICONS[service.platform] ?? "⚡"}</div>
-        )}
-        {/* Rating badge */}
-        <span className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#f59e0b] text-white shadow-sm">
-          <Star size={10} strokeWidth={0} fill="currentColor" />
-          {service.rating.toFixed(1)}
+    <article
+      className={`relative flex flex-col rounded-2xl border bg-white overflow-hidden shadow-sm hover:shadow-lg hover:border-[#0066ff]/40 transition-all duration-200 group ${
+        isSelected ? "border-[#0d9488] ring-2 ring-[#0d9488]/20" : "border-[#e2e8f0]"
+      }`}
+    >
+      {/* HOT badge — góc trên phải */}
+      {service.isFeatured && (
+        <span className="absolute top-0 right-0 px-3 py-1 text-[10px] font-extrabold bg-[#ef4444] text-white uppercase tracking-wider rounded-bl-xl rounded-tr-2xl z-10">
+          HOT
         </span>
-        {/* HOT badge */}
-        {service.isFeatured && (
-          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-[#ef4444] text-white tracking-wide">HOT</span>
-        )}
-        {/* Views */}
-        <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/40 text-white backdrop-blur-sm">
-          <Eye size={10} strokeWidth={2} />
-          {service.totalViews > 999 ? `${(service.totalViews / 1000).toFixed(1)}k` : service.totalViews}
-        </span>
-      </div>
+      )}
 
-      <div className="p-4 flex flex-col flex-1 gap-3">
-        {/* Platform + category tags */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#f1f5f9] text-[#475569] uppercase tracking-wide">
-            {PLATFORM_LABELS[service.platform] ?? service.platform}
+      <div className="flex flex-col flex-1 p-3 gap-5">
+
+       
+
+        {/* Row 1: Tên + Rating chip */}
+        <div className="flex items-start justify-between gap-2 pr-12">
+          <h3 className="text-sm font-bold text-[#0f172a] line-clamp-2 leading-snug flex-1 group-hover:text-[#0066ff] transition-colors">
+            {service.name}
+          </h3>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#000000] text-white shrink-0">
+            <Star size={10} strokeWidth={0} fill="#f59e0b" /> {service.rating.toFixed(1)}
           </span>
+        </div>
+
+        {/* Row 2: Platform + Category + Thumbnail preview */}
+        <div className="flex items-center gap-1.5 flex-wrap -mt-3">
+          
           {service.category && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#dbeafe] text-[#1d4ed8]">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#dbeafe] text-[#1d4ed8]">
               {service.category}
             </span>
           )}
+          {service.thumbnail && (
+            <ThumbnailPreview src={service.thumbnail} alt={service.name} />
+          )}
         </div>
 
-        {/* Name */}
-        <h3 className="text-sm font-bold text-[#0f172a] line-clamp-2 leading-snug group-hover:text-[#0066ff] transition-colors">
-          {service.name}
-        </h3>
+        {/* Row 3: Stats */}
+        <div className="flex items-center gap-3 text-[11px] text-[#64748b] flex-wrap -mt-3">
+          <span className="inline-flex items-center gap-1">
+            <Users size={11} strokeWidth={2} className="text-[#0066ff]" />
+            <span className="font-semibold text-[#0f172a]">{service.customerCount.toLocaleString("vi-VN")}</span> khách hàng
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Package size={11} strokeWidth={2} className="text-[#10b981]" />
+            <span className="font-semibold text-[#0f172a]">{service.totalOrders.toLocaleString("vi-VN")}</span> đơn
+          </span>
+        </div>
+
+        {/* Info card: thời gian + tỉ lệ thành công + bảo hành */}
+        <div className="flex flex-col gap-1.5 rounded-lg bg-[#f8fafc] border border-[#e2e8f0] px-3 py-2 text-[11px] -mt-3">
+          {service.processingTime && (
+            <span className="flex items-center gap-1.5 text-[#475569]">
+              <Clock size={11} strokeWidth={2} className="text-[#7C3AED] shrink-0" />
+              <span className="text-[#7C3AED] font-medium">Thời gian xử lý</span>
+              <span className="font-medium">{service.processingTime}</span>
+            </span>
+          )}
+          {service.warrantyOptions.length > 0 && (
+            <span className="flex items-center gap-1.5 text-[#475569]">
+              <Shield size={11} strokeWidth={2} className="text-[#059669] shrink-0" />
+              <span className="text-[#059669] font-medium">Bảo hành</span>
+              <span className="font-medium">{service.warrantyOptions[0]?.name}</span>
+            </span>
+          )}
+          <div className="pt-0.5">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[#64748b]">Tỉ lệ thành công</span>
+              <span className="font-bold text-[#059669]">{service.successRate}%</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-[#e2e8f0] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#10b981] to-[#34d399]"
+                style={{ width: `${service.successRate}%` }}
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Device variants */}
         {hasVariants && (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1 -mt-3">
             {service.deviceVariants.slice(0, 3).map((v) => (
               <span key={v.name} className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-[#ede9fe] text-[#7c3aed]">
                 {v.name}
@@ -134,105 +193,32 @@ function ServiceCard({
           </div>
         )}
 
-        {/* ── GC MMO stats grid ── */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2 py-3 border-y border-[#f1f5f9]">
-          <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-md bg-[#dbeafe] flex items-center justify-center shrink-0">
-              <Users size={11} strokeWidth={2} className="text-[#2563eb]" />
-            </div>
-            <span className="text-[11px] text-[#475569] font-medium">
-              {service.customerCount.toLocaleString("vi-VN")} khách
-            </span>
-          </div>
+        {/* Spacer */}
+        <div className="flex-1" />
 
-          <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-md bg-[#fef3c7] flex items-center justify-center shrink-0">
-              <Clock size={11} strokeWidth={2} className="text-[#b45309]" />
-            </div>
-            <span className="text-[11px] text-[#475569] font-medium">
-              {service.processingTime ?? "Nhanh"}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-md bg-[#f0fdf4] flex items-center justify-center shrink-0">
-              <TrendingUp size={11} strokeWidth={2} className="text-[#16a34a]" />
-            </div>
-            <span className="text-[11px] text-[#475569] font-medium">
-              {service.totalOrders.toLocaleString("vi-VN")} đơn
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-md bg-[#fef9c3] flex items-center justify-center shrink-0">
-              <Star size={11} strokeWidth={0} fill="#ca8a04" className="text-[#ca8a04]" />
-            </div>
-            <span className="text-[11px] text-[#475569] font-medium">
-              {service.rating.toFixed(1)}/5 sao
-            </span>
-          </div>
-        </div>
-
-        {/* ── Success rate bar ── */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle size={12} strokeWidth={2} className="text-[#10b981]" />
-              <span className="text-[11px] text-[#64748b] font-medium">Tỷ lệ thành công</span>
-            </div>
-            <span className="text-[11px] font-extrabold text-[#10b981]">{service.successRate}%</span>
-          </div>
-          <div className="h-2 rounded-full bg-[#f1f5f9] overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${service.successRate}%`,
-                background: `linear-gradient(90deg, #10b981, #22c55e)`,
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Warranty pills */}
-        {service.warrantyOptions.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {service.warrantyOptions.map((w, i) => (
-              <span
-                key={i}
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                  w.price === 0
-                    ? "bg-[#f1f5f9] text-[#64748b] border border-[#e2e8f0]"
-                    : "bg-[#fef3c7] text-[#92400e] border border-[#fde68a]"
-                }`}
-              >
-                <Zap size={9} strokeWidth={2} />
-                {w.name}{w.price === 0 ? " — Miễn phí" : ` +${formatVnd(w.price)}`}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Price + CTA */}
-        <div className="mt-auto pt-3 border-t border-[#f1f5f9] flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] text-[#94a3b8] mb-0.5">{hasVariants ? "Từ" : "Giá dịch vụ"}</p>
-            <p className="text-xl font-extrabold text-[#e11d48]">{formatVnd(minPrice)}</p>
+        {/* Giá + CTA — tỉ lệ 2:3 giống TutTrick */}
+        <div className="flex items-stretch gap-2">
+          <div className="flex-[2] flex items-center justify-center rounded-xl border-2 border-[#e11d48] px-2 py-2">
+            <p className="text-sm font-extrabold text-center leading-tight text-[#e11d48]">
+              {hasVariants ? `Từ ${formatVnd(minPrice)}` : formatVnd(price)}
+            </p>
           </div>
           <button
             type="button"
             onClick={onSelect}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            className={`flex-[3] flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold transition-all ${
               isSelected
                 ? "bg-[#0d9488] text-white shadow-md"
-                : "bg-[#0f172a] text-white hover:bg-[#0066ff] hover:shadow-md"
+                : "bg-[#e11d48] text-white hover:bg-[#be123c] hover:shadow-md"
             }`}
           >
-            <ShoppingCart size={14} strokeWidth={2} />
-            {isSelected ? "Đang chọn" : "Đặt hàng"}
+            <ShoppingCart size={13} strokeWidth={2} />
+            {isSelected ? "✓ Đang chọn" : "Đặt hàng ngay"}
           </button>
         </div>
+
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -241,11 +227,13 @@ function ServiceOrderPanel({
   isLoggedIn,
   onClose,
   onSuccess,
+  testimonials,
 }: {
   service: ServiceItem;
   isLoggedIn: boolean;
   onClose: () => void;
   onSuccess: (orderId: string) => void;
+  testimonials: TestimonialItem[];
 }) {
   const router = useRouter();
   const cccdInputRef = useRef<HTMLInputElement>(null);
@@ -443,6 +431,7 @@ function ServiceOrderPanel({
                   onChange={(e) => setField("imeiOrLink", e.target.value)}
                   placeholder={isICloud ? "VD: 352456789013456" : `Link ${PLATFORM_LABELS[service.platform] ?? ""}`}
                   className="w-full rounded-xl border border-[#e2e8f0] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:border-[#7C3AED] focus:outline-none transition-colors"
+                  suppressHydrationWarning
                 />
               </div>
             </div>
@@ -462,6 +451,7 @@ function ServiceOrderPanel({
                   onChange={(e) => setField("zaloPhone", e.target.value)}
                   placeholder="VD: 0901234567"
                   className="w-full rounded-xl border border-[#e2e8f0] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:border-[#7C3AED] focus:outline-none transition-colors"
+                  suppressHydrationWarning
                 />
               </div>
             </div>
@@ -482,6 +472,7 @@ function ServiceOrderPanel({
                       onChange={(e) => setField("accountPass", e.target.value)}
                       placeholder="Tài khoản/pass cũ"
                       className="w-full rounded-xl border border-[#e2e8f0] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:border-[#7C3AED] focus:outline-none transition-colors"
+                      suppressHydrationWarning
                     />
                   </div>
                 </div>
@@ -498,6 +489,7 @@ function ServiceOrderPanel({
                       onChange={(e) => setField("gmailPass", e.target.value)}
                       placeholder="Gmail/pass cũ"
                       className="w-full rounded-xl border border-[#e2e8f0] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:border-[#7C3AED] focus:outline-none transition-colors"
+                      suppressHydrationWarning
                     />
                   </div>
                 </div>
@@ -684,6 +676,13 @@ function ServiceOrderPanel({
               Hủy
             </button>
           </div>
+
+          {/* Đánh giá khách hàng — hiển thị dưới form */}
+          {testimonials.length > 0 && (
+            <div className="pt-4 border-t border-border">
+              <TestimonialsSection items={testimonials} />
+            </div>
+          )}
         </form>
       </div>
     </div>
@@ -693,9 +692,11 @@ function ServiceOrderPanel({
 export default function ServiceListWithForm({
   services,
   isLoggedIn,
+  testimonials,
 }: {
   services: ServiceItem[];
   isLoggedIn: boolean;
+  testimonials: (TestimonialItem & { serviceId: string | null })[];
 }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -708,6 +709,13 @@ export default function ServiceListWithForm({
   function handleSuccess(_orderId: string) {
     router.push("/don-hang");
   }
+
+  // Lọc testimonials cho service đang chọn: đúng serviceId HOẶC không gắn service cụ thể
+  const panelTestimonials = selectedService
+    ? testimonials.filter(
+        (t) => t.serviceId === null || t.serviceId === selectedService.id,
+      )
+    : [];
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -726,6 +734,7 @@ export default function ServiceListWithForm({
           isLoggedIn={isLoggedIn}
           onClose={() => setSelectedId(null)}
           onSuccess={handleSuccess}
+          testimonials={panelTestimonials}
         />
       )}
     </div>

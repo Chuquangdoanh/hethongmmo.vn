@@ -73,6 +73,7 @@ export default function LoginForm() {
             value={email} onChange={(e) => setEmail(e.target.value)} required
             className={inputCls} style={{ paddingLeft: 38 }}
             placeholder="Nhập email của bạn"
+            suppressHydrationWarning
           />
         </div>
       </div>
@@ -94,6 +95,7 @@ export default function LoginForm() {
             value={password} onChange={(e) => setPassword(e.target.value)} required
             className={inputCls} style={{ paddingLeft: 38, paddingRight: 40 }}
             placeholder="Nhập mật khẩu của bạn"
+            suppressHydrationWarning
           />
           <button
             type="button" tabIndex={-1} onClick={() => setShow((v) => !v)}

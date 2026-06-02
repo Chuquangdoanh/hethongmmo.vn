@@ -32,7 +32,7 @@ export default async function DichVuPage({
   const [{ category }, session] = await Promise.all([searchParams, auth()]);
   const isLoggedIn = !!session?.user;
 
-  const [rawServices, distinctCategories, serviceCategoryDefs] = await Promise.all([
+  const [rawServices, distinctCategories, serviceCategoryDefs, testimonials] = await Promise.all([
     prisma.service.findMany({
       where: {
         isActive: true,
@@ -58,6 +58,16 @@ export default async function DichVuPage({
     }),
     prisma.serviceCategory.findMany({
       select: { name: true, iconUrl: true },
+    }),
+    prisma.testimonial.findMany({
+      where: { type: "SERVICE", isActive: true },
+      select: {
+        id: true, category: true, serviceId: true,
+        reviewerName: true, reviewerRole: true,
+        reviewerAvatar: true, reviewerInitials: true, reviewerColor: true,
+        content: true, rating: true, createdAt: true,
+      },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
     }),
   ]);
 
@@ -95,10 +105,10 @@ export default async function DichVuPage({
 
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-extrabold text-[#0f172a] uppercase tracking-wide mb-2">
+          <h1 className="text-3xl font-extrabold text-text-dark uppercase tracking-wide mb-2">
             Đăng ký dịch vụ ngay
           </h1>
-          <p className="text-sm text-[#64748b]">
+          <p className="text-sm text-text-muted">
             Chọn dịch vụ bạn cần và điền thông tin để được hỗ trợ nhanh chóng
           </p>
         </div>
@@ -106,13 +116,13 @@ export default async function DichVuPage({
         {/* ── GC MMO stats bar ── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
           {OVERVIEW_STATS.map(({ Icon, color, bg, value, label }) => (
-            <div key={label} className="bg-white rounded-2xl border border-[#e2e8f0] px-4 py-4 flex items-center gap-3 shadow-sm">
+            <div key={label} className="bg-white rounded-2xl border border-border px-4 py-4 flex items-center gap-3 shadow-sm">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: bg }}>
                 <Icon size={18} strokeWidth={1.75} style={{ color }} />
               </div>
               <div className="min-w-0">
-                <p className="text-lg font-extrabold text-[#0f172a] leading-tight">{value}</p>
-                <p className="text-[11px] text-[#64748b] leading-tight">{label}</p>
+                <p className="text-lg font-extrabold text-text-dark leading-tight">{value}</p>
+                <p className="text-[11px] text-text-muted leading-tight">{label}</p>
               </div>
             </div>
           ))}
@@ -170,7 +180,7 @@ export default async function DichVuPage({
             <p className="font-medium">Không có dịch vụ nào</p>
           </div>
         ) : (
-          <ServiceListWithForm services={services} isLoggedIn={isLoggedIn} />
+          <ServiceListWithForm services={services} isLoggedIn={isLoggedIn} testimonials={testimonials} />
         )}
       </div>
     </div>

@@ -1,47 +1,39 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
-import { formatVnd } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
+import TutTricksTable from "./_components/TutTricksTable";
 
 export const metadata: Metadata = { title: "Admin — Tut & Tricks" };
 
 const PAGE_SIZE = 20;
 
-const PLATFORM_LABELS: Record<string, string> = {
-  FACEBOOK: "Facebook", TIKTOK: "TikTok", INSTAGRAM: "Instagram",
-  YOUTUBE: "YouTube", GOOGLE: "Google", ZALO: "Zalo",
-  TELEGRAM: "Telegram", TWITTER: "X (Twitter)", ICLOUD: "iCloud", OTHER: "Khác",
-};
-const PLATFORM_ICONS: Record<string, string> = {
-  FACEBOOK:  "https://svgl.app/library/facebook-icon.svg",
-  TIKTOK:    "https://svgl.app/library/tiktok-icon-light.svg",
-  GOOGLE:    "https://svgl.app/library/google.svg",
-  INSTAGRAM: "https://svgl.app/library/instagram-icon.svg",
-  YOUTUBE:   "https://svgl.app/library/youtube.svg",
-  ICLOUD:    "https://svgl.app/library/icloud.svg",
-  ZALO:      "https://svgl.app/library/zalo.svg",
-  TELEGRAM:  "https://svgl.app/library/telegram.svg",
-  TWITTER:   "https://svgl.app/library/x.svg",
-};
+
+function buildUrl(base: string, params: Record<string, string | undefined>) {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== "") p.set(k, v);
+  }
+  const s = p.toString();
+  return `${base}${s ? `?${s}` : ""}`;
+}
 
 export default async function AdminTutTricksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; platform?: string; q?: string; free?: string }>;
+  searchParams: Promise<{ page?: string; category?: string; tier?: string; q?: string }>;
 }) {
-  const { page, platform, q, free } = await searchParams;
+  const { page, category, tier, q } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
-  const isFree = free === "1";
 
   const where = {
     deletedAt: null,
-    ...(platform ? { platform: platform as never } : {}),
+    ...(category ? { category } : {}),
+    ...(tier ? { tier } : {}),
     ...(q ? { name: { contains: q, mode: "insensitive" as never } } : {}),
-    ...(free === "1" ? { price: { equals: 0 as never } } : free === "0" ? { price: { gt: 0 as never } } : {}),
   };
 
-  const [items, total, allTotal, activeCount, freeCount, ordersAgg] = await Promise.all([
+  const [items, total, allTotal, activeCount, freeCount, dbCategories] = await Promise.all([
     prisma.tutTrick.findMany({
       where,
       orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
@@ -49,19 +41,18 @@ export default async function AdminTutTricksPage({
       take: PAGE_SIZE,
       select: {
         id: true, name: true, thumbnail: true, platform: true, category: true,
-        price: true, isActive: true, isFeatured: true,
-        totalOrders: true, successRate: true, rating: true,
+        tier: true, price: true, isActive: true, isFeatured: true, rating: true,
       },
     }),
     prisma.tutTrick.count({ where }),
     prisma.tutTrick.count({ where: { deletedAt: null } }),
     prisma.tutTrick.count({ where: { deletedAt: null, isActive: true } }),
-    prisma.tutTrick.count({ where: { deletedAt: null, price: { equals: 0 as never } } }),
-    prisma.tutTrick.aggregate({ where: { deletedAt: null }, _sum: { totalOrders: true } }),
+    prisma.tutTrick.count({ where: { deletedAt: null, tier: "Miễn phí" } }),
+    prisma.tutTrickCategory.findMany({ orderBy: { name: "asc" }, select: { name: true, iconUrl: true } }),
   ]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
-  const platforms = ["FACEBOOK", "TIKTOK", "GOOGLE", "INSTAGRAM", "YOUTUBE", "ICLOUD", "ZALO", "TELEGRAM", "TWITTER", "OTHER"];
+  const BASE = "/admin/tut-tricks";
 
   return (
     <div className="space-y-6">
@@ -73,14 +64,14 @@ export default async function AdminTutTricksPage({
         </div>
         <Link
           href="/admin/tut-tricks/tao-moi"
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#7C3AED] text-white text-sm font-semibold hover:bg-[#A855F7] transition-colors whitespace-nowrap flex-shrink-0"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#7C3AED] text-white text-sm font-semibold hover:bg-[#A855F7] transition-colors whitespace-nowrap shrink-0"
         >
           + Thêm mới
         </Link>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Tổng tài liệu</p>
           <p className="text-3xl font-bold text-gray-900">{allTotal.toLocaleString("vi-VN")}</p>
@@ -96,11 +87,6 @@ export default async function AdminTutTricksPage({
           <p className="text-3xl font-bold text-[#2563eb]">{freeCount.toLocaleString("vi-VN")}</p>
           <p className="text-xs text-gray-400 mt-1.5">Có phí: {(allTotal - freeCount).toLocaleString("vi-VN")}</p>
         </div>
-        <div className="rounded-xl border border-[#A855F7]/30 bg-[#A855F7]/5 p-5">
-          <p className="text-xs font-medium text-[#A855F7] uppercase tracking-wide mb-2">Tổng đã bán</p>
-          <p className="text-3xl font-bold text-[#A855F7]">{(ordersAgg._sum.totalOrders ?? 0).toLocaleString("vi-VN")}</p>
-          <p className="text-xs text-gray-400 mt-1.5">Tất cả tài liệu</p>
-        </div>
       </div>
 
       {/* Search */}
@@ -110,13 +96,13 @@ export default async function AdminTutTricksPage({
           placeholder="Tìm theo tên tut & trick..."
           className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
         />
-        {platform && <input type="hidden" name="platform" value={platform} />}
-        {free !== undefined && <input type="hidden" name="free" value={free} />}
+        {category && <input type="hidden" name="category" value={category} />}
+        {tier && <input type="hidden" name="tier" value={tier} />}
         <button type="submit" className="px-4 py-2 rounded-lg bg-[#7C3AED] text-white text-sm font-medium hover:bg-[#A855F7] transition-colors">
           Tìm
         </button>
-        {(q || platform || free !== undefined) && (
-          <Link href="/admin/tut-tricks" className="px-4 py-2 rounded-lg border border-gray-200 text-gray-500 text-sm hover:border-gray-300 transition-colors">
+        {(q ?? category ?? tier) && (
+          <Link href={BASE} className="px-4 py-2 rounded-lg border border-gray-200 text-gray-500 text-sm hover:border-gray-300 transition-colors">
             Xóa lọc
           </Link>
         )}
@@ -124,159 +110,79 @@ export default async function AdminTutTricksPage({
 
       {/* Filters */}
       <div className="flex items-center gap-2 flex-wrap">
-        {/* Free/Paid toggle */}
+        {/* Loại tut filter = tier field (Miễn phí / Có phí) */}
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">Loại tut</span>
         <Link
-          href={`/admin/tut-tricks${platform ? `?platform=${platform}` : ""}${q ? `${platform ? "&" : "?"}q=${encodeURIComponent(q)}` : ""}`}
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${free === undefined ? "bg-gray-800 text-white" : "bg-white border border-gray-200 text-gray-500 hover:border-gray-400"}`}
+          href={buildUrl(BASE, { q, category })}
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${!tier ? "bg-gray-800 text-white" : "bg-white border border-gray-200 text-gray-500 hover:border-gray-400"}`}
         >
           Tất cả
         </Link>
         <Link
-          href={`/admin/tut-tricks?free=0${platform ? `&platform=${platform}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${free === "0" ? "bg-[#A855F7] text-white" : "bg-white border border-gray-200 text-gray-500 hover:border-[#A855F7] hover:text-[#A855F7]"}`}
-        >
-          Có phí
-        </Link>
-        <Link
-          href={`/admin/tut-tricks?free=1${platform ? `&platform=${platform}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${isFree ? "bg-[#2563eb] text-white" : "bg-white border border-gray-200 text-gray-500 hover:border-[#2563eb] hover:text-[#2563eb]"}`}
+          href={buildUrl(BASE, { q, category, tier: "Miễn phí" })}
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${tier === "Miễn phí" ? "bg-[#10B981] text-white" : "bg-white border border-gray-200 text-gray-500 hover:border-[#10B981] hover:text-[#10B981]"}`}
         >
           Miễn phí
         </Link>
-        <span className="text-gray-300 mx-1">|</span>
-        {/* Platform filter */}
         <Link
-          href={q ? `/admin/tut-tricks?q=${encodeURIComponent(q)}` : "/admin/tut-tricks"}
-          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${!platform ? "bg-[#7C3AED] text-white" : "bg-white border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-[#7C3AED]"}`}
+          href={buildUrl(BASE, { q, category, tier: "Có phí" })}
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${tier === "Có phí" ? "bg-[#A855F7] text-white" : "bg-white border border-gray-200 text-gray-500 hover:border-[#A855F7] hover:text-[#A855F7]"}`}
         >
-          Tất cả nền tảng
+          Có phí
         </Link>
-        {platforms.map((p) => (
+
+        <span className="text-gray-300 mx-1">|</span>
+
+        {/* Danh mục filter = category field (từ TutTrickCategory) */}
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">Danh mục</span>
+        <Link
+          href={buildUrl(BASE, { q, tier })}
+          className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${!category ? "bg-[#7C3AED] text-white" : "bg-white border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-[#7C3AED]"}`}
+        >
+          Tất cả
+        </Link>
+        {dbCategories.map((cat) => (
           <Link
-            key={p}
-            href={`/admin/tut-tricks?platform=${p}${q ? `&q=${encodeURIComponent(q)}` : ""}${free !== undefined ? `&free=${free}` : ""}`}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${platform === p ? "bg-[#7C3AED] text-white" : "bg-white border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-[#7C3AED]"}`}
+            key={cat.name}
+            href={buildUrl(BASE, { q, tier, category: cat.name })}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${category === cat.name ? "bg-[#7C3AED] text-white" : "bg-white border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-[#7C3AED]"}`}
           >
-            {PLATFORM_ICONS[p] && (
-              <span className={`flex items-center justify-center w-4 h-4 rounded p-0.5 shrink-0 ${platform === p ? "bg-white/20" : "bg-white border border-gray-200"}`}>
+            {cat.iconUrl && (
+              <span className={`flex items-center justify-center w-4 h-4 rounded p-0.5 shrink-0 ${category === cat.name ? "bg-white/20" : "bg-white border border-gray-200"}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={PLATFORM_ICONS[p]} alt={PLATFORM_LABELS[p]} className="w-full h-full object-contain" />
+                <img src={cat.iconUrl} alt={cat.name} className="w-full h-full object-contain" />
               </span>
             )}
-            {PLATFORM_LABELS[p]}
+            {cat.name}
           </Link>
         ))}
+
+        {dbCategories.length === 0 && (
+          <Link href="/admin/tut-trick-categories" className="text-xs text-[#7C3AED] hover:underline">
+            + Thêm danh mục
+          </Link>
+        )}
+
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-gray-100">
-          <span className="text-sm font-semibold text-gray-700">
-            {total.toLocaleString("vi-VN")} tài liệu
-            {platform ? ` · ${PLATFORM_LABELS[platform]}` : ""}
-            {q ? ` · "${q}"` : ""}
-          </span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px]">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Tài liệu</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Platform</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Giá</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Đã bán</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Đánh giá</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Trạng thái</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Hành động</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-16 text-center">
-                    <p className="text-4xl mb-3">📖</p>
-                    <p className="text-sm font-medium text-gray-600">Không tìm thấy tài liệu</p>
-                    <p className="text-xs text-gray-400 mt-1">Thử thay đổi bộ lọc hoặc thêm tài liệu mới</p>
-                  </td>
-                </tr>
-              )}
-              {items.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-3">
-                      {item.thumbnail ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={item.thumbnail} alt={item.name} className="w-10 h-10 rounded-lg object-cover border border-gray-100 flex-shrink-0" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-lg bg-[#7C3AED]/10 flex items-center justify-center text-lg flex-shrink-0">
-                          📖
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{item.name}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{item.category}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <span className="inline-flex items-center gap-1.5 text-xs text-gray-600">
-                      {PLATFORM_ICONS[item.platform] && (
-                        <span className="flex items-center justify-center w-5 h-5 bg-[#f8fafc] rounded border border-gray-200 p-0.5 shrink-0">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={PLATFORM_ICONS[item.platform]} alt={PLATFORM_LABELS[item.platform] ?? item.platform} className="w-full h-full object-contain" />
-                        </span>
-                      )}
-                      {PLATFORM_LABELS[item.platform] ?? item.platform}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3.5 text-right">
-                    {Number(item.price) === 0 ? (
-                      <span className="text-sm font-bold text-[#10B981]">Miễn phí</span>
-                    ) : (
-                      <span className="text-sm font-bold text-[#A855F7]">{formatVnd(Number(item.price))}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3.5 text-center text-sm font-semibold text-[#2563eb]">
-                    {item.totalOrders.toLocaleString("vi-VN")}
-                  </td>
-                  <td className="px-4 py-3.5 text-center">
-                    <span className="text-sm font-bold text-[#F59E0B]">★ {item.rating.toFixed(1)}</span>
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <div className="flex gap-1.5">
-                      {item.isActive
-                        ? <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#10B981]/10 text-[#10B981]">Hoạt động</span>
-                        : <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-500">Ẩn</span>
-                      }
-                      {item.isFeatured && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#F59E0B]/10 text-[#F59E0B]">Nổi bật</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5 text-right">
-                    <Link
-                      href={`/admin/tut-tricks/${item.id}/sua`}
-                      className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-[#7C3AED] bg-[#7C3AED]/8 hover:bg-[#7C3AED]/15 transition-colors"
-                    >
-                      Sửa
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <TutTricksTable
+        items={items.map((i) => ({ ...i, price: Number(i.price) }))}
+        total={total}
+        category={category}
+        tier={tier}
+        q={q}
+        dbCategories={dbCategories}
+      />
 
       {totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
-          basePath="/admin/tut-tricks"
+          basePath={BASE}
           searchParams={{
-            ...(platform ? { platform } : {}),
+            ...(category ? { category } : {}),
+            ...(tier ? { tier } : {}),
             ...(q ? { q } : {}),
-            ...(free !== undefined ? { free } : {}),
           }}
         />
       )}

@@ -79,14 +79,14 @@ export default function CourseSlider({ courses }: { courses?: CourseCardData[] }
   const hasSale = course.originalPrice > course.salePrice && course.originalPrice > 0;
 
   return (
-    <section style={{ padding: "100px 0", background: "#fff", overflow: "hidden" }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
+    <section style={{ padding: "80px 0", background: "#fff", overflow: "hidden" }}>
+      <div style={{ maxWidth: "960px", margin: "0 auto", padding: "0 24px" }}>
         <div
-          style={{ display: "flex", gap: "70px", alignItems: "center" }}
+          style={{ display: "flex", gap: "56px", alignItems: "center" }}
           className="slider-flex-responsive"
         >
           {/* Left info panel */}
-          <div style={{ flex: "0 0 300px" }} className="anim-slide-left slider-info-col">
+          <div style={{ flex: "0 0 240px" }} className="anim-slide-left slider-info-col">
             <div style={{
               display: "inline-flex", alignItems: "center", gap: "6px",
               background: "rgba(0,137,123,.1)", color: "#00897b",
@@ -181,7 +181,7 @@ export default function CourseSlider({ courses }: { courses?: CourseCardData[] }
               </div>
 
               {/* Body */}
-              <div style={{ padding: "28px 30px", background: "#fff" }}>
+              <div style={{ padding: "22px 24px", background: "#fff" }}>
                 {/* Category tag */}
                 <span style={{
                   display: "inline-block",
@@ -289,7 +289,7 @@ export default function CourseSlider({ courses }: { courses?: CourseCardData[] }
 
       <style>{`
         .slider-flex-responsive { flex-direction: row; }
-        .slider-info-col { flex: 0 0 300px !important; }
+        .slider-info-col { flex: 0 0 240px !important; }
         .course-slider-btn:hover {
           background: #2B6CB0 !important;
           color: #fff !important;
@@ -297,8 +297,8 @@ export default function CourseSlider({ courses }: { courses?: CourseCardData[] }
           transform: translateY(-2px);
         }
         @media (max-width: 1024px) {
-          .slider-flex-responsive { gap: 40px !important; }
-          .slider-info-col { flex: 0 0 260px !important; }
+          .slider-flex-responsive { gap: 32px !important; }
+          .slider-info-col { flex: 0 0 208px !important; }
         }
         @media (max-width: 768px) {
           .slider-flex-responsive { flex-direction: column !important; }

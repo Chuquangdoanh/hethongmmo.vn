@@ -31,6 +31,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           contentList: true, platformVariants: true, badge: true, saleDeadline: true,
           youtubeUrl: true, seoTitle: true, seoDescription: true, totalOrders: true,
           isActive: true, displayOrder: true,
+          commitments: true, registrationProcedure: true,
         },
       });
       if (!item || !item.isActive) {
@@ -80,7 +81,7 @@ const courseCreateSchema = z.object({
   duration: z.string().max(100).optional(),
   studentCount: z.number().int().min(0).default(0),
   instructorName: z.string().max(200).optional(),
-  contentList: z.array(z.string().max(500)).max(100).default([]),
+  contentList: z.array(z.string().max(20000)).max(100).default([]),
   platformVariants: z.array(z.object({
     name: z.string().min(1).max(100),
     icon: z.string().max(50).default(""),
@@ -96,6 +97,8 @@ const courseCreateSchema = z.object({
   isActive: z.boolean().default(true),
   requiresAccountType: z.boolean().default(false),
   requiresCccd: z.boolean().default(false),
+  commitments: z.array(z.string().max(500)).max(20).default([]),
+  registrationProcedure: z.string().max(5000).optional(),
 }).refine((d) => d.salePrice <= d.originalPrice, {
   message: "Giá bán phải nhỏ hơn hoặc bằng giá gốc",
   path: ["salePrice"],
@@ -151,6 +154,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         isActive: data.isActive,
         requiresAccountType: data.requiresAccountType,
         requiresCccd: data.requiresCccd,
+        commitments: data.commitments as never,
+        registrationProcedure: data.registrationProcedure,
       },
       select: { id: true, slug: true, name: true },
     });

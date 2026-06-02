@@ -17,6 +17,7 @@ const tutTrickPatchSchema = z.object({
   thumbnail: z.string().url().optional(),
   platform: z.enum(["FACEBOOK", "TIKTOK", "GOOGLE", "INSTAGRAM", "YOUTUBE", "ICLOUD", "ZALO", "TELEGRAM", "TWITTER", "OTHER"]).optional(),
   category: z.string().min(1).max(100).optional(),
+  tier: z.string().max(50).optional(),
   price: z.number().min(0).max(100_000_000).optional(),
   description: z.string().max(10_000).optional(),
   contentUrl: z.string().url().optional(),

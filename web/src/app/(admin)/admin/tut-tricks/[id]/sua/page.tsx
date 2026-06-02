@@ -13,19 +13,21 @@ export default async function AdminTutTrickEditPage({
 }) {
   const { id } = await params;
 
-  const item = await prisma.tutTrick.findUnique({
-    where: { id, deletedAt: null },
-    select: {
-      id: true, name: true, slug: true, platform: true, category: true,
-      price: true, description: true, docs: true,
-      successRate: true, rating: true, totalOrders: true, displayOrder: true,
-      publishedDate: true, thumbnail: true,
-      isActive: true, isFeatured: true,
-      seoTitle: true, seoDescription: true,
-      requiresAccountType: true, requiresCccd: true,
-      // contentUrlEnc không trả về client — để trống = giữ link cũ
-    },
-  });
+  const [item, dbCategories] = await Promise.all([
+    prisma.tutTrick.findUnique({
+      where: { id, deletedAt: null },
+      select: {
+        id: true, name: true, slug: true, platform: true, category: true, tier: true,
+        price: true, description: true, docs: true,
+        successRate: true, rating: true, totalOrders: true, displayOrder: true,
+        publishedDate: true, thumbnail: true,
+        isActive: true, isFeatured: true,
+        seoTitle: true, seoDescription: true,
+        requiresAccountType: true, requiresCccd: true,
+      },
+    }),
+    prisma.tutTrickCategory.findMany({ orderBy: { name: "asc" }, select: { name: true } }),
+  ]);
 
   if (!item) notFound();
 
@@ -36,12 +38,14 @@ export default async function AdminTutTrickEditPage({
       </div>
       <h1 className="text-2xl font-bold text-gray-900">Sửa Tut/Trick</h1>
       <TutTrickForm
+        categoryOptions={dbCategories.map((c) => c.name)}
         initial={{
           id: item.id,
           name: item.name,
           slug: item.slug,
           platform: item.platform,
           category: item.category,
+          tier: item.tier,
           price: Number(item.price),
           description: item.description ?? undefined,
           docs: item.docs ?? undefined,

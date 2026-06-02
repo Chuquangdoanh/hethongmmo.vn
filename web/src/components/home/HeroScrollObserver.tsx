@@ -4,35 +4,102 @@ import { useEffect } from "react";
 
 export default function HeroScrollObserver() {
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      document
-        .querySelectorAll<HTMLElement>(
-          ".anim-fade-up,.anim-slide-left,.anim-slide-right,.anim-scale-in,.anim-fade-in",
-        )
-        .forEach((el) => {
-          el.style.opacity = "1";
-        });
-      return;
-    }
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const els = document.querySelectorAll<HTMLElement>(
+    // ── 1. Scroll Reveal ──
+    const animEls = document.querySelectorAll<HTMLElement>(
       ".anim-fade-up,.anim-slide-left,.anim-slide-right,.anim-scale-in,.anim-fade-in",
     );
 
-    const obs = new IntersectionObserver(
+    if (reducedMotion) {
+      animEls.forEach((el) => { el.style.opacity = "1"; });
+    }
+
+    const revealObs = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
           if (e.isIntersecting) {
-            e.target.classList.add("visible");
-            obs.unobserve(e.target);
+            (e.target as HTMLElement).classList.add("visible");
+            revealObs.unobserve(e.target);
           }
         });
       },
       { threshold: 0.12 },
     );
 
-    els.forEach((el) => obs.observe(el));
-    return () => obs.disconnect();
+    if (!reducedMotion) {
+      animEls.forEach((el) => revealObs.observe(el));
+    }
+
+    // ── 2. Counter Animation ──
+    const counterEls = document.querySelectorAll<HTMLElement>("[data-count]");
+
+    const counterObs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          const el = e.target as HTMLElement;
+          const rawCount = el.dataset.count ?? "0";
+          const target = parseFloat(rawCount);
+          const suffix = el.dataset.suffix ?? "";
+          const isFloat = rawCount.includes(".");
+          counterObs.unobserve(el);
+
+          if (reducedMotion) {
+            el.textContent = isFloat
+              ? target.toFixed(1) + suffix
+              : target.toLocaleString("vi-VN") + suffix;
+            return;
+          }
+
+          const duration = 1600;
+          const startTime = performance.now();
+          const tick = (now: number) => {
+            const progress = Math.min((now - startTime) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const current = target * eased;
+            el.textContent = isFloat
+              ? current.toFixed(1) + suffix
+              : Math.floor(current).toLocaleString("vi-VN") + suffix;
+            if (progress < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        });
+      },
+      { threshold: 0.5 },
+    );
+
+    counterEls.forEach((el) => {
+      const rawCount = el.dataset.count ?? "0";
+      const suffix = el.dataset.suffix ?? "";
+      const isFloat = rawCount.includes(".");
+      if (reducedMotion) {
+        const target = parseFloat(rawCount);
+        el.textContent = isFloat
+          ? target.toFixed(1) + suffix
+          : target.toLocaleString("vi-VN") + suffix;
+      } else {
+        // Reset to 0 before observing so there's no snap from server value
+        el.textContent = isFloat ? "0.0" + suffix : "0" + suffix;
+        counterObs.observe(el);
+      }
+    });
+
+    // ── 3. Parallax Hero Grid ──
+    const gridMask = document.querySelector<HTMLElement>(".hero-grid-mask");
+    const handleScroll = () => {
+      if (!gridMask) return;
+      gridMask.style.transform = `translateY(${window.scrollY * 0.12}px)`;
+    };
+    if (!reducedMotion && gridMask) {
+      window.addEventListener("scroll", handleScroll, { passive: true });
+    }
+
+    return () => {
+      revealObs.disconnect();
+      counterObs.disconnect();
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   return null;

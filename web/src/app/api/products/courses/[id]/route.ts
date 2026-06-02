@@ -24,7 +24,7 @@ const coursePatchSchema = z
     studentCount: z.number().int().min(0).optional(),
     rating: z.number().min(0).max(5).optional(),
     instructorName: z.string().max(200).optional(),
-    contentList: z.array(z.string().max(500)).max(100).optional(),
+    contentList: z.array(z.string().max(20000)).max(100).optional(),
     platformVariants: z.array(z.object({
       name: z.string().min(1).max(100),
       icon: z.string().max(50).default(""),
@@ -40,6 +40,8 @@ const coursePatchSchema = z
     isActive: z.boolean().optional(),
     requiresAccountType: z.boolean().optional(),
     requiresCccd: z.boolean().optional(),
+    commitments: z.array(z.string().max(500)).max(20).optional(),
+    registrationProcedure: z.string().max(5000).nullable().optional(),
   })
   .refine(
     (d) => {
@@ -99,12 +101,14 @@ export async function PATCH(
     }
 
     const description = data.description !== undefined ? sanitizeHtml(data.description) : undefined;
-    const { saleDeadline, platformVariants, ...rest } = data;
+    const { saleDeadline, platformVariants, commitments, registrationProcedure, ...rest } = data;
     const updateData = {
       ...rest,
       ...(description !== undefined ? { description } : {}),
       ...(saleDeadline !== undefined ? { saleDeadline: saleDeadline ? new Date(saleDeadline) : null } : {}),
       ...(platformVariants !== undefined ? { platformVariants: platformVariants as never } : {}),
+      ...(commitments !== undefined ? { commitments: commitments as never } : {}),
+      ...(registrationProcedure !== undefined ? { registrationProcedure } : {}),
     };
 
     const updated = await prisma.course.update({

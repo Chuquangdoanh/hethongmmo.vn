@@ -22,11 +22,11 @@ const CATEGORY_ICONS = [
 ];
 
 const STATS = [
-  { value: "59.639+",    label: "Khách hàng" },
-  { value: "363.921+", label: "Đơn giao dịch" },
-  { value: "7.926+",    label: "Học viên" },
-  { value: "99.9%",      label: "Tỉ lệ hài lòng" },
-  { value: "24/7",       label: "Hỗ trợ" },
+  { value: "59.639+",  count: 59639,  suffix: "+", label: "Khách hàng" },
+  { value: "363.921+", count: 363921, suffix: "+", label: "Đơn giao dịch" },
+  { value: "7.926+",   count: 7926,   suffix: "+", label: "Học viên" },
+  { value: "99.9%",    count: 99.9,   suffix: "%", label: "Tỉ lệ hài lòng" },
+  { value: "24/7",     count: null,   suffix: "",  label: "Hỗ trợ" },
 ];
 
 const POPULAR_SERVICES = [
@@ -283,7 +283,7 @@ export default async function HomePage() {
         }} />
 
         {/* Grid mask */}
-        <div style={{
+        <div className="hero-grid-mask" style={{
           position: "absolute", inset: 0,
           backgroundImage:
             "linear-gradient(rgba(0,102,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,102,255,.04) 1px,transparent 1px)",
@@ -566,7 +566,8 @@ export default async function HomePage() {
                 <Link
                   key={i}
                   href={href}
-                  className="svc-compact-card"
+                  className="svc-compact-card anim-fade-up"
+                  data-d={String((i % 6) + 1)}
                   style={{
                     display: "flex", flexDirection: "column", alignItems: "center",
                     background: "#fff", borderRadius: "16px",
@@ -624,7 +625,7 @@ export default async function HomePage() {
       }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)" }} className="stats-grid-responsive">
-            {STATS.map(({ value, label }, i) => (
+            {STATS.map(({ value, count, suffix, label }, i) => (
               <div
                 key={label}
                 className="anim-fade-up"
@@ -635,10 +636,14 @@ export default async function HomePage() {
                   borderLeft: i > 0 ? "1px solid #e2e8f0" : "none",
                 }}
               >
-                <h3 style={{
-                  fontSize: "clamp(1.6rem,3vw,2.4rem)", fontWeight: "900",
-                  lineHeight: 1, marginBottom: "8px", color: "#0066ff",
-                }}>
+                <h3
+                  data-count={count !== null ? String(count) : undefined}
+                  data-suffix={count !== null ? suffix : undefined}
+                  style={{
+                    fontSize: "clamp(1.6rem,3vw,2.4rem)", fontWeight: "900",
+                    lineHeight: 1, marginBottom: "8px", color: "#0066ff",
+                  }}
+                >
                   {value}
                 </h3>
                 <p style={{ fontSize: ".82rem", color: "#64748b", fontWeight: "600", letterSpacing: ".5px", margin: 0 }}>
@@ -703,11 +708,12 @@ export default async function HomePage() {
             flexWrap: "wrap",
             gap: "16px",
           }}>
-            {CATEGORY_ICONS.map(({ label, href, Icon }) => (
+            {CATEGORY_ICONS.map(({ label, href, Icon }, i) => (
               <Link
                 key={label}
                 href={href}
-                className="cat-icon-card"
+                className="cat-icon-card anim-fade-up"
+                data-d={String(i + 1)}
                 style={{
                   display: "flex", flexDirection: "column", alignItems: "center",
                   gap: "10px", padding: "20px 16px",
@@ -778,7 +784,7 @@ export default async function HomePage() {
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "20px" }} className="tut-grid">
-              {hotTuts.map((tut) => {
+              {hotTuts.map((tut, i) => {
                 const pubDate = tut.publishedDate
                   ? new Date(tut.publishedDate).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })
                   : null;
@@ -786,7 +792,8 @@ export default async function HomePage() {
                   <Link
                     key={tut.id}
                     href={`/tut-tricks`}
-                    className="tut-card"
+                    className="tut-card anim-fade-up"
+                    data-d={String(i + 1)}
                     style={{
                       display: "flex", flexDirection: "column",
                       background: "#fff", borderRadius: "16px",
@@ -984,11 +991,12 @@ export default async function HomePage() {
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "16px" }} className="product-grid">
-              {featuredProducts.map((p) => (
+              {featuredProducts.map((p, i) => (
                 <Link
                   key={p.id}
                   href={`/tai-nguyen-mmo/san-pham/${p.id}`}
-                  className="product-card"
+                  className="product-card anim-fade-up"
+                  data-d={String((i % 6) + 1)}
                   style={{
                     display: "flex", flexDirection: "column",
                     background: "#fff", borderRadius: "14px",

@@ -8,7 +8,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ====================================================================
@@ -309,6 +308,7 @@ model Service {
   deletedAt           DateTime? @map("deleted_at")
 
   orders          Order[]
+  testimonials    Testimonial[]
 
   @@index([slug])
   @@index([platform])
@@ -357,13 +357,16 @@ model Course {
   totalViews       Int            @default(0) @map("total_views")
   isActive            Boolean        @default(true) @map("is_active")
   displayOrder        Int            @default(0) @map("display_order")
-  requiresAccountType Boolean        @default(false) @map("requires_account_type")
-  requiresCccd        Boolean        @default(false) @map("requires_cccd")
-  createdAt           DateTime       @default(now()) @map("created_at")
+  requiresAccountType     Boolean        @default(false) @map("requires_account_type")
+  requiresCccd            Boolean        @default(false) @map("requires_cccd")
+  commitments             Json           @default("[]") @map("commitments")
+  registrationProcedure   String?        @map("registration_procedure")
+  createdAt               DateTime       @default(now()) @map("created_at")
   updatedAt           DateTime       @updatedAt @map("updated_at")
   deletedAt           DateTime?      @map("deleted_at")
 
   orders           Order[]
+  testimonials     Testimonial[]
 
   @@index([slug])
   @@index([category])
@@ -381,6 +384,7 @@ model TutTrick {
   thumbnail      String?
   platform       Platform
   category       String
+  tier           String    @default("Miễn phí")
   price          Decimal   @db.Decimal(18, 2) @default(0)
   description    String?
   contentUrlEnc  Bytes?    @map("content_url_enc")
@@ -473,6 +477,17 @@ model ResourceCategory {
 
   @@index([name])
   @@map("resource_categories")
+}
+
+model TutTrickCategory {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  iconUrl   String?  @map("icon_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([name])
+  @@map("tut_trick_categories")
 }
 
 // ====================================================================
@@ -870,4 +885,39 @@ model AuditLog {
   @@index([action])
   @@index([targetType, targetId])
   @@map("audit_logs")
+}
+
+// ====================================================================
+// 23. TESTIMONIALS (đánh giá do admin tạo)
+// ====================================================================
+
+enum TestimonialType {
+  COURSE
+  SERVICE
+}
+
+model Testimonial {
+  id               String          @id @default(uuid()) @db.Uuid
+  type             TestimonialType
+  courseId         String?         @db.Uuid @map("course_id")
+  course           Course?         @relation(fields: [courseId], references: [id])
+  serviceId        String?         @db.Uuid @map("service_id")
+  service          Service?        @relation(fields: [serviceId], references: [id])
+  category         String?
+  reviewerName     String          @map("reviewer_name")
+  reviewerRole     String?         @map("reviewer_role")
+  reviewerAvatar   String?         @map("reviewer_avatar")
+  reviewerInitials String?         @map("reviewer_initials")
+  reviewerColor    String?         @map("reviewer_color")
+  content          String
+  rating           Int             @default(5)
+  isActive         Boolean         @default(true) @map("is_active")
+  displayOrder     Int             @default(0) @map("display_order")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  @@index([type, isActive, displayOrder])
+  @@index([courseId, isActive])
+  @@index([serviceId, isActive])
+  @@map("testimonials")
 }

@@ -58,7 +58,7 @@ function getYoutubeEmbedId(url: string): string | null {
   }
 }
 
-const COMMITMENTS = [
+const SIDEBAR_SUPPORT = [
   "Tài liệu học tập độc quyền",
   "Hỗ trợ 1:1 từ giảng viên",
   "Chứng chỉ hoàn thành",
@@ -69,9 +69,19 @@ const COMMITMENTS = [
 export default async function KhoaHocDetailPage({ params }: Props) {
   const { slug } = await params;
 
-  const [course, session] = await Promise.all([
+  const [course, session, testimonials] = await Promise.all([
     prisma.course.findFirst({ where: { slug, isActive: true, deletedAt: null } }),
     auth(),
+    prisma.testimonial.findMany({
+      where: { type: "COURSE", isActive: true, course: { slug } },
+      select: {
+        id: true, category: true,
+        reviewerName: true, reviewerRole: true,
+        reviewerAvatar: true, reviewerInitials: true, reviewerColor: true,
+        content: true, rating: true, createdAt: true,
+      },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
+    }),
   ]);
 
   if (!course) notFound();
@@ -81,8 +91,9 @@ export default async function KhoaHocDetailPage({ params }: Props) {
   const finalPrice    = !isExpired && isOnSale ? Number(course.salePrice) : Number(course.originalPrice);
   const savedAmount   = isOnSale && !isExpired ? Number(course.originalPrice) - finalPrice : 0;
 
-  const contentList = Array.isArray(course.contentList) ? (course.contentList as string[]) : [];
-  const embedId     = course.youtubeUrl ? getYoutubeEmbedId(course.youtubeUrl) : null;
+  const contentList   = Array.isArray(course.contentList)  ? (course.contentList  as string[]) : [];
+  const commitments   = Array.isArray(course.commitments)   ? (course.commitments  as string[]) : [];
+  const embedId       = course.youtubeUrl ? getYoutubeEmbedId(course.youtubeUrl) : null;
   const catIcon     = CATEGORY_PLATFORM_ICONS[course.category];
 
   const upd = new Date(course.updatedAt);
@@ -304,6 +315,9 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                 isOnSale={!!(isOnSale && !isExpired)}
                 isLoggedIn={!!session?.user}
                 userName={session?.user?.name ?? ""}
+                commitments={commitments}
+                registrationProcedure={course.registrationProcedure ?? null}
+                testimonials={testimonials}
               />
             </div>
           </div>
@@ -416,7 +430,7 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                 </div>
               </div>
 
-              {/* Bạn có trong khóa học */}
+              {/* Hỗ trợ trong khóa học — cố định cho tất cả khóa học */}
               <div className="bg-white rounded-2xl border border-[#bbf7d0] p-5">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#d1fae5" }}>
@@ -425,7 +439,7 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                   <h3 className="text-sm font-bold text-[#0f172a]">Hỗ trợ trong khóa học</h3>
                 </div>
                 <ul className="space-y-2.5">
-                  {COMMITMENTS.map((c) => (
+                  {SIDEBAR_SUPPORT.map((c) => (
                     <li key={c} className="flex items-start gap-2.5">
                       <CheckCircle size={14} strokeWidth={2} className="text-[#16a34a] shrink-0 mt-0.5" />
                       <span className="text-xs text-[#374151] leading-relaxed">{c}</span>

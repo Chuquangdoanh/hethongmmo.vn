@@ -1,21 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const PLATFORM_OPTIONS = [
-  { value: "FACEBOOK",  label: "Facebook",    icon: "https://svgl.app/library/facebook-icon.svg" },
-  { value: "TIKTOK",    label: "TikTok",      icon: "https://svgl.app/library/tiktok-icon-light.svg" },
-  { value: "GOOGLE",    label: "Google",      icon: "https://svgl.app/library/google.svg" },
-  { value: "INSTAGRAM", label: "Instagram",   icon: "https://svgl.app/library/instagram-icon.svg" },
-  { value: "YOUTUBE",   label: "YouTube",     icon: "https://svgl.app/library/youtube.svg" },
-  { value: "ICLOUD",    label: "iCloud",      icon: "https://svgl.app/library/icloud.svg" },
-  { value: "ZALO",      label: "Zalo",        icon: "https://svgl.app/library/zalo.svg" },
-  { value: "TELEGRAM",  label: "Telegram",    icon: "https://svgl.app/library/telegram.svg" },
-  { value: "TWITTER",   label: "X (Twitter)", icon: "https://svgl.app/library/x.svg" },
-  { value: "OTHER",     label: "Khác",        icon: "" },
-];
-const PRICING_CATEGORIES = ["Có phí", "Miễn phí"];
 
 interface TutTrickData {
   id?: string;
@@ -23,6 +10,7 @@ interface TutTrickData {
   slug?: string;
   platform?: string;
   category?: string;
+  tier?: string;
   price?: number;
   description?: string;
   docs?: string;
@@ -44,7 +32,7 @@ interface TutTrickData {
 
 const inputCls = "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none";
 
-export default function TutTrickForm({ initial }: { initial?: TutTrickData }) {
+export default function TutTrickForm({ initial, categoryOptions = [] }: { initial?: TutTrickData; categoryOptions?: string[] }) {
   const router = useRouter();
   const isEdit = !!initial?.id;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,8 +40,9 @@ export default function TutTrickForm({ initial }: { initial?: TutTrickData }) {
   const [form, setForm] = useState({
     name: initial?.name ?? "",
     slug: initial?.slug ?? "",
-    platform: initial?.platform ?? "FACEBOOK",
-    category: initial?.category ?? "Miễn phí",
+    platform: initial?.platform ?? "OTHER",
+    category: initial?.category ?? categoryOptions[0] ?? "",
+    tier: initial?.tier ?? "Miễn phí",
     price: initial?.price?.toString() ?? "0",
     description: initial?.description ?? "",
     docs: initial?.docs ?? "",
@@ -74,22 +63,11 @@ export default function TutTrickForm({ initial }: { initial?: TutTrickData }) {
     requiresCccd: initial?.requiresCccd ?? false,
   });
 
-  const [showPlatformDropdown, setShowPlatformDropdown] = useState(false);
-  const platformDropdownRef = useRef<HTMLDivElement>(null);
   const [thumbUploading, setThumbUploading] = useState(false);
   const [thumbError, setThumbError] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (platformDropdownRef.current && !platformDropdownRef.current.contains(e.target as Node)) {
-        setShowPlatformDropdown(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   function set(field: string, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -123,6 +101,7 @@ export default function TutTrickForm({ initial }: { initial?: TutTrickData }) {
       ...(form.slug ? { slug: form.slug } : {}),
       platform: form.platform,
       category: form.category,
+      tier: form.tier,
       price: parseFloat(form.price) || 0,
       successRate: parseInt(form.successRate, 10) || 100,
       rating: parseFloat(form.rating) || 0,
@@ -194,67 +173,58 @@ export default function TutTrickForm({ initial }: { initial?: TutTrickData }) {
               <label className="block text-xs text-gray-500 mb-1.5">Slug (để trống = tự tạo)</label>
               <input type="text" value={form.slug} onChange={(e) => set("slug", e.target.value)} placeholder="vd: hack-view-facebook" className={inputCls} />
             </div>
-            <div ref={platformDropdownRef} className="relative">
-              <label className="block text-xs text-gray-500 mb-1.5">Platform *</label>
-              <button
-                type="button"
-                onClick={() => setShowPlatformDropdown((prev) => !prev)}
-                className={`${inputCls} flex items-center gap-2 text-left cursor-pointer`}
-              >
-                {(() => {
-                  const opt = PLATFORM_OPTIONS.find((o) => o.value === form.platform);
-                  return opt ? (
-                    <>
-                      {opt.icon ? (
-                        <span className="flex items-center justify-center w-5 h-5 bg-white rounded-md border border-gray-200 p-0.5 shrink-0">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={opt.icon} alt={opt.label} className="w-full h-full object-contain" />
-                        </span>
-                      ) : null}
-                      <span className="flex-1 text-gray-900">{opt.label}</span>
-                    </>
-                  ) : <span className="flex-1 text-gray-400">Chọn platform</span>;
-                })()}
-                <span className="ml-auto text-gray-400 text-xs">▾</span>
-              </button>
-              {showPlatformDropdown && (
-                <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-gray-200 bg-white shadow-xl p-3">
-                  <div className="grid grid-cols-5 gap-2">
-                    {PLATFORM_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => { set("platform", opt.value); setShowPlatformDropdown(false); }}
-                        className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border transition-all ${
-                          form.platform === opt.value
-                            ? "border-[#7C3AED] bg-[#7C3AED]/8"
-                            : "border-gray-100 hover:border-[#7C3AED]/40 hover:bg-gray-50"
-                        }`}
-                      >
-                        {opt.icon ? (
-                          <span className="flex items-center justify-center w-8 h-8 bg-white rounded-lg border border-gray-100 p-1 shrink-0">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={opt.icon} alt={opt.label} className="w-full h-full object-contain" />
-                          </span>
-                        ) : (
-                          <span className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded-lg text-lg">🌐</span>
-                        )}
-                        <span className="text-[10px] font-medium text-gray-600 text-center leading-tight">{opt.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1.5">Danh mục *</label>
+              {categoryOptions.length > 0 ? (
+                <select required value={form.category} onChange={(e) => set("category", e.target.value)} className={inputCls}>
+                  {categoryOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              ) : (
+                <>
+                  <input type="text" value={form.category} onChange={(e) => set("category", e.target.value)} placeholder="Nhập tên danh mục..." className={inputCls} />
+                  <p className="mt-1 text-[10px] text-amber-500">
+                    Chưa có danh mục — <a href="/admin/tut-trick-categories" target="_blank" className="underline">thêm tại đây</a>
+                  </p>
+                </>
               )}
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1.5">Danh mục *</label>
-              <select required value={form.category} onChange={(e) => set("category", e.target.value)} className={inputCls}>
-                {PRICING_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <label className="block text-xs text-gray-500 mb-2">Loại tut *</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => set("tier", "Miễn phí")}
+                  className={`flex-1 py-2.5 rounded-lg border text-sm font-semibold transition-colors ${
+                    form.tier === "Miễn phí"
+                      ? "bg-[#10B981] text-white border-[#10B981]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#10B981] hover:text-[#10B981]"
+                  }`}
+                >
+                  Miễn phí
+                </button>
+                <button
+                  type="button"
+                  onClick={() => set("tier", "Có phí")}
+                  className={`flex-1 py-2.5 rounded-lg border text-sm font-semibold transition-colors ${
+                    form.tier === "Có phí"
+                      ? "bg-[#A855F7] text-white border-[#A855F7]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#A855F7] hover:text-[#A855F7]"
+                  }`}
+                >
+                  Có phí
+                </button>
+              </div>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1.5">Giá (VND, 0 = miễn phí)</label>
-              <input type="number" min="0" value={form.price} onChange={(e) => set("price", e.target.value)} className={inputCls} />
+              <label className="block text-xs text-gray-500 mb-1.5">Giá (VND, để 0 nếu không có)</label>
+              <input
+                type="number"
+                min="0"
+                value={form.price}
+                onChange={(e) => set("price", e.target.value)}
+                placeholder="0"
+                className={inputCls}
+              />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1.5">Tỉ lệ thành công (%)</label>

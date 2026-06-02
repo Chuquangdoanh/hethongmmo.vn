@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
 import SafeHtml from "@/components/shared/SafeHtml";
 import ServiceOrderForm from "./ServiceOrderForm";
+import TestimonialsSection from "@/components/shared/TestimonialsSection";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -81,7 +82,7 @@ function parseJsonArray<T extends { name: string; price: number }>(raw: unknown)
 export default async function DichVuDetailPage({ params }: Props) {
   const { slug } = await params;
 
-  const [service, session] = await Promise.all([
+  const [service, session, testimonials] = await Promise.all([
     prisma.service.findFirst({
       where: { slug, isActive: true, deletedAt: null },
       select: {
@@ -94,6 +95,17 @@ export default async function DichVuDetailPage({ params }: Props) {
       },
     }),
     auth(),
+    prisma.testimonial.findMany({
+      where: { type: "SERVICE", isActive: true },
+      select: {
+        id: true, category: true,
+        reviewerName: true, reviewerRole: true,
+        reviewerAvatar: true, reviewerInitials: true, reviewerColor: true,
+        content: true, rating: true, createdAt: true,
+      },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
+      take: 10,
+    }),
   ]);
 
   if (!service) notFound();
@@ -115,10 +127,10 @@ export default async function DichVuDetailPage({ params }: Props) {
                   <img src={PLATFORM_ICONS[service.platform]} alt={PLATFORM_LABELS[service.platform] ?? service.platform} className="w-full h-full object-contain" />
                 </span>
               )}
-              <p className="text-xs text-[#0066ff] font-semibold">{PLATFORM_LABELS[service.platform] ?? service.platform}</p>
+              <p className="text-xs text-primary font-semibold">{PLATFORM_LABELS[service.platform] ?? service.platform}</p>
             </div>
-            <h1 className="text-2xl font-bold text-[#0f172a] mb-3">{service.name}</h1>
-            <div className="flex flex-wrap items-center gap-4 text-xs text-[#64748b]">
+            <h1 className="text-2xl font-bold text-text-dark mb-3">{service.name}</h1>
+            <div className="flex flex-wrap items-center gap-4 text-xs text-text-muted">
               <span>⭐ {service.rating.toFixed(1)}</span>
               <span>📦 {service.totalOrders.toLocaleString("vi-VN")} đơn</span>
               <span>✅ {service.successRate}% thành công</span>
@@ -141,7 +153,7 @@ export default async function DichVuDetailPage({ params }: Props) {
               {platformVariants.map((v, i) => (
                 <span
                   key={i}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#e2e8f0] bg-white text-xs text-[#334155] font-medium shadow-sm"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-white text-xs text-[#334155] font-medium shadow-sm"
                 >
                   {v.icon ? (
                     <span className="w-4 h-4 shrink-0 flex items-center justify-center">
@@ -157,7 +169,7 @@ export default async function DichVuDetailPage({ params }: Props) {
 
           {/* Thumbnail */}
           {service.thumbnail && (
-            <div className="rounded-xl overflow-hidden border border-[#e2e8f0]">
+            <div className="rounded-xl overflow-hidden border border-border">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={service.thumbnail} alt={service.name} className="w-full object-cover max-h-64" />
             </div>
@@ -165,26 +177,27 @@ export default async function DichVuDetailPage({ params }: Props) {
 
           {/* Description */}
           {service.description && (
-            <div className="rounded-xl border border-[#e2e8f0] bg-white p-6">
-              <h2 className="text-sm font-semibold text-[#0f172a] mb-4">Mô tả dịch vụ</h2>
-              <div className="prose-sm text-[#64748b] leading-relaxed">
+            <div className="rounded-xl border border-border bg-white p-6">
+              <h2 className="text-sm font-semibold text-text-dark mb-4">Mô tả dịch vụ</h2>
+              <div className="prose-sm text-text-muted leading-relaxed">
                 <SafeHtml html={service.description} />
               </div>
             </div>
           )}
+
         </div>
 
         {/* ── Order sidebar ── */}
         <div className="lg:col-span-1">
-          <div className="sticky top-24 rounded-xl border border-[#e2e8f0] bg-white p-6 space-y-4">
+          <div className="sticky top-24 rounded-xl border border-border bg-white p-6 space-y-4">
             <div>
-              <p className="text-xs text-[#64748b] mb-1">Giá dịch vụ</p>
+              <p className="text-xs text-text-muted mb-1">Giá dịch vụ</p>
               {deviceVariants.length > 0 ? (
-                <p className="text-2xl font-bold text-[#00897b]">
+                <p className="text-2xl font-bold text-teal">
                   Từ {formatVnd(Math.min(...deviceVariants.map(v => v.price)))}
                 </p>
               ) : (
-                <p className="text-3xl font-bold text-[#00897b]">{formatVnd(Number(service.price))}</p>
+                <p className="text-3xl font-bold text-teal">{formatVnd(Number(service.price))}</p>
               )}
             </div>
 
@@ -200,28 +213,35 @@ export default async function DichVuDetailPage({ params }: Props) {
               requiresCccd={service.requiresCccd}
             />
 
-            <div className="space-y-2 pt-2 border-t border-[#e2e8f0]">
-              <div className="flex justify-between text-xs text-[#64748b]">
+            <div className="space-y-2 pt-2 border-t border-border">
+              <div className="flex justify-between text-xs text-text-muted">
                 <span>Tỷ lệ thành công</span>
                 <span>{service.successRate}%</span>
               </div>
-              <div className="flex justify-between text-xs text-[#64748b]">
+              <div className="flex justify-between text-xs text-text-muted">
                 <span>Đánh giá</span>
                 <span>⭐ {service.rating.toFixed(1)} / 5</span>
               </div>
               {service.totalOrders > 0 && (
-                <div className="flex justify-between text-xs text-[#64748b]">
+                <div className="flex justify-between text-xs text-text-muted">
                   <span>Đã bán</span>
                   <span>{service.totalOrders.toLocaleString("vi-VN")} đơn</span>
                 </div>
               )}
               {service.customerCount > 0 && (
-                <div className="flex justify-between text-xs text-[#64748b]">
+                <div className="flex justify-between text-xs text-text-muted">
                   <span>Khách hàng</span>
                   <span>{service.customerCount.toLocaleString("vi-VN")}</span>
                 </div>
               )}
             </div>
+
+            {/* Đánh giá — ngay dưới form, luôn hiển thị khi có dữ liệu */}
+            {testimonials.length > 0 && (
+              <div className="pt-2 border-t border-border">
+                <TestimonialsSection items={testimonials} />
+              </div>
+            )}
           </div>
         </div>
       </div>

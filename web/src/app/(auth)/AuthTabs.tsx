@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { UserPlus, LogIn } from "lucide-react";
 
 const TABS = [
@@ -14,13 +14,6 @@ export default function AuthTabs() {
   const pathname = usePathname();
   const [hovered, setHovered] = useState<string | null>(null);
 
-  // Defer active state đến sau hydration — tránh server/client style mismatch.
-  // Server render: activePath = "" → tất cả tab inactive (nhất quán).
-  // Sau mount: activePath = pathname → tab đúng sáng lên.
-  const [activePath, setActivePath] = useState("");
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setActivePath(pathname); }, [pathname]);
-
   return (
     <div style={{
       display: "flex",
@@ -31,7 +24,7 @@ export default function AuthTabs() {
       background: "#fff",
     }}>
       {TABS.map(({ href, label, Icon }) => {
-        const active  = activePath === href;
+        const active  = pathname === href;
         const isHover = hovered === href && !active;
         return (
           <Link

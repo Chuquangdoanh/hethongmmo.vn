@@ -59,6 +59,8 @@ export default async function AdminCourseEditPage({
       seoDescription: true,
       requiresAccountType: true,
       requiresCccd: true,
+      commitments: true,
+      registrationProcedure: true,
     },
   });
 
@@ -66,6 +68,10 @@ export default async function AdminCourseEditPage({
 
   const contentList = Array.isArray(course.contentList)
     ? (course.contentList as string[])
+    : [];
+
+  const commitments = Array.isArray(course.commitments)
+    ? (course.commitments as string[])
     : [];
 
   const platformVariants = parsePlatformVariants(course.platformVariants);
@@ -111,6 +117,8 @@ export default async function AdminCourseEditPage({
           seoDescription: course.seoDescription ?? undefined,
           requiresAccountType: course.requiresAccountType,
           requiresCccd: course.requiresCccd,
+          commitments,
+          registrationProcedure: course.registrationProcedure ?? undefined,
         }}
       />
     </div>

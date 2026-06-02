@@ -4,16 +4,12 @@ import AuthTabs from "./AuthTabs";
 export default function AuthRightPanel({ children }: { children: ReactNode }) {
   return (
     <div
-      className="w-full lg:w-[40%]"
+      className="w-full lg:w-[40%] p-4 lg:px-8 lg:py-6"
       style={{
         display: "flex",
         flexDirection: "column",
         alignItems: "stretch",
         justifyContent: "center",
-        paddingTop: 24,
-        paddingBottom: 24,
-        paddingLeft: 32,
-        paddingRight: 32,
         flexShrink: 0,
         overflowY: "auto",
         minHeight: 0,

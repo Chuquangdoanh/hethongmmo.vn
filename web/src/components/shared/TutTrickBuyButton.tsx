@@ -69,7 +69,7 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
   const docs = result.tutTrickDocs ?? null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.65)" }}>
+    <div className="fixed inset-0 z-1100 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.65)" }}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
@@ -192,7 +192,7 @@ function BuyConfirmPopup({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-1100 flex items-center justify-center p-4"
       style={{ backgroundColor: "rgba(0,0,0,0.60)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
