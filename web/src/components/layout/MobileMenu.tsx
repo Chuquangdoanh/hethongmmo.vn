@@ -63,7 +63,7 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance }: Mobi
 
   const initials  = user ? (user.fullName || user.email).slice(0, 2).toUpperCase() : "";
   const balanceStr = mounted && balance != null ? formatVnd(balance) : null;
-  const isSeller  = user?.role === "SELLER" || user?.role === "STAFF" || user?.role === "ADMIN";
+  const isSeller  = (user?.role === "SELLER" && user?.sellerStatus === "APPROVED") || user?.role === "STAFF" || user?.role === "ADMIN";
   const isAdmin   = user?.role === "ADMIN"  || user?.role === "STAFF";
 
   const quickLinks: { href: string; Icon: React.ElementType; iconBg: string; iconColor: string; label: string }[] = [

@@ -30,7 +30,7 @@ export default function UserMenu({ user, balance }: UserMenuProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const isSeller = user.role === "SELLER" || user.role === "STAFF" || user.role === "ADMIN";
+  const isSeller = (user.role === "SELLER" && user.sellerStatus === "APPROVED") || user.role === "STAFF" || user.role === "ADMIN";
   const isAdmin  = user.role === "ADMIN"  || user.role === "STAFF";
   const initials = (user.fullName || user.email).slice(0, 2).toUpperCase();
   // Only format after mount to avoid SSR/browser Intl mismatch

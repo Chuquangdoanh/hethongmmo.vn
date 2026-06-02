@@ -93,7 +93,7 @@ export async function PATCH(
 
         await tx.user.update({
           where: { id: request.userId },
-          data: { sellerStatus: "REJECTED" },
+          data: { sellerStatus: "REJECTED", role: "USER" },
         });
 
         await tx.notification.create({
