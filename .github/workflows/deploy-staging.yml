@@ -43,7 +43,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.REGISTRY_URL }}/chuquangdoanh:staging-${{ github.sha }}
+          tags: ${{ secrets.REGISTRY_URL }}/hethongmmo:staging-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
@@ -58,19 +58,19 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
-            cd /opt/chuquangdoanh-staging
+            cd /opt/hethongmmo-staging
             export IMAGE_TAG=staging-${{ github.sha }}
             export REGISTRY_URL=${{ secrets.REGISTRY_URL }}
 
             # Pull new image
-            docker pull ${REGISTRY_URL}/chuquangdoanh:${IMAGE_TAG}
+            docker pull ${REGISTRY_URL}/hethongmmo:${IMAGE_TAG}
 
             # Update .env
             echo "IMAGE_TAG=${IMAGE_TAG}" > .env.deploy
 
             # Run migrations before swapping containers
             docker run --rm --env-file .env \
-              ${REGISTRY_URL}/chuquangdoanh:${IMAGE_TAG} \
+              ${REGISTRY_URL}/hethongmmo:${IMAGE_TAG} \
               pnpm prisma migrate deploy
 
             # Swap containers
