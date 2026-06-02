@@ -8,11 +8,14 @@ import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ProductBuyButton from "./_components/ProductBuyButton";
 import { FilterSidebar } from "./_components/FilterSidebar";
 import type { CategoryItem } from "./_components/FilterSidebar";
+import Pagination from "@/components/shared/Pagination";
 import {
   Package, ShieldCheck, ShoppingBag, ShoppingCart, Store,
   Pencil, CheckCircle,
 } from "lucide-react";
 import { CommunityBanner } from "./_components/CommunityBanner";
+
+const PAGE_SIZE = 20;
 
 export const metadata: Metadata = {
   title: "Hệ Thống MMO",
@@ -70,12 +73,14 @@ function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }
 export default async function TaiNguyenMmoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; sort?: string; q?: string; price?: string }>;
+  searchParams: Promise<{ category?: string; sort?: string; q?: string; price?: string; page?: string }>;
 }) {
-  const [{ category, sort: sortParam, q: rawQ, price: priceParam }, session] = await Promise.all([
+  const [{ category, sort: sortParam, q: rawQ, price: priceParam, page: pageParam }, session] = await Promise.all([
     searchParams,
     auth(),
   ]);
+
+  const currentPage = Math.max(1, Number(pageParam ?? 1) || 1);
 
   const activeSort = (sortParam as SortId | undefined) ?? "noi-bat";
   const q = rawQ?.trim() || undefined;
@@ -304,6 +309,15 @@ export default async function TaiNguyenMmoPage({
   });
 
   const totalCount = sortedProducts.length;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const pagedProducts = sortedProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Preserve current filters when navigating pages
+  const paginationParams: Record<string, string> = {};
+  if (category) paginationParams["category"] = category;
+  if (sortParam) paginationParams["sort"] = sortParam;
+  if (rawQ)      paginationParams["q"] = rawQ;
+  if (priceParam) paginationParams["price"] = priceParam;
 
   return (
     <div className="min-h-screen bg-[#f1f5f9]">
@@ -362,7 +376,7 @@ export default async function TaiNguyenMmoPage({
             ) : (
               /* 4-column product grid */
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                {sortedProducts.map((p) => {
+                {pagedProducts.map((p) => {
                   const displayRating = p.rating > 0 ? p.rating : 5;
                   return (
                     <div
@@ -499,6 +513,15 @@ export default async function TaiNguyenMmoPage({
                   );
                 })}
               </div>
+            )}
+
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                basePath="/tai-nguyen-mmo"
+                searchParams={paginationParams}
+              />
             )}
           </div>
         </div>
