@@ -29,10 +29,16 @@ export default function CourseOrderForm({
   const [name, setName] = useState(userName);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isLoggedIn) { router.push("/dang-nhap"); return; }
+    if (!phone.trim()) {
+      setPhoneError("Vui lòng nhập số điện thoại.");
+      return;
+    }
+    setPhoneError("");
     setError("");
     setLoading(true);
     try {
@@ -75,10 +81,18 @@ export default function CourseOrderForm({
           <input
             type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => { setPhone(e.target.value); if (phoneError) setPhoneError(""); }}
             placeholder="Số điện thoại / Zalo liên lạc *"
-            className="w-full rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/20 focus:outline-none transition-all"
+            className={`w-full rounded-xl border bg-light px-3 py-2.5 text-sm text-text-dark placeholder:text-[#94a3b8] focus:ring-2 focus:outline-none transition-all ${
+              phoneError
+                ? "border-danger focus:border-danger focus:ring-danger/20"
+                : "border-border focus:border-primary focus:ring-primary/20"
+            }`}
+            suppressHydrationWarning
           />
+          {phoneError && (
+            <p className="mt-1 text-xs text-danger">{phoneError}</p>
+          )}
         </div>
 
         {/* Full name */}
