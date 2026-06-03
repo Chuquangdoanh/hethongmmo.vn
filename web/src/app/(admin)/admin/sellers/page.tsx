@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { formatDate, formatVnd } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import ShopLockAdminButton from "./[id]/ShopLockAdminButton";
+import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
 export const metadata: Metadata = { title: "Admin — Sellers" };
 
@@ -32,6 +33,8 @@ const TIER_LABELS: Record<string, string> = {
   STANDARD: "Standard", SILVER: "Silver", GOLD: "Gold", VIP: "VIP",
 };
 
+type SortKey = "revenue_desc" | "revenue_asc";
+
 function buildHref(params: Record<string, string | undefined>) {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
@@ -44,11 +47,14 @@ function buildHref(params: Record<string, string | undefined>) {
 export default async function AdminSellersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; tier?: string; q?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; tier?: string; q?: string; sort?: string }>;
 }) {
-  const { page, status, tier, q } = await searchParams;
+  const { page, status, tier, q, sort: sortParam } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
   const search = q?.trim() || undefined;
+  const activeSort = (sortParam === "revenue_desc" || sortParam === "revenue_asc")
+    ? sortParam as SortKey
+    : undefined;
 
   const userFilter: Record<string, unknown> = {};
   if (tier)   userFilter.sellerTier = tier;
@@ -62,16 +68,47 @@ export default async function AdminSellersPage({
     ...(Object.keys(userFilter).length > 0 ? { user: userFilter } : {}),
   };
 
-  const [requests, total] = await Promise.all([
-    prisma.sellerRequest.findMany({
+  // Revenue sort: fetch ALL requests + revenues first, sort in-memory, then paginate
+  let requests: Awaited<ReturnType<typeof prisma.sellerRequest.findMany<{
+    include: { user: { select: { id: true; email: true; fullName: true; sellerTier: true } } }
+  }>>>;
+  let total: number;
+
+  if (activeSort) {
+    const allRequests = await prisma.sellerRequest.findMany({
       where,
-      orderBy: { createdAt: "desc" },
-      skip: (currentPage - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
       include: { user: { select: { id: true, email: true, fullName: true, sellerTier: true } } },
-    }),
-    prisma.sellerRequest.count({ where }),
-  ]);
+    });
+    const allUserIds = allRequests.map((r) => r.userId);
+    const allRevenueRows = allUserIds.length > 0
+      ? await prisma.order.groupBy({
+          by: ["sellerId"],
+          where: { sellerId: { in: allUserIds }, status: "DONE" },
+          _sum: { finalPrice: true },
+        })
+      : [];
+    const allRevenueMap = new Map(allRevenueRows.map((r) => [r.sellerId, Number(r._sum.finalPrice ?? 0)]));
+
+    allRequests.sort((a, b) => {
+      const ra = allRevenueMap.get(a.userId) ?? 0;
+      const rb = allRevenueMap.get(b.userId) ?? 0;
+      return activeSort === "revenue_desc" ? rb - ra : ra - rb;
+    });
+
+    total = allRequests.length;
+    requests = allRequests.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  } else {
+    [requests, total] = await Promise.all([
+      prisma.sellerRequest.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (currentPage - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
+        include: { user: { select: { id: true, email: true, fullName: true, sellerTier: true } } },
+      }),
+      prisma.sellerRequest.count({ where }),
+    ]);
+  }
 
   const userIds = requests.map((r) => r.userId);
 
@@ -120,6 +157,10 @@ export default async function AdminSellersPage({
   const sellerRatingMap = new Map(sellerRatingRows.map((r) => [r.seller_id, { avg: r.avg_rating, count: Number(r.review_count) }]));
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  // Sort toggle links
+  const nextRevenueSort = activeSort === "revenue_desc" ? "revenue_asc" : "revenue_desc";
+  const revenueSortHref = buildHref({ status, tier, q: search, sort: nextRevenueSort, page: undefined });
 
   return (
     <div className="space-y-6">
@@ -214,7 +255,21 @@ export default async function AdminSellersPage({
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Trạng thái</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Hạng</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Slot gian hàng</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">Tổng doanh số</th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">
+                <Link
+                  href={revenueSortHref}
+                  className="inline-flex items-center gap-1 justify-end hover:text-violet-600 transition-colors"
+                >
+                  Tổng doanh số
+                  {activeSort === "revenue_desc" ? (
+                    <ChevronDown size={13} strokeWidth={2.5} className="text-violet-600" />
+                  ) : activeSort === "revenue_asc" ? (
+                    <ChevronUp size={13} strokeWidth={2.5} className="text-violet-600" />
+                  ) : (
+                    <ChevronsUpDown size={13} strokeWidth={2} className="text-gray-400" />
+                  )}
+                </Link>
+              </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Đánh giá TB</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Shop</th>
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">Hành động</th>
@@ -312,9 +367,10 @@ export default async function AdminSellersPage({
           totalPages={totalPages}
           basePath="/admin/sellers"
           searchParams={{
-            ...(status ? { status } : {}),
-            ...(tier   ? { tier }   : {}),
-            ...(search ? { q: search } : {}),
+            ...(status     ? { status }         : {}),
+            ...(tier       ? { tier }           : {}),
+            ...(search     ? { q: search }      : {}),
+            ...(activeSort ? { sort: activeSort } : {}),
           }}
         />
       )}
