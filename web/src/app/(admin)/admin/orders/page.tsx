@@ -66,6 +66,12 @@ export default async function AdminOrdersPage({
     ...dateFilter,
   };
 
+  // Card counts respect date filter + status filter but not orderType
+  const typeCountsWhere = {
+    ...(status ? { status: status as never } : {}),
+    ...dateFilter,
+  };
+
   const [orders, total, pendingCount, processingCount, doneToday, revenueToday, typeCounts] = await Promise.all([
     prisma.order.findMany({
       where,
@@ -88,6 +94,7 @@ export default async function AdminOrdersPage({
     }),
     prisma.order.groupBy({
       by: ["orderType"],
+      where: typeCountsWhere,
       _count: { id: true },
     }),
   ]);
