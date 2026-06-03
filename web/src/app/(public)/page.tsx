@@ -125,20 +125,7 @@ export default async function HomePage() {
             {/* ── Left: Text ── */}
             <div style={{ flex: 1 }} className="anim-fade-up">
 
-              {/* Badge */}
-              <div style={{
-                display: "inline-block",
-                background: "linear-gradient(135deg,#fef3c7,#fde68a)",
-                color: "#92400e",
-                padding: "6px 18px", borderRadius: "100px",
-                fontSize: ".75rem", fontWeight: "700", letterSpacing: "1.2px",
-                textTransform: "uppercase", marginBottom: "20px",
-                boxShadow: "0 2px 8px rgba(245,158,11,.2)",
-              }}>
-                DJ MEDIA AGENCY
-              </div>
-
-              {/* Heading */}
+              {/* Heading — eyebrow removed per taste-skill §4.7 (max 1/3 sections) */}
               <h2 style={{
                 fontSize: "clamp(1.8rem,4vw,3rem)", fontWeight: "900",
                 color: "#0f172a", lineHeight: "1.2", marginBottom: "20px",
@@ -336,26 +323,21 @@ export default async function HomePage() {
                 Hệ thống MMO &amp; Tài nguyên số 5.0 chính thức ra mắt
               </div>
 
+              {/* taste-skill §4.7: hero max 4 elements — eyebrow·H1·subtext·CTAs */}
               <h1 style={{
-                fontSize: "clamp(2rem,5vw,4rem)",
-                lineHeight: "1.2", fontWeight: "900", color: "#0f172a", marginBottom: "12px",
+                fontSize: "clamp(2.2rem,5vw,4.2rem)",
+                lineHeight: "1.15", fontWeight: "900", color: "#0f172a", marginBottom: "20px",
+                letterSpacing: "-0.03em",
               }}>
                 HỆ THỐNG MMO &amp;<br />
                 <span style={{ color: "#0066ff" }}>TÀI NGUYÊN SỐ 5.0</span>
               </h1>
 
               <p style={{
-                fontSize: "1.15rem", color: "#334155", fontWeight: "600",
-                marginBottom: "16px",
+                fontSize: "1.05rem", color: "#64748b", marginBottom: "36px",
+                maxWidth: "480px", lineHeight: "1.75",
               }}>
-                Khóa Học MMO  •  Dịch Vụ  •  TUT/TRICKS  •  Tài Nguyên   •  Quảng Cáo
-              </p>
-
-              <p style={{
-                fontSize: "1rem", color: "#64748b", marginBottom: "36px",
-                maxWidth: "520px", lineHeight: "1.8",
-              }}>
-                Nền tảng giao dịch MMO toàn diện dành cho Facebook, TikTok, Google Ads và Digital Marketing.
+                Nền tảng giao dịch MMO cho Facebook, TikTok, Google Ads — khóa học, dịch vụ, tài nguyên số.
               </p>
 
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
@@ -367,20 +349,6 @@ export default async function HomePage() {
                   Đăng Ký Khóa Học
                   <ArrowRight size={16} strokeWidth={2} />
                 </Link>
-              </div>
-
-              {/* Trust badges */}
-              <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", marginTop: "32px" }}>
-                {[
-                  { Icon: ShieldCheck, label: "Uy tín hàng đầu"  },
-                  { Icon: Zap,         label: "Giao dịch tự động" },
-                  { Icon: Headphones,  label: "Hỗ trợ 24/7"       },
-                ].map(({ Icon, label }) => (
-                  <div key={label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Icon size={17} strokeWidth={1.75} style={{ color: "#0066ff", flexShrink: 0 }} />
-                    <span style={{ fontSize: ".85rem", color: "#64748b", fontWeight: "600" }}>{label}</span>
-                  </div>
-                ))}
               </div>
             </div>
 
@@ -479,16 +447,6 @@ export default async function HomePage() {
             </div>
 
             <div style={{ flex: 1 }} className="anim-slide-right">
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: "8px",
-                background: "rgba(0,102,255,.08)", color: "#0066ff",
-                padding: "6px 16px", borderRadius: "100px",
-                fontSize: ".75rem", fontWeight: "700", letterSpacing: "1.5px",
-                textTransform: "uppercase", marginBottom: "16px",
-              }}>
-                <Briefcase size={14} strokeWidth={1.75} />
-                Chuyên gia
-              </div>
               <h2 style={{ fontSize: "clamp(1.8rem,3.5vw,2.8rem)", fontWeight: "800", lineHeight: "1.2", marginBottom: "20px", color: "#0f172a" }}>
                 CHUYÊN GIA<br />DIGITAL MARKETING
               </h2>
@@ -614,39 +572,44 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── STATS ─────────────────────────────────────── */}
+      {/* ── STATS — taste-skill §4.9: bold display numbers, no border dividers ── */}
       <div style={{
-        background: "#f8fafc",
-        borderTop: "1px solid #e2e8f0",
-        borderBottom: "1px solid #e2e8f0",
-        padding: "60px 0",
+        background: "#0f172a",
+        padding: "72px 0",
         position: "relative",
         overflow: "hidden",
       }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)" }} className="stats-grid-responsive">
+        {/* Subtle grid texture */}
+        <div style={{
+          position: "absolute", inset: 0, pointerEvents: "none",
+          backgroundImage: "linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px)",
+          backgroundSize: "48px 48px",
+        }} />
+        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", position: "relative" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: "0" }} className="stats-grid-responsive">
             {STATS.map(({ value, count, suffix, label }, i) => (
               <div
                 key={label}
-                className="anim-fade-up"
+                className="anim-card-in"
                 data-d={String(i + 1)}
                 style={{
-                  textAlign: "center", padding: "30px 16px",
-                  position: "relative", cursor: "default",
-                  borderLeft: i > 0 ? "1px solid #e2e8f0" : "none",
+                  textAlign: "center", padding: "40px 24px",
+                  cursor: "default",
+                  borderLeft: i > 0 ? "1px solid rgba(255,255,255,.06)" : "none",
                 }}
               >
                 <h3
                   data-count={count !== null ? String(count) : undefined}
                   data-suffix={count !== null ? suffix : undefined}
                   style={{
-                    fontSize: "clamp(1.6rem,3vw,2.4rem)", fontWeight: "900",
-                    lineHeight: 1, marginBottom: "8px", color: "#0066ff",
+                    fontSize: "clamp(2rem,3.5vw,3.2rem)", fontWeight: "900",
+                    lineHeight: 1, marginBottom: "10px", color: "#fff",
+                    letterSpacing: "-0.04em",
                   }}
                 >
                   {value}
                 </h3>
-                <p style={{ fontSize: ".82rem", color: "#64748b", fontWeight: "600", letterSpacing: ".5px", margin: 0 }}>
+                <p style={{ fontSize: ".8rem", color: "rgba(255,255,255,.5)", fontWeight: "600", letterSpacing: ".8px", textTransform: "uppercase", margin: 0 }}>
                   {label}
                 </p>
               </div>
@@ -886,11 +849,11 @@ export default async function HomePage() {
                       <div>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                           <span style={{ fontSize: ".75rem", color: "#64748b" }}>Tỉ lệ thành công</span>
-                          <span style={{ fontSize: ".75rem", fontWeight: "700", color: "#319795" }}>{tut.successRate}%</span>
+                          <span style={{ fontSize: ".75rem", fontWeight: "700", color: "#0066ff" }}>{tut.successRate}%</span>
                         </div>
                         <div style={{ height: "5px", background: "#e2e8f0", borderRadius: "3px", overflow: "hidden" }}>
                           <div style={{
-                            height: "100%", background: "#319795", borderRadius: "3px",
+                            height: "100%", background: "#0066ff", borderRadius: "3px",
                             width: `${tut.successRate}%`,
                           }} />
                         </div>
@@ -1080,16 +1043,6 @@ export default async function HomePage() {
             {/* FAQ */}
             <div style={{ flex: 1 }}>
               <div style={{ marginBottom: "36px" }}>
-                <div style={{
-                  display: "inline-flex", alignItems: "center", gap: "8px",
-                  background: "rgba(0,102,255,.08)", color: "#0066ff",
-                  padding: "6px 16px", borderRadius: "100px",
-                  fontSize: ".75rem", fontWeight: "700", letterSpacing: "1.5px",
-                  textTransform: "uppercase", marginBottom: "12px",
-                }}>
-                  <HelpCircle size={14} strokeWidth={1.75} />
-                  FAQ
-                </div>
                 <h2 style={{ fontSize: "clamp(1.5rem,3vw,2rem)", fontWeight: "800", color: "#0f172a", lineHeight: "1.2", margin: 0 }}>
                   CÂU HỎI THƯỜNG GẶP
                 </h2>
