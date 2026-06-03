@@ -117,71 +117,73 @@ export default async function HomePage() {
     <>
       <HeroScrollObserver />
 
-      {/* ── DJ MEDIA AGENCY INTRO — §4.7 zigzag cap: full-width stacked, not split ── */}
-      <section style={{ padding: "72px 0 64px", background: "#fff" }}>
+      {/* ── DJ MEDIA AGENCY INTRO ────────────────────── */}
+      <section style={{ padding: "80px 0 72px", background: "#fff", overflow: "hidden" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
+          <div style={{ display: "flex", gap: "64px", alignItems: "center" }} className="expert-flex">
 
-          {/* Top: headline + description + social — stacked left */}
-          <div className="anim-fade-up" style={{ marginBottom: "48px" }}>
-            <h2 style={{
-              fontSize: "clamp(1.8rem,4vw,3rem)", fontWeight: "900",
-              color: "#0f172a", lineHeight: "1.15", marginBottom: "16px",
-              maxWidth: "640px",
-            }}>
-              CÔNG TY TNHH DJ MEDIA &amp; SUPPORT MẠNG XÃ HỘI
-            </h2>
-            <p style={{ fontSize: "1rem", color: "#64748b", lineHeight: "1.75", maxWidth: "560px", marginBottom: "24px" }}>
-              7 năm kinh nghiệm — đơn vị tiên phong về dịch vụ Facebook, TikTok và Google Ads tại Việt Nam, với 2 chi nhánh Hà Nội và Hà Tĩnh.
-            </p>
-            {/* Social icons */}
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              {[
-                { href: "https://facebook.com", bg: "#1877F2", svg: <svg width="20" height="20" fill="#fff" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg> },
-                { href: "https://tiktok.com",   bg: "#010101", svg: <svg width="18" height="18" fill="#fff" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 1 1-2.1-2.78V9.01a6.34 6.34 0 1 0 5.44 6.29V8.89A8.18 8.18 0 0 0 20.6 10.4V7a4.85 4.85 0 0 1-1.01-.31z"/></svg> },
-                { href: "https://youtube.com",  bg: "#FF0000", svg: <svg width="20" height="20" fill="#fff" viewBox="0 0 24 24"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon fill="#fff" points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg> },
-                { href: "https://zalo.me",      bg: "#0068FF", svg: <span style={{ color: "#fff", fontWeight: "800", fontSize: ".8rem" }}>Zalo</span> },
-              ].map(({ href, bg, svg }) => (
-                <a key={href} href={href} target="_blank" rel="noopener noreferrer" className="social-icon-btn"
-                  style={{ width: "44px", height: "44px", borderRadius: "50%", background: bg,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
-                  {svg}
-                </a>
-              ))}
-            </div>
-          </div>
+            {/* ── Left: Text ── */}
+            <div style={{ flex: 1 }} className="anim-fade-up">
 
-          {/* Bottom: 4 horizontal tiles — different layout family from split above */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "16px" }} className="grid-4-responsive">
-            {[
-              { num: "7+",  unit: "Năm",       label: "Kinh nghiệm thực chiến" },
-              { num: "2",   unit: "Chi nhánh", label: "Hà Nội và Hà Tĩnh" },
-              { num: "3",   unit: "Nền tảng",  label: "Facebook, TikTok, Google" },
-              { num: null,  unit: null,         label: "0828.118.789", sub: "Hotline CEO Phạm Hữu Dũng" },
-            ].map(({ num, unit, label, sub }, i) => (
-              <div key={i} className="anim-card-in" data-d={String(i + 1)} style={{
-                padding: "28px 24px",
-                background: i === 3 ? "linear-gradient(135deg,#0066ff,#0052cc)" : "#f8fafc",
-                borderRadius: "16px",
-                border: i === 3 ? "none" : "1px solid #e2e8f0",
+              <h2 style={{
+                fontSize: "clamp(1.8rem,4vw,3rem)", fontWeight: "900",
+                color: "#0f172a", lineHeight: "1.2", marginBottom: "20px",
               }}>
-                {num ? (
-                  <div style={{ fontSize: "2.2rem", fontWeight: "900", color: i === 3 ? "#fff" : "#0066ff", lineHeight: 1, marginBottom: "4px", letterSpacing: "-0.03em" }}>
-                    {num}<span style={{ fontSize: "1.1rem" }}> {unit}</span>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-                    <Phone size={18} strokeWidth={2} style={{ color: "#fff", flexShrink: 0 }} />
-                    <span style={{ fontSize: "1.1rem", fontWeight: "800", color: "#fff", letterSpacing: ".3px" }}>{label}</span>
-                  </div>
-                )}
-                <p style={{ fontSize: ".8rem", color: i === 3 ? "rgba(255,255,255,.75)" : "#64748b", fontWeight: "500", margin: num ? 0 : "0", lineHeight: 1.4 }}>
-                  {num ? label : (sub ?? "")}
-                </p>
-              </div>
-            ))}
-          </div>
+                CÔNG TY TNHH DJ MEDIA &amp;<br />SUPPORT MẠNG XÃ HỘI
+              </h2>
 
+              <p style={{
+                fontSize: ".975rem", color: "#2563eb", lineHeight: "1.85",
+                marginBottom: "32px", maxWidth: "520px",
+              }}>
+                Hỗ Trợ Mọi Vấn Đề Dịch Vụ Mạng Xã Hội Đội Ngũ Chuyên Nghiệp Với 7 Năm Kinh Nghiệm Trong Các Lĩnh Vực : Hỗ Trợ Tất Cả Về Dịch Vụ Facebook + Tik Tok + Google, Chạy Quảng Cáo ADS, Khai Thác Adbreak và Đào Tạo Học Viên Chuyên Nghiệp Là Đơn Vị Công Ty Dịch Vụ Mạng Xã Hội Facebook + Tik Tok Đầu Tiên Tại Việt Nam Có 2 Chi Nhánh Tại Hà Nội và Hà Tĩnh !
+              </p>
+
+              {/* Social icons */}
+              <div style={{ display: "flex", gap: "10px", marginBottom: "32px", flexWrap: "wrap" }}>
+                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#1877F2", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
+                  <svg width="22" height="22" fill="#fff" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                </a>
+                <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#010101", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
+                  <svg width="20" height="20" fill="#fff" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.28 6.28 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.89a8.18 8.18 0 0 0 4.78 1.52V7a4.85 4.85 0 0 1-1.01-.31z"/></svg>
+                </a>
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
+                  <svg width="20" height="20" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                </a>
+                <a href="https://zalo.me" target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#0068FF", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
+                  <span style={{ color: "#fff", fontWeight: "900", fontSize: ".85rem", letterSpacing: "-.5px" }}>Zalo</span>
+                </a>
+                <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#FF0000", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
+                  <svg width="22" height="22" fill="#fff" viewBox="0 0 24 24"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon fill="#FF0000" points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/><polygon fill="#fff" points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>
+                </a>
+              </div>
+
+              {/* Hotline card */}
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "16px", background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: "16px", padding: "14px 24px", boxShadow: "0 4px 18px rgba(0,0,0,.07)" }}>
+                <div style={{ width: "48px", height: "48px", flexShrink: 0, background: "linear-gradient(135deg,#fbbf24,#f59e0b)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Phone size={22} strokeWidth={2} style={{ color: "#fff" }} />
+                </div>
+                <div>
+                  <p style={{ fontSize: ".78rem", color: "#64748b", margin: "0 0 3px", fontWeight: "500" }}>Hotline (CEO – Phạm Hữu Dũng)</p>
+                  <p style={{ fontSize: "1.25rem", fontWeight: "800", color: "#f97316", margin: 0, letterSpacing: ".5px" }}>0828.118.789</p>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Right: Image ── */}
+            <div style={{ flex: "0 0 480px", position: "relative" }} className="anim-scale-in expert-img-col">
+              <div style={{ borderRadius: "24px", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,.16)", aspectRatio: "4/3", background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/images/dj-media-classroom.jpg" alt="DJ Media Agency – Lớp học thực chiến" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              </div>
+              <div style={{ position: "absolute", bottom: "24px", left: "24px", background: "#fff", borderRadius: "16px", padding: "14px 20px", boxShadow: "0 12px 32px rgba(0,0,0,.14)", zIndex: 2, animation: "float 5s ease-in-out infinite" }}>
+                <div style={{ fontSize: "1.8rem", fontWeight: "900", color: "#f59e0b", lineHeight: 1 }}>10+</div>
+                <div style={{ fontSize: ".73rem", color: "#334155", fontWeight: "600", marginTop: "4px" }}>Năm Kinh Nghiệm</div>
+                <div style={{ fontSize: ".73rem", color: "#334155", fontWeight: "600" }}>Thực Chiến</div>
+              </div>
+            </div>
+
+          </div>
         </div>
       </section>
 
