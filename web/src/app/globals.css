@@ -217,9 +217,6 @@ body { animation: pageFadeIn 0.28s ease-out both; }
 /* ══════════════════════════════════════════
    SCROLL-TRIGGER CLASSES
 ══════════════════════════════════════════ */
-/* Spring easing — dùng cho tất cả scroll reveals */
-:root { --spring: cubic-bezier(0.16,1,0.3,1); }
-
 /* Card flow-in: scale + Y + opacity — hiệu ứng "trôi vào" chính */
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(64px) scale(0.94); }
@@ -233,15 +230,20 @@ body { animation: pageFadeIn 0.28s ease-out both; }
 .anim-fade-in,
 .anim-card-in { opacity: 0; }
 
-/* Headers / sections */
-.anim-fade-up.visible    { animation: fadeUp    .75s var(--spring) forwards; }
-.anim-slide-left.visible { animation: slideLeft .75s var(--spring) forwards; }
-.anim-slide-right.visible{ animation: slideRight .75s var(--spring) forwards; }
-.anim-scale-in.visible   { animation: scaleIn   .75s var(--spring) forwards; }
-.anim-fade-in.visible    { animation: fadeIn    .6s  ease forwards; }
+/*
+  NOTE: var() KHÔNG dùng được trong animation shorthand vì browser
+  cần validate timing-function tại parse-time trước khi resolve variable.
+  → hardcode cubic-bezier trực tiếp vào từng khai báo.
+*/
+.anim-fade-up.visible    { animation: fadeUp    .75s cubic-bezier(0.16,1,0.3,1) both; }
+.anim-slide-left.visible { animation: slideLeft .75s cubic-bezier(0.16,1,0.3,1) both; }
+.anim-slide-right.visible{ animation: slideRight .75s cubic-bezier(0.16,1,0.3,1) both; }
+.anim-scale-in.visible   { animation: scaleIn   .75s cubic-bezier(0.16,1,0.3,1) both; }
+.anim-fade-in.visible    { animation: fadeIn    .6s  ease                        both; }
 
 /* Product / TUT / service cards — trôi từ dưới lên với scale */
-.anim-card-in.visible { animation: cardIn .7s var(--spring) forwards; }
+/* fill-mode: both → áp dụng from-keyframe trong thời gian delay (không pop) */
+.anim-card-in.visible    { animation: cardIn    .7s  cubic-bezier(0.16,1,0.3,1) both; }
 
 /* Stagger: 150ms mỗi card — đủ để cảm nhận cascade */
 [data-d="1"]{ animation-delay:.05s!important }
