@@ -201,26 +201,26 @@ a  { text-decoration: none; }
 /* Hard load */
 body {
   animation:
-    pt-fade-in 280ms ease-out           both,
-    pt-rise    560ms cubic-bezier(0.22,1,0.36,1) both;
+    pt-fade-in 500ms ease-out                    both,
+    pt-rise    900ms cubic-bezier(0.22,1,0.36,1) both;
 }
 
 /* SPA navigation */
 .page-entering {
   animation:
-    pt-fade-in 280ms ease-out           both,
-    pt-rise    560ms cubic-bezier(0.22,1,0.36,1) both;
+    pt-fade-in 500ms ease-out                    both,
+    pt-rise    900ms cubic-bezier(0.22,1,0.36,1) both;
 }
 
 /* Browser-native View Transitions (Chrome 111+, Safari 18.2+) */
 @view-transition { navigation: auto; }
 ::view-transition-old(root) {
-  animation: 160ms ease-in both vt-fade-out;
+  animation: 250ms ease-in both vt-fade-out;
 }
 ::view-transition-new(root) {
   animation:
-    260ms ease-out                      both vt-fade-in,
-    520ms cubic-bezier(0.22,1,0.36,1)  both vt-rise;
+    500ms ease-out                       both vt-fade-in,
+    900ms cubic-bezier(0.22,1,0.36,1)   both vt-rise;
 }
 @keyframes vt-fade-out { to   { opacity: 0; } }
 @keyframes vt-fade-in  { from { opacity: 0; } to { opacity: 1; } }
