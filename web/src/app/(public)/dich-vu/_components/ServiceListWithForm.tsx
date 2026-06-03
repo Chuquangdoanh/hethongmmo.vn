@@ -815,6 +815,7 @@ export default function ServiceListWithForm({
 
       {selectedService && (
         <ServiceOrderPanel
+          key={selectedService.id}
           service={selectedService}
           isLoggedIn={isLoggedIn}
           onClose={() => setSelectedId(null)}
