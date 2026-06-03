@@ -55,30 +55,6 @@ interface ServiceItem {
   requiresCccd: boolean;
 }
 
-function ThumbnailPreview({ src, alt }: { src: string; alt: string }) {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="w-full">
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); setShow((v) => !v); }}
-        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold border border-[#e2e8f0] text-[#475569] hover:border-[#0066ff] hover:text-[#0066ff] transition-colors"
-      >
-        🖼 {show ? "Ẩn ảnh" : "Xem ảnh"}
-      </button>
-      {show && (
-        <div className="mt-2 rounded-xl overflow-hidden border border-[#e2e8f0]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={src}
-            alt={alt}
-            className="w-full h-auto object-contain max-h-48"
-          />
-        </div>
-      )}
-    </div>
-  );
-}
 
 function ServiceCard({
   service,
@@ -89,6 +65,7 @@ function ServiceCard({
   isSelected: boolean;
   onSelect: () => void;
 }) {
+  const [showImage, setShowImage] = useState(false);
   const price    = Number(service.price);
   const minPrice = service.deviceVariants.length > 0
     ? Math.min(...service.deviceVariants.map((v) => v.price))
@@ -101,121 +78,141 @@ function ServiceCard({
         isSelected ? "border-[#0d9488] ring-2 ring-[#0d9488]/20" : "border-[#e2e8f0]"
       }`}
     >
-      {/* HOT badge — góc trên phải */}
+      {/* HOT badge */}
       {service.isFeatured && (
         <span className="absolute top-0 right-0 px-3 py-1 text-[10px] font-extrabold bg-[#ef4444] text-white uppercase tracking-wider rounded-bl-xl rounded-tr-2xl z-10">
           HOT
         </span>
       )}
 
-      <div className="flex flex-col flex-1 p-3 gap-5">
-
-       
-
-        {/* Row 1: Tên + Rating chip */}
-        <div className="flex items-start justify-between gap-2 pr-12">
-          <h3 className="text-sm font-bold text-[#0f172a] line-clamp-2 leading-snug flex-1 group-hover:text-[#0066ff] transition-colors">
-            {service.name}
-          </h3>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#000000] text-white shrink-0">
-            <Star size={10} strokeWidth={0} fill="#f59e0b" /> {service.rating.toFixed(1)}
-          </span>
-        </div>
-
-        {/* Row 2: Platform + Category + Thumbnail preview */}
-        <div className="flex items-center gap-1.5 flex-wrap -mt-3">
-          
-          {service.category && (
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#dbeafe] text-[#1d4ed8]">
-              {service.category}
-            </span>
-          )}
-          {service.thumbnail && (
-            <ThumbnailPreview src={service.thumbnail} alt={service.name} />
-          )}
-        </div>
-
-        {/* Row 3: Stats */}
-        <div className="flex items-center gap-3 text-[11px] text-[#64748b] flex-wrap -mt-3">
-          <span className="inline-flex items-center gap-1">
-            <Users size={11} strokeWidth={2} className="text-[#0066ff]" />
-            <span className="font-semibold text-[#0f172a]">{service.customerCount.toLocaleString("vi-VN")}</span> khách hàng
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Package size={11} strokeWidth={2} className="text-[#10b981]" />
-            <span className="font-semibold text-[#0f172a]">{service.totalOrders.toLocaleString("vi-VN")}</span> đơn
-          </span>
-        </div>
-
-        {/* Info card: thời gian + tỉ lệ thành công + bảo hành */}
-        <div className="flex flex-col gap-1.5 rounded-lg bg-[#f8fafc] border border-[#e2e8f0] px-3 py-2 text-[11px] -mt-3">
-          {service.processingTime && (
-            <span className="flex items-center gap-1.5 text-[#475569]">
-              <Clock size={11} strokeWidth={2} className="text-[#7C3AED] shrink-0" />
-              <span className="text-[#7C3AED] font-medium">Thời gian xử lý</span>
-              <span className="font-medium">{service.processingTime}</span>
-            </span>
-          )}
-          {service.warrantyOptions.length > 0 && (
-            <span className="flex items-center gap-1.5 text-[#475569]">
-              <Shield size={11} strokeWidth={2} className="text-[#059669] shrink-0" />
-              <span className="text-[#059669] font-medium">Bảo hành</span>
-              <span className="font-medium">{service.warrantyOptions[0]?.name}</span>
-            </span>
-          )}
-          <div className="pt-0.5">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[#64748b]">Tỉ lệ thành công</span>
-              <span className="font-bold text-[#059669]">{service.successRate}%</span>
-            </div>
-            <div className="h-1.5 w-full rounded-full bg-[#e2e8f0] overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[#10b981] to-[#34d399]"
-                style={{ width: `${service.successRate}%` }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Device variants */}
-        {hasVariants && (
-          <div className="flex flex-wrap gap-1 -mt-3">
-            {service.deviceVariants.slice(0, 3).map((v) => (
-              <span key={v.name} className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-[#ede9fe] text-[#7c3aed]">
-                {v.name}
-              </span>
-            ))}
-            {service.deviceVariants.length > 3 && (
-              <span className="px-2 py-0.5 rounded-lg text-[10px] text-[#94a3b8]">+{service.deviceVariants.length - 3}</span>
-            )}
-          </div>
-        )}
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Giá + CTA — tỉ lệ 2:3 giống TutTrick */}
-        <div className="flex items-stretch gap-2">
-          <div className="flex-[2] flex items-center justify-center rounded-xl border-2 border-[#e11d48] px-2 py-2">
-            <p className="text-sm font-extrabold text-center leading-tight text-[#e11d48]">
-              {hasVariants ? `Từ ${formatVnd(minPrice)}` : formatVnd(price)}
-            </p>
-          </div>
+      {/* ── CHẾ ĐỘ XEM ẢNH: ẩn toàn bộ thông tin, chỉ hiện ảnh ── */}
+      {showImage && service.thumbnail ? (
+        <div className="flex flex-col flex-1">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={service.thumbnail}
+            alt={service.name}
+            className="w-full flex-1 object-cover"
+            style={{ minHeight: "220px" }}
+          />
           <button
             type="button"
-            onClick={onSelect}
-            className={`flex-[3] flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold transition-all ${
-              isSelected
-                ? "bg-[#0d9488] text-white shadow-md"
-                : "bg-[#e11d48] text-white hover:bg-[#be123c] hover:shadow-md"
-            }`}
+            onClick={(e) => { e.stopPropagation(); setShowImage(false); }}
+            className="w-full py-2.5 text-xs font-bold text-[#475569] bg-[#f8fafc] border-t border-[#e2e8f0] hover:text-[#0066ff] transition-colors"
           >
-            <ShoppingCart size={13} strokeWidth={2} />
-            {isSelected ? "✓ Đang chọn" : "Đặt hàng ngay"}
+            ← Quay lại thông tin
           </button>
         </div>
+      ) : (
+        /* ── CHẾ ĐỘ THÔNG THƯỜNG ── */
+        <div className="flex flex-col flex-1 p-3 gap-5">
 
-      </div>
+          {/* Row 1: Tên + Rating chip */}
+          <div className="flex items-start justify-between gap-2 pr-12">
+            <h3 className="text-sm font-bold text-[#0f172a] line-clamp-2 leading-snug flex-1 group-hover:text-[#0066ff] transition-colors">
+              {service.name}
+            </h3>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#000000] text-white shrink-0">
+              <Star size={10} strokeWidth={0} fill="#f59e0b" /> {service.rating.toFixed(1)}
+            </span>
+          </div>
+
+          {/* Row 2: Category + Xem ảnh button (cạnh nhau) */}
+          <div className="flex items-center gap-1.5 flex-wrap -mt-3">
+            {service.category && (
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#dbeafe] text-[#1d4ed8]">
+                {service.category}
+              </span>
+            )}
+            {service.thumbnail && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setShowImage(true); }}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border border-[#e2e8f0] text-[#475569] hover:border-[#0066ff] hover:text-[#0066ff] transition-colors"
+              >
+                🖼 Xem ảnh
+              </button>
+            )}
+          </div>
+
+          {/* Row 3: Stats */}
+          <div className="flex items-center gap-3 text-[11px] text-[#64748b] flex-wrap -mt-3">
+            <span className="inline-flex items-center gap-1">
+              <Users size={11} strokeWidth={2} className="text-[#0066ff]" />
+              <span className="font-semibold text-[#0f172a]">{service.customerCount.toLocaleString("vi-VN")}</span> khách hàng
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Package size={11} strokeWidth={2} className="text-[#10b981]" />
+              <span className="font-semibold text-[#0f172a]">{service.totalOrders.toLocaleString("vi-VN")}</span> đơn
+            </span>
+          </div>
+
+          {/* Info card */}
+          <div className="flex flex-col gap-1.5 rounded-lg bg-[#f8fafc] border border-[#e2e8f0] px-3 py-2 text-[11px] -mt-3">
+            {service.processingTime && (
+              <span className="flex items-center gap-1.5 text-[#475569]">
+                <Clock size={11} strokeWidth={2} className="text-[#7C3AED] shrink-0" />
+                <span className="text-[#7C3AED] font-medium">Thời gian xử lý</span>
+                <span className="font-medium">{service.processingTime}</span>
+              </span>
+            )}
+            {service.warrantyOptions.length > 0 && (
+              <span className="flex items-center gap-1.5 text-[#475569]">
+                <Shield size={11} strokeWidth={2} className="text-[#059669] shrink-0" />
+                <span className="text-[#059669] font-medium">Bảo hành</span>
+                <span className="font-medium">{service.warrantyOptions[0]?.name}</span>
+              </span>
+            )}
+            <div className="pt-0.5">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[#64748b]">Tỉ lệ thành công</span>
+                <span className="font-bold text-[#059669]">{service.successRate}%</span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-[#e2e8f0] overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-[#10b981] to-[#34d399]" style={{ width: `${service.successRate}%` }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Device variants */}
+          {hasVariants && (
+            <div className="flex flex-wrap gap-1 -mt-3">
+              {service.deviceVariants.slice(0, 3).map((v) => (
+                <span key={v.name} className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-[#ede9fe] text-[#7c3aed]">
+                  {v.name}
+                </span>
+              ))}
+              {service.deviceVariants.length > 3 && (
+                <span className="px-2 py-0.5 rounded-lg text-[10px] text-[#94a3b8]">+{service.deviceVariants.length - 3}</span>
+              )}
+            </div>
+          )}
+
+          <div className="flex-1" />
+
+          {/* Giá + CTA */}
+          <div className="flex items-stretch gap-2">
+            <div className="flex-[2] flex items-center justify-center rounded-xl border-2 border-[#e11d48] px-2 py-2">
+              <p className="text-sm font-extrabold text-center leading-tight text-[#e11d48]">
+                {hasVariants ? `Từ ${formatVnd(minPrice)}` : formatVnd(price)}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onSelect}
+              className={`flex-[3] flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold transition-all ${
+                isSelected
+                  ? "bg-[#0d9488] text-white shadow-md"
+                  : "bg-[#e11d48] text-white hover:bg-[#be123c] hover:shadow-md"
+              }`}
+            >
+              <ShoppingCart size={13} strokeWidth={2} />
+              {isSelected ? "✓ Đang chọn" : "Đặt hàng ngay"}
+            </button>
+          </div>
+
+        </div>
+      )}
     </article>
   );
 }
