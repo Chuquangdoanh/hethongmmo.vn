@@ -27,12 +27,17 @@ export default async function AdminDashboardPage({
   today.setHours(0, 0, 0, 0);
 
   // ── Always-on queries ──────────────────────────────────────────────
+  const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
+  const monthEnd   = new Date(selectedYear, selectedMonth, 1);
+
   const [
     totalUsers, newUsersToday, totalOrders, ordersToday,
     pendingWithdrawals, openComplaints,
     totalDeposits, depositsToday,
     recentOrders, recentUsers,
     monthWithdrawal,
+    sellerRevenueMonth,
+    approvedSellerCount,
   ] = await Promise.all([
     prisma.user.count({ where: { deletedAt: null } }),
     prisma.user.count({ where: { createdAt: { gte: today }, deletedAt: null } }),
@@ -63,13 +68,20 @@ export default async function AdminDashboardPage({
     prisma.sellerWithdrawal.aggregate({
       where: {
         status: { in: ["APPROVED", "COMPLETED"] },
-        createdAt: {
-          gte: new Date(selectedYear, selectedMonth - 1, 1),
-          lt:  new Date(selectedYear, selectedMonth, 1),
-        },
+        createdAt: { gte: monthStart, lt: monthEnd },
       },
       _sum: { amount: true, netAmount: true },
     }),
+    prisma.order.aggregate({
+      where: {
+        sellerId: { not: null },
+        status: "DONE",
+        createdAt: { gte: monthStart, lt: monthEnd },
+      },
+      _sum: { finalPrice: true },
+      _count: { id: true },
+    }),
+    prisma.user.count({ where: { sellerStatus: "APPROVED", deletedAt: null } }),
   ]);
 
   // ── Build chart data ───────────────────────────────────────────────
@@ -229,6 +241,12 @@ export default async function AdminDashboardPage({
       sub:   `Sau phí: ${formatVnd(Number(monthWithdrawal._sum.netAmount ?? 0))}`,
       color: "text-blue-600",
     },
+    {
+      label: `Doanh số seller T${selectedMonth}/${selectedYear}`,
+      value: formatVnd(Number(sellerRevenueMonth._sum.finalPrice ?? 0)),
+      sub:   `${sellerRevenueMonth._count.id} đơn · ${approvedSellerCount} seller`,
+      color: "text-emerald-600",
+    },
   ];
 
   return (
@@ -236,7 +254,7 @@ export default async function AdminDashboardPage({
       <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         {STATS.map(({ label, value, sub, color }) => (
           <div key={label} className="rounded-xl border border-gray-200 bg-gray-50 p-5">
             <p className="text-xs text-gray-500 mb-1">{label}</p>
