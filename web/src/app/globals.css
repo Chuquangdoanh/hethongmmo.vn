@@ -217,24 +217,41 @@ body { animation: pageFadeIn 0.28s ease-out both; }
 /* ══════════════════════════════════════════
    SCROLL-TRIGGER CLASSES
 ══════════════════════════════════════════ */
+/* Spring easing — dùng cho tất cả scroll reveals */
+:root { --spring: cubic-bezier(0.16,1,0.3,1); }
+
+/* Card flow-in: scale + Y + opacity — hiệu ứng "trôi vào" chính */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(64px) scale(0.94); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
 .anim-fade-up,
 .anim-slide-left,
 .anim-slide-right,
 .anim-scale-in,
-.anim-fade-in { opacity: 0; }
+.anim-fade-in,
+.anim-card-in { opacity: 0; }
 
-.anim-fade-up.visible    { animation: fadeUp    .7s cubic-bezier(0.4,0,0.2,1) forwards; }
-.anim-slide-left.visible { animation: slideLeft .7s cubic-bezier(0.4,0,0.2,1) forwards; }
-.anim-slide-right.visible{ animation: slideRight .7s cubic-bezier(0.4,0,0.2,1) forwards; }
-.anim-scale-in.visible   { animation: scaleIn   .7s cubic-bezier(0.4,0,0.2,1) forwards; }
-.anim-fade-in.visible    { animation: fadeIn    .6s ease forwards; }
+/* Headers / sections */
+.anim-fade-up.visible    { animation: fadeUp    .75s var(--spring) forwards; }
+.anim-slide-left.visible { animation: slideLeft .75s var(--spring) forwards; }
+.anim-slide-right.visible{ animation: slideRight .75s var(--spring) forwards; }
+.anim-scale-in.visible   { animation: scaleIn   .75s var(--spring) forwards; }
+.anim-fade-in.visible    { animation: fadeIn    .6s  ease forwards; }
 
-[data-d="1"]{ animation-delay:.1s!important }
-[data-d="2"]{ animation-delay:.2s!important }
-[data-d="3"]{ animation-delay:.3s!important }
-[data-d="4"]{ animation-delay:.4s!important }
-[data-d="5"]{ animation-delay:.5s!important }
-[data-d="6"]{ animation-delay:.6s!important }
+/* Product / TUT / service cards — trôi từ dưới lên với scale */
+.anim-card-in.visible { animation: cardIn .7s var(--spring) forwards; }
+
+/* Stagger: 150ms mỗi card — đủ để cảm nhận cascade */
+[data-d="1"]{ animation-delay:.05s!important }
+[data-d="2"]{ animation-delay:.20s!important }
+[data-d="3"]{ animation-delay:.35s!important }
+[data-d="4"]{ animation-delay:.50s!important }
+[data-d="5"]{ animation-delay:.65s!important }
+[data-d="6"]{ animation-delay:.80s!important }
+[data-d="7"]{ animation-delay:.95s!important }
+[data-d="8"]{ animation-delay:1.1s!important }
 
 /* ══════════════════════════════════════════
    STICKY CONTACT MENU

@@ -72,7 +72,7 @@ export default async function HomePage() {
         stockItems: { some: { status: "AVAILABLE" } },
       },
       orderBy: [{ salesCount: "desc" }, { createdAt: "desc" }],
-      take: 6,
+      take: 3,
       select: {
         id: true, name: true, price: true, imageUrl: true, salesCount: true,
         description: true, sellerCategory: true,
@@ -566,7 +566,7 @@ export default async function HomePage() {
                 <Link
                   key={i}
                   href={href}
-                  className="svc-compact-card anim-fade-up"
+                  className="svc-compact-card anim-card-in"
                   data-d={String((i % 6) + 1)}
                   style={{
                     display: "flex", flexDirection: "column", alignItems: "center",
@@ -712,7 +712,7 @@ export default async function HomePage() {
               <Link
                 key={label}
                 href={href}
-                className="cat-icon-card anim-fade-up"
+                className="cat-icon-card anim-card-in"
                 data-d={String(i + 1)}
                 style={{
                   display: "flex", flexDirection: "column", alignItems: "center",
@@ -792,7 +792,7 @@ export default async function HomePage() {
                   <Link
                     key={tut.id}
                     href={`/tut-tricks`}
-                    className="tut-card anim-fade-up"
+                    className="tut-card anim-card-in"
                     data-d={String(i + 1)}
                     style={{
                       display: "flex", flexDirection: "column",
@@ -943,42 +943,6 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          {/* Filter tabs */}
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "24px" }}>
-            {[
-              { label: "Tất cả",   href: "/tai-nguyen-mmo",                  active: true },
-              { label: "Facebook", href: "/tai-nguyen-mmo?category=Facebook", active: false },
-              { label: "TikTok",   href: "/tai-nguyen-mmo?category=TikTok",   active: false },
-              { label: "Game",     href: "/tai-nguyen-mmo?category=Game",     active: false },
-              { label: "Giá rẻ",  href: "/tai-nguyen-mmo?sort=gia-thap",      active: false },
-              { label: "Giá cao",  href: "/tai-nguyen-mmo?sort=gia-cao",      active: false },
-            ].map(({ label, href, active }) => (
-              <Link
-                key={label}
-                href={href}
-                style={{
-                  padding: "7px 18px", borderRadius: "8px", fontSize: ".85rem", fontWeight: "600",
-                  textDecoration: "none",
-                  background: active ? "#0066ff" : "#fff",
-                  color: active ? "#fff" : "#64748b",
-                  border: active ? "1.5px solid #0066ff" : "1.5px solid #e2e8f0",
-                  transition: "all .25s ease",
-                }}
-                className="filter-tab"
-              >
-                {label}
-              </Link>
-            ))}
-            <Link href="/tai-nguyen-mmo" style={{
-              padding: "7px 18px", borderRadius: "8px", fontSize: ".85rem", fontWeight: "600",
-              background: "transparent", color: "#0066ff",
-              border: "1.5px solid #0066ff", textDecoration: "none",
-              display: "flex", alignItems: "center", gap: "4px",
-            }}>
-              Xem tất cả →
-            </Link>
-          </div>
-
           {featuredProducts.length === 0 ? (
             <div style={{
               textAlign: "center", padding: "60px 20px",
@@ -990,20 +954,21 @@ export default async function HomePage() {
               <p style={{ color: "#64748b", fontWeight: "600" }}>Chưa có sản phẩm nào. Hãy quay lại sau!</p>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "16px" }} className="product-grid">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "20px", alignItems: "stretch" }} className="product-grid">
               {featuredProducts.map((p, i) => (
                 <Link
                   key={p.id}
                   href={`/tai-nguyen-mmo/san-pham/${p.id}`}
-                  className="product-card anim-fade-up"
-                  data-d={String((i % 6) + 1)}
+                  className="product-card anim-card-in"
+                  data-d={String(i + 1)}
                   style={{
                     display: "flex", flexDirection: "column",
-                    background: "#fff", borderRadius: "14px",
+                    background: "#fff", borderRadius: "16px",
                     border: "1.5px solid #e2e8f0",
                     overflow: "hidden", textDecoration: "none",
-                    boxShadow: "0 4px 12px rgba(0,0,0,.05)",
+                    boxShadow: "0 4px 16px rgba(0,0,0,.06)",
                     transition: "all .3s ease",
+                    height: "100%",
                   }}
                 >
                   {/* Thumbnail */}
@@ -1034,57 +999,65 @@ export default async function HomePage() {
                   </div>
 
                   {/* Content */}
-                  <div style={{ padding: "14px", flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <h3 style={{
-                      fontSize: ".9rem", fontWeight: "700", color: "#0f172a", margin: 0,
-                      display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-                    }}>
-                      {p.name}
-                    </h3>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <div style={{ padding: "16px", flex: 1, display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {/* Tags */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                       <span style={{
-                        fontSize: ".7rem", fontWeight: "700", color: "#f97316",
+                        fontSize: ".68rem", fontWeight: "700", color: "#f97316",
                         background: "rgba(249,115,22,.08)", padding: "2px 8px", borderRadius: "4px",
                       }}>
                         Seller #{p.seller.uidPrefix}
                       </span>
-                      <span style={{ fontSize: ".7rem", color: "#64748b" }}>
+                      <span style={{
+                        fontSize: ".68rem", fontWeight: "600", color: "#64748b",
+                        background: "#f1f5f9", padding: "2px 8px", borderRadius: "4px",
+                      }}>
                         {p.sellerCategory}
                       </span>
                     </div>
 
-                    {p.description && (
-                      <p style={{
-                        fontSize: ".78rem", color: "#64748b", margin: 0,
-                        display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-                      }}>
-                        {p.description}
-                      </p>
-                    )}
+                    {/* Title */}
+                    <h3 style={{
+                      fontSize: ".95rem", fontWeight: "700", color: "#0f172a", margin: 0,
+                      display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+                      lineHeight: "1.4", minHeight: "2.8em",
+                    }}>
+                      {p.name}
+                    </h3>
 
-                    <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-                      <span style={{ fontSize: ".75rem", color: "#64748b", display: "inline-flex", alignItems: "center", gap: "3px" }}>
+                    {/* Description — always render for equal height */}
+                    <p style={{
+                      fontSize: ".78rem", color: "#64748b", margin: 0,
+                      display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+                      lineHeight: "1.55", minHeight: "2.4em",
+                    }}>
+                      {p.description ?? "Sản phẩm chất lượng cao, giao hàng tự động, bảo hành uy tín."}
+                    </p>
+
+                    {/* Stock & Sales */}
+                    <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                      <span style={{ fontSize: ".75rem", color: "#64748b", display: "inline-flex", alignItems: "center", gap: "4px" }}>
                         <Package size={12} strokeWidth={1.75} />
-                        {p._count.stockItems} còn
+                        {p._count.stockItems} còn hàng
                       </span>
-                      <span style={{ fontSize: ".75rem", color: "#64748b", display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                        <CheckCircle size={12} strokeWidth={1.75} style={{ color: "#319795" }} />
+                      <span style={{ fontSize: ".75rem", color: "#16a34a", display: "inline-flex", alignItems: "center", gap: "4px", fontWeight: "600" }}>
+                        <CheckCircle size={12} strokeWidth={1.75} />
                         {p.salesCount} đã bán
                       </span>
                     </div>
 
+                    {/* Price + CTA */}
                     <div style={{
                       display: "flex", alignItems: "center", justifyContent: "space-between",
-                      marginTop: "auto", paddingTop: "10px", borderTop: "1px solid #f1f5f9",
+                      marginTop: "auto", paddingTop: "12px", borderTop: "1px solid #f1f5f9",
                     }}>
-                      <span style={{ fontSize: "1.1rem", fontWeight: "800", color: "#E53E3E" }}>
+                      <span style={{ fontSize: "1.15rem", fontWeight: "800", color: "#E53E3E" }}>
                         {formatVnd(Number(p.price))}
                       </span>
                       <span style={{
                         background: "#E53E3E", color: "#fff",
-                        padding: "7px 16px", borderRadius: "8px",
-                        fontWeight: "700", fontSize: ".8rem",
+                        padding: "8px 18px", borderRadius: "8px",
+                        fontWeight: "700", fontSize: ".82rem",
                         display: "inline-flex", alignItems: "center", gap: "5px",
                       }}>
                         <ShoppingCart size={13} strokeWidth={2} />

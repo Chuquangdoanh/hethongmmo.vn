@@ -8,7 +8,7 @@ export default function HeroScrollObserver() {
 
     // ── 1. Scroll Reveal ──
     const animEls = document.querySelectorAll<HTMLElement>(
-      ".anim-fade-up,.anim-slide-left,.anim-slide-right,.anim-scale-in,.anim-fade-in",
+      ".anim-fade-up,.anim-slide-left,.anim-slide-right,.anim-scale-in,.anim-fade-in,.anim-card-in",
     );
 
     if (reducedMotion) {
