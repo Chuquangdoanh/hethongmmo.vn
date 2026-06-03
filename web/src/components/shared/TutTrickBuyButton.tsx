@@ -176,11 +176,6 @@ function BuyConfirmPopup({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, []);
-
   const INFO_ROWS = [
     item.publishedDate ? { Icon: Calendar, label: "Ngày cập nhật",   value: item.publishedDate,  iconCls: "text-[#718096]"  } : null,
     { Icon: Tag,      label: "Nền tảng",        value: null,                iconCls: "text-[#718096]"  },

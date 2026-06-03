@@ -47,11 +47,17 @@ a  { text-decoration: none; }
 /* ── Modal / popup entrance — ngăn flash trắng khi popup mở ── */
 @keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes modalIn {
-  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
   to   { opacity: 1; transform: translateY(0)    scale(1);    }
 }
-.modal-backdrop { animation: backdropIn 200ms ease-out both; }
-.modal-card     { animation: modalIn    300ms cubic-bezier(0.22,1,0.36,1) both; }
+.modal-backdrop {
+  animation: backdropIn 180ms ease-out both;
+  will-change: opacity;
+}
+.modal-card {
+  animation: modalIn 320ms cubic-bezier(0.22,1,0.36,1) both;
+  will-change: transform, opacity;
+}
 
 /* ── taste-skill §4.4 — Shape Consistency Lock: cards = 16px, no mixed radii ── */
 .tut-card,
