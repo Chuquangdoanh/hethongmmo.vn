@@ -3,29 +3,17 @@ import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/auth";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
-import { formatVnd, formatDate } from "@/lib/utils/format";
+import { formatVnd } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import CreateUserModal from "./_components/CreateUserModal";
-import InlineRoleCell from "./_components/InlineRoleCell";
-import InlineUserStatusCell from "./_components/InlineUserStatusCell";
+import UsersTableClient from "./_components/UsersTableClient";
 
 export const metadata: Metadata = { title: "Quản lý người dùng" };
 
 const PAGE_SIZE = 20;
 
-const ROLE_BADGES: Record<string, string> = {
-  USER:   "bg-gray-100 text-gray-600",
-  SELLER: "bg-[#10B981]/10 text-[#10B981]",
-  STAFF:  "bg-[#F59E0B]/10 text-[#F59E0B]",
-  ADMIN:  "bg-[#EF4444]/10 text-[#EF4444]",
-};
 const ROLE_LABELS: Record<string, string> = {
   USER: "Người dùng", SELLER: "Nhà bán", STAFF: "Nhân viên", ADMIN: "Admin",
-};
-const STATUS_BADGES: Record<string, string> = {
-  ACTIVE:   "bg-[#10B981]/10 text-[#10B981]",
-  BANNED:   "bg-[#EF4444]/10 text-[#EF4444]",
-  INACTIVE: "bg-gray-100 text-gray-500",
 };
 
 export default async function AdminUsersPage({
@@ -154,79 +142,13 @@ export default async function AdminUsersPage({
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-gray-100">
-          <span className="text-sm font-semibold text-gray-700">
-            {total.toLocaleString("vi-VN")} người dùng
-            {role ? ` · ${ROLE_LABELS[role] ?? role}` : ""}
-            {q ? ` · "${q}"` : ""}
-          </span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px]">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Người dùng</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Trạng thái</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Số dư</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Đơn hàng</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Ngày tạo</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Hành động</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {users.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-16 text-center">
-                    <p className="text-4xl mb-3">👤</p>
-                    <p className="text-sm font-medium text-gray-600">Không tìm thấy người dùng</p>
-                    <p className="text-xs text-gray-400 mt-1">Thử thay đổi từ khóa tìm kiếm</p>
-                  </td>
-                </tr>
-              )}
-              {users.map((u) => (
-                <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-[#7C3AED]/10 flex items-center justify-center text-[#A855F7] text-xs font-bold flex-shrink-0">
-                        {(u.fullName || u.email).slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate max-w-[160px]">{u.fullName || "—"}</p>
-                        <p className="text-[10px] text-gray-400 font-mono mt-0.5 truncate max-w-[160px]">{u.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <InlineRoleCell userId={u.id} role={u.role} isSelf={u.id === me?.id} />
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <InlineUserStatusCell userId={u.id} status={u.status} isSelf={u.id === me?.id} />
-                  </td>
-                  <td className="px-4 py-3.5 text-right">
-                    <span className={`text-sm font-bold ${Number(u.balance) > 0 ? "text-[#10B981]" : "text-gray-400"}`}>
-                      {formatVnd(Number(u.balance))}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3.5 text-center text-sm font-semibold text-[#A855F7]">
-                    {u._count.orders.toLocaleString("vi-VN")}
-                  </td>
-                  <td className="px-4 py-3.5 text-xs text-gray-500">{formatDate(u.createdAt)}</td>
-                  <td className="px-4 py-3.5 text-right">
-                    <Link
-                      href={`/admin/users/${u.id}`}
-                      className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-[#7C3AED] bg-[#7C3AED]/8 hover:bg-[#7C3AED]/15 transition-colors"
-                    >
-                      Chi tiết
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <UsersTableClient
+        users={users}
+        currentUserId={me?.id ?? ""}
+        total={total}
+        role={role}
+        q={q}
+      />
 
       {totalPages > 1 && (
         <Pagination

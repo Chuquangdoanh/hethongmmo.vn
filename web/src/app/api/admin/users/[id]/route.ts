@@ -211,3 +211,50 @@ export async function PATCH(
     return apiCatch(err);
   }
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<NextResponse> {
+  try {
+    const session = await auth();
+    const admin = requireAdmin(session);
+    const { id } = await params;
+
+    if (id === admin.id) {
+      return apiError("Không thể xóa tài khoản của chính mình", "FORBIDDEN", 403);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id, deletedAt: null },
+      select: { id: true, email: true, role: true },
+    });
+    if (!user) throw new NotFoundError("User");
+
+    if (user.role === "ADMIN") {
+      return apiError("Không thể xóa tài khoản Admin", "FORBIDDEN", 403);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id },
+        data: { deletedAt: new Date(), status: "DELETED" },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: admin.id,
+          action: "ADMIN_DELETE_USER",
+          targetType: "User",
+          targetId: id,
+          before: { email: user.email, role: user.role },
+          after: { deletedAt: new Date().toISOString() },
+        },
+      });
+    });
+
+    logger.info({ adminId: admin.id, targetUserId: id }, "Admin soft-deleted user");
+    return apiSuccess();
+  } catch (err) {
+    return apiCatch(err);
+  }
+}
