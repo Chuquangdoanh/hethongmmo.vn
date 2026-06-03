@@ -27,7 +27,7 @@ export default function PageTransitionWrapper({ children }: { children: React.Re
     void el.offsetHeight;
     el.classList.add("page-entering");
 
-    const timer = setTimeout(() => el.classList.remove("page-entering"), 450);
+    const timer = setTimeout(() => el.classList.remove("page-entering"), 620);
     return () => clearTimeout(timer);
   }, [pathname]);
 
