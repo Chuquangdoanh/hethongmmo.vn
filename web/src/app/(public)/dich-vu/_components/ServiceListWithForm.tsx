@@ -223,12 +223,14 @@ function ServiceOrderPanel({
   onClose,
   onSuccess,
   testimonials,
+  autoScroll,
 }: {
   service: ServiceItem;
   isLoggedIn: boolean;
   onClose: () => void;
   onSuccess: (orderId: string) => void;
   testimonials: TestimonialItem[];
+  autoScroll: boolean;
 }) {
   const router = useRouter();
   const cccdInputRef = useRef<HTMLInputElement>(null);
@@ -266,17 +268,33 @@ function ServiceOrderPanel({
   const [gmailTouched, setGmailTouched]       = useState(false);
 
   useEffect(() => {
+    if (!autoScroll) return;
     const el = panelRef.current;
     if (!el) return;
-    // Delay: đợi DOM render xong và sticky header đo được đúng chiều cao
+
     const timer = setTimeout(() => {
       const headerEl = document.querySelector<HTMLElement>(".main-header-shell") ?? document.querySelector("header");
       const headerH  = headerEl ? headerEl.getBoundingClientRect().height : 80;
-      const top = el.getBoundingClientRect().top + window.scrollY - headerH - 16;
-      window.scrollTo({ top, behavior: "smooth" });
-    }, 80);
+      const target   = el.getBoundingClientRect().top + window.scrollY - headerH - 20;
+
+      // Custom slow scroll — 900ms ease-out cubic (browser smooth không kiểm soát tốc độ)
+      const start    = window.scrollY;
+      const distance = target - start;
+      const duration = 900;
+      const startTime = performance.now();
+
+      function step(now: number) {
+        const elapsed  = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease     = 1 - Math.pow(1 - progress, 3); // cubic ease-out
+        window.scrollTo(0, start + distance * ease);
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }, 120);
+
     return () => clearTimeout(timer);
-  }, []);
+  }, [autoScroll]);
 
   const selectedVariant = service.deviceVariants.find(v => v.name === deviceVariant);
   const basePrice = selectedVariant ? selectedVariant.price : price;
@@ -385,7 +403,7 @@ function ServiceOrderPanel({
   }
 
   return (
-    <div ref={panelRef} className="col-span-full mt-2 scroll-mt-24">
+    <div ref={panelRef} className="col-span-full mt-2 scroll-mt-24 panel-fade-in">
       <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-md overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#1e40af] to-[#7C3AED] px-6 py-4 flex items-center justify-between">
@@ -785,10 +803,15 @@ export default function ServiceListWithForm({
 }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [autoScroll, setAutoScroll]  = useState(false);
   const selectedService = services.find((s) => s.id === selectedId) ?? null;
 
   function handleSelect(id: string) {
-    setSelectedId((prev) => (prev === id ? null : id));
+    setSelectedId((prev) => {
+      if (prev === id) { setAutoScroll(false); return null; }   // deselect
+      setAutoScroll(prev === null);                              // scroll only on first open
+      return id;
+    });
   }
 
   function handleSuccess(_orderId: string) {
@@ -815,12 +838,12 @@ export default function ServiceListWithForm({
 
       {selectedService && (
         <ServiceOrderPanel
-          key={selectedService.id}
           service={selectedService}
           isLoggedIn={isLoggedIn}
           onClose={() => setSelectedId(null)}
           onSuccess={handleSuccess}
           testimonials={panelTestimonials}
+          autoScroll={autoScroll}
         />
       )}
     </div>

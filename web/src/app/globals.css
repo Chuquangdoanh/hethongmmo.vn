@@ -37,6 +37,13 @@ body {
 img { display: block; max-width: 100%; }
 a  { text-decoration: none; }
 
+/* ── Order panel fade-in (dich-vu page) ── */
+@keyframes panelFadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.panel-fade-in { animation: panelFadeIn 0.45s cubic-bezier(0.22,1,0.36,1) both; }
+
 /* ── taste-skill §4.4 — Shape Consistency Lock: cards = 16px, no mixed radii ── */
 .tut-card,
 .product-card,
