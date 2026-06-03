@@ -33,7 +33,8 @@ const TIER_LABELS: Record<string, string> = {
   STANDARD: "Standard", SILVER: "Silver", GOLD: "Gold", VIP: "VIP",
 };
 
-type SortKey = "revenue_desc" | "revenue_asc";
+type SortKey = "revenue_desc" | "revenue_asc" | "rating_desc" | "rating_asc";
+const VALID_SORTS: SortKey[] = ["revenue_desc", "revenue_asc", "rating_desc", "rating_asc"];
 
 function buildHref(params: Record<string, string | undefined>) {
   const q = new URLSearchParams();
@@ -52,7 +53,7 @@ export default async function AdminSellersPage({
   const { page, status, tier, q, sort: sortParam } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
   const search = q?.trim() || undefined;
-  const activeSort = (sortParam === "revenue_desc" || sortParam === "revenue_asc")
+  const activeSort = VALID_SORTS.includes(sortParam as SortKey)
     ? sortParam as SortKey
     : undefined;
 
@@ -80,19 +81,38 @@ export default async function AdminSellersPage({
       include: { user: { select: { id: true, email: true, fullName: true, sellerTier: true } } },
     });
     const allUserIds = allRequests.map((r) => r.userId);
-    const allRevenueRows = allUserIds.length > 0
-      ? await prisma.order.groupBy({
-          by: ["sellerId"],
-          where: { sellerId: { in: allUserIds }, status: "DONE" },
-          _sum: { finalPrice: true },
-        })
-      : [];
+
+    type AllRatingRow = { seller_id: string; avg_rating: number };
+
+    const [allRevenueRows, allRatingRows] = await Promise.all([
+      (activeSort === "revenue_desc" || activeSort === "revenue_asc") && allUserIds.length > 0
+        ? prisma.order.groupBy({
+            by: ["sellerId"],
+            where: { sellerId: { in: allUserIds }, status: "DONE" },
+            _sum: { finalPrice: true },
+          })
+        : Promise.resolve([]),
+      (activeSort === "rating_desc" || activeSort === "rating_asc") && allUserIds.length > 0
+        ? prisma.$queryRaw<AllRatingRow[]>`
+            SELECT sp.seller_id,
+                   AVG(r.rating)::float AS avg_rating
+            FROM   reviews r
+            JOIN   seller_products sp ON r.product_id = sp.id
+            WHERE  r.product_type = 'SELLER_PRODUCT'
+              AND  sp.seller_id = ANY(${allUserIds}::uuid[])
+            GROUP  BY sp.seller_id
+          `
+        : Promise.resolve([] as AllRatingRow[]),
+    ]);
+
     const allRevenueMap = new Map(allRevenueRows.map((r) => [r.sellerId, Number(r._sum.finalPrice ?? 0)]));
+    const allRatingMap  = new Map(allRatingRows.map((r) => [r.seller_id, r.avg_rating ?? 0]));
 
     allRequests.sort((a, b) => {
-      const ra = allRevenueMap.get(a.userId) ?? 0;
-      const rb = allRevenueMap.get(b.userId) ?? 0;
-      return activeSort === "revenue_desc" ? rb - ra : ra - rb;
+      if (activeSort === "revenue_desc") return (allRevenueMap.get(b.userId) ?? 0) - (allRevenueMap.get(a.userId) ?? 0);
+      if (activeSort === "revenue_asc")  return (allRevenueMap.get(a.userId) ?? 0) - (allRevenueMap.get(b.userId) ?? 0);
+      if (activeSort === "rating_desc")  return (allRatingMap.get(b.userId) ?? 0) - (allRatingMap.get(a.userId) ?? 0);
+      /* rating_asc */                   return (allRatingMap.get(a.userId) ?? 0) - (allRatingMap.get(b.userId) ?? 0);
     });
 
     total = allRequests.length;
@@ -161,6 +181,9 @@ export default async function AdminSellersPage({
   // Sort toggle links
   const nextRevenueSort = activeSort === "revenue_desc" ? "revenue_asc" : "revenue_desc";
   const revenueSortHref = buildHref({ status, tier, q: search, sort: nextRevenueSort, page: undefined });
+
+  const nextRatingSort = activeSort === "rating_desc" ? "rating_asc" : "rating_desc";
+  const ratingSortHref = buildHref({ status, tier, q: search, sort: nextRatingSort, page: undefined });
 
   return (
     <div className="space-y-6">
@@ -270,7 +293,21 @@ export default async function AdminSellersPage({
                   )}
                 </Link>
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Đánh giá TB</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">
+                <Link
+                  href={ratingSortHref}
+                  className="inline-flex items-center gap-1 hover:text-violet-600 transition-colors"
+                >
+                  Đánh giá TB
+                  {activeSort === "rating_desc" ? (
+                    <ChevronDown size={13} strokeWidth={2.5} className="text-violet-600" />
+                  ) : activeSort === "rating_asc" ? (
+                    <ChevronUp size={13} strokeWidth={2.5} className="text-violet-600" />
+                  ) : (
+                    <ChevronsUpDown size={13} strokeWidth={2} className="text-gray-400" />
+                  )}
+                </Link>
+              </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Shop</th>
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">Hành động</th>
             </tr>
