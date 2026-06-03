@@ -62,7 +62,7 @@ export default function UsersTableClient({ users, currentUserId, total, role, q 
   async function handleDelete() {
     const ids = [...selected];
     if (ids.length === 0) return;
-    if (!window.confirm(`Xóa ${ids.length} tài khoản đã chọn? Hành động này không thể hoàn tác.`)) return;
+    if (!window.confirm(`Xóa vĩnh viễn ${ids.length} tài khoản khỏi database?\n\nToàn bộ đơn hàng, giao dịch, đánh giá liên quan cũng sẽ bị xóa. Không thể hoàn tác.`)) return;
 
     startTransition(async () => {
       await Promise.all(

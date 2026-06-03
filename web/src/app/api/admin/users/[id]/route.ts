@@ -236,23 +236,42 @@ export async function DELETE(
     }
 
     await prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id },
-        data: { deletedAt: new Date(), status: "DELETED" },
-      });
+      // Audit log first (actor still exists in DB)
       await tx.auditLog.create({
         data: {
           actorId: admin.id,
-          action: "ADMIN_DELETE_USER",
+          action: "ADMIN_HARD_DELETE_USER",
           targetType: "User",
           targetId: id,
           before: { email: user.email, role: user.role },
-          after: { deletedAt: new Date().toISOString() },
+          after: { deleted: true },
         },
       });
+
+      // 1. ChatRooms linked to this user's complaints (cascades ChatMember + ChatMessage)
+      const complaintIds = (await tx.complaint.findMany({
+        where: { userId: id },
+        select: { id: true },
+      })).map((c) => c.id);
+      if (complaintIds.length > 0) {
+        await tx.chatRoom.deleteMany({ where: { complaintId: { in: complaintIds } } });
+      }
+
+      // 2. Complaints, Reviews, Withdrawals, Transactions, Orders
+      await tx.complaint.deleteMany({ where: { userId: id } });
+      await tx.review.deleteMany({ where: { userId: id } });
+      await tx.sellerWithdrawal.deleteMany({ where: { sellerId: id } });
+      await tx.transaction.deleteMany({ where: { userId: id } });
+      await tx.order.deleteMany({
+        where: { OR: [{ userId: id }, { sellerId: id }] },
+      });
+
+      // 3. Hard delete — cascades: Session, RefreshToken, Notification,
+      //    SellerRequest, SellerProduct (+ SellerProductStock)
+      await tx.user.delete({ where: { id } });
     });
 
-    logger.info({ adminId: admin.id, targetUserId: id }, "Admin soft-deleted user");
+    logger.info({ adminId: admin.id, targetUserId: id }, "Admin hard-deleted user");
     return apiSuccess();
   } catch (err) {
     return apiCatch(err);
