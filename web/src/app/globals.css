@@ -34,14 +34,14 @@ body {
   background: #ffffff;
 }
 
-/* taste-skill §4.1 — Outfit for all headings */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-outfit, var(--font-inter, sans-serif));
-  letter-spacing: -0.02em;
-}
-
 img { display: block; max-width: 100%; }
 a  { text-decoration: none; }
+
+/* ── taste-skill §4.4 — Shape Consistency Lock: cards = 16px, no mixed radii ── */
+.tut-card,
+.product-card,
+.svc-compact-card,
+.service-card { border-radius: 16px !important; }
 
 /* ── taste-skill §4.5 — Tactile :active feedback (simulate physical push) ── */
 .btn-canva-primary:active,
