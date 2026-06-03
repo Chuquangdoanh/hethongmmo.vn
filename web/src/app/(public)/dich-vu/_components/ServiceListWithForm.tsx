@@ -56,29 +56,27 @@ interface ServiceItem {
 }
 
 function ThumbnailPreview({ src, alt }: { src: string; alt: string }) {
-  const [open, setOpen] = useState(false);
+  const [show, setShow] = useState(false);
   return (
-    <>
+    <div className="w-full">
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); setOpen(true); }}
+        onClick={(e) => { e.stopPropagation(); setShow((v) => !v); }}
         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold border border-[#e2e8f0] text-[#475569] hover:border-[#0066ff] hover:text-[#0066ff] transition-colors"
       >
-        🖼 Xem ảnh
+        🖼 {show ? "Ẩn ảnh" : "Xem ảnh"}
       </button>
-      {open && (
-        <div className="fixed inset-0 z-1100 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-          <div className="relative z-10 max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
-            <button type="button" onClick={() => setOpen(false)} className="absolute -top-10 right-0 text-white/70 hover:text-white text-sm font-semibold">
-              ✕ Đóng
-            </button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt={alt} className="w-full h-auto rounded-xl shadow-2xl max-h-[80vh] object-contain" />
-          </div>
+      {show && (
+        <div className="mt-2 rounded-xl overflow-hidden border border-[#e2e8f0]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt={alt}
+            className="w-full h-auto object-contain max-h-48"
+          />
         </div>
       )}
-    </>
+    </div>
   );
 }
 
