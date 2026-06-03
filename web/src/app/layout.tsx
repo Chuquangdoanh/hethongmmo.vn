@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import "./globals.css";
 import Providers from "@/components/providers/Providers";
 import NavigationProgressLoader from "@/components/layout/NavigationProgressLoader";
+import PageTransitionWrapper from "@/components/layout/PageTransitionWrapper";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -43,7 +44,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="min-h-full flex flex-col bg-white text-[#0f172a] font-sans">
         <NavigationProgressLoader />
-        <Providers>{children}</Providers>
+        <Providers>
+          <PageTransitionWrapper>{children}</PageTransitionWrapper>
+        </Providers>
       </body>
     </html>
   );
