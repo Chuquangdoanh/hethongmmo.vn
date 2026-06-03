@@ -99,7 +99,7 @@ function ServiceCard({
 
   return (
     <article
-      className={`relative flex flex-col rounded-2xl border bg-white overflow-hidden shadow-sm hover:shadow-lg hover:border-[#0066ff]/40 transition-all duration-200 group ${
+      className={`relative flex flex-col rounded-2xl border bg-white overflow-hidden shadow-sm hover:shadow-lg hover:border-[#0066ff]/40 hover:-translate-y-1.5 transition-[transform,box-shadow,border-color] duration-300 group ${
         isSelected ? "border-[#0d9488] ring-2 ring-[#0d9488]/20" : "border-[#e2e8f0]"
       }`}
     >
@@ -260,9 +260,27 @@ function ServiceOrderPanel({
   const [cccdError, setCccdError] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [phoneError, setPhoneError]           = useState("");
+  const [phoneTouched, setPhoneTouched]       = useState(false);
+  const [warrantyError, setWarrantyError]     = useState("");
+  const [warrantyTouched, setWarrantyTouched] = useState(false);
+  const [cccdFieldError, setCccdFieldError]   = useState("");
+  const [linkError, setLinkError]             = useState("");
+  const [linkTouched, setLinkTouched]         = useState(false);
+  const [gmailError, setGmailError]           = useState("");
+  const [gmailTouched, setGmailTouched]       = useState(false);
 
   useEffect(() => {
-    panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const el = panelRef.current;
+    if (!el) return;
+    // Delay: đợi DOM render xong và sticky header đo được đúng chiều cao
+    const timer = setTimeout(() => {
+      const headerEl = document.querySelector<HTMLElement>(".main-header-shell") ?? document.querySelector("header");
+      const headerH  = headerEl ? headerEl.getBoundingClientRect().height : 80;
+      const top = el.getBoundingClientRect().top + window.scrollY - headerH - 16;
+      window.scrollTo({ top, behavior: "smooth" });
+    }, 80);
+    return () => clearTimeout(timer);
   }, []);
 
   const selectedVariant = service.deviceVariants.find(v => v.name === deviceVariant);
@@ -272,6 +290,33 @@ function ServiceOrderPanel({
 
   function setField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function validateLink(value: string): string {
+    const v = value.trim();
+    if (!v) return "Vui lòng nhập thông tin này.";
+    if (isICloud && !/^\d{14,16}$/.test(v)) return "IMEI không hợp lệ — cần 14–16 chữ số.";
+    if (!isICloud && !/^https?:\/\/.+/.test(v)) return "Link không hợp lệ — phải bắt đầu bằng https://";
+    return "";
+  }
+
+  function validateGmail(value: string): string {
+    const v = value.trim();
+    if (!v) return "";
+    const email = v.split("|")[0]?.split(":")[0]?.trim() ?? v;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return "Gmail không đúng định dạng (VD: ten@gmail.com:matkhau).";
+    return "";
+  }
+
+  function validatePhone(value: string): string {
+    if (!value.trim()) return "Vui lòng nhập số điện thoại Zalo liên hệ.";
+    if (!/^(0|\+84)[3-9]\d{8}$/.test(value.trim())) return "Số điện thoại không hợp lệ (VD: 0901234567).";
+    return "";
+  }
+
+  function validateWarranty(value: string): string {
+    if (service.warrantyOptions.length > 0 && !value) return "Vui lòng chọn chế độ bảo hành.";
+    return "";
   }
 
   async function handleCccdFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -298,7 +343,17 @@ function ServiceOrderPanel({
     if (hasDeviceVariants && !deviceVariant) {
       setError("Vui lòng chọn thiết bị cần xử lý."); return;
     }
-    if (!form.zaloPhone.trim()) { setError("Vui lòng nhập số điện thoại Zalo liên hệ."); return; }
+    const lErr = validateLink(form.imeiOrLink);
+    const pErr = validatePhone(form.zaloPhone);
+    const gErr = validateGmail(form.gmailPass);
+    const wErr = validateWarranty(form.warranty);
+    const cErr = (!isICloud && service.requiresCccd && !cccdUrl) ? "Vui lòng tải lên ảnh CCCD mặt trước." : "";
+    setLinkTouched(true);    setLinkError(lErr);
+    setPhoneTouched(true);   setPhoneError(pErr);
+    setGmailTouched(true);   setGmailError(gErr);
+    setWarrantyTouched(true); setWarrantyError(wErr);
+    setCccdFieldError(cErr);
+    if (lErr || pErr || gErr || wErr || cErr) return;
     setError("");
     setLoading(true);
     try {
@@ -335,7 +390,7 @@ function ServiceOrderPanel({
   }
 
   return (
-    <div ref={panelRef} className="col-span-full mt-2 scroll-mt-6">
+    <div ref={panelRef} className="col-span-full mt-2 scroll-mt-24">
       <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-md overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#1e40af] to-[#7C3AED] px-6 py-4 flex items-center justify-between">
@@ -428,32 +483,45 @@ function ServiceOrderPanel({
                 <input
                   type="text"
                   value={form.imeiOrLink}
-                  onChange={(e) => setField("imeiOrLink", e.target.value)}
+                  onChange={(e) => {
+                    setField("imeiOrLink", e.target.value);
+                    if (linkTouched) setLinkError(validateLink(e.target.value));
+                  }}
+                  onBlur={() => { setLinkTouched(true); setLinkError(validateLink(form.imeiOrLink)); }}
                   placeholder={isICloud ? "VD: 352456789013456" : `Link ${PLATFORM_LABELS[service.platform] ?? ""}`}
-                  className="w-full rounded-xl border border-[#e2e8f0] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:border-[#7C3AED] focus:outline-none transition-colors"
+                  className={`w-full rounded-xl border pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none transition-colors ${
+                    linkError ? "border-[#ef4444] bg-[#fff5f5] focus:border-[#ef4444]" : "border-[#e2e8f0] bg-[#f8fafc] focus:border-[#7C3AED]"
+                  }`}
                   suppressHydrationWarning
                 />
               </div>
+              {linkError && <p className="mt-1 text-xs text-[#ef4444]">{linkError}</p>}
             </div>
 
             {/* SĐT Zalo */}
             <div>
               <label className="block text-xs font-semibold text-[#374151] mb-1.5 flex items-center gap-1.5">
                 <Phone size={12} strokeWidth={2} className="text-[#10b981]" />
-                Số Điện Thoại Zalo liên hệ *
+                Số Điện Thoại Zalo liên hệ <span className="text-[#ef4444]">*</span>
               </label>
               <div className="relative">
                 <Phone size={15} strokeWidth={1.75} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
                 <input
-                  required
                   type="tel"
                   value={form.zaloPhone}
-                  onChange={(e) => setField("zaloPhone", e.target.value)}
+                  onChange={(e) => {
+                    setField("zaloPhone", e.target.value);
+                    if (phoneTouched) setPhoneError(validatePhone(e.target.value));
+                  }}
+                  onBlur={() => { setPhoneTouched(true); setPhoneError(validatePhone(form.zaloPhone)); }}
                   placeholder="VD: 0901234567"
-                  className="w-full rounded-xl border border-[#e2e8f0] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:border-[#7C3AED] focus:outline-none transition-colors"
+                  className={`w-full rounded-xl border pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none transition-colors ${
+                    phoneError ? "border-[#ef4444] bg-[#fff5f5] focus:border-[#ef4444]" : "border-[#e2e8f0] bg-[#f8fafc] focus:border-[#7C3AED]"
+                  }`}
                   suppressHydrationWarning
                 />
               </div>
+              {phoneError && <p className="mt-1 text-xs text-[#ef4444]">{phoneError}</p>}
             </div>
 
             {/* Tài khoản/pass — ẩn với iCloud */}
@@ -486,12 +554,19 @@ function ServiceOrderPanel({
                     <input
                       type="text"
                       value={form.gmailPass}
-                      onChange={(e) => setField("gmailPass", e.target.value)}
+                      onChange={(e) => {
+                        setField("gmailPass", e.target.value);
+                        if (gmailTouched) setGmailError(validateGmail(e.target.value));
+                      }}
+                      onBlur={() => { setGmailTouched(true); setGmailError(validateGmail(form.gmailPass)); }}
                       placeholder="Gmail/pass cũ"
-                      className="w-full rounded-xl border border-[#e2e8f0] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:border-[#7C3AED] focus:outline-none transition-colors"
+                      className={`w-full rounded-xl border pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none transition-colors ${
+                        gmailError ? "border-[#ef4444] bg-[#fff5f5] focus:border-[#ef4444]" : "border-[#e2e8f0] bg-[#f8fafc] focus:border-[#7C3AED]"
+                      }`}
                       suppressHydrationWarning
                     />
                   </div>
+                  {gmailError && <p className="mt-1 text-xs text-[#ef4444]">{gmailError}</p>}
                 </div>
               </>
             )}
@@ -536,9 +611,13 @@ function ServiceOrderPanel({
             <div>
               <label className="flex items-center gap-1.5 text-xs font-semibold text-[#374151] mb-2">
                 <BadgeCheck size={12} strokeWidth={2} className="text-[#7c3aed]" />
-                CCCD mặt trước
+                CCCD mặt trước <span className="text-[#ef4444]">*</span>
               </label>
-              <div className={`relative rounded-xl border-2 border-dashed transition-colors ${cccdUrl ? "border-[#0d9488] bg-[#f0fdfa]" : "border-[#e2e8f0] bg-[#f8fafc] hover:border-[#0d9488]/50"}`}>
+              <div className={`relative rounded-xl border-2 border-dashed transition-colors ${
+                cccdUrl ? "border-[#0d9488] bg-[#f0fdfa]"
+                : cccdFieldError ? "border-[#ef4444] bg-[#fff5f5]"
+                : "border-[#e2e8f0] bg-[#f8fafc] hover:border-[#0d9488]/50"
+              }`}>
                 {cccdUrl ? (
                   <div className="flex items-center gap-3 px-4 py-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -576,26 +655,37 @@ function ServiceOrderPanel({
                   </label>
                 )}
               </div>
-              {cccdError && <p className="flex items-center gap-1 text-xs text-[#ef4444] mt-1"><X size={11} strokeWidth={2} />{cccdError}</p>}
+              {cccdError && <p className="text-xs text-[#ef4444] mt-1">{cccdError}</p>}
+              {cccdFieldError && !cccdUrl && <p className="text-xs text-[#ef4444] mt-1">{cccdFieldError}</p>}
             </div>
           )}
 
           {/* Warranty */}
           {service.warrantyOptions.length > 0 && (
             <div>
-              <label className="block text-xs text-[#64748b] mb-1.5">Chế độ bảo hành</label>
+              <label className="block text-xs font-semibold text-[#374151] mb-1.5">
+                Chế Độ Bảo Hành <span className="text-[#ef4444]">*</span>
+              </label>
               <select
                 value={form.warranty}
-                onChange={(e) => setField("warranty", e.target.value)}
-                className="w-full rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2.5 text-sm text-[#0f172a] focus:border-[#7C3AED] focus:outline-none"
+                onChange={(e) => {
+                  setField("warranty", e.target.value);
+                  setWarrantyTouched(true);
+                  setWarrantyError(validateWarranty(e.target.value));
+                }}
+                onBlur={() => { setWarrantyTouched(true); setWarrantyError(validateWarranty(form.warranty)); }}
+                className={`w-full rounded-xl border px-3 py-2.5 text-sm text-[#0f172a] focus:outline-none transition-colors ${
+                  warrantyError ? "border-[#ef4444] bg-[#fff5f5] focus:border-[#ef4444]" : "border-[#e2e8f0] bg-[#f8fafc] focus:border-[#7C3AED]"
+                }`}
               >
-                <option value="">Chọn chế độ bảo hành</option>
+                <option value="">— Chọn gói bảo hành —</option>
                 {service.warrantyOptions.map((w) => (
                   <option key={w.name} value={w.name}>
                     {w.name}{w.price === 0 ? " — Miễn phí" : ` (+${formatVnd(w.price)})`}
                   </option>
                 ))}
               </select>
+              {warrantyError && <p className="mt-1 text-xs text-[#ef4444]">{warrantyError}</p>}
             </div>
           )}
 
