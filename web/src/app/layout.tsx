@@ -4,7 +4,6 @@ import { headers } from "next/headers";
 import "./globals.css";
 import Providers from "@/components/providers/Providers";
 import NavigationProgressLoader from "@/components/layout/NavigationProgressLoader";
-import PageTransitionWrapper from "@/components/layout/PageTransitionWrapper";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -44,8 +43,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="min-h-full flex flex-col bg-white text-[#0f172a] font-sans">
         <NavigationProgressLoader />
+        {/* PageTransitionWrapper intentionally NOT here — each route group
+            layout wraps only its own <main> content, so the sticky Header
+            is never included in the blur/fade animation. */}
         <Providers>
-          <PageTransitionWrapper>{children}</PageTransitionWrapper>
+          {children}
         </Providers>
       </body>
     </html>
