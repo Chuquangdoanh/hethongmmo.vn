@@ -2,27 +2,34 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { SellerTier } from "@prisma/client";
-
-const TIER_META: Record<SellerTier, { label: string; badge: string; description: string }> = {
-  STANDARD: { label: "Standard", badge: "bg-gray-100 text-gray-600", description: "Hạng mặc định" },
-  SILVER:   { label: "Silver",   badge: "bg-slate-100 text-slate-600", description: "Phí thấp hơn, giữ đơn ngắn hơn" },
-  GOLD:     { label: "Gold",     badge: "bg-amber-100 text-amber-700", description: "Ưu đãi tốt, phí thấp" },
-  VIP:      { label: "VIP",      badge: "bg-violet-100 text-violet-700", description: "Ưu đãi cao nhất" },
-};
-
-const TIERS = Object.keys(TIER_META) as SellerTier[];
+import type { SellerTierDefinition } from "@prisma/client";
 
 interface Props {
-  sellerId: string;
-  currentTier: SellerTier;
+  sellerId:    string;
+  currentTier: string;
+  tiers:       Pick<SellerTierDefinition, "id" | "key" | "label" | "description" | "badgeColor">[];
 }
 
-export default function SellerTierForm({ sellerId, currentTier }: Props) {
+const COLOR_BADGE: Record<string, string> = {
+  gray:   "bg-gray-100 text-gray-700",
+  slate:  "bg-slate-100 text-slate-700",
+  amber:  "bg-amber-100 text-amber-700",
+  violet: "bg-violet-100 text-violet-700",
+  blue:   "bg-blue-100 text-blue-700",
+  green:  "bg-green-100 text-green-700",
+  red:    "bg-red-100 text-red-700",
+  pink:   "bg-pink-100 text-pink-700",
+  orange: "bg-orange-100 text-orange-700",
+  teal:   "bg-teal-100 text-teal-700",
+};
+
+export default function SellerTierForm({ sellerId, currentTier, tiers }: Props) {
   const router = useRouter();
-  const [selected, setSelected] = useState<SellerTier>(currentTier);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [selected, setSelected] = useState(currentTier);
+  const [loading, setLoading]   = useState(false);
+  const [message, setMessage]   = useState("");
+
+  const currentMeta = tiers.find((t) => t.key === currentTier);
 
   async function handleSave() {
     if (selected === currentTier) return;
@@ -34,19 +41,14 @@ export default function SellerTierForm({ sellerId, currentTier }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tier: selected }),
       });
-      const json = await res.json() as { success: boolean; message?: string; error?: string };
-      if (!res.ok || !json.success) {
-        setMessage(json.error ?? "Cập nhật thất bại");
-        return;
-      }
+      const json = await res.json() as { success?: boolean; message?: string; error?: string };
+      if (!res.ok || !json.success) { setMessage(json.error ?? "Cập nhật thất bại"); return; }
       setMessage("Đã cập nhật hạng seller");
       router.refresh();
     } finally {
       setLoading(false);
     }
   }
-
-  const currentMeta = TIER_META[currentTier];
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5">
@@ -55,32 +57,33 @@ export default function SellerTierForm({ sellerId, currentTier }: Props) {
           <h2 className="text-sm font-semibold text-gray-900">Hạng seller (Chế độ ưu đãi)</h2>
           <p className="text-xs text-gray-500 mt-0.5">
             Hạng hiện tại:{" "}
-            <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${currentMeta.badge}`}>
-              {currentMeta.label}
-            </span>
+            {currentMeta && (
+              <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${COLOR_BADGE[currentMeta.badgeColor] ?? COLOR_BADGE["gray"]}`}>
+                {currentMeta.label}
+              </span>
+            )}
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-4">
-        {TIERS.map((tier) => {
-          const meta = TIER_META[tier];
-          const isSelected = selected === tier;
+        {tiers.map((tier) => {
+          const isSelected = selected === tier.key;
           return (
             <button
-              key={tier}
+              key={tier.key}
               type="button"
-              onClick={() => setSelected(tier)}
+              onClick={() => setSelected(tier.key)}
               className={`rounded-lg border px-4 py-3 text-left transition-colors ${
-                isSelected
-                  ? "border-violet-400 bg-violet-50"
-                  : "border-gray-200 bg-white hover:border-gray-300"
+                isSelected ? "border-violet-400 bg-violet-50" : "border-gray-200 bg-white hover:border-gray-300"
               }`}
             >
-              <p className={`text-sm font-semibold ${isSelected ? "text-violet-700" : "text-gray-700"}`}>
-                {meta.label}
-              </p>
-              <p className="text-[11px] text-gray-400 mt-0.5">{meta.description}</p>
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${COLOR_BADGE[tier.badgeColor] ?? COLOR_BADGE["gray"]}`}>
+                  {tier.label}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-400">{tier.description ?? ""}</p>
             </button>
           );
         })}
@@ -98,7 +101,7 @@ export default function SellerTierForm({ sellerId, currentTier }: Props) {
         disabled={loading || selected === currentTier}
         className="w-full rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        {loading ? "Đang lưu..." : `Chuyển sang ${TIER_META[selected].label}`}
+        {loading ? "Đang lưu..." : `Chuyển sang ${tiers.find((t) => t.key === selected)?.label ?? selected}`}
       </button>
     </div>
   );

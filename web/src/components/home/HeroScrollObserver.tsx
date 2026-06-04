@@ -12,19 +12,30 @@ export default function HeroScrollObserver() {
     );
 
     if (reducedMotion) {
-      animEls.forEach((el) => { el.style.opacity = "1"; });
+      animEls.forEach((el) => {
+        el.style.opacity = "1";
+        el.style.willChange = "auto";
+      });
     }
 
+    // rootMargin: trigger 60px before element fully enters viewport
     const revealObs = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
           if (e.isIntersecting) {
-            (e.target as HTMLElement).classList.add("visible");
-            revealObs.unobserve(e.target);
+            const el = e.target as HTMLElement;
+            el.classList.add("visible");
+            revealObs.unobserve(el);
+            // Release GPU layer after animation completes
+            el.addEventListener(
+              "animationend",
+              () => { el.style.willChange = "auto"; },
+              { once: true },
+            );
           }
         });
       },
-      { threshold: 0.12 },
+      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" },
     );
 
     if (!reducedMotion) {
@@ -52,7 +63,7 @@ export default function HeroScrollObserver() {
             return;
           }
 
-          const duration = 1600;
+          const duration = 1400;
           const startTime = performance.now();
           const tick = (now: number) => {
             const progress = Math.min((now - startTime) / duration, 1);
@@ -79,7 +90,6 @@ export default function HeroScrollObserver() {
           ? target.toFixed(1) + suffix
           : target.toLocaleString("vi-VN") + suffix;
       } else {
-        // Reset to 0 before observing so there's no snap from server value
         el.textContent = isFloat ? "0.0" + suffix : "0" + suffix;
         counterObs.observe(el);
       }
@@ -87,10 +97,18 @@ export default function HeroScrollObserver() {
 
     // ── 3. Parallax Hero Grid ──
     const gridMask = document.querySelector<HTMLElement>(".hero-grid-mask");
+    let rafId: number | null = null;
+
     const handleScroll = () => {
-      if (!gridMask) return;
-      gridMask.style.transform = `translateY(${window.scrollY * 0.12}px)`;
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        if (gridMask) {
+          gridMask.style.transform = `translateY(${window.scrollY * 0.12}px)`;
+        }
+        rafId = null;
+      });
     };
+
     if (!reducedMotion && gridMask) {
       window.addEventListener("scroll", handleScroll, { passive: true });
     }
@@ -99,6 +117,7 @@ export default function HeroScrollObserver() {
       revealObs.disconnect();
       counterObs.disconnect();
       window.removeEventListener("scroll", handleScroll);
+      if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, []);
 

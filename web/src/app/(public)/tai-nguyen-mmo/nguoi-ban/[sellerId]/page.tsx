@@ -12,7 +12,7 @@ import {
 
 // ─── Tier config ──────────────────────────────────────────────────────────────
 
-const TIER_CFG = {
+const TIER_CFG: Record<string, { label: string; color: string; bg: string }> = {
   STANDARD: { label: "Tiêu chuẩn", color: "#64748b", bg: "#f1f5f9" },
   SILVER:   { label: "Bạc",        color: "#475569", bg: "#e2e8f0" },
   GOLD:     { label: "Vàng",       color: "#b45309", bg: "#fef3c7" },
@@ -114,7 +114,7 @@ export default async function SellerProfilePage({
   else products = [...products].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   const sellerName  = `Seller #${seller.id.slice(0, 8).toUpperCase()}`;
-  const tier        = TIER_CFG[seller.sellerTier];
+  const tier        = TIER_CFG[seller.sellerTier] ?? TIER_CFG["STANDARD"]!;
   const avgRating   = reviewStats._avg.rating ?? 0;
   const reviewCount = reviewStats._count.id;
   const positiveReviews = await prisma.review.count({

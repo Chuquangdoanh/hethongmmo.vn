@@ -25,7 +25,9 @@ interface PurchaseParams {
   orderType: OrderType;
   itemId: string;
   itemName: string;
-  finalPrice: number;
+  catalogPrice: number;   // giá gốc trước giảm
+  finalPrice: number;     // giá thực trả (= catalogPrice khi không có discount)
+  discountPercent: number;
   idempotencyKey: string;
   warrantyVariant?: string;
   customerNote?: string;
@@ -48,7 +50,7 @@ function generateOrderCode(): string {
  * creates order + transaction. Returns decrypted content for digital items.
  */
 export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseResult> {
-  const { userId, orderType, itemId, itemName, finalPrice, idempotencyKey, warrantyVariant, customerNote } =
+  const { userId, orderType, itemId, itemName, catalogPrice, finalPrice, discountPercent, idempotencyKey, warrantyVariant, customerNote } =
     params;
 
   // Idempotency: return existing order if already processed
@@ -172,7 +174,7 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
       userId,
       orderType,
       itemName,
-      originalPrice: price.toFixed(2),
+      originalPrice: new Decimal(catalogPrice).toFixed(2),
       finalPrice: price.toFixed(2),
       warrantyVariant,
       customerNote,
@@ -203,7 +205,9 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
         orderId: order.id,
         type: txType as never,
         amount: price.neg().toFixed(2),
-        description: `Mua: ${itemName}`,
+        description: discountPercent > 0
+          ? `Mua: ${itemName} (giảm ${discountPercent}%)`
+          : `Mua: ${itemName}`,
         balanceBefore: balanceBefore.toFixed(2),
         balanceAfter: balanceAfter.toFixed(2),
       },

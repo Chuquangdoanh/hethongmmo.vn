@@ -2,13 +2,14 @@ import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
 import { TrendingUp, CheckCircle, Clock, Package } from "lucide-react";
-import type { SellerTier } from "@prisma/client";
-
-const TIER_BADGE: Record<SellerTier, { label: string; cls: string }> = {
-  STANDARD: { label: "Standard", cls: "border-gray-400/50 text-gray-300" },
-  SILVER:   { label: "Silver",   cls: "border-slate-300/60 text-slate-200" },
-  GOLD:     { label: "Gold",     cls: "border-amber-400/60 text-amber-300" },
-  VIP:      { label: "VIP",      cls: "border-violet-400/60 text-violet-300" },
+const COLOR_MAP: Record<string, string> = {
+  gray:   "border-gray-400/50 text-gray-300",
+  slate:  "border-slate-300/60 text-slate-200",
+  amber:  "border-amber-400/60 text-amber-300",
+  violet: "border-violet-400/60 text-violet-300",
+  blue:   "border-blue-400/60 text-blue-300",
+  green:  "border-green-400/60 text-green-300",
+  red:    "border-red-400/60 text-red-300",
 };
 
 export type SellerActiveTab = "overview" | "products" | "orders" | "complaints" | "revenue" | "withdrawal";
@@ -28,11 +29,13 @@ interface Props {
 }
 
 export default async function SellerProfileHero({ userId, activeTab }: Props) {
-  const [user, revenueAgg, pendingCount, productCount] = await Promise.all([
+  const [user, tierDef, revenueAgg, pendingCount, productCount] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { fullName: true, email: true, uidPrefix: true, sellerTier: true },
     }),
+    prisma.user.findUnique({ where: { id: userId }, select: { sellerTier: true } })
+      .then((u) => prisma.sellerTierDefinition.findUnique({ where: { key: u?.sellerTier ?? "STANDARD" } })),
     prisma.order.aggregate({
       where: { sellerId: userId, status: "DONE" },
       _sum: { finalPrice: true },
@@ -69,15 +72,11 @@ export default async function SellerProfileHero({ userId, activeTab }: Props) {
               <span className="inline-flex px-2.5 py-0.5 rounded-full border border-violet-500/60 text-violet-300 text-[11px] font-medium">
                 Nhà bán hàng
               </span>
-              {(() => {
-                const tier = user.sellerTier ?? "STANDARD";
-                const { label, cls } = TIER_BADGE[tier];
-                return (
-                  <span className={`inline-flex px-2.5 py-0.5 rounded-full border text-[11px] font-semibold ${cls}`}>
-                    {label}
-                  </span>
-                );
-              })()}
+              {tierDef && (
+                <span className={`inline-flex px-2.5 py-0.5 rounded-full border text-[11px] font-semibold ${COLOR_MAP[tierDef.badgeColor] ?? COLOR_MAP["gray"]}`}>
+                  {tierDef.label}
+                </span>
+              )}
             </div>
           </div>
         </div>

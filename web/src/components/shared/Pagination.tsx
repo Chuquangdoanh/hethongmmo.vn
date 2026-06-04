@@ -6,10 +6,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
-  /** For URL-based navigation (server pages). Provide basePath OR onPageChange. */
   basePath?: string;
   searchParams?: Record<string, string>;
-  /** For client-side navigation (client pages). */
   onPageChange?: (page: number) => void;
 }
 
@@ -39,119 +37,158 @@ export default function Pagination({
     return pages;
   };
 
+  const prevDisabled = currentPage === 1;
+  const nextDisabled = currentPage === totalPages;
+
+  const arrowBase =
+    "inline-flex items-center justify-center w-9 h-9 rounded-lg border transition-all duration-150 select-none";
+  const arrowEnabled =
+    "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 shadow-sm";
+  const arrowDisabled =
+    "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed pointer-events-none";
+
   function PageItem({ page }: { page: number | "..." }) {
     if (page === "...") {
-      return <span className="px-2 text-[#71717A] select-none">…</span>;
+      return (
+        <span className="inline-flex items-center justify-center w-9 h-9 text-sm text-slate-400 select-none">
+          ···
+        </span>
+      );
     }
+
     const isActive = page === currentPage;
-    const cls = `min-w-[36px] h-9 rounded-md text-sm font-medium transition-colors ${
-      isActive ? "bg-[#7C3AED] text-white" : "text-[#A1A1AA] hover:bg-[#1F1F2E] hover:text-[#F4F4F5]"
-    }`;
+    const itemBase = "inline-flex items-center justify-center w-9 h-9 rounded-lg text-sm font-semibold transition-all duration-150 select-none border";
+    const itemActive = "bg-[#0066ff] border-[#0066ff] text-white shadow-[0_2px_8px_rgba(0,102,255,0.28)]";
+    const itemIdle = "bg-white border-slate-200 text-slate-600 hover:border-[#0066ff] hover:text-[#0066ff] hover:bg-blue-50 shadow-sm";
+
+    const cls = `${itemBase} ${isActive ? itemActive : itemIdle}`;
 
     if (basePath) {
       return (
-        <Link href={buildHref(basePath, page, searchParams)} className={cls} aria-current={isActive ? "page" : undefined}>
+        <Link
+          href={buildHref(basePath, page, searchParams)}
+          className={cls}
+          aria-current={isActive ? "page" : undefined}
+        >
           {page}
         </Link>
       );
     }
     return (
-      <button onClick={() => onPageChange?.(page)} className={cls} aria-current={isActive ? "page" : undefined}>
+      <button
+        onClick={() => onPageChange?.(page)}
+        className={cls}
+        aria-current={isActive ? "page" : undefined}
+      >
         {page}
       </button>
     );
   }
 
-  const prevDisabled = currentPage === 1;
-  const nextDisabled = currentPage === totalPages;
-
   return (
-    <nav aria-label="Phân trang" className="flex items-center justify-center gap-1 py-4">
-      {/* Mobile */}
-      <div className="flex items-center gap-2 sm:hidden">
-        {basePath ? (
-          <Link
-            href={buildHref(basePath, currentPage - 1, searchParams)}
-            aria-disabled={prevDisabled}
-            className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm text-[#A1A1AA] transition-colors ${prevDisabled ? "opacity-40 pointer-events-none" : "hover:bg-[#1F1F2E]"}`}
-          >
-            <ChevronLeft size={14} /> Trước
-          </Link>
-        ) : (
-          <button
-            onClick={() => onPageChange?.(currentPage - 1)}
-            disabled={prevDisabled}
-            className="flex items-center gap-1 px-3 py-2 rounded-md text-sm text-[#A1A1AA] disabled:opacity-40 enabled:hover:bg-[#1F1F2E] transition-colors"
-          >
-            <ChevronLeft size={14} /> Trước
-          </button>
-        )}
-        <span className="text-sm text-[#A1A1AA]">{currentPage}/{totalPages}</span>
-        {basePath ? (
-          <Link
-            href={buildHref(basePath, currentPage + 1, searchParams)}
-            aria-disabled={nextDisabled}
-            className={`flex items-center gap-1 px-3 py-2 rounded-md text-sm text-[#A1A1AA] transition-colors ${nextDisabled ? "opacity-40 pointer-events-none" : "hover:bg-[#1F1F2E]"}`}
-          >
-            Tiếp <ChevronRight size={14} />
-          </Link>
-        ) : (
-          <button
-            onClick={() => onPageChange?.(currentPage + 1)}
-            disabled={nextDisabled}
-            className="flex items-center gap-1 px-3 py-2 rounded-md text-sm text-[#A1A1AA] disabled:opacity-40 enabled:hover:bg-[#1F1F2E] transition-colors"
-          >
-            Tiếp <ChevronRight size={14} />
-          </button>
-        )}
-      </div>
+    <nav aria-label="Phân trang" className="flex flex-col items-center gap-3 py-4">
 
       {/* Desktop */}
-      <div className="hidden sm:flex items-center gap-1">
+      <div className="hidden sm:flex items-center gap-1.5">
         {basePath ? (
           <Link
             href={buildHref(basePath, currentPage - 1, searchParams)}
             aria-disabled={prevDisabled}
-            className={`p-2 rounded-md text-[#A1A1AA] transition-colors ${prevDisabled ? "opacity-40 pointer-events-none" : "hover:bg-[#1F1F2E]"}`}
             aria-label="Trang trước"
+            className={`${arrowBase} ${prevDisabled ? arrowDisabled : arrowEnabled}`}
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={15} strokeWidth={2} />
           </Link>
         ) : (
           <button
             onClick={() => onPageChange?.(currentPage - 1)}
             disabled={prevDisabled}
-            className="p-2 rounded-md text-[#A1A1AA] disabled:opacity-40 enabled:hover:bg-[#1F1F2E] transition-colors"
             aria-label="Trang trước"
+            className={`${arrowBase} ${prevDisabled ? arrowDisabled : arrowEnabled}`}
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={15} strokeWidth={2} />
           </button>
         )}
 
-        {getPages().map((page, i) => (
-          <PageItem key={page === "..." ? `e-${i}` : page} page={page} />
-        ))}
+        <div className="flex items-center gap-1">
+          {getPages().map((page, i) => (
+            <PageItem key={page === "..." ? `e-${i}` : page} page={page} />
+          ))}
+        </div>
 
         {basePath ? (
           <Link
             href={buildHref(basePath, currentPage + 1, searchParams)}
             aria-disabled={nextDisabled}
-            className={`p-2 rounded-md text-[#A1A1AA] transition-colors ${nextDisabled ? "opacity-40 pointer-events-none" : "hover:bg-[#1F1F2E]"}`}
             aria-label="Trang sau"
+            className={`${arrowBase} ${nextDisabled ? arrowDisabled : arrowEnabled}`}
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={15} strokeWidth={2} />
           </Link>
         ) : (
           <button
             onClick={() => onPageChange?.(currentPage + 1)}
             disabled={nextDisabled}
-            className="p-2 rounded-md text-[#A1A1AA] disabled:opacity-40 enabled:hover:bg-[#1F1F2E] transition-colors"
             aria-label="Trang sau"
+            className={`${arrowBase} ${nextDisabled ? arrowDisabled : arrowEnabled}`}
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={15} strokeWidth={2} />
           </button>
         )}
       </div>
+
+      {/* Mobile */}
+      <div className="flex sm:hidden items-center gap-3">
+        {basePath ? (
+          <Link
+            href={buildHref(basePath, currentPage - 1, searchParams)}
+            aria-disabled={prevDisabled}
+            className={`${arrowBase} gap-1 px-3 w-auto text-sm font-medium ${prevDisabled ? arrowDisabled : arrowEnabled}`}
+          >
+            <ChevronLeft size={14} strokeWidth={2} />
+            Trước
+          </Link>
+        ) : (
+          <button
+            onClick={() => onPageChange?.(currentPage - 1)}
+            disabled={prevDisabled}
+            className={`${arrowBase} gap-1 px-3 w-auto text-sm font-medium ${prevDisabled ? arrowDisabled : arrowEnabled}`}
+          >
+            <ChevronLeft size={14} strokeWidth={2} />
+            Trước
+          </button>
+        )}
+
+        <span className="text-sm font-semibold text-slate-500 tabular-nums">
+          {currentPage} <span className="text-slate-300">/</span> {totalPages}
+        </span>
+
+        {basePath ? (
+          <Link
+            href={buildHref(basePath, currentPage + 1, searchParams)}
+            aria-disabled={nextDisabled}
+            className={`${arrowBase} gap-1 px-3 w-auto text-sm font-medium ${nextDisabled ? arrowDisabled : arrowEnabled}`}
+          >
+            Tiếp
+            <ChevronRight size={14} strokeWidth={2} />
+          </Link>
+        ) : (
+          <button
+            onClick={() => onPageChange?.(currentPage + 1)}
+            disabled={nextDisabled}
+            className={`${arrowBase} gap-1 px-3 w-auto text-sm font-medium ${nextDisabled ? arrowDisabled : arrowEnabled}`}
+          >
+            Tiếp
+            <ChevronRight size={14} strokeWidth={2} />
+          </button>
+        )}
+      </div>
+
+      {/* Page indicator */}
+      <p className="text-xs text-slate-400 tabular-nums">
+        Trang <span className="font-semibold text-slate-500">{currentPage}</span> / {totalPages}
+      </p>
+
     </nav>
   );
 }

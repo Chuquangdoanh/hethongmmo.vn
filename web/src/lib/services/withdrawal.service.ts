@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import Decimal from "decimal.js";
-import { getSellerConfig, getSellerTierConfig } from "@/lib/services/seller.service";
-import type { SellerTierKey } from "@/lib/services/seller.service";
+import { getSellerTierConfig } from "@/lib/services/seller.service";
 import {
   InsufficientBalanceError,
   NotFoundError,
@@ -35,8 +34,6 @@ export async function requestWithdrawal(
     throw new ValidationError("Không có đơn hàng nào để rút");
   }
 
-  const config = await getSellerConfig();
-
   const result = await prisma.$transaction(async (tx) => {
     // Verify seller and lock row
     const userRows = await tx.$queryRaw<
@@ -58,8 +55,8 @@ export async function requestWithdrawal(
       throw new ValidationError("Tài khoản chưa được duyệt làm seller");
     }
 
-    const tierKey = (user.seller_tier ?? "STANDARD") as SellerTierKey;
-    const tierCfg = getSellerTierConfig(config, tierKey);
+    const tierKey = user.seller_tier ?? "STANDARD";
+    const tierCfg = await getSellerTierConfig(tierKey);
     const feePercent = tierCfg.fee_percent;
     const minAmount = tierCfg.min_withdrawal;
     const holdDays = tierCfg.hold_days;

@@ -1,32 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { formatVnd } from "@/lib/utils/format";
 import SafeHtml from "@/components/shared/SafeHtml";
 import {
-  X, CheckCircle, Copy, Check, AlertTriangle, Lock,
-  Calendar, Tag, Users, Wallet, Shield, Clock, Gem,
-  PartyPopper, LogIn,
+  X, CheckCircle, Copy, Check, AlertTriangle,
+  PartyPopper, LogIn, Star,
 } from "lucide-react";
-
-const PLATFORM_ICONS: Record<string, string> = {
-  FACEBOOK:  "https://svgl.app/library/facebook-icon.svg",
-  TIKTOK:    "https://svgl.app/library/tiktok-icon-light.svg",
-  GOOGLE:    "https://svgl.app/library/google.svg",
-  INSTAGRAM: "https://svgl.app/library/instagram-icon.svg",
-  YOUTUBE:   "https://svgl.app/library/youtube.svg",
-  ICLOUD:    "https://svgl.app/library/icloud.svg",
-  ZALO:      "https://svgl.app/library/zalo.svg",
-  TELEGRAM:  "https://svgl.app/library/telegram.svg",
-  TWITTER:   "https://svgl.app/library/x.svg",
-};
-
-const PLATFORM_LABELS: Record<string, string> = {
-  FACEBOOK: "Facebook", TIKTOK: "TikTok", INSTAGRAM: "Instagram",
-  YOUTUBE: "YouTube", GOOGLE: "Google", ZALO: "Zalo",
-  TELEGRAM: "Telegram", TWITTER: "X (Twitter)", ICLOUD: "iCloud", OTHER: "Khác",
-};
 
 export interface TutTrickItem {
   id: string;
@@ -37,6 +19,7 @@ export interface TutTrickItem {
   price: number;
   description: string | null;
   successRate: number;
+  rating: number;
   totalOrders: number;
   publishedDate: string | null;
   warrantyPolicy?: string | null;
@@ -50,9 +33,23 @@ interface OrderResult {
   tutTrickDocs?: string | null;
 }
 
+// ─── DeliveryModal ────────────────────────────────────────────────────────────
 function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () => void }) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleCopy() {
     await navigator.clipboard.writeText(result.deliveredContent ?? "");
@@ -60,35 +57,32 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
     setTimeout(() => setCopied(false), 2000);
   }
 
-  function handleClose() {
-    onClose();
-    router.refresh();
-  }
+  function handleClose() { onClose(); router.refresh(); }
 
   const driveLink = result.deliveredContent ?? "";
   const docs = result.tutTrickDocs ?? null;
 
   return (
-    <div className="modal-backdrop fixed inset-0 z-1100 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.65)" }}>
-      <div className="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(0,0,0,0.60)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
+    >
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col" style={{ maxHeight: "90dvh" }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
               <Check size={11} className="text-white" strokeWidth={3} />
             </div>
             <span className="text-sm font-semibold text-gray-800">Nhận hàng thành công!</span>
           </div>
-          <button
-            onClick={handleClose}
-            className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
-          >
+          <button onClick={handleClose} className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors">
             <X size={13} />
           </button>
         </div>
 
-        <div className="px-5 py-5 space-y-4">
-          {/* Icon + title */}
+        <div className="overflow-y-auto flex-1 px-5 py-5 space-y-4">
           <div className="text-center">
             <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-2">
               <PartyPopper size={26} className="text-emerald-500" />
@@ -97,31 +91,23 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
             <p className="text-xs text-gray-500 mt-1">Sản phẩm đã được giao. Lưu thông tin bên dưới.</p>
           </div>
 
-          {/* Bảng 1: Link Google Drive */}
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 overflow-hidden">
             <div className="flex items-center gap-2 px-3.5 py-2 border-b border-emerald-200 bg-emerald-100">
               <span className="text-base leading-none">📁</span>
               <span className="text-xs font-semibold text-emerald-800">Link Google Drive</span>
             </div>
             <div className="flex items-center gap-2 px-3.5 py-3">
-              <a
-                href={driveLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 text-sm text-blue-600 hover:text-blue-800 hover:underline break-all font-medium leading-snug"
-              >
+              <a href={driveLink} target="_blank" rel="noopener noreferrer"
+                className="flex-1 text-sm text-blue-600 hover:underline break-all font-medium leading-snug">
                 {driveLink}
               </a>
-              <button
-                onClick={handleCopy}
-                className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-[11px] font-semibold transition-colors whitespace-nowrap"
-              >
+              <button onClick={handleCopy}
+                className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-[11px] font-semibold transition-colors whitespace-nowrap">
                 {copied ? <><Check size={11} /> Đã chép</> : <><Copy size={11} /> Sao chép</>}
               </button>
             </div>
           </div>
 
-          {/* Bảng 2: Nội dung docs */}
           {docs && (
             <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
               <div className="flex items-center gap-2 px-3.5 py-2 border-b border-gray-200 bg-gray-50">
@@ -129,15 +115,11 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
                 <span className="text-xs font-semibold text-gray-700">Nội dung hướng dẫn</span>
               </div>
               <div className="px-3.5 py-3 max-h-28 overflow-y-auto">
-                <SafeHtml
-                  html={docs}
-                  className="prose prose-sm max-w-none text-xs text-gray-700 leading-relaxed [&_a]:text-blue-600 [&_a]:underline [&_h2]:font-semibold [&_h2]:text-gray-900 [&_h3]:font-semibold [&_h3]:text-gray-900 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1.5"
-                />
+                <SafeHtml html={docs} className="prose prose-sm max-w-none text-xs text-gray-700 leading-relaxed [&_a]:text-blue-600 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1.5" />
               </div>
             </div>
           )}
 
-          {/* Warning */}
           <div className="flex gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-3">
             <AlertTriangle size={14} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-amber-800 leading-relaxed">
@@ -145,11 +127,11 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
               <span className="font-semibold underline cursor-pointer" onClick={() => router.push("/don-hang")}>Lịch sử đơn hàng</span>.
             </p>
           </div>
+        </div>
 
-          <button
-            onClick={handleClose}
-            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-1.5"
-          >
+        <div className="px-5 py-4 border-t border-gray-100 shrink-0">
+          <button onClick={handleClose}
+            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-1.5">
             <CheckCircle size={15} /> Đã lưu, đóng lại
           </button>
         </div>
@@ -158,6 +140,7 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
   );
 }
 
+// ─── BuyConfirmPopup ──────────────────────────────────────────────────────────
 function BuyConfirmPopup({
   item, onClose, onConfirm, loading, error,
 }: {
@@ -167,157 +150,164 @@ function BuyConfirmPopup({
   loading: boolean;
   error: string;
 }) {
-  const popupRef = useRef<HTMLDivElement>(null);
   const isFree = item.price === 0;
+  const [balance, setBalance] = useState<number | null>(null);
 
+  // Fetch số dư khi popup mở
   useEffect(() => {
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    fetch("/api/user/profile")
+      .then((r) => r.json())
+      .then((d: { data?: { balance?: string | number } }) => {
+        const b = d?.data?.balance;
+        if (b !== undefined) setBalance(Number(b));
+      })
+      .catch(() => {});
+  }, []);
+
+  // Scroll lock + ESC (overflow trên html — không dùng position:fixed để tránh phá fixed elements)
+  useEffect(() => {
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
   }, [onClose]);
 
-  const INFO_ROWS = [
-    item.publishedDate ? { Icon: Calendar, label: "Ngày cập nhật",   value: item.publishedDate,  iconCls: "text-[#718096]"  } : null,
-    { Icon: Tag,      label: "Nền tảng",        value: null,                iconCls: "text-[#718096]"  },
-    { Icon: Users,    label: "Khách hàng",       value: `${item.totalOrders.toLocaleString("vi-VN")} người`, iconCls: "text-[#718096]"  },
-    { Icon: Wallet,   label: "Chi phí",          value: null,                iconCls: "text-amber-500"  },
-    item.warrantyPolicy  ? { Icon: Shield, label: "Chế độ bảo hành", value: item.warrantyPolicy,  iconCls: "text-[#319795]"  } : null,
-    item.processingTime  ? { Icon: Clock,  label: "Thời gian xử lý", value: item.processingTime,  iconCls: "text-[#718096]"  } : null,
-  ].filter(Boolean) as Array<{ Icon: React.ElementType; label: string; value: string | null; iconCls: string }>;
+  const remaining = !isFree && balance !== null ? balance - item.price : null;
+  const isInsufficient = !isFree && remaining !== null && remaining < 0;
+
+  // Dòng chi tiết dịch vụ (không bao gồm rating/khách hàng — đã đưa lên stats bar)
+  const rows: Array<{ label: string; value: React.ReactNode; variant?: "emerald" | "red" }> = [
+    { label: "Dịch vụ", value: item.name },
+    ...(item.warrantyPolicy ? [{ label: "Chính Sách Bảo Hành", value: item.warrantyPolicy } as const] : []),
+    { label: "Tỉ lệ thành công", value: `${item.successRate}%` },
+    ...(item.processingTime ? [{ label: "Thời gian xử lý", value: item.processingTime } as const] : []),
+    ...(item.publishedDate ? [{ label: "Thời gian cập nhật", value: item.publishedDate } as const] : []),
+    ...(balance !== null
+      ? [{ label: "Số dư hiện tại", value: formatVnd(balance), variant: "emerald" as const }]
+      : []),
+    {
+      label: "Chi phí",
+      value: isFree ? "Miễn phí" : formatVnd(item.price),
+      variant: isFree ? "emerald" as const : "red" as const,
+    },
+    ...(remaining !== null
+      ? [{ label: "Số dư còn lại", value: formatVnd(remaining), variant: remaining < 0 ? "red" as const : undefined }]
+      : []),
+  ];
 
   return (
     <div
-      className="modal-backdrop fixed inset-0 z-1100 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.60)" }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        ref={popupRef}
-        className="modal-card bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col"
-        style={{ maxHeight: "90vh" }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col"
+        style={{ maxHeight: "90dvh" }}
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
-          <div className="flex items-center gap-2">
-            {PLATFORM_ICONS[item.platform] && (
-              <span className="flex items-center justify-center w-6 h-6 bg-gray-100 rounded-md p-1 shrink-0 border border-gray-200">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={PLATFORM_ICONS[item.platform]} alt="" className="w-full h-full object-contain" />
-              </span>
-            )}
-            <span className="text-sm font-bold text-gray-800">Xác nhận mua Tut & Trick</span>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
-          >
-            <X size={14} />
-          </button>
-        </div>
-
-        {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-5 py-5 space-y-4">
-
-          {/* Thumbnail */}
-          {item.thumbnail && (
-            <div className="w-full aspect-video rounded-xl overflow-hidden bg-gray-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={item.thumbnail} alt={item.name} className="w-full h-full object-cover" />
-            </div>
-          )}
-
-          {/* Name */}
-          <h2 className="text-base font-bold text-gray-800 leading-snug">{item.name}</h2>
-
-          {/* Info grid */}
-          <div className="rounded-xl border border-gray-200 bg-gray-50 divide-y divide-gray-200">
-            {INFO_ROWS.map(({ Icon, label, value, iconCls }) => (
-              <div key={label} className="flex items-center justify-between px-4 py-2.5 text-xs">
-                <span className="text-gray-500 flex items-center gap-1.5">
-                  <Icon size={13} className={iconCls} /> {label}
-                </span>
-                {/* Special render for platform and cost */}
-                {label === "Nền tảng" ? (
-                  <span className="inline-flex items-center gap-1.5 font-medium text-gray-800">
-                    {PLATFORM_ICONS[item.platform] && (
-                      <span className="flex items-center justify-center w-4 h-4 bg-white rounded border border-gray-200 p-0.5 shrink-0">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={PLATFORM_ICONS[item.platform]} alt="" className="w-full h-full object-contain" />
-                      </span>
-                    )}
-                    {PLATFORM_LABELS[item.platform] ?? item.platform}
-                  </span>
-                ) : label === "Chi phí" ? (
-                  <span className={`font-bold flex items-center gap-1 ${isFree ? "text-[#38A169]" : "text-[#E53E3E]"}`}>
-                    {isFree
-                      ? <><Tag size={11} /> Miễn phí</>
-                      : <><Gem size={11} /> {formatVnd(item.price)}</>
-                    }
-                  </span>
-                ) : (
-                  <span className="font-medium text-gray-800 text-right max-w-[60%]">{value}</span>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Tỉ lệ thành công */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-500 flex items-center gap-1.5">
-                <CheckCircle size={13} className="text-[#319795]" /> Tỉ lệ thành công
-              </span>
-              <span className="font-bold text-[#319795]">{item.successRate}%</span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[#319795] to-[#38A169]"
-                style={{ width: `${item.successRate}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Mô tả */}
-          {item.description && (
-            <div className="space-y-1.5">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Mô tả</p>
-              <div className="text-xs text-gray-600 leading-relaxed max-h-32 overflow-y-auto rounded-lg border border-gray-200 bg-white px-3 py-2.5">
-                <SafeHtml html={item.description} />
-              </div>
-            </div>
-          )}
-
-          {/* Warning */}
-          <div className="flex gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-3">
-            <Lock size={14} className="text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-amber-800 leading-relaxed">
-              Nội dung chi tiết sẽ được giao ngay sau khi xác nhận mua. Không hoàn tiền sau khi đã nhận hàng.
-            </p>
-          </div>
-
-          {error && (
-            <div className="flex items-center gap-2">
-              <AlertTriangle size={13} className="text-red-500 shrink-0" />
-              <p className="text-xs text-red-500 font-medium">{error}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-5 py-4 border-t border-gray-200 flex gap-3 shrink-0">
+        {/* ── Header (teal) — title + subtitle + stats ── */}
+        <div
+          className="relative px-5 pt-4 pb-4 shrink-0"
+          style={{ background: "linear-gradient(135deg, #0d9488 0%, #059669 100%)" }}
+        >
+          {/* Nút X */}
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 text-sm font-semibold hover:bg-gray-50 disabled:opacity-60 transition-colors"
+            aria-label="Đóng"
+            style={{ touchAction: "manipulation" }}
+            className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center bg-white/20 text-white hover:bg-white/35 transition-colors disabled:opacity-50"
+          >
+            <X size={14} />
+          </button>
+
+          {/* Title + subtitle */}
+          <h3 className="text-white font-bold text-[16px] leading-tight tracking-wide uppercase pr-9">
+            XÁC NHẬN MUA TUT
+          </h3>
+          <p className="text-white/70 text-[11px] mt-0.5 mb-3">
+            Vui lòng kiểm tra thông tin trước khi xác nhận
+          </p>
+
+          {/* Stats: khách hàng + sao — nằm trong header */}
+          <div className="flex items-center justify-between rounded-xl bg-white/15 px-4 py-2.5">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle size={13} className="text-white/90 shrink-0" />
+              <span className="text-white text-[13px] font-semibold">
+                {item.totalOrders.toLocaleString("vi-VN")} khách hàng
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <Star
+                  key={s}
+                  size={13}
+                  className={s <= Math.round(item.rating)
+                    ? "text-amber-300 fill-amber-300"
+                    : "text-white/30 fill-white/20"}
+                />
+              ))}
+              <span className="ml-1 text-white text-[13px] font-bold">{item.rating.toFixed(1)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Body — chi tiết dịch vụ ── */}
+        <div className="overflow-y-auto flex-1 divide-y divide-gray-100">
+          {rows.map((row, i) => (
+            <div key={i} className="flex items-start justify-between gap-4 px-5 py-3">
+              <span className="text-[13px] text-gray-500 shrink-0 pt-px leading-snug">{row.label}</span>
+              <span className={`text-[13px] font-semibold text-right leading-snug ${
+                row.variant === "emerald" ? "text-emerald-600" :
+                row.variant === "red"     ? "text-red-500"     :
+                "text-gray-800"
+              }`}>
+                {row.value}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Cảnh báo số dư không đủ */}
+        {isInsufficient && (
+          <div className="px-5 py-2.5 bg-red-50 border-t border-red-100">
+            <p className="text-xs text-red-600 font-medium">Số dư không đủ. Vui lòng nạp thêm tiền.</p>
+          </div>
+        )}
+
+        {/* Lỗi server */}
+        {error && (
+          <div className="px-5 py-2.5 bg-red-50 border-t border-red-100">
+            <div className="flex items-center gap-1.5">
+              <AlertTriangle size={13} className="text-red-500 shrink-0" />
+              <p className="text-xs text-red-600 font-medium">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Footer ── */}
+        <div className="px-5 py-4 border-t border-gray-100 flex gap-3 shrink-0">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            style={{ touchAction: "manipulation" }}
+            className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold hover:bg-gray-50 disabled:opacity-60 transition-colors"
           >
             Hủy
           </button>
           <button
             onClick={onConfirm}
-            disabled={loading}
-            className="flex-1 py-2.5 rounded-xl bg-[#C53030] text-white text-sm font-bold hover:bg-[#C53030] disabled:opacity-60 transition-colors"
+            disabled={loading || isInsufficient}
+            style={{ touchAction: "manipulation" }}
+            className="flex-1 py-3 rounded-xl bg-[#C53030] hover:bg-[#C53030] text-white text-sm font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Đang xử lý..." : isFree ? "Nhận miễn phí" : `Mua · ${formatVnd(item.price)}`}
+            {loading ? "Đang xử lý..." : "Xác nhận mua"}
           </button>
         </div>
       </div>
@@ -325,6 +315,7 @@ function BuyConfirmPopup({
   );
 }
 
+// ─── TutTrickBuyButton ────────────────────────────────────────────────────────
 interface Props {
   item: TutTrickItem;
   isLoggedIn: boolean;
@@ -335,15 +326,16 @@ interface Props {
 export default function TutTrickBuyButton({ item, isLoggedIn, variant = "default", label }: Props) {
   const router = useRouter();
   const [showPopup, setShowPopup] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [result, setResult] = useState<OrderResult | null>(null);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState("");
+  const [result, setResult]       = useState<OrderResult | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => { setIsMounted(true); }, []);
 
   function handleClick() {
-    if (!isLoggedIn) {
-      router.push("/dang-nhap");
-      return;
-    }
+    if (!isLoggedIn) { router.push("/dang-nhap"); return; }
+    if (showPopup) return;
     setError("");
     setShowPopup(true);
   }
@@ -390,37 +382,40 @@ export default function TutTrickBuyButton({ item, isLoggedIn, variant = "default
 
   return (
     <>
-      {result?.deliveredContent && (
-        <DeliveryModal result={result} onClose={() => { setResult(null); router.refresh(); }} />
+      {/* Render portal ra ngoài DOM tree của card để tránh bị ảnh hưởng bởi overflow/transform */}
+      {isMounted && result?.deliveredContent && createPortal(
+        <DeliveryModal result={result} onClose={() => { setResult(null); router.refresh(); }} />,
+        document.body,
       )}
-      {showPopup && (
+      {isMounted && showPopup && createPortal(
         <BuyConfirmPopup
           item={item}
           onClose={() => { if (!loading) setShowPopup(false); }}
           onConfirm={handleConfirm}
           loading={loading}
           error={error}
-        />
+        />,
+        document.body,
       )}
 
       <div className="space-y-1.5">
         <button
           onClick={handleClick}
+          style={{ touchAction: "manipulation" }}
           className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all duration-150 active:scale-[0.98] ${
             isSolidRed
-              ? "bg-[#C53030] text-white hover:bg-[#C53030]"
+              ? "bg-[#C53030] text-white hover:bg-[#9B1C1C]"
               : isOutlineRed
                 ? "bg-transparent text-[#2B6CB0] border-2 border-[#2B6CB0] hover:bg-[#2B6CB0] hover:text-white"
                 : isDark
-                  ? "bg-[#0f172a] text-white hover:bg-[#1e293b]"
+                  ? "bg-text-dark text-white hover:bg-[#1e293b]"
                   : isFree
                     ? "bg-[#10b981] text-white hover:bg-[#059669]"
-                    : "bg-[#C53030] text-white hover:bg-[#C53030]"
+                    : "bg-[#C53030] text-white hover:bg-[#9B1C1C]"
           }`}
         >
           {btnLabel}
         </button>
-       
       </div>
     </>
   );

@@ -139,6 +139,7 @@ export default function ProductForm({ mode, sellerCategory, initialData }: Produ
         maxLength={200}
         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-[#e11d48]/60 focus:bg-white focus:outline-none transition-colors"
         placeholder="Tên sản phẩm"
+        suppressHydrationWarning
       />
     </div>
   );
@@ -155,6 +156,7 @@ export default function ProductForm({ mode, sellerCategory, initialData }: Produ
         step={1000}
         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-[#e11d48]/60 focus:bg-white focus:outline-none transition-colors"
         placeholder="VD: 50000"
+        suppressHydrationWarning
       />
     </div>
   );

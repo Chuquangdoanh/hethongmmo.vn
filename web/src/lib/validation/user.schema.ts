@@ -16,6 +16,7 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   email: z.string().email().toLowerCase().trim(),
   password: z.string().min(1),
+  captchaToken: z.string().optional(),
 });
 
 export const changePasswordSchema = z

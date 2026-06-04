@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
 import HeroScrollObserver from "@/components/home/HeroScrollObserver";
+import HomeDriftObserver from "@/components/home/HomeDriftObserver";
 import CourseSlider from "@/components/home/CourseSlider";
 import FaqAccordion from "@/components/home/FaqAccordion";
 import {
@@ -116,6 +117,7 @@ export default async function HomePage() {
   return (
     <>
       <HeroScrollObserver />
+      <HomeDriftObserver />
 
       {/* ── DJ MEDIA AGENCY INTRO ────────────────────── */}
       <section style={{ padding: "80px 0 72px", background: "#fff", overflow: "hidden" }}>
@@ -409,7 +411,7 @@ export default async function HomePage() {
                 background: "#0066ff", color: "#fff",
                 padding: "15px 36px", borderRadius: "12px",
                 fontWeight: "700", fontSize: "1rem", textDecoration: "none",
-                transition: "all .3s ease",
+                transition: "background .3s ease, box-shadow .3s ease, transform .3s ease",
               }}>
                 Xem thêm về tôi →
               </Link>
@@ -471,7 +473,6 @@ export default async function HomePage() {
                     border: "1.5px solid #e2e8f0",
                     overflow: "hidden", textDecoration: "none",
                     boxShadow: "0 2px 8px rgba(0,0,0,.05)",
-                    transition: "all .3s ease",
                     textAlign: "center",
                   }}
                 >
@@ -622,7 +623,6 @@ export default async function HomePage() {
                   background: "#fff", borderRadius: "16px",
                   border: "1.5px solid #e2e8f0",
                   textDecoration: "none",
-                  transition: "all .3s ease",
                   boxShadow: "0 2px 6px rgba(0,0,0,.04)",
                   minWidth: "120px", maxWidth: "160px", flex: "0 0 auto",
                 }}
@@ -659,7 +659,7 @@ export default async function HomePage() {
             <Link href="/tut-tricks" style={{
               fontSize: ".875rem", fontWeight: "600", color: "#0066ff",
               textDecoration: "none", border: "1.5px solid #0066ff",
-              padding: "7px 18px", borderRadius: "8px", transition: "all .25s ease",
+              padding: "7px 18px", borderRadius: "8px", transition: "background .22s ease, color .22s ease",
             }} className="btn-view-all">
               Xem tất cả
             </Link>
@@ -702,7 +702,6 @@ export default async function HomePage() {
                       border: "1.5px solid #e2e8f0",
                       overflow: "hidden", textDecoration: "none",
                       boxShadow: "0 4px 12px rgba(0,0,0,.06)",
-                      transition: "all .35s ease",
                     }}
                   >
                     {/* Thumbnail / platform banner */}
@@ -870,7 +869,6 @@ export default async function HomePage() {
                     border: "1.5px solid #e2e8f0",
                     overflow: "hidden", textDecoration: "none",
                     boxShadow: "0 4px 16px rgba(0,0,0,.06)",
-                    transition: "all .3s ease",
                     height: "100%",
                   }}
                 >
@@ -1016,7 +1014,7 @@ export default async function HomePage() {
                     background: "#FF4500", color: "#fff",
                     padding: "14px 24px", borderRadius: "12px",
                     fontWeight: "700", fontSize: ".95rem", textDecoration: "none",
-                    textAlign: "center", transition: "all .3s ease",
+                    textAlign: "center", transition: "background .3s ease, transform .3s ease, box-shadow .3s ease",
                   }} className="cta-btn-green">
                     Đăng ký miễn phí
                   </Link>
@@ -1024,7 +1022,7 @@ export default async function HomePage() {
                     background: "rgba(255,255,255,.12)", color: "#fff",
                     padding: "14px 24px", borderRadius: "12px",
                     fontWeight: "600", fontSize: ".95rem", textDecoration: "none",
-                    textAlign: "center", transition: "all .3s ease",
+                    textAlign: "center", transition: "background .3s ease",
                     border: "1px solid rgba(255,255,255,.2)",
                   }} className="cta-btn-outline">
                     Xem dịch vụ
@@ -1084,7 +1082,7 @@ export default async function HomePage() {
         /* Hero buttons */
         .btn-hero-primary {
           animation: pulseNeon 2.5s ease-in-out infinite;
-          transition: transform .3s ease, box-shadow .3s ease, animation 0s;
+          transition: transform .3s ease, box-shadow .3s ease;
         }
         .btn-hero-primary:hover {
           transform: translateY(-3px) scale(1.02);
@@ -1092,7 +1090,7 @@ export default async function HomePage() {
           box-shadow: 0 12px 32px rgba(255,69,0,.45);
         }
         .btn-hero-outline {
-          transition: all .3s ease;
+          transition: background .3s ease, color .3s ease, border-color .3s ease, box-shadow .3s ease, transform .3s ease;
         }
         .btn-hero-outline:hover {
           background: #2B6CB0;
@@ -1168,7 +1166,7 @@ export default async function HomePage() {
           text-decoration: none; border: 1.5px solid #0066ff;
           padding: 7px 18px; border-radius: 8px;
           display: inline-flex; align-items: center; gap: 6px;
-          transition: all .22s ease; white-space: nowrap;
+          transition: background .22s ease, color .22s ease, border-color .22s ease; white-space: nowrap;
         }
         .section-link:hover { background: #0066ff; color: #fff; }
 

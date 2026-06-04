@@ -694,14 +694,14 @@ export default function CourseForm({ initial }: { initial?: CourseData }) {
 
         {/* ── SEO ── */}
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-900">Cam Kết Khóa Học</h2>
+          <h2 className="text-sm font-semibold text-gray-900">SEO Tiêu đề & Mô tả</h2>
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <label className="block text-xs text-gray-500 mb-1.5">Cam Kết 1</label>
+              <label className="block text-xs text-gray-500 mb-1.5">Tiêu đề SEO</label>
               <input type="text" value={form.seoTitle} onChange={(e) => set("seoTitle", e.target.value)} maxLength={255} className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1.5">Cam kết 2</label>
+              <label className="block text-xs text-gray-500 mb-1.5">Mô tả SEO</label>
               <textarea
                 rows={2}
                 value={form.seoDescription}

@@ -14,6 +14,7 @@ Hướng dẫn cho AI assistant khi làm việc với dự án này.
 - [No Duplication](.claude/rules/no-duplication.md) — DRY rules, list abstractions đã có
 - [Test Policy](.claude/rules/test-policy.md) — Test ngay sau khi fix/update, checklist theo loại thay đổi
 - [Feature Workflow](.claude/rules/feature-workflow.md) — **ĐỌC KHI: thêm DB field, thêm chức năng, thêm API, thêm UI page, sửa giao diện**
+- [UI Animation Rules](.claude/rules/ui-animation-rules.md) — **ĐỌC KHI: sửa giao diện, thêm hiệu ứng, animation, UI** — 12 nguyên tắc bất biến
 
 ### Logs
 - [Completed Tasks](.claude/logs/completed-tasks.md) — **GHI SAU MỖI TASK HOÀN THÀNH** (không sửa mục cũ)

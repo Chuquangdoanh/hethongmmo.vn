@@ -7,7 +7,7 @@ import {
   LayoutDashboard, ShoppingBag, Package, Zap, BookOpen, FileText,
   Gamepad2, Tags, BookMarked, Tag, FolderOpen, ShieldCheck, Star,
   AlertTriangle, Radio, Wallet, ArrowDownCircle, ArrowUpCircle,
-  Store, Settings, Users, Search, ChevronDown, Home, X,
+  Store, Settings, Users, Search, ChevronDown, Home, X, Lock,
   type LucideIcon,
 } from "lucide-react";
 
@@ -29,6 +29,7 @@ interface NavLink {
   Icon: LucideIcon;
   color: string;
   badge?: BadgeKey;
+  adminOnly?: boolean;
 }
 
 interface NavSection {
@@ -96,8 +97,9 @@ const SECTIONS: NavSection[] = [
   {
     key: "system", label: "Hệ thống", Icon: Users, color: "#64748b", bg: "#f1f5f9",
     links: [
-      { href: "/admin/users",     label: "Người dùng", Icon: Users,  color: "#0066ff" },
-      { href: "/admin/audit-log", label: "Audit Log",  Icon: Search, color: "#64748b" },
+      { href: "/admin/users",      label: "Người dùng", Icon: Users,  color: "#0066ff" },
+      { href: "/admin/audit-log",  label: "Audit Log",  Icon: Search, color: "#64748b" },
+      { href: "/admin/phan-quyen", label: "Phân quyền", Icon: Lock,   color: "#64748b", adminOnly: true },
     ],
   },
 ];
@@ -109,7 +111,16 @@ const LS_DISMISSED = "admin-sidebar-dismissed";
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function AdminSidebar({ pendingOrderCount }: { pendingOrderCount: number }) {
+interface AdminSidebarProps {
+  pendingOrderCount: number;
+  /** Null = ADMIN (no filtering). Array = STAFF disabled page keys. */
+  disabledPages: string[] | null;
+  isAdmin: boolean;
+}
+
+export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin }: AdminSidebarProps) {
+  // Page keys that this user cannot access
+  const disabledSet = disabledPages ? new Set(disabledPages) : null;
   const pathname = usePathname();
 
   const [badges, setBadges] = useState<Badges>({
@@ -357,6 +368,12 @@ export default function AdminSidebar({ pendingOrderCount }: { pendingOrderCount:
                 {isOpen && (
                   <div className="ml-3 pl-3 border-l border-gray-100 mt-0.5 mb-1 space-y-0.5">
                     {section.links.map((link) => {
+                      // Hide admin-only links from STAFF
+                      if (link.adminOnly && !isAdmin) return null;
+                      // Hide link if STAFF and page is disabled
+                      const pageKey = link.href.replace(/^\//, ""); // "/admin/users" → "admin/users"
+                      if (disabledSet?.has(pageKey)) return null;
+
                       const active    = isActive(link.href);
                       const linkBadge = link.badge ? hasBadge(link.badge) : false;
 

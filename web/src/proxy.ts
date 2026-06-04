@@ -11,6 +11,7 @@ const PROTECTED_PREFIXES = [
   "/nap-tien",
   "/don-hang",
   "/lich-su-giao-dich",
+  "/tro-chuyen",
 ];
 const SELLER_PREFIXES = ["/ban-hang", "/san-pham", "/rut-tien"];
 const ADMIN_PREFIX = "/admin";
@@ -22,7 +23,35 @@ const AUTH_ROUTES = [
   "/dat-lai-mat-khau",
 ];
 
-export default auth(function middleware(req: NextRequest & { auth?: { user?: unknown } | null }) {
+// Fetch disabled page keys for a role from Upstash REST API (fail-open).
+async function fetchDisabledPages(role: string): Promise<string[]> {
+  const url   = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return [];
+
+  try {
+    const key = encodeURIComponent(`page_perm:disabled:${role}`);
+    const res = await fetch(`${url}/get/${key}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal:  AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { result: string | null };
+    if (!json.result) return [];
+    return JSON.parse(json.result) as string[];
+  } catch {
+    return []; // fail-open: never block access due to Redis being unavailable
+  }
+}
+
+function isDisabledPage(pathname: string, disabledKeys: string[]): boolean {
+  return disabledKeys.some((key) => {
+    const urlPath = `/${key}`;
+    return pathname === urlPath || pathname.startsWith(`${urlPath}/`);
+  });
+}
+
+export default auth(async function middleware(req: NextRequest & { auth?: { user?: unknown } | null }) {
   const { pathname } = req.nextUrl;
   const session = (req as { auth?: { user?: { role?: string; status?: string } } | null }).auth;
   const isAuthenticated = !!session?.user;
@@ -61,8 +90,13 @@ export default auth(function middleware(req: NextRequest & { auth?: { user?: unk
     return NextResponse.redirect(loginUrl);
   }
 
-  // ── 3. Guard: non-admin accessing /admin ───────────────────────────
-  if (pathname.startsWith(ADMIN_PREFIX) && isAuthenticated && userRole !== "ADMIN") {
+  // ── 3. Guard: only ADMIN and STAFF can access /admin ──────────────
+  if (
+    pathname.startsWith(ADMIN_PREFIX) &&
+    isAuthenticated &&
+    userRole !== "ADMIN" &&
+    userRole !== "STAFF"
+  ) {
     return NextResponse.redirect(new URL("/thong-tin-ca-nhan", req.url));
   }
 
@@ -105,6 +139,22 @@ export default auth(function middleware(req: NextRequest & { auth?: { user?: unk
       "unknown";
     if (allowedIps.length > 0 && !allowedIps.includes(clientIp)) {
       return new NextResponse("Forbidden", { status: 403 });
+    }
+  }
+
+  // ── 8. Page permission check (Redis) ──────────────────────────────
+  // ADMIN always has full access. Only check when Redis is configured.
+  // Skip the permission management page itself and API routes.
+  if (
+    isAuthenticated &&
+    userRole !== "ADMIN" &&
+    !pathname.startsWith("/api/") &&
+    pathname !== "/admin/phan-quyen"
+  ) {
+    const disabledPages = await fetchDisabledPages(userRole ?? "USER");
+    if (disabledPages.length > 0 && isDisabledPage(pathname, disabledPages)) {
+      const redirectTo = userRole === "STAFF" ? "/admin/dashboard" : "/";
+      return NextResponse.redirect(new URL(redirectTo, req.url));
     }
   }
 

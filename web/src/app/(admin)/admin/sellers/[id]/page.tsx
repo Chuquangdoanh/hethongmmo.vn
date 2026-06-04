@@ -33,7 +33,7 @@ export default async function AdminSellerDetailPage({
   if (!request) notFound();
 
   type ShopRow = { shop_locked: boolean };
-  const [shopRows, products, orderStats, withdrawalStats] = await Promise.all([
+  const [shopRows, products, orderStats, withdrawalStats, allTiers] = await Promise.all([
     prisma.$queryRaw<ShopRow[]>`SELECT shop_locked FROM users WHERE id = ${request.userId}`,
     prisma.sellerProduct.findMany({
       where: { sellerId: request.userId, deletedAt: null },
@@ -60,6 +60,11 @@ export default async function AdminSellerDetailPage({
     prisma.sellerWithdrawal.aggregate({
       where: { sellerId: request.userId, status: "COMPLETED" },
       _sum: { amount: true, netAmount: true },
+    }),
+    prisma.sellerTierDefinition.findMany({
+      where: { isActive: true },
+      orderBy: { displayOrder: "asc" },
+      select: { id: true, key: true, label: true, description: true, badgeColor: true },
     }),
   ]);
   const shopLocked = shopRows[0]?.shop_locked ?? false;
@@ -188,6 +193,7 @@ export default async function AdminSellerDetailPage({
             <SellerTierForm
               sellerId={request.userId}
               currentTier={request.user.sellerTier}
+              tiers={allTiers}
             />
           )}
 

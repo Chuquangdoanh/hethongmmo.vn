@@ -25,6 +25,10 @@ const patchSchema = z.discriminatedUnion("action", [
     action: z.literal("revoke_seller"),
     reason: z.string().min(1).max(500).optional(),
   }),
+  z.object({
+    action: z.literal("set_discount"),
+    discountPercent: z.number().int().min(0).max(100),
+  }),
 ]);
 
 export async function GET(
@@ -203,6 +207,26 @@ export async function PATCH(
         });
       });
       logger.info({ adminId: admin.id, targetUserId: id }, "Admin revoked seller access");
+      return apiSuccess();
+    }
+
+    if (action === "set_discount") {
+      const { discountPercent } = parsed.data as Extract<(typeof parsed)["data"], { action: "set_discount" }>;
+      await prisma.$transaction(async (tx) => {
+        const before = await tx.user.findUniqueOrThrow({ where: { id }, select: { discountPercent: true } });
+        await tx.user.update({ where: { id }, data: { discountPercent } });
+        await tx.auditLog.create({
+          data: {
+            actorId: admin.id,
+            action: "ADMIN_SET_DISCOUNT",
+            targetType: "User",
+            targetId: id,
+            before: { discountPercent: before.discountPercent },
+            after: { discountPercent },
+          },
+        });
+      });
+      logger.info({ adminId: admin.id, targetUserId: id, discountPercent }, "Admin set user discount");
       return apiSuccess();
     }
 

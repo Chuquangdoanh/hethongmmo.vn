@@ -27,7 +27,9 @@ const BASE_PARAMS = {
   orderType: "SERVICE" as const,
   itemId: ITEM_ID,
   itemName: "Test Service",
+  catalogPrice: 50_000,
   finalPrice: 50_000,
+  discountPercent: 0,
   idempotencyKey: "idem-key-abc123",
 };
 

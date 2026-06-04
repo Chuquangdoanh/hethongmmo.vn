@@ -7,6 +7,7 @@ import { purchaseProduct } from "@/lib/services/purchase.service";
 import { orderRatelimit, checkRateLimit } from "@/lib/security/rate-limit";
 import { AppError } from "@/lib/errors";
 import { apiOk, apiList, apiCatch, apiValidationError, apiError } from "@/lib/api-response";
+import { getDiscountInfo, applyDiscount } from "@/lib/utils/discount";
 
 export const runtime = "nodejs";
 
@@ -88,14 +89,32 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const { itemId, orderType, warrantyVariant, deviceVariant, customerNote, idempotencyKey } = parsed.data;
 
-    const { itemName, finalPrice } = await resolveItem(orderType, itemId, deviceVariant, warrantyVariant);
+    // Resolve catalog price server-side (không tin client)
+    const { itemName, catalogPrice } = await resolveItem(orderType, itemId, deviceVariant, warrantyVariant);
+
+    // Tính discount — chỉ áp dụng cho SERVICE / COURSE / TUTTRICK
+    const DISCOUNTABLE: string[] = ["SERVICE", "COURSE", "TUTTRICK"];
+    let discountPct = 0;
+    if (DISCOUNTABLE.includes(orderType)) {
+      const userRow = await prisma.user.findUnique({
+        where: { id: me.id },
+        select: { discountPercent: true, totalDeposited: true },
+      });
+      if (userRow) {
+        const info = getDiscountInfo(Number(userRow.totalDeposited), userRow.discountPercent);
+        discountPct = info.pct;
+      }
+    }
+    const finalPrice = applyDiscount(catalogPrice, discountPct);
 
     const result = await purchaseProduct({
       userId: me.id,
       orderType,
       itemId,
       itemName,
+      catalogPrice,
       finalPrice,
+      discountPercent: discountPct,
       idempotencyKey,
       warrantyVariant,
       customerNote,
@@ -135,7 +154,7 @@ async function resolveItem(
   itemId: string,
   deviceVariant?: string,
   warrantyVariant?: string,
-): Promise<{ itemName: string; finalPrice: number }> {
+): Promise<{ itemName: string; catalogPrice: number }> {
   if (orderType === "SERVICE") {
     const row = await prisma.service.findUnique({
       where: { id: itemId, isActive: true, deletedAt: null },
@@ -144,7 +163,7 @@ async function resolveItem(
     if (!row) throw new AppError("Dịch vụ không khả dụng hoặc đã bị tắt.", "ITEM_INACTIVE", 400);
 
     const deviceVariants = parseVariantArray(row.productList);
-    let finalPrice = Number(row.price);
+    let catalogPrice = Number(row.price);
     let nameSuffix = "";
 
     if (deviceVariants.length > 0) {
@@ -155,20 +174,20 @@ async function resolveItem(
       if (!variant) {
         throw new AppError("Thiết bị không hợp lệ, vui lòng chọn lại.", "INVALID_DEVICE", 400);
       }
-      finalPrice = variant.price;
+      catalogPrice = variant.price;
       nameSuffix = ` (${variant.name})`;
     }
 
-    // Add warranty price server-side
+    // Add warranty price server-side (warranty không được giảm giá)
     const warrantyOpts = parseVariantArray(row.warrantyOptions);
     if (warrantyVariant) {
       const wOption = warrantyOpts.find(w => w.name === warrantyVariant);
       if (wOption && wOption.price > 0) {
-        finalPrice += wOption.price;
+        catalogPrice += wOption.price;
       }
     }
 
-    return { itemName: row.name + nameSuffix, finalPrice };
+    return { itemName: row.name + nameSuffix, catalogPrice };
   }
   if (orderType === "COURSE") {
     const row = await prisma.course.findUnique({
@@ -176,7 +195,7 @@ async function resolveItem(
       select: { name: true, salePrice: true },
     });
     if (!row) throw new AppError("Khóa học không khả dụng hoặc đã bị tắt.", "ITEM_INACTIVE", 400);
-    return { itemName: row.name, finalPrice: Number(row.salePrice) };
+    return { itemName: row.name, catalogPrice: Number(row.salePrice) };
   }
   if (orderType === "TUTTRICK") {
     const row = await prisma.tutTrick.findUnique({
@@ -184,7 +203,7 @@ async function resolveItem(
       select: { name: true, price: true },
     });
     if (!row) throw new AppError("Tài liệu không khả dụng hoặc đã bị tắt.", "ITEM_INACTIVE", 400);
-    return { itemName: row.name, finalPrice: Number(row.price) };
+    return { itemName: row.name, catalogPrice: Number(row.price) };
   }
   if (orderType === "MMO_PRODUCT") {
     const row = await prisma.mmoProduct.findUnique({
@@ -192,7 +211,7 @@ async function resolveItem(
       select: { name: true, price: true },
     });
     if (!row) throw new AppError("Sản phẩm không khả dụng hoặc đã bị tắt.", "ITEM_INACTIVE", 400);
-    return { itemName: row.name, finalPrice: Number(row.price) };
+    return { itemName: row.name, catalogPrice: Number(row.price) };
   }
   if (orderType === "SELLER_PRODUCT") {
     const row = await prisma.sellerProduct.findUnique({
@@ -200,7 +219,7 @@ async function resolveItem(
       select: { name: true, price: true },
     });
     if (!row) throw new AppError("Sản phẩm không khả dụng hoặc đã bị tắt.", "ITEM_INACTIVE", 400);
-    return { itemName: row.name, finalPrice: Number(row.price) };
+    return { itemName: row.name, catalogPrice: Number(row.price) };
   }
   throw new AppError("Loại đơn hàng không hợp lệ.", "INVALID_ORDER_TYPE", 400);
 }

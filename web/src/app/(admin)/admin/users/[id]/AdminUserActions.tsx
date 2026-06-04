@@ -16,10 +16,11 @@ interface Props {
   currentRole: string;
   currentStatus: string;
   balance: number;
+  discountPercent: number;
   isSelf: boolean;
 }
 
-export default function AdminUserActions({ userId, currentRole, currentStatus, balance, isSelf }: Props) {
+export default function AdminUserActions({ userId, currentRole, currentStatus, balance, discountPercent, isSelf }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [adjustAmount, setAdjustAmount] = useState("");
@@ -27,6 +28,7 @@ export default function AdminUserActions({ userId, currentRole, currentStatus, b
   const [error, setError] = useState("");
   const [selectedRole, setSelectedRole] = useState(currentRole);
   const [confirmRole, setConfirmRole] = useState(false);
+  const [discountInput, setDiscountInput] = useState(String(discountPercent));
 
   async function patch(body: Record<string, unknown>, label: string) {
     setLoading(label);
@@ -141,6 +143,42 @@ export default function AdminUserActions({ userId, currentRole, currentStatus, b
           placeholder="Ghi chú (bắt buộc)"
           className="w-full rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-900 focus:border-[#7C3AED] focus:outline-none"
         />
+      </div>
+
+      {/* Discount override */}
+      <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
+        <p className="text-xs text-gray-500 font-medium">
+          Giảm giá khi mua (Service / Khóa học / Tut)
+        </p>
+        <p className="text-[10px] text-gray-400">
+          0 = dùng tier tự động (50tr→5%, 100tr→7%, 200tr→10%). &gt;0 = override cứng.
+        </p>
+        <div className="flex gap-2 items-center">
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={discountInput}
+            onChange={(e) => setDiscountInput(e.target.value)}
+            placeholder="0-100"
+            className="w-24 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-900 focus:border-[#7C3AED] focus:outline-none"
+          />
+          <span className="text-xs text-gray-500">%</span>
+          <button
+            onClick={() => {
+              const pct = parseInt(discountInput, 10);
+              if (isNaN(pct) || pct < 0 || pct > 100) { setError("% giảm giá phải từ 0-100."); return; }
+              void patch({ action: "set_discount", discountPercent: pct }, "discount");
+            }}
+            disabled={!!loading}
+            className="px-3 py-1.5 rounded-md bg-[#7C3AED] text-white text-xs hover:bg-[#A855F7] disabled:opacity-60 transition-colors"
+          >
+            {loading === "discount" ? "..." : "Lưu"}
+          </button>
+        </div>
+        <p className="text-[10px] text-gray-400">
+          Hiện tại: <span className="font-semibold text-gray-600">{discountPercent > 0 ? `${discountPercent}% (admin override)` : "Tự động theo tier"}</span>
+        </p>
       </div>
 
       {/* Confirm modal for STAFF/ADMIN */}

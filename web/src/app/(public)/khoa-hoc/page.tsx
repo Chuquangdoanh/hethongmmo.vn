@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import CourseScrollHelper from "./_components/CourseScrollHelper";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
 import {
@@ -18,6 +19,16 @@ const BADGE_STYLES: Record<string, { bg: string; color: string; label: string }>
   TREND:   { bg: "#f0fdf4", color: "#16a34a", label: "TREND" },
   NEW:     { bg: "#ede9fe", color: "#7c3aed", label: "NEW" },
   VIP:     { bg: "#dbeafe", color: "#1d4ed8", label: "VIP" },
+};
+
+// Thứ tự ưu tiên badge — chỉnh số để thay đổi thứ tự, số nhỏ lên trước
+const BADGE_PRIORITY: Record<string, number> = {
+  VIP:     0,
+  HOT:     1,
+  POPULAR: 2,
+  TREND:   3,
+  NEW:     4,
+  NONE:    99,
 };
 
 const FORMAT_LABELS: Record<string, { label: string; color: string; bg: string }> = {
@@ -55,6 +66,7 @@ export default async function KhoaHocPage({
         duration: true, studentCount: true,
         rating: true, badge: true, saleDeadline: true,
         description: true, contentList: true, totalViews: true,
+        displayOrder: true,
       },
     }),
     prisma.course.findMany({
@@ -67,6 +79,16 @@ export default async function KhoaHocPage({
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
     }),
   ]);
+
+  // Sort 3 cấp: displayOrder ASC → badge priority (BADGE_PRIORITY) → studentCount DESC
+  // Stable sort — thứ tự bằng nhau giữ nguyên vị trí tương đối từ DB
+  courses.sort((a, b) => {
+    if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
+    const pa = BADGE_PRIORITY[a.badge] ?? 99;
+    const pb = BADGE_PRIORITY[b.badge] ?? 99;
+    if (pa !== pb) return pa - pb;
+    return b.studentCount - a.studentCount;
+  });
 
   const categoryIconMap  = new Map(courseCategoryDefs.map((c) => [c.name, c.icon]));
   const uniqueCategories = [...new Set(rawCategories.map((c) => c.category))].sort();
@@ -87,6 +109,7 @@ export default async function KhoaHocPage({
 
   return (
     <div className="min-h-screen bg-[#f4f6f9]">
+      <CourseScrollHelper />
 
       {/* ══ HERO SECTION ══ */}
       <div

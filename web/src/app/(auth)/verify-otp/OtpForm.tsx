@@ -150,6 +150,7 @@ export default function OtpForm() {
             onChange={(e) => handleChange(i, e.target.value)}
             onKeyDown={(e) => handleKeyDown(i, e)}
             className="w-11 h-12 rounded-lg border border-[#e2e8f0] bg-white text-center text-lg font-bold text-[#0f172a] focus:border-[#0066ff] focus:outline-none transition-colors"
+            suppressHydrationWarning
           />
         ))}
       </div>

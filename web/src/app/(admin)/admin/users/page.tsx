@@ -141,9 +141,9 @@ export default async function AdminUsersPage({
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table — serialize Decimal → number before passing to Client Component */}
       <UsersTableClient
-        users={users}
+        users={users.map((u) => ({ ...u, balance: Number(u.balance) }))}
         currentUserId={me?.id ?? ""}
         total={total}
         role={role}

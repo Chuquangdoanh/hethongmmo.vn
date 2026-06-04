@@ -111,6 +111,7 @@ export default function CreateUserModal() {
                     minLength={2}
                     placeholder="Nguyễn Văn A"
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
+                    suppressHydrationWarning
                   />
                 </div>
 
@@ -126,6 +127,7 @@ export default function CreateUserModal() {
                     required
                     placeholder="user@example.com"
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
+                    suppressHydrationWarning
                   />
                 </div>
 
@@ -143,6 +145,7 @@ export default function CreateUserModal() {
                       minLength={8}
                       placeholder="Tối thiểu 8 ký tự, gồm hoa, thường, số"
                       className="w-full rounded-lg border border-gray-200 px-3 py-2 pr-20 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
+                      suppressHydrationWarning
                     />
                     <button
                       type="button"
@@ -164,6 +167,7 @@ export default function CreateUserModal() {
                     onChange={(e) => set("phone", e.target.value)}
                     placeholder="0912345678"
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
+                    suppressHydrationWarning
                   />
                 </div>
 

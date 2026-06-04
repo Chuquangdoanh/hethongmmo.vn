@@ -72,6 +72,7 @@ export default function ProfileForm({
             value={email}
             disabled
             className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-400 cursor-not-allowed"
+            suppressHydrationWarning
           />
         </div>
         <div>
@@ -82,6 +83,7 @@ export default function ProfileForm({
             onChange={(e) => setFullName(e.target.value)}
             required
             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-blue-500 focus:outline-none transition-colors"
+            suppressHydrationWarning
           />
         </div>
         <div>
@@ -92,6 +94,7 @@ export default function ProfileForm({
             onChange={(e) => setPhone(e.target.value)}
             className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-blue-500 focus:outline-none transition-colors"
             placeholder="0xxx xxx xxx"
+            suppressHydrationWarning
           />
         </div>
 
@@ -108,6 +111,7 @@ export default function ProfileForm({
                 onChange={(e) => setFacebookUrl(e.target.value)}
                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-blue-500 focus:outline-none transition-colors"
                 placeholder="Link hoặc tên tài khoản Facebook"
+                suppressHydrationWarning
               />
             </div>
             <div>
@@ -122,6 +126,7 @@ export default function ProfileForm({
                   onChange={(e) => setTelegramUsername(e.target.value.replace(/^@/, ""))}
                   className="flex-1 px-3 py-2.5 text-sm text-gray-800 outline-none bg-transparent"
                   placeholder="username"
+                  suppressHydrationWarning
                 />
               </div>
             </div>

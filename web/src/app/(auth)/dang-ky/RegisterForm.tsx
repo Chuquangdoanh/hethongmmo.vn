@@ -188,7 +188,6 @@ export default function RegisterForm() {
         </div>
       </div>
 
-      {/* Captcha */}
       <CaptchaWidget onVerify={setCaptchaToken} onExpire={() => setCaptchaToken("")} />
 
       {/* Checkbox điều khoản */}

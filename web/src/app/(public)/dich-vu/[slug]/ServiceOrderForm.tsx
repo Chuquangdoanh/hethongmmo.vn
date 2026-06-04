@@ -18,6 +18,8 @@ interface FieldErrors {
   deviceVariant?: string;
   link?: string;
   phone?: string;
+  cccd?: string;
+  warranty?: string;
 }
 
 interface Props {
@@ -58,6 +60,8 @@ export default function ServiceOrderForm({
   const [errorCode, setErrorCode] = useState("");
   const [isBalanceError, setIsBalanceError] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [phoneTouched, setPhoneTouched]     = useState(false);
+  const [warrantyTouched, setWarrantyTouched] = useState(false);
   const [reportSent, setReportSent] = useState(false);
   const [reportLoading, setReportLoading] = useState(false);
 
@@ -84,6 +88,17 @@ export default function ServiceOrderForm({
     }
   }
 
+  function validatePhone(value: string): string {
+    if (!value.trim()) return "Vui lòng nhập số điện thoại liên hệ.";
+    if (!/^(0|\+84)[3-9]\d{8}$/.test(value.trim())) return "Số điện thoại không hợp lệ (VD: 0901234567).";
+    return "";
+  }
+
+  function validateWarranty(value: string): string {
+    if (warrantyOptions.length > 0 && !value) return "Vui lòng chọn gói bảo hành.";
+    return "";
+  }
+
   function validate(): boolean {
     const errs: FieldErrors = {};
     if (hasDeviceVariants && !deviceVariant) {
@@ -92,9 +107,11 @@ export default function ServiceOrderForm({
     if (isICloud && link.trim() && !/^\d{14,16}$/.test(link.trim())) {
       errs.link = "IMEI không hợp lệ — cần 14–16 chữ số, không có ký tự khác.";
     }
-    if (phone.trim() && !/^(0|\+84)\d{8,9}$/.test(phone.trim())) {
-      errs.phone = "Số điện thoại không hợp lệ (VD: 0901234567).";
-    }
+    const phoneErr = validatePhone(phone);
+    if (phoneErr) errs.phone = phoneErr;
+    if (showCccd && !cccdUrl) errs.cccd = "Vui lòng tải lên ảnh CCCD mặt trước.";
+    const warrantyErr = validateWarranty(warranty);
+    if (warrantyErr) errs.warranty = warrantyErr;
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -228,29 +245,34 @@ export default function ServiceOrderForm({
         )}
       </div>
 
-      {/* Phone */}
-      {isICloud && (
-        <div>
-          <label className="block text-xs text-[#64748b] mb-1.5">Số Điện Thoại liên hệ</label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => { setPhone(e.target.value); setFieldErrors(p => ({ ...p, phone: undefined })); }}
-            placeholder="VD: 0901234567"
-            className={`w-full rounded-lg border px-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none transition-colors ${
-              fieldErrors.phone
-                ? "border-[#EF4444] bg-[#fff5f5] focus:border-[#EF4444]"
-                : "border-[#e2e8f0] bg-[#f8fafc] focus:border-[#0066ff]"
-            }`}
-            suppressHydrationWarning
-          />
-          {fieldErrors.phone && (
-            <p className="mt-1.5 text-xs text-[#EF4444] flex items-center gap-1">
-              <span>⚠</span> {fieldErrors.phone}
-            </p>
-          )}
-        </div>
-      )}
+      {/* Phone — bắt buộc mọi dịch vụ */}
+      <div>
+        <label className="block text-xs text-[#64748b] mb-1.5">
+          Số Điện Thoại Liên Hệ <span className="text-[#EF4444]">*</span>
+        </label>
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => {
+            setPhone(e.target.value);
+            if (phoneTouched) setFieldErrors(p => ({ ...p, phone: validatePhone(e.target.value) || undefined }));
+          }}
+          onBlur={() => {
+            setPhoneTouched(true);
+            setFieldErrors(p => ({ ...p, phone: validatePhone(phone) || undefined }));
+          }}
+          placeholder="VD: 0901234567"
+          className={`w-full rounded-lg border px-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none transition-colors ${
+            fieldErrors.phone
+              ? "border-[#EF4444] bg-[#fff5f5] focus:border-[#EF4444]"
+              : "border-[#e2e8f0] bg-[#f8fafc] focus:border-[#0066ff]"
+          }`}
+          suppressHydrationWarning
+        />
+        {fieldErrors.phone && (
+          <p className="mt-1.5 text-xs text-[#EF4444]">{fieldErrors.phone}</p>
+        )}
+      </div>
 
       {/* Account type */}
       {showAccountType && (
@@ -283,8 +305,14 @@ export default function ServiceOrderForm({
       {/* CCCD upload */}
       {showCccd && (
         <div>
-          <label className="block text-xs text-[#64748b] mb-2">CCCD mặt trước</label>
-          <div className={`relative rounded-xl border-2 border-dashed transition-colors ${cccdUrl ? "border-[#0066ff] bg-[#eff6ff]" : "border-[#e2e8f0] bg-[#f8fafc] hover:border-[#0066ff]/50"}`}>
+          <label className="block text-xs text-[#64748b] mb-2">
+            CCCD mặt trước <span className="text-[#EF4444]">*</span>
+          </label>
+          <div className={`relative rounded-xl border-2 border-dashed transition-colors ${
+            cccdUrl ? "border-primary bg-[#eff6ff]"
+            : fieldErrors.cccd ? "border-[#EF4444] bg-[#fff5f5]"
+            : "border-border bg-light hover:border-primary/50"
+          }`}>
             {cccdUrl ? (
               <div className="flex items-center gap-3 px-4 py-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -323,25 +351,43 @@ export default function ServiceOrderForm({
             )}
           </div>
           {cccdError && <p className="text-xs text-[#ef4444] mt-1">{cccdError}</p>}
+          {fieldErrors.cccd && <p className="text-xs text-[#EF4444] mt-1">{fieldErrors.cccd}</p>}
         </div>
       )}
 
-      {/* Warranty */}
+      {/* Warranty — bắt buộc chọn nếu dịch vụ có options */}
       {warrantyOptions.length > 0 && (
         <div>
-          <label className="block text-xs text-[#64748b] mb-1.5">Hỗ Trợ / Bảo hành (tùy chọn)</label>
+          <label className="block text-xs text-[#64748b] mb-1.5">
+            Chế Độ Bảo Hành <span className="text-[#EF4444]">*</span>
+          </label>
           <select
             value={warranty}
-            onChange={(e) => setWarranty(e.target.value)}
-            className="w-full rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2.5 text-sm text-[#0f172a] focus:border-[#0066ff] focus:outline-none"
+            onChange={(e) => {
+            setWarranty(e.target.value);
+            setWarrantyTouched(true);
+            setFieldErrors(p => ({ ...p, warranty: validateWarranty(e.target.value) || undefined }));
+          }}
+          onBlur={() => {
+            setWarrantyTouched(true);
+            setFieldErrors(p => ({ ...p, warranty: validateWarranty(warranty) || undefined }));
+          }}
+            className={`w-full rounded-lg border px-3 py-2.5 text-sm text-text-dark focus:outline-none transition-colors ${
+              fieldErrors.warranty
+                ? "border-[#EF4444] bg-[#fff5f5] focus:border-[#EF4444]"
+                : "border-border bg-light focus:border-primary"
+            }`}
           >
-            <option value="">Không bảo hành</option>
+            <option value="">— Chọn gói bảo hành —</option>
             {warrantyOptions.map((w) => (
               <option key={w.name} value={w.name}>
                 {w.name}{w.price === 0 ? " — Miễn phí" : ` (+${formatVnd(w.price)})`}
               </option>
             ))}
           </select>
+          {fieldErrors.warranty && (
+            <p className="mt-1.5 text-xs text-[#EF4444]">{fieldErrors.warranty}</p>
+          )}
           {warrantyOptions.some(w => w.price > 0) && (
             <p className="text-[10px] text-[#E53E3E] mt-1">Đây là mức giá niêm yết có thể thay đổi theo từng máy.</p>
           )}

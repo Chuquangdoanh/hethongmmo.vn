@@ -11,6 +11,8 @@ interface DepositParams {
   description: string;
   type: Extract<TxType, "DEPOSIT_AUTO" | "DEPOSIT_MANUAL">;
   metadata?: Record<string, string | number | boolean>;
+  transactionDate?: string;
+  accountNumber?: string;
 }
 
 /**
@@ -18,7 +20,7 @@ interface DepositParams {
  * Idempotent: throws DuplicateError if referenceCode already processed.
  */
 export async function processDeposit(params: DepositParams): Promise<Transaction> {
-  const { userId, amount, referenceCode, description, type, metadata } = params;
+  const { userId, amount, referenceCode, description, type, metadata, transactionDate, accountNumber } = params;
 
   // Idempotency — check before taking any lock
   const existing = await prisma.transaction.findUnique({
@@ -60,6 +62,9 @@ export async function processDeposit(params: DepositParams): Promise<Transaction
         balanceBefore: balanceBefore.toFixed(2),
         balanceAfter: balanceAfter.toFixed(2),
         referenceCode,
+        metadata: metadata ?? undefined,
+        transactionDate: transactionDate ?? undefined,
+        accountNumber: accountNumber ?? undefined,
       },
     });
 

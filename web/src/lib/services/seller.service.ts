@@ -8,17 +8,16 @@ import {
 } from "@/lib/errors";
 import { logger } from "@/lib/utils/logger";
 
-const SELLER_REGISTRATION_FEE = 50_000;
-
 interface RegisterSellerParams {
   userId: string;
   category: string;
   ip?: string;
 }
 
-/** Deducts 50,000đ registration fee and creates a pending seller request. */
+/** Deducts registration fee (from system_config) and creates a pending seller request. */
 export async function registerSeller(params: RegisterSellerParams): Promise<void> {
   const { userId, category, ip } = params;
+  const SELLER_REGISTRATION_FEE = await getRegistrationFee();
 
   await prisma.$transaction(async (tx) => {
     const userRows = await tx.$queryRaw<
@@ -151,19 +150,26 @@ export interface SlotPackage {
   price: number;
 }
 
-export type SellerTierKey = "STANDARD" | "SILVER" | "GOLD" | "VIP";
+// Kept for backward-compat type hints — DB now stores tier as free-form string
+export type SellerTierKey = string;
 
 export interface TierConfig {
   fee_percent: number;
   min_withdrawal: number;
   hold_days: number;
+  label?: string;
+  description?: string;
+  badge_color?: string;
+  benefits?: string[];
+  upgrade_min_revenue?: number;
+  upgrade_min_orders?: number;
 }
 
-export const DEFAULT_TIER_CONFIG: Record<SellerTierKey, TierConfig> = {
-  STANDARD: { fee_percent: 5, min_withdrawal: 200_000, hold_days: 3 },
-  SILVER:   { fee_percent: 4, min_withdrawal: 150_000, hold_days: 2 },
-  GOLD:     { fee_percent: 3, min_withdrawal: 100_000, hold_days: 1 },
-  VIP:      { fee_percent: 1, min_withdrawal: 50_000,  hold_days: 0 },
+// Fallback used when the DB has no matching tier definition
+export const FALLBACK_TIER_CONFIG: TierConfig = {
+  fee_percent: 5, min_withdrawal: 200_000, hold_days: 3,
+  label: "Standard", badge_color: "gray", benefits: [],
+  upgrade_min_revenue: 0, upgrade_min_orders: 0,
 };
 
 export interface SystemSellerConfig {
@@ -171,7 +177,7 @@ export interface SystemSellerConfig {
   withdrawal_fee_percent?: number;
   min_withdrawal_amount?: number;
   slot_packages?: SlotPackage[];
-  tier_config?: Record<SellerTierKey, TierConfig>;
+  registration_fee?: number;
 }
 
 export const DEFAULT_SLOT_PACKAGES: SlotPackage[] = [
@@ -180,13 +186,34 @@ export const DEFAULT_SLOT_PACKAGES: SlotPackage[] = [
   { slots: 10, price: 120_000 },
 ];
 
-/** Returns effective withdrawal config for a seller based on their tier. */
-export function getSellerTierConfig(
-  config: SystemSellerConfig,
-  tier: SellerTierKey,
-): TierConfig {
-  const tierMap = config.tier_config ?? DEFAULT_TIER_CONFIG;
-  return tierMap[tier] ?? DEFAULT_TIER_CONFIG[tier] ?? DEFAULT_TIER_CONFIG.STANDARD;
+/** Returns TierConfig from DB for a given tier key. Falls back to FALLBACK_TIER_CONFIG. */
+export async function getSellerTierConfig(tierKey: string): Promise<TierConfig> {
+  const row = await prisma.sellerTierDefinition.findUnique({ where: { key: tierKey } });
+  if (!row) return FALLBACK_TIER_CONFIG;
+  return {
+    fee_percent:         row.feePercent,
+    min_withdrawal:      row.minWithdrawal,
+    hold_days:           row.holdDays,
+    label:               row.label,
+    description:         row.description ?? undefined,
+    badge_color:         row.badgeColor,
+    benefits:            row.benefits as string[],
+    upgrade_min_revenue: row.upgradeMinRevenue,
+    upgrade_min_orders:  row.upgradeMinOrders,
+  };
+}
+
+/** Returns all active tier definitions ordered by displayOrder. */
+export async function getAllTierDefinitions() {
+  return prisma.sellerTierDefinition.findMany({
+    where: { isActive: true },
+    orderBy: { displayOrder: "asc" },
+  });
+}
+
+/** Returns ALL tier definitions (including inactive) for admin management. */
+export async function getAllTierDefinitionsAdmin() {
+  return prisma.sellerTierDefinition.findMany({ orderBy: { displayOrder: "asc" } });
 }
 
 /** Reads seller_settings from system_config. */
@@ -196,6 +223,12 @@ export async function getSellerConfig(): Promise<SystemSellerConfig> {
     select: { value: true },
   });
   return (config?.value as SystemSellerConfig) ?? {};
+}
+
+/** Returns the effective registration fee (from system_config or default 50,000đ). */
+export async function getRegistrationFee(): Promise<number> {
+  const config = await getSellerConfig();
+  return config.registration_fee ?? 50_000;
 }
 
 interface BuySellerSlotsParams {

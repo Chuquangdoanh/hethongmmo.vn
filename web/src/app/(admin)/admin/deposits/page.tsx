@@ -1,8 +1,10 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
+import { Search, X } from "lucide-react";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
+import ResolveUnmatchedButton from "./_components/ResolveUnmatchedButton";
 
 export const metadata: Metadata = { title: "Admin — Nạp tiền" };
 
@@ -11,19 +13,30 @@ const PAGE_SIZE = 25;
 export default async function AdminDepositsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; type?: string }>;
+  searchParams: Promise<{ page?: string; type?: string; q?: string }>;
 }) {
-  const { page, type } = await searchParams;
+  const { page, type, q } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
+  const search = q?.trim() ?? "";
 
-  const typeFilter =
+  const typeWhere =
     type === "AUTO"   ? { type: "DEPOSIT_AUTO" as never } :
     type === "MANUAL" ? { type: "DEPOSIT_MANUAL" as never } :
     { type: { in: ["DEPOSIT_AUTO", "DEPOSIT_MANUAL"] as never[] } };
 
+  const searchWhere = search ? {
+    OR: [
+      { user: { email:    { contains: search, mode: "insensitive" as const } } },
+      { user: { fullName: { contains: search, mode: "insensitive" as const } } },
+      { referenceCode:    { contains: search, mode: "insensitive" as const } },
+    ],
+  } : {};
+
+  const where = search ? { AND: [typeWhere, searchWhere] } : typeWhere;
+
   const [transactions, total] = await Promise.all([
     prisma.transaction.findMany({
-      where: typeFilter,
+      where,
       orderBy: { createdAt: "desc" },
       skip: (currentPage - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -31,16 +44,14 @@ export default async function AdminDepositsPage({
         id: true,
         type: true,
         amount: true,
-        description: true,
         referenceCode: true,
         createdAt: true,
         user: { select: { email: true, fullName: true } },
       },
     }),
-    prisma.transaction.count({ where: typeFilter }),
+    prisma.transaction.count({ where }),
   ]);
 
-  // Aggregate totals
   const [autoTotal, manualTotal] = await Promise.all([
     prisma.transaction.aggregate({
       where: { type: "DEPOSIT_AUTO" as never },
@@ -56,11 +67,21 @@ export default async function AdminDepositsPage({
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
+  // Build href helpers that preserve current params
+  function typeHref(key: string) {
+    const params = new URLSearchParams();
+    if (key)    params.set("type", key);
+    if (search) params.set("q", search);
+    return `/admin/deposits${params.size ? `?${params}` : ""}`;
+  }
+
+  const paginationParams: Record<string, string> = {};
+  if (type)   paginationParams.type = type;
+  if (search) paginationParams.q    = search;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Nạp tiền</h1>
-      </div>
+      <h1 className="text-2xl font-bold text-gray-900">Nạp tiền</h1>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4">
@@ -83,26 +104,67 @@ export default async function AdminDepositsPage({
       {/* Unmatched transfers */}
       <UnmatchedTransfersSection />
 
-      {/* Type filter */}
-      <div className="flex items-center gap-2">
-        {[
-          { key: "", label: "Tất cả" },
-          { key: "AUTO", label: "Tự động" },
-          { key: "MANUAL", label: "Thủ công" },
-        ].map(({ key, label }) => (
-          <Link
-            key={key}
-            href={key ? `/admin/deposits?type=${key}` : "/admin/deposits"}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              type === key || (!type && !key)
-                ? "bg-[#7C3AED] text-white"
-                : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
-            }`}
+      {/* Search + Type filter row */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        {/* Search form — native GET, no client component needed */}
+        <form method="get" action="/admin/deposits" className="flex-1 flex gap-2">
+          {type && <input type="hidden" name="type" value={type} />}
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              name="q"
+              defaultValue={search}
+              placeholder="Tìm email, họ tên, mã tham chiếu..."
+              className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#7C3AED] bg-white"
+            />
+          </div>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-[#7C3AED] text-white text-xs font-medium rounded-lg hover:bg-[#6D28D9] transition-colors"
           >
-            {label}
-          </Link>
-        ))}
+            Tìm
+          </button>
+          {search && (
+            <Link
+              href={type ? `/admin/deposits?type=${type}` : "/admin/deposits"}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-gray-500 hover:text-gray-700 flex items-center"
+            >
+              <X size={14} />
+            </Link>
+          )}
+        </form>
+
+        {/* Type filter */}
+        <div className="flex items-center gap-2 shrink-0">
+          {[
+            { key: "", label: "Tất cả" },
+            { key: "AUTO", label: "Tự động" },
+            { key: "MANUAL", label: "Thủ công" },
+          ].map(({ key, label }) => (
+            <Link
+              key={key}
+              href={typeHref(key)}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                type === key || (!type && !key)
+                  ? "bg-[#7C3AED] text-white"
+                  : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
       </div>
+
+      {/* Search result summary */}
+      {search && (
+        <p className="text-xs text-gray-500">
+          {total > 0
+            ? `${total} kết quả cho "${search}"`
+            : `Không tìm thấy kết quả cho "${search}"`}
+        </p>
+      )}
 
       {/* Table */}
       <div className="rounded-xl border border-gray-200 overflow-x-auto">
@@ -119,11 +181,13 @@ export default async function AdminDepositsPage({
           <tbody>
             {transactions.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-500">Không có giao dịch</td>
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-500">
+                  Không có giao dịch
+                </td>
               </tr>
             )}
             {transactions.map((tx, i) => (
-              <tr key={tx.id} className={`${i !== 0 ? "border-t border-gray-200" : ""} hover:bg-gray-100 transition-colors`}>
+              <tr key={tx.id} className={`${i !== 0 ? "border-t border-gray-200" : ""} hover:bg-gray-50 transition-colors`}>
                 <td className="px-4 py-3">
                   <p className="text-sm text-gray-900">{tx.user.fullName}</p>
                   <p className="text-[11px] text-gray-500">{tx.user.email}</p>
@@ -155,7 +219,7 @@ export default async function AdminDepositsPage({
           currentPage={currentPage}
           totalPages={totalPages}
           basePath="/admin/deposits"
-          searchParams={type ? { type } : {}}
+          searchParams={paginationParams}
         />
       )}
     </div>
@@ -166,7 +230,7 @@ async function UnmatchedTransfersSection() {
   const unmatched = await prisma.unmatchedTransfer.findMany({
     where: { status: "PENDING" },
     orderBy: { createdAt: "desc" },
-    take: 5,
+    take: 10,
     select: { id: true, content: true, amount: true, referenceCode: true, createdAt: true },
   });
 
@@ -177,14 +241,22 @@ async function UnmatchedTransfersSection() {
       <h2 className="text-sm font-semibold text-[#EF4444] mb-3">
         Giao dịch chưa khớp ({unmatched.length})
       </h2>
-      <div className="space-y-2">
+      <div className="space-y-3">
         {unmatched.map((ut) => (
-          <div key={ut.id} className="flex items-center justify-between text-sm">
-            <div>
+          <div key={ut.id} className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
               <p className="text-gray-500 text-xs font-mono">{ut.referenceCode}</p>
-              <p className="text-[10px] text-gray-500 truncate max-w-[240px]">{ut.content}</p>
+              <p className="text-[10px] text-gray-500 truncate max-w-65">{ut.content}</p>
+              <p className="text-[10px] text-gray-400">{formatDate(ut.createdAt)}</p>
             </div>
-            <span className="text-[#EF4444] font-semibold">+{formatVnd(Number(ut.amount))}</span>
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              <span className="text-[#EF4444] font-semibold text-sm">+{formatVnd(Number(ut.amount))}</span>
+              <ResolveUnmatchedButton
+                id={ut.id}
+                referenceCode={ut.referenceCode}
+                amount={Number(ut.amount)}
+              />
+            </div>
           </div>
         ))}
       </div>

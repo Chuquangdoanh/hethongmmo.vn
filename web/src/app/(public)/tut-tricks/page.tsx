@@ -318,6 +318,7 @@ export default async function TutTricksPage({
                             price,
                             description: item.description,
                             successRate: item.successRate,
+                            rating: item.rating,
                             totalOrders: item.totalOrders,
                             publishedDate: publishedDateStr,
                             warrantyPolicy: item.warrantyPolicy,

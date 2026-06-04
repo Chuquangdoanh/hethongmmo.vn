@@ -4,12 +4,12 @@ import { auth } from "@/auth";
 import { requireAdmin } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { apiSuccess, apiCatch, apiValidationError } from "@/lib/api-response";
-import { NotFoundError } from "@/lib/errors";
+import { NotFoundError, ValidationError } from "@/lib/errors";
 
 export const runtime = "nodejs";
 
 const schema = z.object({
-  tier: z.enum(["STANDARD", "SILVER", "GOLD", "VIP"]),
+  tier: z.string().min(1).max(50),
 });
 
 export async function PATCH(
@@ -24,6 +24,12 @@ export async function PATCH(
     const body: unknown = await req.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) return apiValidationError(parsed.error.issues);
+
+    // Verify the tier key exists in seller_tier_definitions
+    const tierDef = await prisma.sellerTierDefinition.findUnique({
+      where: { key: parsed.data.tier },
+    });
+    if (!tierDef) throw new ValidationError("Hạng seller không tồn tại");
 
     const user = await prisma.user.findUnique({
       where: { id },
@@ -43,11 +49,11 @@ export async function PATCH(
         targetType: "User",
         targetId: id,
         before: { sellerTier: user.sellerTier },
-        after: { sellerTier: parsed.data.tier },
+        after:  { sellerTier: parsed.data.tier },
       },
     });
 
-    return apiSuccess(`Đã cập nhật hạng seller thành ${parsed.data.tier}`);
+    return apiSuccess(`Đã cập nhật hạng seller thành ${tierDef.label}`);
   } catch (err) {
     return apiCatch(err);
   }

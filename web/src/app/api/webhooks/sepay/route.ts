@@ -53,23 +53,32 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // 3. Parse + Zod validate
-  let payload: z.infer<typeof sePaySchema>;
+  let parsed: ReturnType<typeof sePaySchema.safeParse>;
   try {
-    payload = sePaySchema.parse(JSON.parse(rawBody));
-  } catch (err) {
-    logger.warn({ err }, "SePay payload validation failed");
+    parsed = sePaySchema.safeParse(JSON.parse(rawBody));
+  } catch {
+    logger.warn("SePay payload JSON parse failed");
     return NextResponse.json({ success: false, message: "Invalid payload" }, { status: 200 });
   }
+  if (!parsed.success) {
+    logger.warn({ issues: parsed.error.issues }, "SePay payload validation failed");
+    return NextResponse.json({ success: false, message: "Invalid payload" }, { status: 200 });
+  }
+  const payload = parsed.data;
 
   // 4. Only process incoming transfers >= 10,000đ
   if (payload.transferType !== "in" || payload.transferAmount < 10_000) {
     return NextResponse.json({ success: true }, { status: 200 });
   }
 
-  const { referenceCode, transferAmount, content, gateway, transactionDate } = payload;
+  const { referenceCode, transferAmount, content, gateway, transactionDate, accountNumber } = payload;
 
   // 5. Find uid_prefix (8 lowercase hex chars) in transfer content
-  const uidMatch = content.match(/\b([0-9a-fA-F]{8})\b/);
+  // Primary: match canonical "NAP XXXXXXXX" format (case-insensitive, flexible spacing)
+  // Fallback: bare 8-hex word boundary match
+  const uidMatch =
+    content.match(/\bNAP\s*([0-9a-fA-F]{8})\b/i) ??
+    content.match(/\b([0-9a-fA-F]{8})\b/);
   const uidPrefix = uidMatch?.[1]?.toLowerCase();
 
   if (!uidPrefix) {
@@ -98,6 +107,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       referenceCode,
       description: `Nạp tiền qua ${gateway}: ${content.slice(0, 200)}`,
       type: "DEPOSIT_AUTO",
+      transactionDate,
+      accountNumber: accountNumber ?? undefined,
       metadata: {
         gateway,
         content: content.slice(0, 500),

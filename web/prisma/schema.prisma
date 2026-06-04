@@ -138,13 +138,6 @@ enum StockItemStatus {
   SOLD
 }
 
-enum SellerTier {
-  STANDARD
-  SILVER
-  GOLD
-  VIP
-}
-
 // ====================================================================
 // 1. USERS & AUTH
 // ====================================================================
@@ -164,8 +157,12 @@ model User {
   totalDeposited       Decimal       @default(0) @db.Decimal(18, 2) @map("total_deposited")
   totalSpent           Decimal       @default(0) @db.Decimal(18, 2) @map("total_spent")
 
+  // Giảm giá khi mua Service/Course/TutTrick
+  // 0 = dùng tier tự động theo totalDeposited; > 0 = admin override cứng
+  discountPercent      Int           @default(0) @map("discount_percent")
+
   sellerStatus         SellerStatus  @default(NONE) @map("seller_status")
-  sellerTier           SellerTier    @default(STANDARD) @map("seller_tier")
+  sellerTier           String        @default("STANDARD") @map("seller_tier") @db.VarChar(50)
   sellerCategory       String?       @map("seller_category")
   maxSellerProducts    Int           @default(3) @map("max_seller_products")
 
@@ -555,8 +552,11 @@ model Transaction {
   description   String
   balanceBefore Decimal  @db.Decimal(18, 2) @map("balance_before")
   balanceAfter  Decimal  @db.Decimal(18, 2) @map("balance_after")
-  referenceCode String?  @unique @map("reference_code")
-  createdAt     DateTime @default(now()) @map("created_at")
+  referenceCode   String?  @unique @map("reference_code")
+  metadata        Json?
+  transactionDate String?  @db.VarChar(30) @map("transaction_date")
+  accountNumber   String?  @db.VarChar(50) @map("account_number")
+  createdAt       DateTime @default(now()) @map("created_at")
 
   @@index([userId, createdAt])
   @@index([type])
@@ -885,6 +885,47 @@ model AuditLog {
   @@index([action])
   @@index([targetType, targetId])
   @@map("audit_logs")
+}
+
+// ====================================================================
+// 22. SELLER_TIER_DEFINITIONS (hạng nhà bán hàng động — thay thế SellerTier enum)
+// ====================================================================
+model SellerTierDefinition {
+  id                String   @id @default(uuid()) @db.Uuid
+  key               String   @unique @db.VarChar(50)
+  label             String   @db.VarChar(30)
+  description       String?  @db.VarChar(200)
+  badgeColor        String   @default("gray") @map("badge_color") @db.VarChar(30)
+  feePercent        Float    @default(5) @map("fee_percent")
+  minWithdrawal     Int      @default(200000) @map("min_withdrawal")
+  holdDays          Int      @default(3) @map("hold_days")
+  benefits          Json     @default("[]")
+  upgradeMinRevenue Int      @default(0) @map("upgrade_min_revenue")
+  upgradeMinOrders  Int      @default(0) @map("upgrade_min_orders")
+  displayOrder      Int      @default(0) @map("display_order")
+  isBuiltIn         Boolean  @default(false) @map("is_built_in")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, displayOrder])
+  @@map("seller_tier_definitions")
+}
+
+// ====================================================================
+// 23. PAGE_PERMISSIONS (phân quyền truy cập trang theo role)
+// ====================================================================
+model PagePermission {
+  id              String   @id @default(uuid()) @db.Uuid
+  role            Role
+  pageKey         String   @map("page_key") @db.VarChar(100)
+  isEnabled       Boolean  @default(true) @map("is_enabled")
+  updatedByUserId String?  @map("updated_by_user_id") @db.Uuid
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([role, pageKey])
+  @@index([role])
+  @@map("page_permissions")
 }
 
 // ====================================================================

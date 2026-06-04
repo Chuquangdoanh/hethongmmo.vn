@@ -2,21 +2,14 @@
 
 import { useState } from "react";
 import { formatVnd } from "@/lib/utils/format";
-import type { SlotPackage, TierConfig, SellerTierKey } from "@/lib/services/seller.service";
-
-const TIERS: { key: SellerTierKey; label: string; color: string }[] = [
-  { key: "STANDARD", label: "Standard", color: "text-gray-600" },
-  { key: "SILVER",   label: "Silver",   color: "text-slate-500" },
-  { key: "GOLD",     label: "Gold",     color: "text-amber-600" },
-  { key: "VIP",      label: "VIP",      color: "text-violet-600" },
-];
+import type { SlotPackage } from "@/lib/services/seller.service";
 
 interface Props {
   initialFeePercent: number;
   initialMinAmount: number;
   initialHoldDays: number;
   initialSlotPackages: SlotPackage[];
-  initialTierConfig: Record<SellerTierKey, TierConfig>;
+  initialRegistrationFee: number;
 }
 
 export default function SellerSettingsForm({
@@ -24,23 +17,16 @@ export default function SellerSettingsForm({
   initialMinAmount,
   initialHoldDays,
   initialSlotPackages,
-  initialTierConfig,
+  initialRegistrationFee,
 }: Props) {
   const [feePercent, setFeePercent] = useState(String(initialFeePercent));
   const [minAmount, setMinAmount] = useState(String(initialMinAmount));
   const [holdDays, setHoldDays] = useState(String(initialHoldDays));
+  const [registrationFee, setRegistrationFee] = useState(String(initialRegistrationFee));
   const [packages, setPackages] = useState<SlotPackage[]>(initialSlotPackages);
-  const [tierConfig, setTierConfig] = useState<Record<SellerTierKey, TierConfig>>(initialTierConfig);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-
-  function updateTier(tier: SellerTierKey, field: keyof TierConfig, value: string) {
-    setTierConfig((prev) => ({
-      ...prev,
-      [tier]: { ...prev[tier], [field]: parseFloat(value) || 0 },
-    }));
-  }
 
   function updatePackage(index: number, field: keyof SlotPackage, value: string) {
     setPackages((prev) =>
@@ -70,10 +56,10 @@ export default function SellerSettingsForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           withdrawal_fee_percent: parseFloat(feePercent) || 0,
-          min_withdrawal_amount: parseInt(minAmount) || 0,
-          order_hold_days: parseInt(holdDays) || 0,
-          slot_packages: packages,
-          tier_config: tierConfig,
+          min_withdrawal_amount:  parseInt(minAmount) || 0,
+          order_hold_days:        parseInt(holdDays) || 0,
+          registration_fee:       parseInt(registrationFee) || 0,
+          slot_packages:          packages,
         }),
       });
       const json = await res.json() as { success: boolean; error?: string };
@@ -147,72 +133,22 @@ export default function SellerSettingsForm({
                   Đơn phải hoàn thành &gt; {holdDays} ngày mới được rút
                 </p>
               </div>
-            </div>
-          </div>
 
-          {/* ── Tier config ── */}
-          <div>
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold text-gray-700">Chế độ ưu đãi theo hạng seller</h3>
-              <p className="text-xs text-gray-400 mt-0.5">Mỗi hạng có phí rút, số tiền tối thiểu, và số ngày giữ đơn riêng</p>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="pb-2 text-left text-xs font-semibold text-gray-500 w-20">Hạng</th>
-                    <th className="pb-2 text-left text-xs font-semibold text-gray-500">Phí (%)</th>
-                    <th className="pb-2 text-left text-xs font-semibold text-gray-500">Tối thiểu (đ)</th>
-                    <th className="pb-2 text-left text-xs font-semibold text-gray-500">Giữ đơn</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {TIERS.map(({ key, label, color }) => (
-                    <tr key={key}>
-                      <td className="py-2.5 pr-3">
-                        <span className={`font-bold text-sm ${color}`}>{label}</span>
-                      </td>
-                      <td className="py-2.5 pr-3">
-                        <input
-                          type="number"
-                          value={tierConfig[key].fee_percent}
-                          onChange={(e) => updateTier(key, "fee_percent", e.target.value)}
-                          min={0} max={50} step={0.5}
-                          className="w-20 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-violet-500 focus:outline-none transition-colors"
-                        />
-                      </td>
-                      <td className="py-2.5 pr-3">
-                        <input
-                          type="number"
-                          value={tierConfig[key].min_withdrawal}
-                          onChange={(e) => updateTier(key, "min_withdrawal", e.target.value)}
-                          min={0} step={10000}
-                          className="w-32 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-violet-500 focus:outline-none transition-colors"
-                        />
-                        <p className="text-[10px] text-gray-400 mt-0.5" suppressHydrationWarning>
-                          {formatVnd(tierConfig[key].min_withdrawal)}
-                        </p>
-                      </td>
-                      <td className="py-2.5">
-                        <input
-                          type="number"
-                          value={tierConfig[key].hold_days}
-                          onChange={(e) => updateTier(key, "hold_days", e.target.value)}
-                          min={0} max={30} step={1}
-                          className="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 focus:border-violet-500 focus:outline-none transition-colors"
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-3 rounded-lg bg-violet-50 border border-violet-200 p-3">
-              <p className="text-xs text-violet-700">
-                Gán hạng cho seller tại trang <strong>Quản lý Sellers</strong>. Hệ thống tự dùng cấu hình của hạng tương ứng khi seller rút tiền.
-              </p>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Phí đăng ký bán hàng (đ)
+                </label>
+                <input
+                  type="number"
+                  value={registrationFee}
+                  onChange={(e) => setRegistrationFee(e.target.value)}
+                  min={0} step={1000}
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-violet-500 focus:outline-none transition-colors"
+                />
+                <p className="text-[10px] text-gray-400 mt-1" suppressHydrationWarning>
+                  Hiện tại: {formatVnd(parseInt(registrationFee) || 0)} — trừ khi người dùng nộp đơn đăng ký seller
+                </p>
+              </div>
             </div>
           </div>
 

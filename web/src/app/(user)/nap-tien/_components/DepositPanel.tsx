@@ -13,6 +13,7 @@ interface Props {
 }
 
 const PRESET_AMOUNTS = [50_000, 100_000, 200_000, 500_000, 1_000_000, 2_000_000, 5_000_000, 10_000_000];
+const MIN_AMOUNT = 50_000;
 
 function formatVndShort(n: number) {
   if (n >= 1_000_000) return `${n / 1_000_000}tr`;
@@ -27,7 +28,9 @@ export default function DepositPanel({ bankName, accountNumber, accountHolder, b
   const [selected, setSelected] = useState(100_000);
   const [custom, setCustom] = useState("");
 
-  const amount = custom ? Number(custom.replace(/\D/g, "")) || selected : selected;
+  const customNum = custom ? Number(custom.replace(/\D/g, "")) : 0;
+  const isBelowMin = custom !== "" && customNum > 0 && customNum < MIN_AMOUNT;
+  const amount = custom ? customNum || selected : selected;
 
   const qrUrl =
     `https://img.vietqr.io/image/${bankBin}-${accountNumber}-qr_only.jpg` +
@@ -67,16 +70,25 @@ export default function DepositPanel({ bankName, accountNumber, accountHolder, b
         </div>
 
         {/* Custom amount input */}
-        <div className="relative">
-          <input
-            type="text"
-            value={custom ? Number(custom).toLocaleString("vi-VN") : ""}
-            onChange={handleCustomChange}
-            placeholder={formatAmount(selected)}
-            suppressHydrationWarning
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none pr-12"
-          />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">VND</span>
+        <div className="space-y-1.5">
+          <div className="relative">
+            <input
+              type="text"
+              value={custom ? Number(custom).toLocaleString("vi-VN") : ""}
+              onChange={handleCustomChange}
+              placeholder={formatAmount(selected)}
+              suppressHydrationWarning
+              className={`w-full rounded-lg border bg-gray-50 px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none pr-12 ${
+                isBelowMin
+                  ? "border-red-400 focus:border-red-500"
+                  : "border-gray-200 focus:border-blue-500"
+              }`}
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">VND</span>
+          </div>
+          {isBelowMin && (
+            <p className="text-xs text-red-500">Số tiền nạp tối thiểu là 50.000đ</p>
+          )}
         </div>
       </div>
 
@@ -132,7 +144,7 @@ export default function DepositPanel({ bankName, accountNumber, accountHolder, b
             "Quét mã QR hiển thị bên cạnh",
             "Kiểm tra thông tin và xác nhận chuyển khoản",
             "Tiền sẽ được cộng tự động sau 1 – 3 phút",
-            "Số tiền nạp tối thiểu 100.000đ",
+            "Số tiền nạp tối thiểu 50.000đ",
           ].map((step, i) => (
             <li key={i} className="flex items-start gap-2.5 text-xs text-gray-600">
               <span className="shrink-0 w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold flex items-center justify-center mt-px">

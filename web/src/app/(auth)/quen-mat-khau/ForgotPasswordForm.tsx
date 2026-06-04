@@ -42,6 +42,7 @@ export default function ForgotPasswordForm() {
           required
           className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:border-[#0066ff] focus:outline-none transition-colors"
           placeholder="email@example.com"
+          suppressHydrationWarning
         />
       </div>
       {error && <p className="text-xs text-[#EF4444]">{error}</p>}

@@ -243,42 +243,46 @@ a  { text-decoration: none; }
    Both use animation-fill-mode:both so opacity:0 applies before paint.
 ──────────────────────────────────────────────────────────────── */
 
-/* Hard load — body entrance */
+/* Hard load — body entrance (opacity only; transform on body breaks position:fixed) */
 @keyframes pt-fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes pt-rise    { from { transform: translateY(5px); } to { transform: translateY(0); } }
 
-body {
-  animation:
-    pt-fade-in 500ms ease-out                    both,
-    pt-rise    900ms cubic-bezier(0.22,1,0.36,1) both;
-}
+body { animation: pt-fade-in 400ms ease-out both; }
 
 /* SPA navigation — PageTransitionWrapper .page-entering
-   Blur → rõ nét: nội dung từ mờ (blur 6px, scale 1.01) → sắc nét
-   Không còn translateY — không có cảm giác "nháy trắng" hay "trôi"  */
-@keyframes page-blur-in {
-  from { opacity: 0; filter: blur(6px); transform: scale(1.01); }
-  to   { opacity: 1; filter: blur(0);   transform: scale(1);    }
+   fade + rise nhẹ: nội dung trôi lên 12px và hiện dần.
+   translateZ(0) trên wrapper đã tạo GPU layer ổn định từ trước
+   → translateY animation chạy hoàn toàn trên compositor, không tạo layer mới.
+   cubic-bezier(0.22,1,0.36,1): easing kiểu "spring" — nhanh ra, thả nhẹ cuối. */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .page-entering {
-  animation: page-blur-in 400ms ease-out both;
+  animation: page-fade-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity, transform;
 }
 
 /* Browser-native View Transitions — cross-document nav (Chrome 111+, Safari 18.2+) */
 @view-transition { navigation: auto; }
 ::view-transition-old(root) {
-  animation: 160ms ease-in both vt-blur-out;
+  animation: 150ms ease-in both vt-fade-out;
 }
 ::view-transition-new(root) {
-  animation: 400ms ease-out both vt-blur-in;
+  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-fade-in;
 }
-@keyframes vt-blur-out {
-  to { opacity: 0; filter: blur(4px); transform: scale(0.99); }
+@keyframes vt-fade-out {
+  to { opacity: 0; transform: translateY(-6px); }
 }
-@keyframes vt-blur-in {
-  from { opacity: 0; filter: blur(6px); transform: scale(1.01); }
-  to   { opacity: 1; filter: blur(0);   transform: scale(1);    }
+@keyframes vt-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -383,4 +387,39 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
   }
+}
+
+/* ── HomeDriftObserver — section drift (cqd namespace) ──────────────
+   Transform-only (không opacity) để tránh nhân opacity với anim-* bên trong.
+   18px drift lên, 0.65s spring easing — nhẹ nhàng, tự nhiên.
+   Only fires khi section enter viewport lần đầu (unobserve sau đó).
+──────────────────────────────────────────────────────────────────── */
+@keyframes cqd-drift-enter {
+  from { transform: translateY(18px); }
+  to   { transform: translateY(0); }
+}
+
+section.cqd-drift {
+  animation: cqd-drift-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ── Header: GPU layer + entrance mượt mà (cqd namespace) ───────────
+   Nguyên nhân nháy trắng:
+   · backdrop-filter:blur(20px) trên header tạo compositor layer muộn
+     → khi SPA navigation thay content bên dưới, browser repaint → flash
+   Fix:
+   · will-change:transform → GPU composite layer ngay từ lúc mount
+     → backdrop-filter không còn trigger repaint khi content đổi
+   · cqd-header-drop → slide nhẹ 8px xuống khi hard load
+     (opacity đã được handle bởi body { animation: pt-fade-in })
+   · Không re-trigger khi SPA nav — header nằm ở root layout (DOM stable)
+──────────────────────────────────────────────────────────────────── */
+@keyframes cqd-header-drop {
+  from { transform: translateY(-8px); }
+  to   { transform: translateY(0); }
+}
+
+.main-header-shell {
+  will-change: transform;
+  animation: cqd-header-drop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

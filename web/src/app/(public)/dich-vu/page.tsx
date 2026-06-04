@@ -3,6 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import ServiceListWithForm from "./_components/ServiceListWithForm";
+import Pagination from "@/components/shared/Pagination";
 import { Users, TrendingUp, Star, CheckCircle, Headphones } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -24,15 +25,18 @@ function parseJsonArray<T extends { name: string; price: number }>(raw: unknown)
   });
 }
 
+const LIMIT = 9;
+
 export default async function DichVuPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; page?: string }>;
 }) {
-  const [{ category }, session] = await Promise.all([searchParams, auth()]);
+  const [{ category, page: pageParam }, session] = await Promise.all([searchParams, auth()]);
   const isLoggedIn = !!session?.user;
+  const page = Math.max(1, parseInt(pageParam ?? "1", 10));
 
-  const [rawServices, distinctCategories, serviceCategoryDefs, testimonials] = await Promise.all([
+  const [rawServices, total, agg, distinctCategories, serviceCategoryDefs, testimonials] = await Promise.all([
     prisma.service.findMany({
       where: {
         isActive: true,
@@ -40,6 +44,8 @@ export default async function DichVuPage({
         ...(category ? { category } : {}),
       },
       orderBy: [{ isFeatured: "desc" }, { displayOrder: "asc" }],
+      skip: (page - 1) * LIMIT,
+      take: LIMIT,
       select: {
         id: true, slug: true, name: true, thumbnail: true,
         platform: true, category: true, price: true,
@@ -49,6 +55,14 @@ export default async function DichVuPage({
         description: true, warrantyOptions: true, productList: true,
         requiresAccountType: true, requiresCccd: true,
       },
+    }),
+    prisma.service.count({
+      where: { isActive: true, deletedAt: null, ...(category ? { category } : {}) },
+    }),
+    prisma.service.aggregate({
+      where: { isActive: true, deletedAt: null, ...(category ? { category } : {}) },
+      _sum: { customerCount: true, totalOrders: true },
+      _avg: { rating: true, successRate: true },
     }),
     prisma.service.findMany({
       where: { isActive: true, deletedAt: null },
@@ -71,6 +85,7 @@ export default async function DichVuPage({
     }),
   ]);
 
+  const totalPages = Math.ceil(total / LIMIT);
   const categoryIconMap = new Map(serviceCategoryDefs.map((c) => [c.name, c.iconUrl]));
   const availableCategories = distinctCategories.map((s) => s.category).filter(Boolean);
 
@@ -81,15 +96,11 @@ export default async function DichVuPage({
     deviceVariants: parseJsonArray<DeviceVariant>(s.productList),
   }));
 
-  // Aggregate stats
-  const totalCustomers = rawServices.reduce((s, v) => s + v.customerCount, 0);
-  const totalOrders    = rawServices.reduce((s, v) => s + v.totalOrders, 0);
-  const avgRating      = rawServices.length > 0
-    ? rawServices.reduce((s, v) => s + v.rating, 0) / rawServices.length
-    : 5;
-  const avgSuccess     = rawServices.length > 0
-    ? rawServices.reduce((s, v) => s + v.successRate, 0) / rawServices.length
-    : 100;
+  // Aggregate stats từ toàn bộ dịch vụ khớp filter (không chỉ trang hiện tại)
+  const totalCustomers = agg._sum.customerCount ?? 0;
+  const totalOrders    = agg._sum.totalOrders ?? 0;
+  const avgRating      = agg._avg.rating ?? 5;
+  const avgSuccess     = agg._avg.successRate ?? 100;
 
   const OVERVIEW_STATS = [
     { Icon: Users,       color: "#0066ff", bg: "#dbeafe", value: `${(totalCustomers / 1000).toFixed(0)}K+`, label: "Khách hàng" },
@@ -113,7 +124,7 @@ export default async function DichVuPage({
           </p>
         </div>
 
-        {/* ── GC MMO stats bar ── */}
+        {/* Stats bar */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
           {OVERVIEW_STATS.map(({ Icon, color, bg, value, label }) => (
             <div key={label} className="bg-white rounded-2xl border border-border px-4 py-4 flex items-center gap-3 shadow-sm">
@@ -167,9 +178,10 @@ export default async function DichVuPage({
         )}
 
         {/* Count */}
-        {services.length > 0 && (
+        {total > 0 && (
           <p className="text-center text-xs text-[#94a3b8] mb-8">
-            Hiển thị <strong>{services.length}</strong> dịch vụ
+            Hiển thị <strong>{services.length}</strong> / <strong>{total}</strong> dịch vụ
+            {totalPages > 1 && <span> — trang {page}/{totalPages}</span>}
           </p>
         )}
 
@@ -182,6 +194,17 @@ export default async function DichVuPage({
         ) : (
           <ServiceListWithForm services={services} isLoggedIn={isLoggedIn} testimonials={testimonials} />
         )}
+
+        {/* Pagination */}
+        <div className="mt-8">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            basePath="/dich-vu"
+            searchParams={category ? { category } : {}}
+          />
+        </div>
+
       </div>
     </div>
   );

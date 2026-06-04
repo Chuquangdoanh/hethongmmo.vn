@@ -3,22 +3,13 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatVnd, formatDate } from "@/lib/utils/format";
-import { getSellerConfig, getSellerTierConfig } from "@/lib/services/seller.service";
-import type { SellerTierKey } from "@/lib/services/seller.service";
+import { getSellerTierConfig } from "@/lib/services/seller.service";
 import {
   ArrowDownToLine, Lock, Clock, TrendingUp, Wallet,
   ReceiptText, AlertTriangle, PackageX,
 } from "lucide-react";
 import WithdrawalForm from "./WithdrawalForm";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
-import type { SellerTier } from "@prisma/client";
-
-const TIER_BADGE: Record<SellerTier, { label: string; cls: string }> = {
-  STANDARD: { label: "Standard", cls: "bg-gray-100 text-gray-600" },
-  SILVER:   { label: "Silver",   cls: "bg-slate-100 text-slate-600" },
-  GOLD:     { label: "Gold",     cls: "bg-amber-100 text-amber-700" },
-  VIP:      { label: "VIP",      cls: "bg-violet-100 text-violet-700" },
-};
 
 export const metadata: Metadata = { title: "Rút tiền" };
 
@@ -26,13 +17,12 @@ export default async function RutTienPage() {
   const session = await auth();
   const me = session!.user as AuthenticatedUser;
 
-  const [config, sellerRow] = await Promise.all([
-    getSellerConfig(),
-    prisma.user.findUnique({ where: { id: me.id }, select: { sellerTier: true } }),
-  ]);
+  const sellerRow = await prisma.user.findUnique({
+    where: { id: me.id },
+    select: { sellerTier: true },
+  });
 
-  const sellerTier = (sellerRow?.sellerTier ?? "STANDARD") as SellerTierKey;
-  const tierCfg = getSellerTierConfig(config, sellerTier);
+  const tierCfg = await getSellerTierConfig(sellerRow?.sellerTier ?? "STANDARD");
   const holdDays = tierCfg.hold_days;
   const feePercent = tierCfg.fee_percent;
   const minAmount = tierCfg.min_withdrawal;
@@ -160,15 +150,11 @@ export default async function RutTienPage() {
             </div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-gray-900">Rút tiền</h1>
-              {(() => {
-                const tier = (sellerRow?.sellerTier ?? "STANDARD") as SellerTier;
-                const { label, cls } = TIER_BADGE[tier];
-                return (
-                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${cls}`}>
-                    {label}
-                  </span>
-                );
-              })()}
+              {tierCfg.label && (
+                <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-violet-100 text-violet-700">
+                  {tierCfg.label}
+                </span>
+              )}
             </div>
           </div>
 

@@ -5,6 +5,7 @@ import {
   Users, Activity, Clock, RotateCcw, MessageCircle,
 } from "lucide-react";
 import AuthRightPanel from "./AuthRightPanel";
+import PageTransitionWrapper from "@/components/layout/PageTransitionWrapper";
 
 const FEATURES = [
   { Icon: Zap,         title: "Xử Lý Tự Động",      desc: "Giao hàng tức thì\nAPI tốc độ cao"        },
@@ -196,7 +197,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       {/* ══════════════════════════════════════════
           FORM — thứ tự 4 trên mobile, cột phải 40% trên desktop
       ══════════════════════════════════════════ */}
-      <AuthRightPanel>{children}</AuthRightPanel>
+      <AuthRightPanel>
+        <PageTransitionWrapper>{children}</PageTransitionWrapper>
+      </AuthRightPanel>
 
       {/* ══════════════════════════════════════════
           MOBILE ONLY — thứ tự 5: Cards

@@ -84,6 +84,7 @@ export default function ResetPasswordForm() {
           minLength={12}
           className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#0f172a] focus:border-[#0066ff] focus:outline-none transition-colors"
           placeholder="Tối thiểu 12 ký tự, có chữ hoa, số, ký tự đặc biệt"
+          suppressHydrationWarning
         />
       </div>
 
@@ -97,6 +98,7 @@ export default function ResetPasswordForm() {
           required
           className="w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#0f172a] focus:border-[#0066ff] focus:outline-none transition-colors"
           placeholder="Nhập lại mật khẩu"
+          suppressHydrationWarning
         />
       </div>
 
