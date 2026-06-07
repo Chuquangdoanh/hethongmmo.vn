@@ -6,8 +6,8 @@ export const metadata: Metadata = { title: "Admin — Danh mục Tut & Tricks" }
 
 export default async function AdminTutTrickCategoriesPage() {
   const categories = await prisma.tutTrickCategory.findMany({
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, iconUrl: true },
+    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+    select: { id: true, name: true, iconUrl: true, displayOrder: true },
   });
 
   return (

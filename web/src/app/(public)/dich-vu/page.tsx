@@ -3,8 +3,10 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import ServiceListWithForm from "./_components/ServiceListWithForm";
+import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import Pagination from "@/components/shared/Pagination";
 import { Users, TrendingUp, Star, CheckCircle, Headphones } from "lucide-react";
+import { getDiscountInfo } from "@/lib/utils/discount";
 
 export const metadata: Metadata = {
   title: "Hệ Thống MMO",
@@ -32,11 +34,13 @@ export default async function DichVuPage({
 }: {
   searchParams: Promise<{ category?: string; page?: string }>;
 }) {
+  await guardPublicPage("dich-vu");
   const [{ category, page: pageParam }, session] = await Promise.all([searchParams, auth()]);
   const isLoggedIn = !!session?.user;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10));
+  const userId = (session?.user as { id: string } | null | undefined)?.id;
 
-  const [rawServices, total, agg, distinctCategories, serviceCategoryDefs, testimonials] = await Promise.all([
+  const [rawServices, total, agg, distinctCategories, serviceCategoryDefs, testimonials, userRow] = await Promise.all([
     prisma.service.findMany({
       where: {
         isActive: true,
@@ -44,8 +48,6 @@ export default async function DichVuPage({
         ...(category ? { category } : {}),
       },
       orderBy: [{ isFeatured: "desc" }, { displayOrder: "asc" }],
-      skip: (page - 1) * LIMIT,
-      take: LIMIT,
       select: {
         id: true, slug: true, name: true, thumbnail: true,
         platform: true, category: true, price: true,
@@ -71,6 +73,7 @@ export default async function DichVuPage({
       orderBy: { category: "asc" },
     }),
     prisma.serviceCategory.findMany({
+      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       select: { name: true, iconUrl: true },
     }),
     prisma.testimonial.findMany({
@@ -83,11 +86,20 @@ export default async function DichVuPage({
       },
       orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
     }),
+    userId
+      ? prisma.user.findUnique({ where: { id: userId }, select: { discountPercent: true, totalDeposited: true } })
+      : Promise.resolve(null),
   ]);
+
+  const discountPct = userRow
+    ? getDiscountInfo(Number(userRow.totalDeposited), userRow.discountPercent).pct
+    : 0;
 
   const totalPages = Math.ceil(total / LIMIT);
   const categoryIconMap = new Map(serviceCategoryDefs.map((c) => [c.name, c.iconUrl]));
-  const availableCategories = distinctCategories.map((s) => s.category).filter(Boolean);
+  // Dùng serviceCategoryDefs (đã sắp xếp theo displayOrder) thay vì alphabetical
+  const activeCatSet = new Set(distinctCategories.map((s) => s.category).filter(Boolean));
+  const availableCategories = serviceCategoryDefs.map((c) => c.name).filter((n) => activeCatSet.has(n));
 
   const services = rawServices.map((s) => ({
     ...s,
@@ -95,6 +107,11 @@ export default async function DichVuPage({
     warrantyOptions: parseJsonArray<WarrantyOption>(s.warrantyOptions),
     deviceVariants: parseJsonArray<DeviceVariant>(s.productList),
   }));
+
+  // Sort by category displayOrder (serviceCategoryDefs already ordered by displayOrder)
+  const svcCatOrder = new Map(serviceCategoryDefs.map((c, idx) => [c.name, idx]));
+  services.sort((a, b) => (svcCatOrder.get(a.category ?? "") ?? 999) - (svcCatOrder.get(b.category ?? "") ?? 999));
+  const pagedServices = services.slice((page - 1) * LIMIT, page * LIMIT);
 
   // Aggregate stats từ toàn bộ dịch vụ khớp filter (không chỉ trang hiện tại)
   const totalCustomers = agg._sum.customerCount ?? 0;
@@ -192,7 +209,7 @@ export default async function DichVuPage({
             <p className="font-medium">Không có dịch vụ nào</p>
           </div>
         ) : (
-          <ServiceListWithForm services={services} isLoggedIn={isLoggedIn} testimonials={testimonials} />
+          <ServiceListWithForm services={pagedServices} isLoggedIn={isLoggedIn} testimonials={testimonials} discountPct={discountPct} />
         )}
 
         {/* Pagination */}

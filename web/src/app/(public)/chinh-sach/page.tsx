@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { guardPublicPage } from "@/lib/utils/public-page-guard";
 
 export const metadata: Metadata = {
   title: "Chính sách bảo mật — hethongmmo.vn",
@@ -135,7 +136,8 @@ const COOKIE_PURPOSES = [
 // Accent: green/teal for security theme
 const ACCENT = { color: "#059669", bg: "#d1fae5", light: "#f0fdf4", border: "#a7f3d0" };
 
-export default function ChinhSachBaoMatPage() {
+export default async function ChinhSachBaoMatPage() {
+  await guardPublicPage("chinh-sach");
   return (
     <div className="mx-auto max-w-[1100px] px-4 md:px-6 lg:px-8 py-12">
 

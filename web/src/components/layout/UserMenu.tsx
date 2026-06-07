@@ -14,7 +14,6 @@ interface UserMenuProps {
 
 export default function UserMenu({ user, balance }: UserMenuProps) {
   const [open, setOpen] = useState(false);
-  const [hovered, setHovered] = useState(false);
   const [mounted, setMounted] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -33,58 +32,33 @@ export default function UserMenu({ user, balance }: UserMenuProps) {
   const isSeller = (user.role === "SELLER" && user.sellerStatus === "APPROVED") || user.role === "STAFF" || user.role === "ADMIN";
   const isAdmin  = user.role === "ADMIN"  || user.role === "STAFF";
   const initials = (user.fullName || user.email).slice(0, 2).toUpperCase();
-  // Only format after mount to avoid SSR/browser Intl mismatch
   const balanceStr = mounted && balance !== null ? formatVnd(balance) : null;
 
   return (
-    <div ref={ref} className="relative profile-dropdown" style={{ display: "inline-block" }}>
-      {/* ── Profile pill (button-message design) ── */}
+    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
       <button
-        id="btn-message"
         onClick={() => setOpen((o) => !o)}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
         aria-haspopup="true"
         aria-expanded={open}
-        className="button-message"
         style={{
-          ["--text-color" as string]: "#ffffff",
-          ["--bg-color-sup" as string]: "#334155",
-          ["--bg-color" as string]: "#1e293b",
-          ["--bg-hover-color" as string]: "#0f172a",
-          ["--online-status" as string]: "#22c55e",
-          ["--font-size" as string]: "13px",
-          ["--btn-transition" as string]: "all 0.2s ease-out",
           display: "flex",
-          justifyContent: "center",
           alignItems: "center",
-          fontFamily: "Inter, sans-serif",
-          boxShadow: "0 0 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.10),0 4px 16px rgba(0,0,0,.09)",
-          backgroundColor: "#1e293b",
-          borderRadius: "68px",
+          gap: "8px",
+          background: open ? "#f1f5f9" : "#f8fafc",
+          border: "1px solid rgba(0,0,0,0.09)",
+          borderRadius: "999px",
           cursor: "pointer",
-          padding: hovered ? "8px 18px 8px 8px" : "5px 10px 5px 5px",
-          height: hovered ? "54px" : "38px",
-          border: "0",
-          overflow: "hidden",
-          position: "relative",
-          transition: "all 0.2s ease-out",
-          width: "fit-content",
+          padding: "5px 14px 5px 5px",
+          height: "38px",
+          transition: "background 0.15s",
         }}
       >
         {/* Avatar */}
-        <div style={{
-          width: hovered ? "38px" : "28px",
-          height: hovered ? "38px" : "28px",
-          position: "relative",
-          flexShrink: 0,
-          transition: "all 0.2s ease-out",
-        }}>
+        <div style={{ position: "relative", flexShrink: 0 }}>
           <div style={{
-            width: "100%",
-            height: "100%",
+            width: "28px",
+            height: "28px",
             borderRadius: "50%",
-            overflow: "hidden",
             background: "linear-gradient(135deg,#3b82f6,#1d4ed8)",
             display: "flex",
             alignItems: "center",
@@ -94,91 +68,45 @@ export default function UserMenu({ user, balance }: UserMenuProps) {
               {initials}
             </span>
           </div>
-          {/* Online dot */}
           <span style={{
             position: "absolute",
-            width: hovered ? "10px" : "7px",
-            height: hovered ? "10px" : "7px",
+            width: "8px",
+            height: "8px",
             right: 0,
             bottom: 0,
             borderRadius: "50%",
-            outline: `solid 2px ${hovered ? "#0f172a" : "#1e293b"}`,
-            backgroundColor: "#22c55e",
-            transition: "all 0.2s ease-out",
-            animation: "active-status 2s ease-in-out infinite",
-            zIndex: 1,
+            background: "#22c55e",
+            outline: "2px solid #f8fafc",
           }} />
         </div>
 
-        {/* Text content */}
-        <div style={{
+        {/* Label + balance */}
+        <span style={{
           display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          justifyContent: "center",
-          paddingLeft: "8px",
-          textAlign: "initial",
-          color: "#ffffff",
-          overflow: "hidden",
+          alignItems: "center",
+          gap: "6px",
+          fontSize: "13px",
+          fontWeight: "600",
+          whiteSpace: "nowrap",
+          color: "#1e293b",
         }}>
-          {hovered ? (
-            <>
-              <span style={{
-                fontSize: "13px",
-                fontWeight: "700",
-                whiteSpace: "nowrap",
-                letterSpacing: "normal",
-                opacity: 1,
-                transform: "translateY(0)",
-                transition: "all 0.2s ease-out",
-                color: "#ffffff",
-              }}>
-                {user.fullName ?? user.email}
-              </span>
-              <span style={{
-                fontSize: "11px",
-                letterSpacing: "normal",
-                opacity: 1,
-                transform: "translateY(0)",
-                transition: "all 0.2s ease-out",
-                color: "#94a3b8",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                maxWidth: "160px",
-              }}>
-                {user.email}
-              </span>
-            </>
-          ) : (
+          Tài khoản
+          {balanceStr && (
             <span style={{
+              fontSize: "11px",
+              padding: "0 7px",
+              height: "18px",
               display: "flex",
               alignItems: "center",
-              fontSize: "13px",
-              fontWeight: "600",
-              whiteSpace: "nowrap",
-              color: "#ffffff",
-              gap: "6px",
+              background: "linear-gradient(135deg,#16a34a,#15803d)",
+              borderRadius: "20px",
+              color: "white",
+              fontWeight: "700",
             }}>
-              Tài khoản
-              {balanceStr && (
-                <span style={{
-                  display: "flex",
-                  alignItems: "center",
-                  fontSize: "11px",
-                  padding: "0 7px",
-                  height: "18px",
-                  background: "linear-gradient(135deg,#16a34a,#15803d)",
-                  borderRadius: "20px",
-                  color: "white",
-                  fontWeight: "700",
-                }}>
-                  {balanceStr}
-                </span>
-              )}
+              {balanceStr}
             </span>
           )}
-        </div>
+        </span>
       </button>
 
       {/* ── Dropdown menu ── */}

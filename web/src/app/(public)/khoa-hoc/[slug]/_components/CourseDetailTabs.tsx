@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   BookOpen, FileText, Headphones, Users,
   ChevronDown, ChevronUp, ShoppingCart,
@@ -25,6 +25,7 @@ interface Props {
   commitments: string[];
   registrationProcedure: string | null;
   testimonials: TestimonialItem[];
+  discountPct?: number;
 }
 
 const BENEFITS = [
@@ -76,10 +77,21 @@ function SectionTitle({ children, count }: { children: React.ReactNode; count?: 
 export default function CourseDetailTabs({
   description, contentList, studentCount,
   courseId, price, originalPrice, isOnSale, isLoggedIn, userName,
-  commitments, registrationProcedure, testimonials,
+  commitments, registrationProcedure, testimonials, discountPct = 0,
 }: Props) {
   const [tab, setTab] = useState<Tab>("intro");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  useEffect(() => {
+    function onScrollToRegister() {
+      setTab("intro");
+      setTimeout(() => {
+        document.getElementById("course-form")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 80);
+    }
+    window.addEventListener("scroll-to-course-register", onScrollToRegister);
+    return () => window.removeEventListener("scroll-to-course-register", onScrollToRegister);
+  }, []);
 
   const reviewCount = testimonials.length;
 
@@ -203,6 +215,7 @@ export default function CourseDetailTabs({
               isOnSale={isOnSale}
               isLoggedIn={isLoggedIn}
               userName={userName}
+              discountPct={discountPct}
             />
           </div>
         </div>

@@ -9,6 +9,7 @@ declare module "next-auth" {
       status: AccountStatus;
       sellerStatus: SellerStatus;
       fullName: string;
+      requiresTwoFactor: boolean;
     } & DefaultSession["user"];
   }
 
@@ -18,6 +19,7 @@ declare module "next-auth" {
     status: AccountStatus;
     sellerStatus: SellerStatus;
     fullName: string;
+    requiresTwoFactor?: boolean;
   }
 }
 
@@ -28,5 +30,7 @@ declare module "next-auth/jwt" {
     status: AccountStatus;
     sellerStatus: SellerStatus;
     fullName: string;
+    requiresTwoFactor?: boolean;
+    statusCheckedAt?: number;
   }
 }

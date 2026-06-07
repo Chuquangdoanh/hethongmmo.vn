@@ -1,5 +1,6 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
+import { guardPublicPage } from "@/lib/utils/public-page-guard";
 
 export const metadata: Metadata = {
   title: "Giới thiệu",
@@ -33,7 +34,8 @@ const TEAM = [
   { name: "Chu Quang Doanh", role: "Founder & CEO", avatar: "👨‍💼" },
 ];
 
-export default function GioiThieuPage() {
+export default async function GioiThieuPage() {
+  await guardPublicPage("gioi-thieu");
   return (
     <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8 py-12">
       {/* Hero */}

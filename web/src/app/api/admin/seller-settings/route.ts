@@ -73,19 +73,42 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       select: { value: true },
     });
 
-    await prisma.systemConfig.upsert({
-      where: { key: "seller_settings" },
-      create: {
-        key: "seller_settings",
-        value: parsed.data,
-        description: "Cấu hình rút tiền nhà bán hàng",
-        updatedByUserId: admin.id,
-      },
-      update: {
-        value: parsed.data,
-        updatedByUserId: admin.id,
-      },
-    });
+    const { withdrawal_fee_percent, min_withdrawal_amount, order_hold_days } = parsed.data;
+
+    await prisma.$transaction([
+      prisma.systemConfig.upsert({
+        where: { key: "seller_settings" },
+        create: {
+          key: "seller_settings",
+          value: parsed.data,
+          description: "Cấu hình rút tiền nhà bán hàng",
+          updatedByUserId: admin.id,
+        },
+        update: {
+          value: parsed.data,
+          updatedByUserId: admin.id,
+        },
+      }),
+      // Đồng bộ sang SellerTierDefinition để getSellerTierConfig() đọc đúng
+      prisma.sellerTierDefinition.upsert({
+        where: { key: "STANDARD" },
+        create: {
+          key: "STANDARD",
+          label: "Standard",
+          feePercent: withdrawal_fee_percent,
+          minWithdrawal: min_withdrawal_amount,
+          holdDays: order_hold_days,
+          isBuiltIn: true,
+          isActive: true,
+          displayOrder: 0,
+        },
+        update: {
+          feePercent: withdrawal_fee_percent,
+          minWithdrawal: min_withdrawal_amount,
+          holdDays: order_hold_days,
+        },
+      }),
+    ]);
 
     await prisma.auditLog.create({
       data: {

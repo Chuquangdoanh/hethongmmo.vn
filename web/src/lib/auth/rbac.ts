@@ -17,6 +17,7 @@ export type AuthenticatedUser = {
   role: Role;
   status: AccountStatus;
   sellerStatus: SellerStatus;
+  requiresTwoFactor?: boolean;
 };
 
 class AppAuthError extends AppError {
@@ -36,6 +37,13 @@ function assertRole(session: Session | null, minRole: Role): AuthenticatedUser {
   }
   if (ROLE_LEVELS[user.role] < ROLE_LEVELS[minRole]) {
     throw new AppAuthError("Bạn không có quyền thực hiện hành động này", "FORBIDDEN", 403);
+  }
+  if ((user.role === "ADMIN" || user.role === "STAFF") && user.requiresTwoFactor) {
+    throw new AppAuthError(
+      "Tài khoản Admin/Staff phải kích hoạt xác thực 2 bước (2FA). Vào phần cài đặt bảo mật để bật 2FA.",
+      "ADMIN_2FA_REQUIRED",
+      403,
+    );
   }
   return user;
 }
@@ -66,6 +74,13 @@ export function requireAdmin(session: Session | null): AuthenticatedUser {
   }
   if (user.role !== "ADMIN") {
     throw new AppAuthError("Chỉ Admin mới có quyền truy cập", "ADMIN_REQUIRED", 403);
+  }
+  if (user.requiresTwoFactor) {
+    throw new AppAuthError(
+      "Tài khoản Admin phải kích hoạt xác thực 2 bước (2FA). Vào phần cài đặt bảo mật để bật 2FA.",
+      "ADMIN_2FA_REQUIRED",
+      403,
+    );
   }
   return user;
 }

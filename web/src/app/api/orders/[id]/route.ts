@@ -39,6 +39,7 @@ export async function GET(
       where: { id },
       select: {
         userId: true,
+        orderCode: true,
         orderType: true,
         status: true,
         deliveredItemId: true,
@@ -54,7 +55,7 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Không có quyền", code: "FORBIDDEN" }, { status: 403 });
     }
     if (order.status !== "DONE") {
-      return NextResponse.json({ success: true, data: { deliveredContent: null } });
+      return NextResponse.json({ success: true, data: { deliveredContent: null, orderCode: order.orderCode } });
     }
 
     let deliveredContent: string | null = null;
@@ -82,6 +83,7 @@ export async function GET(
       data: {
         deliveredContent,
         tutTrickDocs: order.orderType === "TUTTRICK" ? (order.tutTrickDocs ?? null) : null,
+        orderCode: order.orderCode,
       },
     });
   } catch (err) {

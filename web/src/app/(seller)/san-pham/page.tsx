@@ -122,7 +122,7 @@ export default async function SellerSanPhamPage({
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-sm text-violet-600 font-semibold">{formatVnd(Number(p.price))}</td>
+                        <td className="px-4 py-3 text-sm text-red-500 font-semibold">{formatVnd(Number(p.price))}</td>
                         <td className="px-4 py-3 text-sm text-gray-500">{p._count.orders}</td>
                         <td className="px-4 py-3 text-sm text-gray-500">
                           {p._count.stockItems === 0

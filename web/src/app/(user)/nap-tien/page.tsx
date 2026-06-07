@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Nạp tiền" };
 
 const BANK_INFO = {
   bankName:      process.env.BANK_NAME           ?? "MB Bank",
-  accountNumber: process.env.BANK_ACCOUNT_NUMBER ?? "9999888877776666",
+  accountNumber: process.env.BANK_ACCOUNT_NUMBER ?? "0393118789",
   accountHolder: process.env.BANK_ACCOUNT_HOLDER ?? "CHU QUANG DOANH",
   bankBin:       process.env.BANK_BIN            ?? "MB",
 };
@@ -126,9 +126,9 @@ export default async function NapTienPage() {
                 <h3 className="text-sm font-semibold">Hỗ trợ Dịch vụ</h3>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                Số dư tối thiểu <strong className="text-white">50.000đ</strong> để bắt đầu sử dụng các dịch vụ tốt nhất trang mạng xã hội.
+                Nạp tối thiểu <strong className="text-white">50.000đ</strong> để bắt đầu sử dụng các dịch vụ tốt nhất trang mạng xã hội.
               </p>
-              <p className="text-[11px] text-slate-500 uppercase tracking-wide mb-1">Giảm thêm:</p>
+              <p className="text-[13px] text-slate-500 uppercase tracking-wide mb-1">Ưu đãi cho mỗi đơn dịch vụ:</p>
               <p className="text-2xl font-bold text-amber-400">100.000đ</p>
               <Link
                 href="/dich-vu"

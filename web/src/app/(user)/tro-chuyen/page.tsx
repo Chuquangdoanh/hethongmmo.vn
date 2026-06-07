@@ -139,9 +139,13 @@ export default async function TroChuyenPage() {
                             <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200 flex items-center gap-1">
                               <MessageSquare size={9} /> Đang trò chuyện
                             </span>
+                          ) : isClosed ? (
+                            <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-500 border border-gray-200 flex items-center gap-1">
+                              <Lock size={9} /> Đã xử lý
+                            </span>
                           ) : (
                             <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
-                              <Clock size={9} /> Chờ Admin
+                              <Clock size={9} /> Vui lòng chờ
                             </span>
                           )}
                         </div>
@@ -171,9 +175,11 @@ export default async function TroChuyenPage() {
                           </p>
                         ) : c.chatRoom ? (
                           <p className="text-xs text-gray-400 mt-1.5">Chưa có tin nhắn nào</p>
+                        ) : isClosed ? (
+                          <p className="text-xs text-gray-500 mt-1.5">Khiếu nại đã được xử lý bởi bộ phận hỗ trợ.</p>
                         ) : (
                           <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
-                            <Clock size={10} /> Đang chờ Admin xác nhận trò chuyện
+                            <Clock size={10} /> Hệ Thống MMO đang xác minh đơn hàng của bạn, vui lòng chờ đợi...
                           </p>
                         )}
                       </div>

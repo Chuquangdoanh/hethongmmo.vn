@@ -8,6 +8,7 @@ import {
   Gamepad2, Tags, BookMarked, Tag, FolderOpen, ShieldCheck, Star,
   AlertTriangle, Radio, Wallet, ArrowDownCircle, ArrowUpCircle,
   Store, Settings, Users, Search, ChevronDown, Home, X, Lock,
+  Inbox,
   type LucideIcon,
 } from "lucide-react";
 
@@ -331,6 +332,29 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
             <span className="flex-1">Đơn hàng</span>
             {orderBadgeVisible && <BadgeCount count={badges.orders} />}
           </Link>
+
+          {/* Đăng ký dịch vụ */}
+          {(() => {
+            const leadsActive = isActive("/admin/dang-ky-dich-vu");
+            return (
+              <Link
+                href="/admin/dang-ky-dich-vu"
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  leadsActive
+                    ? "bg-[#fef9c3] text-[#78350f]"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <div
+                  className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                  style={{ background: leadsActive ? "#fef08a" : "#f1f5f9" }}
+                >
+                  <Inbox size={13} strokeWidth={1.75} style={{ color: leadsActive ? "#92400e" : "#94a3b8" }} />
+                </div>
+                <span className="flex-1">Đăng ký dịch vụ</span>
+              </Link>
+            );
+          })()}
 
           <div className="h-px bg-gray-100 my-1.5" />
 

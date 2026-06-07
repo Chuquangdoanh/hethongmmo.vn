@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { getPermissionsForRole } from "@/lib/services/page-permission.service";
+import { getPublicPageConfigs } from "@/lib/services/public-page-config.service";
 import { PAGE_REGISTRY } from "@/lib/page-registry";
 import PermissionManager from "./_components/PermissionManager";
 
@@ -13,19 +14,19 @@ export default async function PagePermissionsPage() {
 
   if (!me || me.role !== "ADMIN") redirect("/admin/dashboard");
 
-  const [staffPerms, userPerms, sellerPerms] = await Promise.all([
+  const [staffPerms, userPerms, sellerPerms, publicConfigs] = await Promise.all([
     getPermissionsForRole("STAFF"),
     getPermissionsForRole("USER"),
     getPermissionsForRole("SELLER"),
+    getPublicPageConfigs(),
   ]);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Phân quyền truy cập trang</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Bật / tắt quyền truy cập từng trang cho từng nhóm người dùng.
-          Thay đổi có hiệu lực ngay lập tức.
+          Bật / tắt quyền truy cập từng trang cho từng nhóm người dùng. Thay đổi có hiệu lực ngay lập tức.
         </p>
       </div>
 
@@ -34,6 +35,7 @@ export default async function PagePermissionsPage() {
         initialStaff={staffPerms}
         initialUser={userPerms}
         initialSeller={sellerPerms}
+        initialPublicConfigs={publicConfigs}
       />
     </div>
   );

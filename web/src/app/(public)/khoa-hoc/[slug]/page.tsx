@@ -4,12 +4,14 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
+import { getDiscountInfo } from "@/lib/utils/discount";
 import {
   Clock, BookOpen, Users, Eye,
   ShoppingCart, Shield, Headphones, CheckCircle, RefreshCw, Monitor,
   Flame,
 } from "lucide-react";
 import CourseDetailTabs from "./_components/CourseDetailTabs";
+import SidebarRegisterButton from "./_components/SidebarRegisterButton";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -34,19 +36,6 @@ const FORMAT_LABELS: Record<string, string> = {
   HYBRID:  "Hybrid",
 };
 
-const CATEGORY_PLATFORM_ICONS: Record<string, string> = {
-  "Facebook":    "https://svgl.app/library/facebook-icon.svg",
-  "TikTok":      "https://svgl.app/library/tiktok-icon-light.svg",
-  "YouTube":     "https://svgl.app/library/youtube.svg",
-  "Instagram":   "https://svgl.app/library/instagram-icon.svg",
-  "X (Twitter)": "https://svgl.app/library/x.svg",
-  "Threads":     "https://svgl.app/library/threads.svg",
-  "Telegram":    "https://svgl.app/library/telegram.svg",
-  "WhatsApp":    "https://svgl.app/library/whatsapp-icon.svg",
-  "Pinterest":   "https://svgl.app/library/pinterest.svg",
-  "Reddit":      "https://svgl.app/library/reddit.svg",
-  "LinkedIn":    "https://svgl.app/library/linkedin.svg",
-};
 
 function getYoutubeEmbedId(url: string): string | null {
   try {
@@ -86,15 +75,30 @@ export default async function KhoaHocDetailPage({ params }: Props) {
 
   if (!course) notFound();
 
+  const userId = (session?.user as { id: string } | null | undefined)?.id;
+  const [userRow, categoryRow] = await Promise.all([
+    userId
+      ? prisma.user.findUnique({ where: { id: userId }, select: { discountPercent: true, totalDeposited: true } })
+      : Promise.resolve(null),
+    prisma.courseCategory.findUnique({
+      where: { name: course.category },
+      select: { icon: true },
+    }),
+  ]);
+  const discountPct = userRow
+    ? getDiscountInfo(Number(userRow.totalDeposited), userRow.discountPercent).pct
+    : 0;
+
   const isOnSale  = Number(course.salePrice) < Number(course.originalPrice);
   const isExpired = course.saleDeadline ? new Date(course.saleDeadline) < new Date() : false;
   const finalPrice    = !isExpired && isOnSale ? Number(course.salePrice) : Number(course.originalPrice);
   const savedAmount   = isOnSale && !isExpired ? Number(course.originalPrice) - finalPrice : 0;
+  const discountedFinalPrice = discountPct > 0 ? Math.round(finalPrice * (1 - discountPct / 100)) : finalPrice;
 
   const contentList   = Array.isArray(course.contentList)  ? (course.contentList  as string[]) : [];
   const commitments   = Array.isArray(course.commitments)   ? (course.commitments  as string[]) : [];
   const embedId       = course.youtubeUrl ? getYoutubeEmbedId(course.youtubeUrl) : null;
-  const catIcon     = CATEGORY_PLATFORM_ICONS[course.category];
+  const catIcon       = categoryRow?.icon || null;
 
   const upd = new Date(course.updatedAt);
   const updatedLabel = `${String(upd.getMonth() + 1).padStart(2, "0")}/${upd.getFullYear()}`;
@@ -255,27 +259,36 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                     <Flame size={10} strokeWidth={2} /> LIVE
                   </span>
                 )}
-                {isOnSale && !isExpired && (
+                {(isOnSale && !isExpired) || discountPct > 0 ? (
                   <span className="inline-flex text-[10px] font-semibold text-[#0d9488] bg-[#ccfbf1] px-2 py-0.5 rounded-full">
                     TIẾT KIỆM
+                  </span>
+                ) : null}
+                {discountPct > 0 && (
+                  <span className="inline-flex text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                    Giảm {discountPct}%
                   </span>
                 )}
               </div>
               <div className="flex items-baseline gap-2 mb-0.5">
                 <span className="text-3xl font-extrabold" style={{ color: "#E53E3E" }}>
-                  {formatVnd(finalPrice)}
+                  {formatVnd(discountedFinalPrice)}
                 </span>
-                {isOnSale && !isExpired && (
-                  <span className="text-sm text-[#94a3b8] line-through">
-                    {formatVnd(Number(course.originalPrice))}
-                  </span>
-                )}
+                {discountPct > 0 ? (
+                  <span className="text-sm text-[#94a3b8] line-through">{formatVnd(finalPrice)}</span>
+                ) : isOnSale && !isExpired ? (
+                  <span className="text-sm text-[#94a3b8] line-through">{formatVnd(Number(course.originalPrice))}</span>
+                ) : null}
               </div>
-              {savedAmount > 0 && (
+              {discountPct > 0 ? (
+                <p className="text-xs text-[#e11d48] font-semibold mb-4">
+                  Tiết kiệm {formatVnd(finalPrice - discountedFinalPrice)} (-{discountPct}%)
+                </p>
+              ) : savedAmount > 0 ? (
                 <p className="text-xs text-[#e11d48] font-semibold mb-4">
                   Tiết kiệm {formatVnd(savedAmount)}
                 </p>
-              )}
+              ) : null}
               <div className="flex items-center gap-1.5 mb-5">
                 <div className="flex gap-0.5">
                   {[1,2,3,4,5].map((s) => (
@@ -289,7 +302,11 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                   </span>
                 )}
               </div>
-              
+
+              <div className="mb-5">
+                <SidebarRegisterButton />
+              </div>
+
               <div className="border-t border-[#f1f5f9] pt-4 space-y-3">
                 {INFO_ROWS.map(({ label, value, Icon }) => (
                   <div key={label} className="flex items-center justify-between text-xs">
@@ -318,6 +335,7 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                 commitments={commitments}
                 registrationProcedure={course.registrationProcedure ?? null}
                 testimonials={testimonials}
+                discountPct={discountPct}
               />
             </div>
           </div>
@@ -374,29 +392,38 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                       <Flame size={10} strokeWidth={2} /> LIVE
                     </span>
                   )}
-                  {isOnSale && !isExpired && (
+                  {(isOnSale && !isExpired) || discountPct > 0 ? (
                     <span className="inline-flex text-[10px] font-semibold text-[#0d9488] bg-[#ccfbf1] px-2 py-0.5 rounded-full">
                       TIẾT KIỆM
+                    </span>
+                  ) : null}
+                  {discountPct > 0 && (
+                    <span className="inline-flex text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                      Giảm {discountPct}%
                     </span>
                   )}
                 </div>
 
                 <div className="flex items-baseline gap-2 mb-0.5">
                   <span className="text-3xl font-extrabold" style={{ color: "#E53E3E" }}>
-                    {formatVnd(finalPrice)}
+                    {formatVnd(discountedFinalPrice)}
                   </span>
-                  {isOnSale && !isExpired && (
-                    <span className="text-sm text-[#94a3b8] line-through">
-                      {formatVnd(Number(course.originalPrice))}
-                    </span>
-                  )}
+                  {discountPct > 0 ? (
+                    <span className="text-sm text-[#94a3b8] line-through">{formatVnd(finalPrice)}</span>
+                  ) : isOnSale && !isExpired ? (
+                    <span className="text-sm text-[#94a3b8] line-through">{formatVnd(Number(course.originalPrice))}</span>
+                  ) : null}
                 </div>
 
-                {savedAmount > 0 && (
+                {discountPct > 0 ? (
+                  <p className="text-xs text-[#e11d48] font-semibold mb-4">
+                    Tiết kiệm {formatVnd(finalPrice - discountedFinalPrice)} (-{discountPct}%)
+                  </p>
+                ) : savedAmount > 0 ? (
                   <p className="text-xs text-[#e11d48] font-semibold mb-4">
                     Tiết kiệm {formatVnd(savedAmount)}
                   </p>
-                )}
+                ) : null}
 
                 {/* Stars */}
                 <div className="flex items-center gap-1.5 mb-5">
@@ -414,7 +441,9 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                 </div>
 
                 {/* CTA buttons */}
-                
+                <div className="mb-5">
+                  <SidebarRegisterButton />
+                </div>
 
                 {/* Info rows */}
                 <div className="border-t border-[#f1f5f9] pt-4 space-y-3">

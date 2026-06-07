@@ -7,6 +7,8 @@ import { formatVnd } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import CreateUserModal from "./_components/CreateUserModal";
 import UsersTableClient from "./_components/UsersTableClient";
+import DepositFilter from "./_components/DepositFilter";
+import UsersSearchInput from "./_components/UsersSearchInput";
 
 export const metadata: Metadata = { title: "Quản lý người dùng" };
 
@@ -19,35 +21,51 @@ const ROLE_LABELS: Record<string, string> = {
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string; role?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; role?: string; depositMin?: string; depositMax?: string }>;
 }) {
   const session = await auth();
   const me = session?.user as AuthenticatedUser;
 
-  const { page, q, role } = await searchParams;
-  const currentPage = Math.max(1, parseInt(page ?? "1", 10));
+  const { page, q, role, depositMin, depositMax } = await searchParams;
+  const currentPage  = Math.max(1, parseInt(page ?? "1", 10));
+  const depositMinNum = depositMin ? parseInt(depositMin, 10) : undefined;
+  const depositMaxNum = depositMax ? parseInt(depositMax, 10) : undefined;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  const isFullUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q ?? "");
+
   const where = {
     deletedAt: null,
     ...(q ? { OR: [
-      { email: { contains: q, mode: "insensitive" as const } },
-      { fullName: { contains: q, mode: "insensitive" as const } },
+      ...(isFullUuid ? [{ id: q }] : []),
+      { uidPrefix: { contains: q.replace(/-/g, ""), mode: "insensitive" as const } },
+      { email:     { contains: q, mode: "insensitive" as const } },
+      { fullName:  { contains: q, mode: "insensitive" as const } },
     ]} : {}),
     ...(role ? { role: role as never } : {}),
+    ...(depositMinNum !== undefined || depositMaxNum !== undefined ? {
+      totalDeposited: {
+        ...(depositMinNum !== undefined ? { gte: depositMinNum } : {}),
+        ...(depositMaxNum !== undefined ? { lte: depositMaxNum } : {}),
+      },
+    } : {}),
   };
 
   const [users, total, allTotal, newToday, sellerCount, staffAdminCount] = await Promise.all([
     prisma.user.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: depositMinNum !== undefined || depositMaxNum !== undefined
+        ? { totalDeposited: "desc" }
+        : { createdAt: "desc" },
       skip: (currentPage - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       select: {
         id: true, email: true, fullName: true, role: true,
-        status: true, balance: true, createdAt: true,
+        status: true, balance: true,
+        totalDeposited: true, discountPercent: true,
+        createdAt: true,
         _count: { select: { orders: true } },
       },
     }),
@@ -100,24 +118,12 @@ export default async function AdminUsersPage({
         </div>
       </div>
 
+      {/* Deposit filter */}
+      <DepositFilter />
+
       {/* Search + role filter */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <form className="flex gap-2 flex-1">
-          <input
-            type="search" name="q" defaultValue={q}
-            placeholder="Tìm theo email hoặc tên..."
-            className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
-          />
-          {role && <input type="hidden" name="role" value={role} />}
-          <button type="submit" className="px-4 py-2 rounded-lg bg-[#7C3AED] text-white text-sm font-medium hover:bg-[#A855F7] transition-colors">
-            Tìm
-          </button>
-          {(q || role) && (
-            <Link href="/admin/users" className="px-4 py-2 rounded-lg border border-gray-200 text-gray-500 text-sm hover:border-gray-300 transition-colors">
-              Xóa
-            </Link>
-          )}
-        </form>
+        <UsersSearchInput />
         <div className="flex items-center gap-2 flex-wrap">
           {[
             { key: "", label: "Tất cả" },
@@ -143,7 +149,11 @@ export default async function AdminUsersPage({
 
       {/* Table — serialize Decimal → number before passing to Client Component */}
       <UsersTableClient
-        users={users.map((u) => ({ ...u, balance: Number(u.balance) }))}
+        users={users.map((u) => ({
+          ...u,
+          balance: Number(u.balance),
+          totalDeposited: Number(u.totalDeposited),
+        }))}
         currentUserId={me?.id ?? ""}
         total={total}
         role={role}
@@ -155,7 +165,12 @@ export default async function AdminUsersPage({
           currentPage={currentPage}
           totalPages={totalPages}
           basePath="/admin/users"
-          searchParams={{ ...(q ? { q } : {}), ...(role ? { role } : {}) }}
+          searchParams={{
+            ...(q ? { q } : {}),
+            ...(role ? { role } : {}),
+            ...(depositMin ? { depositMin } : {}),
+            ...(depositMax ? { depositMax } : {}),
+          }}
         />
       )}
     </div>

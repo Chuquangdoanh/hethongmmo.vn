@@ -71,6 +71,13 @@ export const STAFF_PAGE_GROUPS: PageGroup[] = [
     ],
   },
   {
+    key: "leads",
+    label: "Khách hàng",
+    pages: [
+      { key: "admin/dang-ky-dich-vu", label: "Đăng ký dịch vụ" },
+    ],
+  },
+  {
     key: "system",
     label: "Hệ thống",
     pages: [
@@ -117,6 +124,21 @@ export const SELLER_PAGE_GROUPS: PageGroup[] = [
       { key: "rut-tien",           label: "Rút tiền" },
     ],
   },
+];
+
+// ── PUBLIC: trang công khai (không cần đăng nhập) ────────────────────────────
+
+export const PUBLIC_PAGES: PageEntry[] = [
+  { key: "",                        label: "Trang chủ" },
+  { key: "dich-vu",                 label: "Dịch vụ" },
+  { key: "khoa-hoc",                label: "Khóa học" },
+  { key: "tut-tricks",              label: "Tut & Tricks" },
+  { key: "tai-nguyen-mmo",          label: "Tài nguyên MMO" },
+  { key: "NetWorks",                  label: "NETWORKS" },
+  { key: "quang-cao",               label: "Quảng cáo" },
+  { key: "chinh-sach",              label: "Chính sách bảo mật" },
+  { key: "dieu-khoan",              label: "Điều khoản dịch vụ" },
+  { key: "chinh-sach-nha-ban-hang", label: "Chính sách nhà bán hàng" },
 ];
 
 // ── Registry lookup ───────────────────────────────────────────────────────────

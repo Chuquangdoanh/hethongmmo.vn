@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import { decrypt } from "@/lib/security/encryption";
-import { getSellerConfig, DEFAULT_SLOT_PACKAGES } from "@/lib/services/seller.service";
+import { getSellerConfig, getSellerTierConfig, DEFAULT_SLOT_PACKAGES } from "@/lib/services/seller.service";
 import {
   Package, ShoppingBag, TrendingUp, Wallet, Store, Lock,
   Plus, ChevronRight, Boxes, Info, AlertTriangle, Building2,
@@ -38,9 +38,16 @@ export default async function BanHangPage() {
   const session = await auth();
   const me = session!.user as AuthenticatedUser;
 
-  const config = await getSellerConfig();
-  const holdDays = config.order_hold_days ?? 3;
-  const feePercent = config.withdrawal_fee_percent ?? 5;
+  // Fetch sellerTier trước để tính holdDate đúng theo hạng
+  const sellerTierRow = await prisma.user.findUnique({ where: { id: me.id }, select: { sellerTier: true } });
+
+  const [config, tierCfg] = await Promise.all([
+    getSellerConfig(),
+    getSellerTierConfig(sellerTierRow?.sellerTier ?? "STANDARD"),
+  ]);
+
+  const holdDays = tierCfg.hold_days;
+  const feePercent = tierCfg.fee_percent;
   // eslint-disable-next-line react-hooks/purity
   const holdDate = new Date(Date.now() - holdDays * 24 * 60 * 60 * 1000);
 
@@ -161,8 +168,8 @@ export default async function BanHangPage() {
                 <Lock size={18} className="text-red-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-red-700">Gian hàng đang bị khóa bởi Admin</p>
-                <p className="text-xs text-red-500 mt-0.5">Sản phẩm đã ẩn khỏi trang công khai. Bạn không thể rút tiền. Liên hệ admin để được mở khóa.</p>
+                <p className="text-sm font-semibold text-red-700">Hệ Thống MMO xin thông báo gian hàng của bạn đã bị khóa</p>
+                <p className="text-xs text-red-500 mt-0.5">Sản phẩm đã ẩn khỏi trang công khai. Bạn không thể rút tiền. Liên hệ bộ phân cskh để được hỗ trợ mở khóa.</p>
               </div>
             </div>
           )}

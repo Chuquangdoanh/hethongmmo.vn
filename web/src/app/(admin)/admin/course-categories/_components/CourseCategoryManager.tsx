@@ -44,7 +44,6 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
-  const [displayOrder, setDisplayOrder] = useState("0");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -58,7 +57,6 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
     setEditingId(cat.id);
     setName(cat.name);
     setIcon(cat.icon);
-    setDisplayOrder(cat.displayOrder.toString());
     setError("");
   }
 
@@ -66,7 +64,6 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
     setEditingId(null);
     setName("");
     setIcon("");
-    setDisplayOrder("0");
     setError("");
     setUploadError("");
     setImportUrl("");
@@ -138,7 +135,7 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), icon: icon.trim(), displayOrder: parseInt(displayOrder, 10) || 0 }),
+        body: JSON.stringify({ name: name.trim(), icon: icon.trim() }),
       });
       const json = (await res.json()) as { success: boolean; data?: Category; error?: string };
       if (!res.ok || !json.success) { setError(json.error ?? "Lưu thất bại"); return; }
@@ -169,36 +166,36 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
     }
   }
 
+  const nextOrder = categories.length > 0
+    ? Math.max(...categories.map((c) => c.displayOrder)) + 1
+    : 1;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 items-start">
       {/* ── Cột trái: Form thêm / sửa (6/10) ── */}
       <div className="lg:col-span-6">
       <section className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-900">
-          {editingId ? "Sửa danh mục" : "Thêm danh mục mới"}
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-900">
+            {editingId ? "Sửa danh mục" : "Thêm danh mục mới"}
+          </h2>
+          {!editingId && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#7C3AED] bg-[#7C3AED]/8 border border-[#7C3AED]/20 rounded-full px-2.5 py-1">
+              <span className="w-4 h-4 rounded-full bg-[#7C3AED] text-white text-[9px] font-bold flex items-center justify-center">{nextOrder}</span>
+              Số thứ tự tiếp theo
+            </span>
+          )}
+        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="sm:col-span-2">
-            <label className="block text-xs text-gray-500 mb-1.5">Tên danh mục *</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="vd: Facebook Ads, TikTok Marketing..."
-              className={inputCls}
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1.5">Thứ tự hiển thị</label>
-            <input
-              type="number"
-              min="0"
-              value={displayOrder}
-              onChange={(e) => setDisplayOrder(e.target.value)}
-              className={inputCls}
-            />
-          </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1.5">Tên danh mục *</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="vd: Facebook Ads, TikTok Marketing..."
+            className={inputCls}
+          />
         </div>
 
         {/* Icon preview */}
@@ -347,6 +344,11 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
               .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name))
               .map((cat) => (
                 <li key={cat.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                  {/* Số thứ tự */}
+                  <div className="w-7 h-7 rounded-full bg-[#7C3AED]/10 border border-[#7C3AED]/25 flex items-center justify-center shrink-0">
+                    <span className="text-[11px] font-bold text-[#7C3AED]">{cat.displayOrder}</span>
+                  </div>
+                  {/* Icon */}
                   <div className="w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center shrink-0 p-1">
                     {cat.icon && cat.icon.startsWith("http") ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -359,7 +361,6 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
                     <p className="text-sm font-medium text-gray-900">{cat.name}</p>
                     <p className="text-[10px] text-gray-400 truncate">{cat.icon || "Chưa có icon"}</p>
                   </div>
-                  <span className="text-[10px] text-gray-400 shrink-0">#{cat.displayOrder}</span>
                   <div className="flex gap-2 shrink-0">
                     <button
                       type="button"

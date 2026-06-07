@@ -20,7 +20,7 @@ const tutTrickPatchSchema = z.object({
   tier: z.string().max(50).optional(),
   price: z.number().min(0).max(100_000_000).optional(),
   description: z.string().max(10_000).optional(),
-  contentUrl: z.string().url().optional(),
+  contentUrl: z.string().max(2000).optional(),
   docs: z.string().max(50_000).optional(),
   seoTitle: z.string().max(255).optional(),
   seoDescription: z.string().max(500).optional(),
@@ -79,7 +79,9 @@ export async function PATCH(
     const updateData: Parameters<typeof prisma.tutTrick.update>[0]["data"] = { ...rest };
 
     if (contentUrl !== undefined) {
-      updateData.contentUrlEnc = Buffer.from(encrypt(contentUrl)) as unknown as Uint8Array<ArrayBuffer>;
+      updateData.contentUrlEnc = contentUrl === ""
+        ? null
+        : Buffer.from(encrypt(contentUrl)) as unknown as Uint8Array<ArrayBuffer>;
     }
     if (description !== undefined) updateData.description = sanitizeHtml(description);
     if (docs !== undefined) updateData.docs = sanitizeHtml(docs);

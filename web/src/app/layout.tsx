@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
 import Providers from "@/components/providers/Providers";
-import NavigationProgressLoader from "@/components/layout/NavigationProgressLoader";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -16,7 +15,7 @@ export const metadata: Metadata = {
     default: "Hệ Thống MMO | DJ MEDIA",
     template: "%s | Hệ Thống MMO | DJ MEDIA",
   },
-  description: "Dịch vụ MXH, khóa học MMO, tài nguyên và marketplace số 1 Việt Nam",
+  description: "Hệ Thống MMO - Nền tảng dịch vụ mạng xã hội hàng đầu Việt Nam, chuyên mở khóa Facebook, khôi phục Fanpage, Facebook Ads, TikTok Ads, khóa học MMO, tài nguyên số và marketplace sản phẩm số. Cung cấp giải pháp marketing online, phát triển thương hiệu cá nhân và kinh doanh số toàn diện, giúp cá nhân và doanh nghiệp tăng trưởng bền vững.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://hethongmmo.vn"),
   openGraph: {
     siteName: "hethongmmo.vn",
@@ -42,7 +41,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         )}
       </head>
       <body className="min-h-full flex flex-col bg-white text-[#0f172a] font-sans">
-        <NavigationProgressLoader />
         {/* PageTransitionWrapper intentionally NOT here — each route group
             layout wraps only its own <main> content, so the sticky Header
             is never included in the blur/fade animation. */}

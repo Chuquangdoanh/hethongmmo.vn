@@ -5,10 +5,9 @@ import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import InlineStatusCell from "./_components/InlineStatusCell";
 import DateFilter from "./_components/DateFilter";
+import OrderSearchInput from "./_components/OrderSearchInput";
 
 export const metadata: Metadata = { title: "Admin — Đơn hàng" };
-
-const PAGE_SIZE = 20;
 
 const STATUS_BADGES: Record<string, string> = {
   PENDING:    "bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20",
@@ -41,10 +40,12 @@ const TYPE_COLORS: Record<string, string> = {
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; orderType?: string; dateFrom?: string; dateTo?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; orderType?: string; dateFrom?: string; dateTo?: string; q?: string; limit?: string }>;
 }) {
-  const { page, status, orderType, dateFrom: dateFromParam, dateTo: dateToParam } = await searchParams;
+  const { page, status, orderType, dateFrom: dateFromParam, dateTo: dateToParam, q, limit: limitParam } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
+  const _limit = parseInt(limitParam ?? "20", 10);
+  const PAGE_SIZE = ([20, 50, 100] as number[]).includes(_limit) ? _limit : 20;
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -63,6 +64,10 @@ export default async function AdminOrdersPage({
   const where = {
     ...(status ? { status: status as never } : {}),
     ...(orderType ? { orderType: orderType as never } : {}),
+    ...(q ? { OR: [
+      { orderCode: { contains: q, mode: "insensitive" as const } },
+      { user: { email: { contains: q, mode: "insensitive" as const } } },
+    ] } : {}),
     ...dateFilter,
   };
 
@@ -87,9 +92,9 @@ export default async function AdminOrdersPage({
     prisma.order.count({ where }),
     prisma.order.count({ where: { status: "PENDING" } }),
     prisma.order.count({ where: { status: "PROCESSING" } }),
-    prisma.order.count({ where: { status: "DONE", createdAt: { gte: todayStart } } }),
+    prisma.order.count({ where: { status: "DONE", ...dateFilter, ...(orderType ? { orderType: orderType as never } : {}) } }),
     prisma.order.aggregate({
-      where: { status: "DONE", createdAt: { gte: todayStart } },
+      where: { status: "DONE", ...dateFilter, ...(orderType ? { orderType: orderType as never } : {}) },
       _sum: { finalPrice: true },
     }),
     prisma.order.groupBy({
@@ -107,6 +112,17 @@ export default async function AdminOrdersPage({
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
+  const todayStr = `${todayStart.getFullYear()}-${String(todayStart.getMonth() + 1).padStart(2, "0")}-${String(todayStart.getDate()).padStart(2, "0")}`;
+  const periodLabel = isAllTime
+    ? "Tất cả"
+    : !dateFromParam || (dateFromParam === todayStr && (!dateToParam || dateToParam === todayStr))
+    ? "Hôm nay"
+    : dateFromParam === dateToParam
+    ? dateFromParam.split("-").reverse().join("/")
+    : `${dateFromParam.split("-").reverse().join("/")} — ${(dateToParam ?? todayStr).split("-").reverse().join("/")}`;
+  const selectedTypeLabel = orderType ? ORDER_TYPES.find((t) => t.key === orderType)?.label : undefined;
+  const periodCardLabel = selectedTypeLabel ? `${periodLabel} · ${selectedTypeLabel}` : periodLabel;
+
   // Build URL preserving current date + other filters
   function tabUrl(overrides: { status?: string; orderType?: string }) {
     const sp = new URLSearchParams();
@@ -116,8 +132,22 @@ export default async function AdminOrdersPage({
     if (ot) sp.set("orderType", ot);
     if (dateFromParam) sp.set("dateFrom", dateFromParam);
     if (dateToParam) sp.set("dateTo", dateToParam);
-    const q = sp.toString();
-    return q ? `/admin/orders?${q}` : "/admin/orders";
+    if (q) sp.set("q", q);
+    if (PAGE_SIZE !== 20) sp.set("limit", String(PAGE_SIZE));
+    const qs = sp.toString();
+    return qs ? `/admin/orders?${qs}` : "/admin/orders";
+  }
+
+  function limitUrl(n: number) {
+    const sp = new URLSearchParams();
+    if (status) sp.set("status", status);
+    if (orderType) sp.set("orderType", orderType);
+    if (dateFromParam) sp.set("dateFrom", dateFromParam);
+    if (dateToParam) sp.set("dateTo", dateToParam);
+    if (q) sp.set("q", q);
+    if (n !== 20) sp.set("limit", String(n));
+    const qs = sp.toString();
+    return qs ? `/admin/orders?${qs}` : "/admin/orders";
   }
 
   return (
@@ -146,12 +176,12 @@ export default async function AdminOrdersPage({
           <p className="text-xs text-gray-400 mt-1.5">Đang trong quá trình</p>
         </div>
         <div className="rounded-xl border border-[#10B981]/30 bg-[#10B981]/5 p-5">
-          <p className="text-xs font-medium text-[#10B981] uppercase tracking-wide mb-2">Hoàn thành hôm nay</p>
+          <p className="text-xs font-medium text-[#10B981] uppercase tracking-wide mb-2">Hoàn thành — {periodCardLabel}</p>
           <p className="text-3xl font-bold text-[#10B981]">{doneToday.toLocaleString("vi-VN")}</p>
           <p className="text-xs text-gray-400 mt-1.5">Đơn thành công</p>
         </div>
         <div className="rounded-xl border border-[#2563eb]/30 bg-[#2563eb]/5 p-5">
-          <p className="text-xs font-medium text-[#2563eb] uppercase tracking-wide mb-2">Doanh thu hôm nay</p>
+          <p className="text-xs font-medium text-[#2563eb] uppercase tracking-wide mb-2">Doanh thu — {periodCardLabel}</p>
           <p className="text-2xl font-bold text-[#2563eb]">{formatVnd(Number(revenueToday._sum.finalPrice ?? 0))}</p>
           <p className="text-xs text-gray-400 mt-1.5">Từ đơn hoàn thành</p>
         </div>
@@ -232,18 +262,38 @@ export default async function AdminOrdersPage({
 
       {/* Table */}
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
-          <span className="text-sm font-semibold text-gray-700">
-            {total.toLocaleString("vi-VN")} đơn hàng
-            {orderType ? ` · ${ORDER_TYPES.find((t) => t.key === orderType)?.label ?? orderType}` : ""}
-            {status ? ` · ${STATUS_LABELS[status] ?? status}` : ""}
-          </span>
-          {orderType && (
-            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${TYPE_COLORS[orderType] ?? ""}`}>
-              {ORDER_TYPES.find((t) => t.key === orderType)?.icon}{" "}
-              {ORDER_TYPES.find((t) => t.key === orderType)?.label}
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-sm font-semibold text-gray-700">
+              {total.toLocaleString("vi-VN")} đơn hàng
+              {orderType ? ` · ${ORDER_TYPES.find((t) => t.key === orderType)?.label ?? orderType}` : ""}
+              {status ? ` · ${STATUS_LABELS[status] ?? status}` : ""}
+              {q ? ` · "${q}"` : ""}
             </span>
-          )}
+            {orderType && (
+              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${TYPE_COLORS[orderType] ?? ""}`}>
+                {ORDER_TYPES.find((t) => t.key === orderType)?.icon}{" "}
+                {ORDER_TYPES.find((t) => t.key === orderType)?.label}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400">Hiển thị:</span>
+            {[20, 50, 100].map((n) => (
+              <Link
+                key={n}
+                href={limitUrl(n)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
+                  PAGE_SIZE === n
+                    ? "bg-[#7C3AED] border-[#7C3AED] text-white"
+                    : "bg-white border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-[#7C3AED]"
+                }`}
+              >
+                {n}
+              </Link>
+            ))}
+            <OrderSearchInput />
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px]">
@@ -321,6 +371,8 @@ export default async function AdminOrdersPage({
             ...(orderType ? { orderType } : {}),
             ...(dateFromParam ? { dateFrom: dateFromParam } : {}),
             ...(dateToParam ? { dateTo: dateToParam } : {}),
+            ...(q ? { q } : {}),
+            ...(PAGE_SIZE !== 20 ? { limit: String(PAGE_SIZE) } : {}),
           }}
         />
       )}

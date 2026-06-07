@@ -104,6 +104,11 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
             order_id = ${orderId}::uuid, sold_at = now(), updated_at = now()
         WHERE id = ${item.id}::uuid
       `;
+      await tx.$executeRaw`
+        UPDATE mmo_products
+        SET total_orders = total_orders + 1, updated_at = now()
+        WHERE id = ${itemId}::uuid
+      `;
       deliveredItemId = item.id;
       deliveredContent = decrypt(item.value_enc);
     } else if (orderType === "SELLER_PRODUCT") {

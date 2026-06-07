@@ -7,8 +7,16 @@ import type { ChartPoint } from "./DashboardCharts";
 
 export const metadata: Metadata = { title: "Admin Dashboard" };
 
-type DailyAmountRow  = { label: string; total: string };
-type DailyCountRow   = { label: string; cnt:   string };
+type DailyAmountRow = { label: string; total: string };
+type DailyCountRow  = { label: string; cnt:   string };
+
+const ORDER_TYPE_META = [
+  { key: "SERVICE",        label: "Dịch vụ",    icon: "⚙️",  color: "text-[#2563eb]",  bg: "bg-[#2563eb]/10" },
+  { key: "COURSE",         label: "Khóa học",   icon: "🎓",  color: "text-[#7C3AED]",  bg: "bg-[#7C3AED]/10" },
+  { key: "TUTTRICK",       label: "Tut-trick",  icon: "📖",  color: "text-[#F59E0B]",  bg: "bg-[#F59E0B]/10" },
+  { key: "MMO_PRODUCT",    label: "Tài nguyên", icon: "💎",  color: "text-[#10B981]",  bg: "bg-[#10B981]/10" },
+  { key: "SELLER_PRODUCT", label: "Nhà bán",    icon: "🏪",  color: "text-[#A855F7]",  bg: "bg-[#A855F7]/10" },
+] as const;
 
 export default async function AdminDashboardPage({
   searchParams,
@@ -18,18 +26,24 @@ export default async function AdminDashboardPage({
   const sp = await searchParams;
   const now = new Date();
 
-  // Determine filter mode
-  const filterDate   = sp.date ?? null;                                                          // "YYYY-MM-DD"
+  const filterDate    = sp.date ?? null;
   const selectedYear  = Math.max(2020, Math.min(2099, parseInt(sp.year  ?? String(now.getFullYear()),  10)));
   const selectedMonth = Math.max(1,    Math.min(12,   parseInt(sp.month ?? String(now.getMonth() + 1), 10)));
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // ── Always-on queries ──────────────────────────────────────────────
+  // ── Period boundaries ──────────────────────────────────────────────
   const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
   const monthEnd   = new Date(selectedYear, selectedMonth, 1);
 
+  // Matches chart period (day or month mode)
+  const periodStart = filterDate ? new Date(filterDate) : monthStart;
+  const periodEnd   = filterDate
+    ? (() => { const d = new Date(filterDate); d.setDate(d.getDate() + 1); return d; })()
+    : monthEnd;
+
+  // ── Queries ────────────────────────────────────────────────────────
   const [
     totalUsers, newUsersToday, totalOrders, ordersToday,
     pendingWithdrawals, openComplaints,
@@ -38,19 +52,22 @@ export default async function AdminDashboardPage({
     monthWithdrawal,
     sellerRevenueMonth,
     approvedSellerCount,
+    pendingWithdrawalAmount,
+    revenueByType,
+    refundPeriod,
   ] = await Promise.all([
     prisma.user.count({ where: { deletedAt: null } }),
     prisma.user.count({ where: { createdAt: { gte: today }, deletedAt: null } }),
     prisma.order.count(),
     prisma.order.count({ where: { createdAt: { gte: today } } }),
-    prisma.sellerWithdrawal.count({ where: { status: "PENDING" } }),
+    prisma.sellerWithdrawal.count({ where: { status: "PENDING", createdAt: { gte: periodStart, lt: periodEnd } } }),
     prisma.complaint.count({ where: { status: "OPEN" } }),
     prisma.transaction.aggregate({
       where: { type: { in: ["DEPOSIT_AUTO", "DEPOSIT_MANUAL"] } },
       _sum: { amount: true },
     }),
     prisma.transaction.aggregate({
-      where: { type: { in: ["DEPOSIT_AUTO", "DEPOSIT_MANUAL"] }, createdAt: { gte: today } },
+      where: { type: { in: ["DEPOSIT_AUTO", "DEPOSIT_MANUAL"] }, createdAt: { gte: periodStart, lt: periodEnd } },
       _sum: { amount: true },
     }),
     prisma.order.findMany({
@@ -68,7 +85,7 @@ export default async function AdminDashboardPage({
     prisma.sellerWithdrawal.aggregate({
       where: {
         status: { in: ["APPROVED", "COMPLETED"] },
-        createdAt: { gte: monthStart, lt: monthEnd },
+        createdAt: { gte: periodStart, lt: periodEnd },
       },
       _sum: { amount: true, netAmount: true },
     }),
@@ -76,19 +93,37 @@ export default async function AdminDashboardPage({
       where: {
         sellerId: { not: null },
         status: "DONE",
-        createdAt: { gte: monthStart, lt: monthEnd },
+        createdAt: { gte: periodStart, lt: periodEnd },
       },
       _sum: { finalPrice: true },
       _count: { id: true },
     }),
     prisma.user.count({ where: { sellerStatus: "APPROVED", deletedAt: null } }),
+    // Tổng tiền chờ rút (amount, không chỉ count)
+    prisma.sellerWithdrawal.aggregate({
+      where: { status: "PENDING", createdAt: { gte: periodStart, lt: periodEnd } },
+      _sum: { amount: true },
+    }),
+    // Doanh thu theo loại đơn cho kỳ đang lọc
+    prisma.order.groupBy({
+      by: ["orderType"],
+      where: { status: "DONE", createdAt: { gte: periodStart, lt: periodEnd } },
+      _sum: { finalPrice: true },
+      _count: { id: true },
+    }),
+    // Tổng hoàn tiền cho kỳ đang lọc
+    prisma.transaction.aggregate({
+      where: { type: "REFUND", createdAt: { gte: periodStart, lt: periodEnd } },
+      _sum: { amount: true },
+      _count: { id: true },
+    }),
   ]);
 
-  // ── Build chart data ───────────────────────────────────────────────
+  // ── Chart data ─────────────────────────────────────────────────────
   let chartData: ChartPoint[];
 
   if (filterDate) {
-    // ── DAY MODE: hourly aggregation ──
+    // DAY MODE: hourly aggregation
     const dayStart = new Date(filterDate);
     const dayEnd   = new Date(filterDate);
     dayEnd.setDate(dayEnd.getDate() + 1);
@@ -115,7 +150,7 @@ export default async function AdminDashboardPage({
         SELECT TO_CHAR(DATE_TRUNC('hour', created_at), 'HH24') AS label,
                COALESCE(SUM(final_price), 0)::text AS total
         FROM orders
-        WHERE seller_id IS NOT NULL AND status = 'DONE'
+        WHERE status = 'DONE'
           AND created_at >= ${dayStart} AND created_at < ${dayEnd}
         GROUP BY DATE_TRUNC('hour', created_at)
         ORDER BY DATE_TRUNC('hour', created_at)
@@ -131,10 +166,10 @@ export default async function AdminDashboardPage({
       `,
     ]);
 
-    const depMap = new Map(hDeposits.map((r)      => [r.label, Number(r.total)]));
-    const ordMap = new Map(hOrders.map((r)         => [r.label, Number(r.cnt)]));
-    const revMap = new Map(hOrderRevenue.map((r)   => [r.label, Number(r.total)]));
-    const usrMap = new Map(hUsers.map((r)          => [r.label, Number(r.cnt)]));
+    const depMap = new Map(hDeposits.map((r)    => [r.label, Number(r.total)]));
+    const ordMap = new Map(hOrders.map((r)       => [r.label, Number(r.cnt)]));
+    const revMap = new Map(hOrderRevenue.map((r) => [r.label, Number(r.total)]));
+    const usrMap = new Map(hUsers.map((r)        => [r.label, Number(r.cnt)]));
 
     chartData = Array.from({ length: 24 }, (_, h) => {
       const lbl = String(h).padStart(2, "0");
@@ -148,7 +183,7 @@ export default async function AdminDashboardPage({
     });
 
   } else {
-    // ── MONTH MODE: daily aggregation ──
+    // MONTH MODE: daily aggregation
     const startDate = new Date(selectedYear, selectedMonth - 1, 1);
     const endDate   = new Date(selectedYear, selectedMonth,     1);
 
@@ -166,7 +201,7 @@ export default async function AdminDashboardPage({
         SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'DD') AS label,
                COALESCE(SUM(final_price), 0)::text AS total
         FROM orders
-        WHERE seller_id IS NOT NULL AND status = 'DONE'
+        WHERE status = 'DONE'
           AND created_at >= ${startDate} AND created_at < ${endDate}
         GROUP BY DATE_TRUNC('day', created_at)
         ORDER BY DATE_TRUNC('day', created_at)
@@ -190,7 +225,7 @@ export default async function AdminDashboardPage({
       `,
     ]);
 
-    const depMap = new Map(dailyDeposits.map((r)     => [r.label, Number(r.total)]));
+    const depMap = new Map(dailyDeposits.map((r)    => [r.label, Number(r.total)]));
     const revMap = new Map(dailyOrderRevenue.map((r) => [r.label, Number(r.total)]));
     const ordMap = new Map(dailyOrders.map((r)       => [r.label, Number(r.cnt)]));
     const usrMap = new Map(dailyUsers.map((r)        => [r.label, Number(r.cnt)]));
@@ -210,6 +245,21 @@ export default async function AdminDashboardPage({
 
   const periodDepositTotal = chartData.reduce((s, d) => s + d.deposits, 0);
 
+  // ── Revenue breakdown ──────────────────────────────────────────────
+  const periodLabel = filterDate
+    ? `Ngày ${filterDate.split("-").reverse().join("/")}`
+    : `Tháng ${selectedMonth}/${selectedYear}`;
+
+  const typeRevMap = new Map(
+    revenueByType.map((r) => [r.orderType, { amount: Number(r._sum.finalPrice ?? 0), count: r._count.id }])
+  );
+  const grossRevenue  = revenueByType.reduce((s, r) => s + Number(r._sum.finalPrice ?? 0), 0);
+  const refundAmount  = Number(refundPeriod._sum.amount ?? 0);
+  const refundCount   = refundPeriod._count.id;
+  const netRevenue    = grossRevenue - refundAmount;
+  const totalDoneCount = revenueByType.reduce((s, r) => s + r._count.id, 0);
+
+  // ── Stats cards ────────────────────────────────────────────────────
   const STATS = [
     {
       label: "Tổng người dùng",
@@ -224,25 +274,25 @@ export default async function AdminDashboardPage({
       color: "text-[#A855F7]",
     },
     {
-      label: "Nạp tiền hôm nay",
+      label: `Nạp tiền — ${periodLabel}`,
       value: formatVnd(Number(depositsToday._sum.amount ?? 0)),
-      sub:   `Tổng: ${formatVnd(Number(totalDeposits._sum.amount ?? 0))}`,
+      sub:   `Tổng all-time: ${formatVnd(Number(totalDeposits._sum.amount ?? 0))}`,
       color: "text-[#10B981]",
     },
     {
-      label: "Rút tiền chờ duyệt",
+      label: `Rút tiền chờ duyệt — ${periodLabel}`,
       value: pendingWithdrawals.toString(),
-      sub:   `${openComplaints} khiếu nại mở`,
+      sub:   `${formatVnd(Number(pendingWithdrawalAmount._sum.amount ?? 0))} · ${openComplaints} KN`,
       color: pendingWithdrawals > 0 ? "text-[#F59E0B]" : "text-gray-500",
     },
     {
-      label: `Rút tiền T${selectedMonth}/${selectedYear}`,
+      label: `Rút tiền — ${periodLabel}`,
       value: formatVnd(Number(monthWithdrawal._sum.amount ?? 0)),
       sub:   `Sau phí: ${formatVnd(Number(monthWithdrawal._sum.netAmount ?? 0))}`,
       color: "text-blue-600",
     },
     {
-      label: `Doanh số seller T${selectedMonth}/${selectedYear}`,
+      label: `Doanh số seller — ${periodLabel}`,
       value: formatVnd(Number(sellerRevenueMonth._sum.finalPrice ?? 0)),
       sub:   `${sellerRevenueMonth._count.id} đơn · ${approvedSellerCount} seller`,
       color: "text-emerald-600",
@@ -262,6 +312,52 @@ export default async function AdminDashboardPage({
             <p className="text-[10px] text-gray-500">{sub}</p>
           </div>
         ))}
+      </div>
+
+      {/* Revenue breakdown by order type */}
+      <div className="rounded-xl border border-gray-200 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">Doanh thu theo loại — {periodLabel}</h2>
+            <p className="text-[10px] text-gray-400 mt-0.5">Chỉ tính đơn hoàn thành (DONE)</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-[10px] text-gray-400">Doanh thu gộp</p>
+              <p className="text-sm font-bold text-gray-700">{formatVnd(grossRevenue)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] text-gray-400">Thực thu (sau hoàn)</p>
+              <p className={`text-sm font-bold ${netRevenue >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                {formatVnd(netRevenue)}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-px bg-gray-200">
+          {ORDER_TYPE_META.map(({ key, label, icon, color, bg }) => {
+            const d = typeRevMap.get(key) ?? { amount: 0, count: 0 };
+            return (
+              <div key={key} className={`p-4 ${bg} bg-white`}>
+                <p className="text-[10px] text-gray-400 mb-1.5">{icon} {label}</p>
+                <p className={`text-sm font-bold ${color}`}>{formatVnd(d.amount)}</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">{d.count.toLocaleString("vi-VN")} đơn</p>
+              </div>
+            );
+          })}
+          <div className="p-4 bg-red-50">
+            <p className="text-[10px] text-gray-400 mb-1.5">↩ Hoàn tiền</p>
+            <p className="text-sm font-bold text-red-500">−{formatVnd(refundAmount)}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{refundCount} giao dịch</p>
+          </div>
+          <div className="p-4 bg-emerald-50">
+            <p className="text-[10px] text-gray-400 mb-1.5">= Net doanh thu</p>
+            <p className={`text-sm font-bold ${netRevenue >= 0 ? "text-emerald-600" : "text-red-500"}`}>
+              {formatVnd(netRevenue)}
+            </p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{totalDoneCount.toLocaleString("vi-VN")} đơn</p>
+          </div>
+        </div>
       </div>
 
       {/* Charts + filter */}

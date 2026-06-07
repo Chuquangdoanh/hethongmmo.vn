@@ -264,11 +264,12 @@ model LoginAttempt {
 // 2. SERVICES
 // ====================================================================
 model ServiceCategory {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String   @unique
-  iconUrl   String?  @map("icon_url")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @unique
+  iconUrl      String?  @map("icon_url")
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@index([name])
   @@map("service_categories")
@@ -466,22 +467,24 @@ model MmoProductItem {
 // 6. RESOURCE CATEGORIES
 // ====================================================================
 model ResourceCategory {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String   @unique
-  iconUrl   String?  @map("icon_url")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @unique
+  iconUrl      String?  @map("icon_url")
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@index([name])
   @@map("resource_categories")
 }
 
 model TutTrickCategory {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String   @unique
-  iconUrl   String?  @map("icon_url")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @unique
+  iconUrl      String?  @map("icon_url")
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@index([name])
   @@map("tut_trick_categories")
@@ -929,7 +932,22 @@ model PagePermission {
 }
 
 // ====================================================================
-// 23. TESTIMONIALS (đánh giá do admin tạo)
+// 23. PUBLIC PAGE CONFIG (ẩn/hiện + nổi bật + tên trang public)
+// ====================================================================
+
+model PublicPageConfig {
+  id          String   @id @default(uuid()) @db.Uuid
+  pageKey     String   @unique @map("page_key") @db.VarChar(100)
+  isVisible   Boolean  @default(true) @map("is_visible")
+  isFeatured  Boolean  @default(false) @map("is_featured")
+  customLabel String?  @map("custom_label") @db.VarChar(200)
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("public_page_configs")
+}
+
+// ====================================================================
+// 24. TESTIMONIALS (đánh giá do admin tạo)
 // ====================================================================
 
 enum TestimonialType {
@@ -961,4 +979,46 @@ model Testimonial {
   @@index([courseId, isActive])
   @@index([serviceId, isActive])
   @@map("testimonials")
+}
+
+// ====================================================================
+// 25. FANPAGE_REGISTRATIONS
+// ====================================================================
+
+model FanpageRegistration {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  phone       String
+  serviceType String   @map("service_type")
+  serviceName String   @map("service_name")
+  description String
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([status])
+  @@map("fanpage_registrations")
+}
+
+// ====================================================================
+// 26. ADS_REGISTRATIONS
+// ====================================================================
+
+model AdsRegistration {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String
+  phone           String
+  serviceName     String   @map("service_name")
+  serviceTab      String   @map("service_tab")
+  fanpageStatus   String   @map("fanpage_status")
+  hasContent      String   @map("has_content")
+  adsExperience   String   @map("ads_experience")
+  productCategory String   @map("product_category")
+  budget          String
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([status])
+  @@map("ads_registrations")
 }

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import CourseScrollHelper from "./_components/CourseScrollHelper";
+import CategoryFilterClient from "./_components/CategoryFilterClient";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
+import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import {
   Star, Users, Clock, Eye, CheckCircle,
   Zap, BookOpen, TrendingUp, Award, GraduationCap, ChevronRight,
@@ -53,6 +55,7 @@ export default async function KhoaHocPage({
 }: {
   searchParams: Promise<{ category?: string }>;
 }) {
+  await guardPublicPage("khoa-hoc");
   const { category } = await searchParams;
 
   const [courses, rawCategories, courseCategoryDefs] = await Promise.all([
@@ -80,9 +83,12 @@ export default async function KhoaHocPage({
     }),
   ]);
 
-  // Sort 3 cấp: displayOrder ASC → badge priority (BADGE_PRIORITY) → studentCount DESC
-  // Stable sort — thứ tự bằng nhau giữ nguyên vị trí tương đối từ DB
+  // Sort 4 cấp: category displayOrder → course displayOrder → badge priority → studentCount DESC
+  const courseCatOrder = new Map(courseCategoryDefs.map((c, idx) => [c.name, idx]));
   courses.sort((a, b) => {
+    const oa = courseCatOrder.get(a.category ?? "") ?? 999;
+    const ob = courseCatOrder.get(b.category ?? "") ?? 999;
+    if (oa !== ob) return oa - ob;
     if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
     const pa = BADGE_PRIORITY[a.badge] ?? 99;
     const pb = BADGE_PRIORITY[b.badge] ?? 99;
@@ -91,7 +97,13 @@ export default async function KhoaHocPage({
   });
 
   const categoryIconMap  = new Map(courseCategoryDefs.map((c) => [c.name, c.icon]));
-  const uniqueCategories = [...new Set(rawCategories.map((c) => c.category))].sort();
+  // Sort filter buttons theo displayOrder của CourseCategory (không sort alpha)
+  const catNameSet = new Set(rawCategories.map((c) => c.category).filter(Boolean));
+  const uniqueCategories = courseCategoryDefs.map((c) => c.name).filter((n) => catNameSet.has(n));
+  const categoriesWithIcons = uniqueCategories.map((name) => ({
+    name,
+    icon: categoryIconMap.get(name) ?? "",
+  }));
 
   // Hero stats (all courses, regardless of filter)
   const totalStudents  = courses.reduce((s, c) => s + c.studentCount, 0);
@@ -244,54 +256,12 @@ export default async function KhoaHocPage({
       <div id="khoa-hoc-grid" className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-12">
 
         {/* Category filter — centered, scrollable on mobile */}
-        {uniqueCategories.length > 0 && (
+        {categoriesWithIcons.length > 0 && (
           <div className="flex justify-center mb-8">
-            <div
-              className="flex items-center gap-2"
-              style={{ overflowX: "auto", scrollbarWidth: "none", maxWidth: "100%", paddingBottom: "4px" }}
-            >
-              <Link
-                href="/khoa-hoc"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap shrink-0 transition-all"
-                style={
-                  !category
-                    ? { background: "linear-gradient(135deg, #e11d48, #be123c)", color: "#fff", boxShadow: "0 2px 8px rgba(225,29,72,0.35)" }
-                    : { background: "#fff", border: "1.5px solid #e2e8f0", color: "#475569" }
-                }
-              >
-                Tất cả
-              </Link>
-              {uniqueCategories.map((cat) => {
-                const catIcon = categoryIconMap.get(cat);
-                const isActive = category === cat;
-                return (
-                  <Link
-                    key={cat}
-                    href={`/khoa-hoc?category=${encodeURIComponent(cat)}`}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap shrink-0 transition-all"
-                    style={
-                      isActive
-                        ? { background: "linear-gradient(135deg, #e11d48, #be123c)", color: "#fff", boxShadow: "0 2px 8px rgba(225,29,72,0.35)" }
-                        : { background: "#fff", border: "1.5px solid #e2e8f0", color: "#475569" }
-                    }
-                  >
-                    {catIcon && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={catIcon}
-                        alt={cat}
-                        width={16}
-                        height={16}
-                        loading="lazy"
-                        decoding="async"
-                        className={`w-4 h-4 object-contain shrink-0 ${isActive ? "brightness-0 invert" : ""}`}
-                      />
-                    )}
-                    {cat}
-                  </Link>
-                );
-              })}
-            </div>
+            <CategoryFilterClient
+              categories={categoriesWithIcons}
+              activeCategory={category}
+            />
           </div>
         )}
 
@@ -349,7 +319,7 @@ function CourseCard({
   const formatMeta   = FORMAT_LABELS[course.learningFormat] ?? { label: course.learningFormat, color: "#64748b", bg: "#f1f5f9" };
 
   return (
-    <div className="bg-white rounded-2xl border border-[#e2e8f0] overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
+    <Link href={`/khoa-hoc/${course.slug}`} className="bg-white rounded-2xl border border-[#e2e8f0] overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
 
       {/* Thumbnail */}
       <div className="relative overflow-hidden" style={{ aspectRatio: "16/9" }}>
@@ -498,16 +468,15 @@ function CourseCard({
 
         {/* CTA */}
         <div className="mt-auto pt-2">
-          <Link
-            href={`/khoa-hoc/${course.slug}`}
-            className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl text-white text-sm font-bold transition-all hover:opacity-90 active:scale-[0.98]"
+          <div
+            className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl text-white text-sm font-bold"
             style={{ background: "linear-gradient(135deg, #0f172a, #1e293b)" }}
           >
             Xem chi tiết
             <ChevronRight size={14} strokeWidth={2.5} />
-          </Link>
+          </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

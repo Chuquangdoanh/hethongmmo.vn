@@ -124,7 +124,7 @@ export default async function SellerKhieuNaiDetailPage({
                     <span className="font-mono text-xs text-gray-600">#{order.orderCode}</span>
                   </Row>
                   <Row label="Giá bán">
-                    <span className="font-semibold text-emerald-600">{formatVnd(Number(order.finalPrice))}</span>
+                    <span className="font-semibold text-red-500">{formatVnd(Number(order.finalPrice))}</span>
                   </Row>
                   <Row label="Ngày mua">{formatDate(order.createdAt)}</Row>
                 </div>
@@ -156,15 +156,43 @@ export default async function SellerKhieuNaiDetailPage({
                 initialChatEnded={complaint.status === "RESOLVED" || complaint.status === "REJECTED"}
                 endedLabel={complaint.status === "RESOLVED" ? "Hoàn thành" : complaint.status === "REJECTED" ? "Từ chối" : undefined}
               />
+            ) : complaint.status === "REJECTED" ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-6 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-600">
+                    <circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-red-800">Khiếu nại đã bị từ chối</p>
+                  <p className="text-xs text-red-700 mt-1 leading-relaxed">
+                    Hệ Thống MMO đã xem xét và từ chối khiếu nại này. Đơn hàng được xác nhận hoàn thành.
+                  </p>
+                </div>
+              </div>
+            ) : complaint.status === "RESOLVED" ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-6 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600">
+                    <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-emerald-800">Khiếu nại đã được giải quyết</p>
+                  <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
+                    Khiếu nại đã được xử lý và đóng lại.
+                  </p>
+                </div>
+              </div>
             ) : (
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-6 flex items-start gap-3">
                 <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
                   <Clock size={16} className="text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-amber-800">Chờ Admin mở chat</p>
+                  <p className="text-sm font-semibold text-amber-800">Hệ Thống MMO đang xử lý</p>
                   <p className="text-xs text-amber-700 mt-1 leading-relaxed">
-                    Sau khi Admin xác nhận trò chuyện, bạn có thể trao đổi trực tiếp tại đây.
+                    Sau khi Hệ Thống MMO xác nhận trò chuyện, bạn có thể trao đổi trực tiếp tại đây.
                   </p>
                 </div>
               </div>

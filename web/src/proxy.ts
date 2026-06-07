@@ -70,7 +70,11 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
     return NextResponse.redirect(new URL("/tai-khoan-bi-khoa", req.url));
   }
 
-  const response = NextResponse.next();
+  // Inject pathname into request headers so Server Components can read it via headers()
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-pathname", pathname);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
 
   // ── 1. Security headers ────────────────────────────────────────────
   response.headers.set("X-Frame-Options", "DENY");

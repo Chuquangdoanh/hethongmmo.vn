@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { requireUser } from "@/lib/auth/rbac";
 import { uploadBuffer, isAllowedContentType } from "@/lib/storage/s3";
+import { saveLocalFile, type LocalUploadSubdir } from "@/lib/storage/local";
 import { apiOk, apiError, apiCatch } from "@/lib/api-response";
 
 export const runtime = "nodejs";
@@ -31,10 +32,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const rawType = req.nextUrl.searchParams.get("type") ?? "user-upload";
     const uploadType = rawType.replace(/[^a-z0-9-]/g, "").slice(0, 50) || "user-upload";
     const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
-    const key = `${uploadType}/${me.id}/${Date.now()}.${ext}`;
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    const publicUrl = await uploadBuffer({ key, buffer, contentType: file.type });
+    // CCCD và portrait → lưu trên disk VPS, không lên R2 (tránh lộ URL công khai)
+    const SENSITIVE_TYPES = ["cccd", "portrait"] as const;
+    const isSensitive = (SENSITIVE_TYPES as readonly string[]).includes(uploadType);
+
+    let publicUrl: string;
+    if (isSensitive) {
+      publicUrl = await saveLocalFile({
+        buffer,
+        subDir: uploadType as LocalUploadSubdir,
+        userId: me.id,
+        ext,
+      });
+    } else {
+      const key = `${uploadType}/${me.id}/${Date.now()}.${ext}`;
+      publicUrl = await uploadBuffer({ key, buffer, contentType: file.type });
+    }
 
     return apiOk({ url: publicUrl });
   } catch (err) {

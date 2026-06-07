@@ -23,7 +23,7 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-/** Wraps content in the brand email shell (dark theme, design system colors) */
+/** Wraps content in the brand email shell (light theme, white background) */
 function baseTemplate(content: string, preheader = ""): string {
   return `<!DOCTYPE html>
 <html lang="vi">
@@ -32,19 +32,17 @@ function baseTemplate(content: string, preheader = ""): string {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>hethongmmo.vn</title>
 </head>
-<body style="margin:0;padding:0;background:#0A0A0F;font-family:'Helvetica Neue',Arial,sans-serif;color:#F4F4F5;">
-  <span style="display:none;max-height:0;overflow:hidden;color:#0A0A0F;">${escapeHtml(preheader)}</span>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0F;padding:40px 20px;">
+<body style="margin:0;padding:0;background:#F4F4F6;font-family:'Helvetica Neue',Arial,sans-serif;color:#18181B;">
+  <span style="display:none;max-height:0;overflow:hidden;color:#F4F4F6;">${escapeHtml(preheader)}</span>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F4F6;padding:40px 20px;">
     <tr><td align="center">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0"
-             style="max-width:600px;width:100%;background:#14141F;border-radius:12px;overflow:hidden;border:1px solid #2A2A38;">
+             style="max-width:600px;width:100%;background:#FFFFFF;border-radius:12px;overflow:hidden;border:1px solid #E4E4E7;">
         <!-- Header -->
         <tr>
-          <td style="padding:32px 40px;border-bottom:1px solid #2A2A38;">
-            <h1 style="margin:0;font-size:22px;font-weight:700;background:linear-gradient(90deg,#A855F7,#7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-              hethongmmo.vn
-            </h1>
-            <p style="margin:4px 0 0;font-size:12px;color:#71717A;">Nền tảng dịch vụ MMO uy tín</p>
+          <td style="padding:28px 40px;border-bottom:1px solid #E4E4E7;">
+            <h1 style="margin:0;font-size:20px;font-weight:700;color:#7C3AED;">hethongmmo.vn</h1>
+            <p style="margin:4px 0 0;font-size:12px;color:#A1A1AA;">Nền tảng dịch vụ MMO uy tín</p>
           </td>
         </tr>
         <!-- Body -->
@@ -53,12 +51,12 @@ function baseTemplate(content: string, preheader = ""): string {
         </tr>
         <!-- Footer -->
         <tr>
-          <td style="padding:24px 40px;border-top:1px solid #2A2A38;background:#0F0F1A;">
-            <p style="margin:0;font-size:12px;color:#71717A;line-height:1.7;">
+          <td style="padding:24px 40px;border-top:1px solid #E4E4E7;background:#FAFAFA;">
+            <p style="margin:0;font-size:12px;color:#9CA3AF;line-height:1.7;">
               Email này được gửi tự động, vui lòng không trả lời.<br>
-              Cần hỗ trợ? Liên hệ <a href="${APP_URL}/lien-he" style="color:#A855F7;text-decoration:none;">${APP_URL}/lien-he</a>
+              Cần hỗ trợ? Liên hệ <a href="${APP_URL}/lien-he" style="color:#7C3AED;text-decoration:none;">${APP_URL}/lien-he</a>
             </p>
-            <p style="margin:8px 0 0;font-size:11px;color:#52525B;">© 2026 hethongmmo.vn. All rights reserved.</p>
+            <p style="margin:8px 0 0;font-size:11px;color:#A1A1AA;">© 2026 hethongmmo.vn. All rights reserved.</p>
           </td>
         </tr>
       </table>
@@ -128,17 +126,17 @@ export async function sendOtpEmail({
   }
   const purposeText = OTP_PURPOSE_TEXT[purpose] ?? "thao tác này";
   const content = `
-    <h2 style="margin:0 0 16px;font-size:20px;color:#F4F4F5;font-weight:600;">Mã xác minh của bạn</h2>
-    <p style="color:#A1A1AA;font-size:14px;line-height:1.7;margin:0 0 32px;">
-      Sử dụng mã OTP bên dưới để hoàn tất ${purposeText}. Mã có hiệu lực trong <strong style="color:#F4F4F5;">${expiresInMin} phút</strong>.
+    <h2 style="margin:0 0 16px;font-size:20px;color:#18181B;font-weight:700;">Mã xác minh của bạn</h2>
+    <p style="color:#71717A;font-size:14px;line-height:1.7;margin:0 0 32px;">
+      Sử dụng mã OTP bên dưới để hoàn tất ${purposeText}. Mã có hiệu lực trong <strong style="color:#18181B;">${expiresInMin} phút</strong>.
     </p>
     <div style="margin:0 0 32px;text-align:center;">
-      <div style="display:inline-block;padding:20px 48px;background:#1F1F2E;border-radius:12px;border:2px solid #7C3AED;">
-        <div style="font-size:36px;font-weight:700;letter-spacing:10px;color:#A855F7;font-family:'Courier New',monospace;">${escapeHtml(code)}</div>
+      <div style="display:inline-block;padding:20px 48px;background:#F5F3FF;border-radius:12px;border:2px solid #7C3AED;">
+        <div style="font-size:36px;font-weight:700;letter-spacing:10px;color:#7C3AED;font-family:'Courier New',monospace;">${escapeHtml(code)}</div>
       </div>
     </div>
-    <p style="color:#71717A;font-size:13px;margin:0;line-height:1.7;">
-      ⚠️ <strong style="color:#F59E0B;">KHÔNG</strong> chia sẻ mã này với bất kỳ ai, kể cả nhân viên hethongmmo.vn.
+    <p style="color:#9CA3AF;font-size:13px;margin:0;line-height:1.7;">
+      ⚠️ <strong style="color:#D97706;">KHÔNG</strong> chia sẻ mã này với bất kỳ ai, kể cả nhân viên hethongmmo.vn.
     </p>`;
 
   return sendEmail(
@@ -167,24 +165,24 @@ export async function sendDepositEmail({
 }): Promise<EmailResult> {
   const now = new Date();
   const content = `
-    <h2 style="margin:0 0 16px;font-size:20px;color:#10B981;font-weight:600;">✅ Nạp tiền thành công</h2>
-    <p style="color:#A1A1AA;font-size:14px;margin:0 0 24px;">Tài khoản của bạn vừa được cộng:</p>
-    <div style="font-size:36px;font-weight:700;color:#10B981;margin:0 0 24px;">
+    <h2 style="margin:0 0 16px;font-size:20px;color:#059669;font-weight:700;">✅ Nạp tiền thành công</h2>
+    <p style="color:#71717A;font-size:14px;margin:0 0 16px;">Tài khoản của bạn vừa được cộng:</p>
+    <div style="font-size:36px;font-weight:700;color:#059669;margin:0 0 24px;">
       + ${formatVnd(amount)}
     </div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-           style="background:#1F1F2E;border-radius:8px;overflow:hidden;margin:0 0 24px;">
+           style="background:#F9FAFB;border-radius:8px;overflow:hidden;margin:0 0 24px;border:1px solid #E5E7EB;">
       <tr>
-        <td style="padding:14px 20px;color:#A1A1AA;font-size:13px;border-bottom:1px solid #2A2A38;">Mã giao dịch</td>
-        <td style="padding:14px 20px;text-align:right;font-size:13px;font-family:monospace;border-bottom:1px solid #2A2A38;">${escapeHtml(referenceCode)}</td>
+        <td style="padding:14px 20px;color:#6B7280;font-size:13px;border-bottom:1px solid #E5E7EB;">Mã giao dịch</td>
+        <td style="padding:14px 20px;text-align:right;font-size:13px;font-family:monospace;color:#18181B;border-bottom:1px solid #E5E7EB;">${escapeHtml(referenceCode)}</td>
       </tr>
       <tr>
-        <td style="padding:14px 20px;color:#A1A1AA;font-size:13px;border-bottom:1px solid #2A2A38;">Số dư mới</td>
-        <td style="padding:14px 20px;text-align:right;font-size:13px;font-weight:600;border-bottom:1px solid #2A2A38;">${formatVnd(newBalance)}</td>
+        <td style="padding:14px 20px;color:#6B7280;font-size:13px;border-bottom:1px solid #E5E7EB;">Số dư mới</td>
+        <td style="padding:14px 20px;text-align:right;font-size:13px;font-weight:600;color:#18181B;border-bottom:1px solid #E5E7EB;">${formatVnd(newBalance)}</td>
       </tr>
       <tr>
-        <td style="padding:14px 20px;color:#A1A1AA;font-size:13px;">Thời gian</td>
-        <td style="padding:14px 20px;text-align:right;font-size:13px;">${formatDate(now)}</td>
+        <td style="padding:14px 20px;color:#6B7280;font-size:13px;">Thời gian</td>
+        <td style="padding:14px 20px;text-align:right;font-size:13px;color:#18181B;">${formatDate(now)}</td>
       </tr>
     </table>
     <a href="${APP_URL}/lich-su-giao-dich"
@@ -219,34 +217,34 @@ export async function sendOrderEmail({
 }): Promise<EmailResult> {
   const contentBlock = deliveredContent
     ? `<div style="margin:24px 0 0;">
-        <p style="color:#F59E0B;font-size:13px;margin:0 0 8px;font-weight:600;">
+        <p style="color:#D97706;font-size:13px;margin:0 0 8px;font-weight:600;">
           ⚠️ Vui lòng lưu lại nội dung dưới đây ngay. Mỗi đơn chỉ giao 1 lần.
         </p>
-        <div style="background:#1F1F2E;border:1px solid #2A2A38;border-radius:8px;padding:16px;font-family:'Courier New',monospace;font-size:13px;word-break:break-all;color:#A855F7;line-height:1.7;">
+        <div style="background:#F5F3FF;border:1px solid #DDD6FE;border-radius:8px;padding:16px;font-family:'Courier New',monospace;font-size:13px;word-break:break-all;color:#7C3AED;line-height:1.7;">
           ${escapeHtml(deliveredContent)}
         </div>
       </div>`
     : "";
 
   const content = `
-    <h2 style="margin:0 0 20px;font-size:20px;color:#F4F4F5;font-weight:600;">📦 Xác nhận đơn hàng</h2>
+    <h2 style="margin:0 0 20px;font-size:20px;color:#18181B;font-weight:700;">📦 Xác nhận đơn hàng</h2>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-           style="background:#1F1F2E;border-radius:8px;overflow:hidden;margin:0 0 24px;">
+           style="background:#F9FAFB;border-radius:8px;overflow:hidden;margin:0 0 24px;border:1px solid #E5E7EB;">
       <tr>
-        <td style="padding:14px 20px;color:#A1A1AA;font-size:13px;border-bottom:1px solid #2A2A38;">Mã đơn</td>
-        <td style="padding:14px 20px;text-align:right;font-size:13px;font-family:monospace;font-weight:600;border-bottom:1px solid #2A2A38;">${escapeHtml(orderCode)}</td>
+        <td style="padding:14px 20px;color:#6B7280;font-size:13px;border-bottom:1px solid #E5E7EB;">Mã đơn</td>
+        <td style="padding:14px 20px;text-align:right;font-size:13px;font-family:monospace;font-weight:600;color:#18181B;border-bottom:1px solid #E5E7EB;">${escapeHtml(orderCode)}</td>
       </tr>
       <tr>
-        <td style="padding:14px 20px;color:#A1A1AA;font-size:13px;border-bottom:1px solid #2A2A38;">Sản phẩm</td>
-        <td style="padding:14px 20px;text-align:right;font-size:13px;border-bottom:1px solid #2A2A38;">${escapeHtml(itemName)}</td>
+        <td style="padding:14px 20px;color:#6B7280;font-size:13px;border-bottom:1px solid #E5E7EB;">Sản phẩm</td>
+        <td style="padding:14px 20px;text-align:right;font-size:13px;color:#18181B;border-bottom:1px solid #E5E7EB;">${escapeHtml(itemName)}</td>
       </tr>
       <tr>
-        <td style="padding:14px 20px;color:#A1A1AA;font-size:13px;">Số tiền</td>
-        <td style="padding:14px 20px;text-align:right;font-size:14px;font-weight:600;color:#EF4444;">-${formatVnd(finalPrice)}</td>
+        <td style="padding:14px 20px;color:#6B7280;font-size:13px;">Số tiền</td>
+        <td style="padding:14px 20px;text-align:right;font-size:14px;font-weight:600;color:#DC2626;">-${formatVnd(finalPrice)}</td>
       </tr>
     </table>
     ${contentBlock}
-    <p style="margin:24px 0 0;color:#71717A;font-size:12px;line-height:1.7;">
+    <p style="margin:24px 0 0;color:#9CA3AF;font-size:12px;line-height:1.7;">
       Lưu thông tin quan trọng này cẩn thận. hethongmmo.vn không chịu trách nhiệm nếu bạn mất nội dung này.
     </p>`;
 
@@ -272,23 +270,23 @@ export async function sendSellerApprovedEmail({
   maxProducts: number;
 }): Promise<EmailResult> {
   const content = `
-    <h2 style="margin:0 0 16px;font-size:20px;color:#F4F4F5;font-weight:600;">🎉 Chúc mừng! Bạn đã trở thành Seller</h2>
-    <p style="color:#A1A1AA;font-size:14px;line-height:1.7;margin:0 0 24px;">
+    <h2 style="margin:0 0 16px;font-size:20px;color:#18181B;font-weight:700;">🎉 Chúc mừng! Bạn đã trở thành Seller</h2>
+    <p style="color:#71717A;font-size:14px;line-height:1.7;margin:0 0 24px;">
       Tài khoản bán hàng của bạn đã được phê duyệt. Bạn có thể bắt đầu đăng sản phẩm ngay bây giờ.
     </p>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-           style="background:#1F1F2E;border-radius:8px;overflow:hidden;margin:0 0 28px;">
+           style="background:#F9FAFB;border-radius:8px;overflow:hidden;margin:0 0 28px;border:1px solid #E5E7EB;">
       <tr>
-        <td style="padding:14px 20px;color:#A1A1AA;font-size:13px;border-bottom:1px solid #2A2A38;">Danh mục</td>
-        <td style="padding:14px 20px;text-align:right;font-size:13px;font-weight:600;border-bottom:1px solid #2A2A38;">${escapeHtml(category)}</td>
+        <td style="padding:14px 20px;color:#6B7280;font-size:13px;border-bottom:1px solid #E5E7EB;">Danh mục</td>
+        <td style="padding:14px 20px;text-align:right;font-size:13px;font-weight:600;color:#18181B;border-bottom:1px solid #E5E7EB;">${escapeHtml(category)}</td>
       </tr>
       <tr>
-        <td style="padding:14px 20px;color:#A1A1AA;font-size:13px;">Số sản phẩm tối đa</td>
-        <td style="padding:14px 20px;text-align:right;font-size:13px;font-weight:600;">${maxProducts} sản phẩm</td>
+        <td style="padding:14px 20px;color:#6B7280;font-size:13px;">Số sản phẩm tối đa</td>
+        <td style="padding:14px 20px;text-align:right;font-size:13px;font-weight:600;color:#18181B;">${maxProducts} sản phẩm</td>
       </tr>
     </table>
     <a href="${APP_URL}/ban-hang"
-       style="display:inline-block;padding:12px 28px;background:linear-gradient(90deg,#7C3AED,#A855F7);color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;">
+       style="display:inline-block;padding:12px 28px;background:#7C3AED;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;">
       Truy cập trang quản lý bán hàng →
     </a>`;
 
@@ -312,15 +310,15 @@ export async function sendSellerRejectedEmail({
   rejectReason: string;
 }): Promise<EmailResult> {
   const content = `
-    <h2 style="margin:0 0 16px;font-size:20px;color:#EF4444;font-weight:600;">Đơn đăng ký bán hàng bị từ chối</h2>
-    <p style="color:#A1A1AA;font-size:14px;line-height:1.7;margin:0 0 24px;">
+    <h2 style="margin:0 0 16px;font-size:20px;color:#DC2626;font-weight:700;">Đơn đăng ký bán hàng bị từ chối</h2>
+    <p style="color:#71717A;font-size:14px;line-height:1.7;margin:0 0 24px;">
       Chúng tôi đã xem xét đơn đăng ký bán hàng của bạn và rất tiếc phải thông báo rằng đơn không được chấp thuận lần này.
     </p>
-    <div style="padding:16px 20px;background:#1F1F2E;border-left:3px solid #EF4444;border-radius:0 8px 8px 0;margin:0 0 28px;">
-      <p style="margin:0 0 4px;font-size:12px;color:#71717A;text-transform:uppercase;letter-spacing:0.5px;">Lý do từ chối</p>
-      <p style="margin:0;font-size:14px;color:#F4F4F5;line-height:1.7;">${escapeHtml(rejectReason)}</p>
+    <div style="padding:16px 20px;background:#FEF2F2;border-left:3px solid #EF4444;border-radius:0 8px 8px 0;margin:0 0 28px;">
+      <p style="margin:0 0 4px;font-size:11px;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.5px;">Lý do từ chối</p>
+      <p style="margin:0;font-size:14px;color:#18181B;line-height:1.7;">${escapeHtml(rejectReason)}</p>
     </div>
-    <p style="color:#A1A1AA;font-size:13px;line-height:1.7;margin:0 0 24px;">
+    <p style="color:#71717A;font-size:13px;line-height:1.7;margin:0 0 24px;">
       Bạn có thể gửi lại đơn đăng ký sau khi khắc phục các vấn đề được nêu ở trên.
     </p>
     <a href="${APP_URL}/thong-tin-ca-nhan"
@@ -362,19 +360,19 @@ export async function sendWithdrawalEmail({
 }): Promise<EmailResult> {
   const cfg = WITHDRAWAL_STATUS_CONFIG[status];
   const rejectBlock = rejectReason && status === "REJECTED"
-    ? `<div style="margin:16px 0 0;padding:14px 20px;background:#1F1F2E;border-left:3px solid #EF4444;border-radius:0 8px 8px 0;">
-        <p style="margin:0;font-size:13px;color:#A1A1AA;">Lý do từ chối:</p>
-        <p style="margin:4px 0 0;font-size:14px;color:#EF4444;">${escapeHtml(rejectReason)}</p>
+    ? `<div style="margin:16px 0 0;padding:14px 20px;background:#FEF2F2;border-left:3px solid #EF4444;border-radius:0 8px 8px 0;">
+        <p style="margin:0;font-size:13px;color:#71717A;">Lý do từ chối:</p>
+        <p style="margin:4px 0 0;font-size:14px;color:#DC2626;">${escapeHtml(rejectReason)}</p>
        </div>`
     : "";
 
   const content = `
-    <h2 style="margin:0 0 16px;font-size:20px;font-weight:600;color:#F4F4F5;">${cfg.subject}</h2>
-    <div style="display:inline-block;padding:6px 16px;background:#1F1F2E;border-radius:20px;border:1px solid ${cfg.color};margin:0 0 24px;">
+    <h2 style="margin:0 0 16px;font-size:20px;font-weight:700;color:#18181B;">${cfg.subject}</h2>
+    <div style="display:inline-block;padding:6px 16px;background:#F4F4F6;border-radius:20px;border:1px solid ${cfg.color};margin:0 0 24px;">
       <span style="font-size:13px;color:${cfg.color};font-weight:600;">${cfg.badge}</span>
     </div>
-    <p style="color:#A1A1AA;font-size:14px;margin:0 0 20px;">
-      Số tiền thực nhận: <strong style="color:#F4F4F5;font-size:18px;">${formatVnd(netAmount)}</strong>
+    <p style="color:#71717A;font-size:14px;margin:0 0 20px;">
+      Số tiền thực nhận: <strong style="color:#18181B;font-size:18px;">${formatVnd(netAmount)}</strong>
     </p>
     ${rejectBlock}
     <a href="${APP_URL}/ban-hang/rut-tien"
@@ -404,16 +402,16 @@ export async function sendPasswordResetEmail({
   const resetUrl = `${APP_URL}/dat-lai-mat-khau?token=${encodeURIComponent(resetToken)}&email=${encodeURIComponent(to)}`;
 
   const content = `
-    <h2 style="margin:0 0 16px;font-size:20px;font-weight:600;color:#F4F4F5;">Đặt lại mật khẩu</h2>
-    <p style="color:#A1A1AA;font-size:14px;line-height:1.7;margin:0 0 28px;">
+    <h2 style="margin:0 0 16px;font-size:20px;font-weight:700;color:#18181B;">Đặt lại mật khẩu</h2>
+    <p style="color:#71717A;font-size:14px;line-height:1.7;margin:0 0 28px;">
       Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản này.<br>
-      Nhấn vào nút bên dưới để đặt lại mật khẩu. Link có hiệu lực <strong style="color:#F4F4F5;">30 phút</strong>.
+      Nhấn vào nút bên dưới để đặt lại mật khẩu. Link có hiệu lực <strong style="color:#18181B;">30 phút</strong>.
     </p>
     <a href="${resetUrl}"
        style="display:inline-block;padding:14px 32px;background:#7C3AED;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;letter-spacing:0.3px;">
       Đặt lại mật khẩu
     </a>
-    <p style="margin:28px 0 0;color:#71717A;font-size:13px;line-height:1.7;">
+    <p style="margin:28px 0 0;color:#9CA3AF;font-size:13px;line-height:1.7;">
       Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.<br>
       Mật khẩu của bạn vẫn an toàn và không có thay đổi nào được thực hiện.
     </p>`;

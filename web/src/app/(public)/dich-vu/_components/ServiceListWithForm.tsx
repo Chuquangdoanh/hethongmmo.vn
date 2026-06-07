@@ -60,10 +60,12 @@ function ServiceCard({
   service,
   isSelected,
   onSelect,
+  discountPct = 0,
 }: {
   service: ServiceItem;
   isSelected: boolean;
   onSelect: () => void;
+  discountPct?: number;
 }) {
   const [showImage, setShowImage] = useState(false);
   const price    = Number(service.price);
@@ -192,17 +194,27 @@ function ServiceCard({
 
           {/* Giá + CTA */}
           <div className="flex items-stretch gap-2">
-            <div className="flex-[2] flex items-center justify-center rounded-xl border-2 border-[#e11d48] px-2 py-2">
+            <div className="flex-[2] flex flex-col items-center justify-center rounded-xl border-2 border-[#e11d48] px-2 py-2 gap-0.5">
+              {discountPct > 0 && price > 0 && (
+                <p className="text-[10px] text-[#94a3b8] line-through leading-tight">
+                  {hasVariants ? `Từ ${formatVnd(minPrice)}` : formatVnd(price)}
+                </p>
+              )}
               <p className="text-sm font-extrabold text-center leading-tight text-[#e11d48]">
-                {hasVariants ? `Từ ${formatVnd(minPrice)}` : formatVnd(price)}
+                {hasVariants
+                  ? `Từ ${formatVnd(discountPct > 0 ? Math.round(minPrice * (1 - discountPct / 100)) : minPrice)}`
+                  : formatVnd(discountPct > 0 ? Math.round(price * (1 - discountPct / 100)) : price)}
               </p>
+              {discountPct > 0 && price > 0 && (
+                <span className="text-[10px] font-bold text-emerald-600">-{discountPct}%</span>
+              )}
             </div>
             <button
               type="button"
               onClick={onSelect}
               className={`flex-[3] flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-bold transition-all ${
                 isSelected
-                  ? "bg-[#0d9488] text-white shadow-md"
+                  ? "bg-[#be123c] text-white shadow-md"
                   : "bg-[#e11d48] text-white hover:bg-[#be123c] hover:shadow-md"
               }`}
             >
@@ -224,6 +236,7 @@ function ServiceOrderPanel({
   onSuccess,
   testimonials,
   autoScroll,
+  discountPct = 0,
 }: {
   service: ServiceItem;
   isLoggedIn: boolean;
@@ -231,6 +244,7 @@ function ServiceOrderPanel({
   onSuccess: (orderId: string) => void;
   testimonials: TestimonialItem[];
   autoScroll: boolean;
+  discountPct?: number;
 }) {
   const router = useRouter();
   const cccdInputRef = useRef<HTMLInputElement>(null);
@@ -703,26 +717,39 @@ function ServiceOrderPanel({
           )}
 
           {/* Price summary */}
-          <div className="rounded-xl border border-[#fde68a] bg-[#fffbeb] px-4 py-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#fef3c7] flex items-center justify-center shrink-0">
-                <Tag size={18} strokeWidth={1.75} className="text-[#b45309]" />
-              </div>
-              <div>
-                <p className="text-[10px] text-[#92400e] font-semibold uppercase tracking-wide">Giá Dịch Vụ</p>
-                <p className="text-xl font-extrabold text-[#e11d48]">{formatVnd(total)}</p>
-              </div>
-            </div>
-            {(hasDeviceVariants || warrantyPrice > 0) && (
-              <div className="text-[10px] text-[#92400e] text-right space-y-0.5">
-                {selectedVariant && <p className="font-semibold">{selectedVariant.name}</p>}
-                {warrantyPrice > 0 && <p>+ BH {formatVnd(warrantyPrice)}</p>}
-                {hasDeviceVariants && !deviceVariant && (
-                  <p className="text-[#f59e0b] font-semibold">Giá có thể thay đổi theo thiết bị.</p>
+          {(() => {
+            const discountedTotal = discountPct > 0 ? Math.round(total * (1 - discountPct / 100)) : total;
+            return (
+              <div className="rounded-xl border border-[#fde68a] bg-[#fffbeb] px-4 py-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#fef3c7] flex items-center justify-center shrink-0">
+                    <Tag size={18} strokeWidth={1.75} className="text-[#b45309]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#92400e] font-semibold uppercase tracking-wide">Giá Dịch Vụ</p>
+                    {discountPct > 0 ? (
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-[#92400e]/50 line-through">{formatVnd(total)}</p>
+                        <p className="text-xl font-extrabold text-[#e11d48]">{formatVnd(discountedTotal)}</p>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">-{discountPct}%</span>
+                      </div>
+                    ) : (
+                      <p className="text-xl font-extrabold text-[#e11d48]">{formatVnd(total)}</p>
+                    )}
+                  </div>
+                </div>
+                {(hasDeviceVariants || warrantyPrice > 0) && (
+                  <div className="text-[10px] text-[#92400e] text-right space-y-0.5">
+                    {selectedVariant && <p className="font-semibold">{selectedVariant.name}</p>}
+                    {warrantyPrice > 0 && <p>+ BH {formatVnd(warrantyPrice)}</p>}
+                    {hasDeviceVariants && !deviceVariant && (
+                      <p className="text-[#f59e0b] font-semibold">Giá có thể thay đổi theo thiết bị.</p>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
+            );
+          })()}
 
           {/* Note */}
           <div>
@@ -753,7 +780,7 @@ function ServiceOrderPanel({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#0d9488] text-white text-sm font-bold hover:bg-[#0f766e] disabled:opacity-60 transition-colors shadow-md"
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#ef4444] text-white text-sm font-bold hover:bg-[#be123c] disabled:opacity-60 transition-colors shadow-md"
             >
               {loading ? (
                 <>
@@ -796,10 +823,12 @@ export default function ServiceListWithForm({
   services,
   isLoggedIn,
   testimonials,
+  discountPct = 0,
 }: {
   services: ServiceItem[];
   isLoggedIn: boolean;
   testimonials: (TestimonialItem & { serviceId: string | null })[];
+  discountPct?: number;
 }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -815,7 +844,7 @@ export default function ServiceListWithForm({
   }
 
   function handleSuccess(_orderId: string) {
-    router.push("/don-hang");
+    router.push("/cam-on?type=dich-vu");
   }
 
   // Lọc testimonials cho service đang chọn: đúng serviceId HOẶC không gắn service cụ thể
@@ -833,6 +862,7 @@ export default function ServiceListWithForm({
           service={s}
           isSelected={selectedId === s.id}
           onSelect={() => handleSelect(s.id)}
+          discountPct={discountPct}
         />
       ))}
 
@@ -844,6 +874,7 @@ export default function ServiceListWithForm({
           onSuccess={handleSuccess}
           testimonials={panelTestimonials}
           autoScroll={autoScroll}
+          discountPct={discountPct}
         />
       )}
     </div>

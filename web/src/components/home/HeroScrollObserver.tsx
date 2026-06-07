@@ -18,20 +18,22 @@ export default function HeroScrollObserver() {
       });
     }
 
+    const markVisible = (el: HTMLElement) => {
+      el.classList.add("visible");
+      el.addEventListener(
+        "animationend",
+        () => { el.style.willChange = "auto"; },
+        { once: true },
+      );
+    };
+
     // rootMargin: trigger 60px before element fully enters viewport
     const revealObs = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
           if (e.isIntersecting) {
-            const el = e.target as HTMLElement;
-            el.classList.add("visible");
-            revealObs.unobserve(el);
-            // Release GPU layer after animation completes
-            el.addEventListener(
-              "animationend",
-              () => { el.style.willChange = "auto"; },
-              { once: true },
-            );
+            markVisible(e.target as HTMLElement);
+            revealObs.unobserve(e.target);
           }
         });
       },
@@ -39,7 +41,17 @@ export default function HeroScrollObserver() {
     );
 
     if (!reducedMotion) {
-      animEls.forEach((el) => revealObs.observe(el));
+      const vp = window.innerHeight;
+      animEls.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        // Element already in viewport — add .visible immediately (sync, no IO delay)
+        if (rect.bottom > 0 && rect.top < vp - 40 && rect.height > 0) {
+          markVisible(el);
+        } else {
+          // Below fold — use IO for scroll-triggered reveal
+          revealObs.observe(el);
+        }
+      });
     }
 
     // ── 2. Counter Animation ──

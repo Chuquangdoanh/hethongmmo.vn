@@ -9,10 +9,11 @@ interface PaginationProps {
   basePath?: string;
   searchParams?: Record<string, string>;
   onPageChange?: (page: number) => void;
+  pageParam?: string;
 }
 
-function buildHref(basePath: string, page: number, extra: Record<string, string> = {}): string {
-  const params = new URLSearchParams({ ...extra, page: String(page) });
+function buildHref(basePath: string, page: number, extra: Record<string, string> = {}, pageKey = "page"): string {
+  const params = new URLSearchParams({ ...extra, [pageKey]: String(page) });
   return `${basePath}?${params.toString()}`;
 }
 
@@ -22,6 +23,7 @@ export default function Pagination({
   basePath,
   searchParams = {},
   onPageChange,
+  pageParam = "page",
 }: PaginationProps) {
   if (totalPages <= 1) return null;
 
@@ -66,7 +68,7 @@ export default function Pagination({
     if (basePath) {
       return (
         <Link
-          href={buildHref(basePath, page, searchParams)}
+          href={buildHref(basePath, page, searchParams, pageParam)}
           className={cls}
           aria-current={isActive ? "page" : undefined}
         >
@@ -92,7 +94,7 @@ export default function Pagination({
       <div className="hidden sm:flex items-center gap-1.5">
         {basePath ? (
           <Link
-            href={buildHref(basePath, currentPage - 1, searchParams)}
+            href={buildHref(basePath, currentPage - 1, searchParams, pageParam)}
             aria-disabled={prevDisabled}
             aria-label="Trang trước"
             className={`${arrowBase} ${prevDisabled ? arrowDisabled : arrowEnabled}`}
@@ -118,7 +120,7 @@ export default function Pagination({
 
         {basePath ? (
           <Link
-            href={buildHref(basePath, currentPage + 1, searchParams)}
+            href={buildHref(basePath, currentPage + 1, searchParams, pageParam)}
             aria-disabled={nextDisabled}
             aria-label="Trang sau"
             className={`${arrowBase} ${nextDisabled ? arrowDisabled : arrowEnabled}`}
@@ -141,7 +143,7 @@ export default function Pagination({
       <div className="flex sm:hidden items-center gap-3">
         {basePath ? (
           <Link
-            href={buildHref(basePath, currentPage - 1, searchParams)}
+            href={buildHref(basePath, currentPage - 1, searchParams, pageParam)}
             aria-disabled={prevDisabled}
             className={`${arrowBase} gap-1 px-3 w-auto text-sm font-medium ${prevDisabled ? arrowDisabled : arrowEnabled}`}
           >
@@ -165,7 +167,7 @@ export default function Pagination({
 
         {basePath ? (
           <Link
-            href={buildHref(basePath, currentPage + 1, searchParams)}
+            href={buildHref(basePath, currentPage + 1, searchParams, pageParam)}
             aria-disabled={nextDisabled}
             className={`${arrowBase} gap-1 px-3 w-auto text-sm font-medium ${nextDisabled ? arrowDisabled : arrowEnabled}`}
           >

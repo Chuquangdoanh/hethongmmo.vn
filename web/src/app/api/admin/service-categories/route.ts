@@ -13,8 +13,8 @@ export async function GET(): Promise<NextResponse> {
     const session = await auth();
     requireAdmin(session);
     const categories = await prisma.serviceCategory.findMany({
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, iconUrl: true },
+      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, iconUrl: true, displayOrder: true },
     });
     return apiOk(categories);
   } catch (err) {
@@ -36,9 +36,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const existing = await prisma.serviceCategory.findUnique({ where: { name } });
     if (existing) return apiError("Danh mục đã tồn tại", "DUPLICATE", 409);
 
+    const maxOrder = await prisma.serviceCategory.aggregate({ _max: { displayOrder: true } });
+    const nextOrder = (maxOrder._max.displayOrder ?? 0) + 1;
+
     const category = await prisma.serviceCategory.create({
-      data: { name, iconUrl: iconUrl || null },
-      select: { id: true, name: true, iconUrl: true },
+      data: { name, iconUrl: iconUrl || null, displayOrder: nextOrder },
+      select: { id: true, name: true, iconUrl: true, displayOrder: true },
     });
 
     await writeAuditLog({

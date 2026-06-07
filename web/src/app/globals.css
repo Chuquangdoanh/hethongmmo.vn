@@ -206,26 +206,6 @@ a  { text-decoration: none; }
   to   { opacity: 1; transform: translateY(0)     scale(1); }
 }
 
-/* ── Mobile floating navbar ── */
-@media (max-width: 767px) {
-  .main-header-shell {
-    padding: 10px 12px 8px !important;
-    background: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-  .main-header-nav {
-    border-radius: 18px !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(24px) !important;
-    -webkit-backdrop-filter: blur(24px) !important;
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.14),
-      0 2px 8px rgba(0, 0, 0, 0.08),
-      0 0 0 1.5px rgba(255, 255, 255, 0.9) !important;
-    padding: 7px 7px 7px 16px !important;
-  }
-}
 
 /* ── Auth status dot ── */
 @keyframes active-status {
@@ -248,40 +228,20 @@ a  { text-decoration: none; }
 
 body { animation: pt-fade-in 400ms ease-out both; }
 
-/* SPA navigation — PageTransitionWrapper .page-entering
-   fade + rise nhẹ: nội dung trôi lên 12px và hiện dần.
-   translateZ(0) trên wrapper đã tạo GPU layer ổn định từ trước
-   → translateY animation chạy hoàn toàn trên compositor, không tạo layer mới.
-   cubic-bezier(0.22,1,0.36,1): easing kiểu "spring" — nhanh ra, thả nhẹ cuối. */
-@keyframes page-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.page-entering {
-  animation: page-fade-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: opacity, transform;
-}
 
 /* Browser-native View Transitions — cross-document nav (Chrome 111+, Safari 18.2+) */
 @view-transition { navigation: auto; }
 ::view-transition-old(root) {
-  animation: 150ms ease-in both vt-fade-out;
+  animation: 160ms cubic-bezier(0.4, 0, 1, 1) both vt-fade-out;
 }
 ::view-transition-new(root) {
-  animation: 420ms cubic-bezier(0.22, 1, 0.36, 1) both vt-fade-in;
+  animation: 420ms cubic-bezier(0.16, 1, 0.3, 1) both vt-fade-in;
 }
 @keyframes vt-fade-out {
   to { opacity: 0; transform: translateY(-6px); }
 }
 @keyframes vt-fade-in {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(22px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -403,23 +363,4 @@ section.cqd-drift {
   animation: cqd-drift-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* ── Header: GPU layer + entrance mượt mà (cqd namespace) ───────────
-   Nguyên nhân nháy trắng:
-   · backdrop-filter:blur(20px) trên header tạo compositor layer muộn
-     → khi SPA navigation thay content bên dưới, browser repaint → flash
-   Fix:
-   · will-change:transform → GPU composite layer ngay từ lúc mount
-     → backdrop-filter không còn trigger repaint khi content đổi
-   · cqd-header-drop → slide nhẹ 8px xuống khi hard load
-     (opacity đã được handle bởi body { animation: pt-fade-in })
-   · Không re-trigger khi SPA nav — header nằm ở root layout (DOM stable)
-──────────────────────────────────────────────────────────────────── */
-@keyframes cqd-header-drop {
-  from { transform: translateY(-8px); }
-  to   { transform: translateY(0); }
-}
-
-.main-header-shell {
-  will-change: transform;
-  animation: cqd-header-drop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
+@keyframes cqd-hot-pulse { 0%,100% { opacity:1; } 50% { opacity:0.65; } }

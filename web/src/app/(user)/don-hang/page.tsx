@@ -38,6 +38,8 @@ const TAB_LABELS: Record<string, string> = {
 };
 
 const HAS_ACTIONS = new Set(["tuttrick", "tainguyen"]);
+// Các tab này chỉ hiển thị đơn trong 7 ngày gần nhất
+const EXPIRES_7_DAYS = new Set(["tuttrick", "tainguyen"]);
 
 export default async function DonHangPage({
   searchParams,
@@ -53,7 +55,14 @@ export default async function DonHangPage({
 
   const orderTypeFilter = TAB_TYPES[activeTab as keyof typeof TAB_TYPES];
 
-  const [user, lastDeposit, counts, orders, total] = await Promise.all([
+  // Đơn tài nguyên / tut-trick chỉ hiện trong 7 ngày
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const dateFilter = EXPIRES_7_DAYS.has(activeTab) ? { createdAt: { gte: sevenDaysAgo } } : {};
+  const ordersWhere = { userId: me.id, orderType: { in: orderTypeFilter }, ...dateFilter };
+
+  const [user, lastDeposit, orders, total,
+    khoahocCount, dichvuCount, tuttrickCount, tainguyenCount,
+  ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: me.id },
       select: {
@@ -66,13 +75,8 @@ export default async function DonHangPage({
       orderBy: { createdAt: "desc" },
       select: { createdAt: true },
     }),
-    prisma.order.groupBy({
-      by: ["orderType"],
-      where: { userId: me.id },
-      _count: { _all: true },
-    }),
     prisma.order.findMany({
-      where: { userId: me.id, orderType: { in: orderTypeFilter } },
+      where: ordersWhere,
       orderBy: { createdAt: "desc" },
       skip: (currentPage - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -81,9 +85,12 @@ export default async function DonHangPage({
         orderType: true, finalPrice: true, status: true, createdAt: true,
       },
     }),
-    prisma.order.count({
-      where: { userId: me.id, orderType: { in: orderTypeFilter } },
-    }),
+    prisma.order.count({ where: ordersWhere }),
+    // Badge counts — tài nguyên & tut-trick lọc 7 ngày
+    prisma.order.count({ where: { userId: me.id, orderType: "COURSE" as never } }),
+    prisma.order.count({ where: { userId: me.id, orderType: "SERVICE" as never } }),
+    prisma.order.count({ where: { userId: me.id, orderType: "TUTTRICK" as never, createdAt: { gte: sevenDaysAgo } } }),
+    prisma.order.count({ where: { userId: me.id, orderType: { in: ["MMO_PRODUCT", "SELLER_PRODUCT"] as never[] }, createdAt: { gte: sevenDaysAgo } } }),
   ]);
 
   if (!user) return null;
@@ -104,16 +111,11 @@ export default async function DonHangPage({
   const totalSpent     = Number(user.totalSpent);
   const totalPages     = Math.ceil(total / PAGE_SIZE);
 
-  const countMap: Record<string, number> = {};
-  for (const g of counts) {
-    const key = g.orderType as string;
-    countMap[key] = (countMap[key] ?? 0) + (g._count._all);
-  }
   const tabCounts: Record<string, number> = {
-    khoahoc:   countMap["COURSE"] ?? 0,
-    tuttrick:  countMap["TUTTRICK"] ?? 0,
-    tainguyen: (countMap["MMO_PRODUCT"] ?? 0) + (countMap["SELLER_PRODUCT"] ?? 0),
-    dichvu:    countMap["SERVICE"] ?? 0,
+    khoahoc:   khoahocCount,
+    tuttrick:  tuttrickCount,
+    tainguyen: tainguyenCount,
+    dichvu:    dichvuCount,
   };
 
   const showActions = HAS_ACTIONS.has(activeTab);

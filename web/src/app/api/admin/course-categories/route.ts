@@ -12,7 +12,6 @@ export const runtime = "nodejs";
 const createSchema = z.object({
   name: z.string().min(1).max(100).trim(),
   icon: z.string().max(500).default(""),
-  displayOrder: z.number().int().min(0).default(0),
 });
 
 export async function GET(): Promise<NextResponse> {
@@ -54,7 +53,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const category = await prisma.courseCategory.create({ data: parsed.data });
+    const maxOrder = await prisma.courseCategory.aggregate({ _max: { displayOrder: true } });
+    const nextOrder = (maxOrder._max.displayOrder ?? 0) + 1;
+
+    const category = await prisma.courseCategory.create({
+      data: { ...parsed.data, displayOrder: nextOrder },
+    });
 
     await writeAuditLog({
       actorId: actor.id,

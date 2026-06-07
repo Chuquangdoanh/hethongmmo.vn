@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
+import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { formatVnd } from "@/lib/utils/format";
 import HeroScrollObserver from "@/components/home/HeroScrollObserver";
 import HomeDriftObserver from "@/components/home/HomeDriftObserver";
@@ -11,6 +12,7 @@ import {
   ShoppingCart, ArrowRight, Search,
   Phone, Trophy, FolderOpen, Calendar, Clock, Shield, Package,
   CheckCircle, HelpCircle, Briefcase, Users, Music2,
+  Newspaper, ExternalLink, Quote,
 } from "lucide-react";
 
 /* ─── Static data ─── */
@@ -39,6 +41,36 @@ const POPULAR_SERVICES = [
   { title: "Tài nguyên MMO",      desc: "Tool, tài khoản, dịch vụ... marketplace an toàn và tiện lợi",               href: "/tai-nguyen-mmo", emoji: "⚡" },
 ];
 
+const PRESS_CARDS = [
+  {
+    logoType: "vnexpress",
+    tag: "Kinh doanh số",
+    tagColor: "#0066ff",
+    headline: "Hệ sinh thái MMO giúp hàng nghìn người Việt bứt phá thu nhập online",
+    desc: "Nền tảng công nghệ giúp kết nối, đào tạo và hỗ trợ người dùng phát triển công việc kinh doanh online một cách bền vững.",
+    date: "12/03/2025",
+    href: "#",
+  },
+  {
+    logoType: "dantri",
+    tag: "Công nghệ",
+    tagColor: "#0891b2",
+    headline: "Công nghệ AI và tự động hóa đang thay đổi cuộc chơi MMO tại Việt Nam",
+    desc: "Ứng dụng AI và tự động hóa giúp tối ưu hiệu suất, tiết kiệm thời gian và gia tăng hiệu quả cho cộng đồng kinh doanh online.",
+    date: "25/02/2025",
+    href: "#",
+  },
+  {
+    logoType: "24h",
+    tag: "Khởi nghiệp",
+    tagColor: "#7c3aed",
+    headline: "MMO – Cơ hội khởi nghiệp ít vốn nhưng tiềm năng lớn cho người trẻ",
+    desc: "Xu hướng khởi nghiệp online đang mở ra cơ hội cho người trẻ Việt Nam tự do tài chính và làm chủ cuộc sống.",
+    date: "18/02/2025",
+    href: "#",
+  },
+];
+
 const FAQ_ITEMS = [
   { q: "Dịch vụ của website có uy tín không?",  a: "Chúng tôi cam kết về chất lượng và tối ưu hóa các chỉ số chuyển đổi thực tế để mang lại kết quả tốt nhất cho bạn." },
   { q: "Thời gian xử lý đơn hàng là bao lâu?", a: "Hầu hết đơn dịch vụ được xử lý tự động trong vòng 1–24 giờ sau khi thanh toán thành công." },
@@ -56,6 +88,7 @@ const PLATFORM_LABEL: Record<string, string> = {
 
 /* ═══════════════════════════════════════════════════════ */
 export default async function HomePage() {
+  await guardPublicPage("");
   const [hotTuts, featuredProducts, featuredServices, rawCourses] = await Promise.all([
     prisma.tutTrick.findMany({
       where: { isActive: true, deletedAt: null },
@@ -122,27 +155,41 @@ export default async function HomePage() {
       {/* ── DJ MEDIA AGENCY INTRO ────────────────────── */}
       <section style={{ padding: "80px 0 72px", background: "#fff", overflow: "hidden" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
-          <div style={{ display: "flex", gap: "64px", alignItems: "center" }} className="expert-flex">
+          <div className="dj-media-grid">
 
-            {/* ── Left: Text ── */}
-            <div style={{ flex: 1 }} className="anim-fade-up">
-
+            {/* ── 1: Title ── */}
+            <div className="dj-media-title anim-fade-up" data-d="1">
               <h2 style={{
-                fontSize: "clamp(1.8rem,4vw,3rem)", fontWeight: "900",
-                color: "#0f172a", lineHeight: "1.2", marginBottom: "20px",
+                fontSize: "clamp(1.4rem,3vw,2.4rem)", fontWeight: "900",
+                color: "#0f172a", lineHeight: "1.2", marginBottom: "0",
               }}>
-                CÔNG TY TNHH DJ MEDIA &amp;<br />SUPPORT MẠNG XÃ HỘI
+                <span style={{ display: "block", whiteSpace: "nowrap" }}>CÔNG TY TNHH DJ MEDIA &amp;</span>
+                <span style={{ display: "block", whiteSpace: "nowrap" }}>SUPPORT MẠNG XÃ HỘI</span>
               </h2>
+            </div>
 
+            {/* ── 2: Image ── */}
+            <div style={{ position: "relative" }} className="dj-media-img anim-scale-in" data-d="2">
+              <div style={{ borderRadius: "24px", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,.16)", aspectRatio: "4/3", background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/images/dj-media-classroom.jpg" alt="DJ Media Agency – Lớp học thực chiến" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              </div>
+              <div style={{ position: "absolute", bottom: "24px", left: "24px", background: "#fff", borderRadius: "16px", padding: "14px 20px", boxShadow: "0 12px 32px rgba(0,0,0,.14)", zIndex: 2, animation: "float 5s ease-in-out infinite" }}>
+                <div style={{ fontSize: "1.8rem", fontWeight: "900", color: "#f59e0b", lineHeight: 1 }}>7+</div>
+                <div style={{ fontSize: ".73rem", color: "#334155", fontWeight: "600", marginTop: "4px" }}>Năm Kinh Nghiệm</div>
+                <div style={{ fontSize: ".73rem", color: "#334155", fontWeight: "600" }}>Thực Chiến</div>
+              </div>
+            </div>
+
+            {/* ── 3: Description + Social ── */}
+            <div className="dj-media-desc anim-fade-up" data-d="3">
               <p style={{
-                fontSize: ".975rem", color: "#2563eb", lineHeight: "1.85",
-                marginBottom: "32px", maxWidth: "520px",
+                fontSize: ".975rem", color: "#64748b", lineHeight: "1.85",
+                marginBottom: "24px", maxWidth: "520px",
               }}>
-                Hỗ Trợ Mọi Vấn Đề Dịch Vụ Mạng Xã Hội Đội Ngũ Chuyên Nghiệp Với 7 Năm Kinh Nghiệm Trong Các Lĩnh Vực : Hỗ Trợ Tất Cả Về Dịch Vụ Facebook + Tik Tok + Google, Chạy Quảng Cáo ADS, Khai Thác Adbreak và Đào Tạo Học Viên Chuyên Nghiệp Là Đơn Vị Công Ty Dịch Vụ Mạng Xã Hội Facebook + Tik Tok Đầu Tiên Tại Việt Nam Có 2 Chi Nhánh Tại Hà Nội và Hà Tĩnh !
+                Đội ngũ chuyên nghiệp với 7 năm kinh nghiệm thực chiến trong lĩnh vực dịch vụ mạng xã hội: hỗ trợ Facebook, TikTok, Google, chạy quảng cáo ADS, khai thác Adbreak và đào tạo học viên. Đơn vị tiên phong tại Việt Nam với 2 chi nhánh tại Hà Nội và Hà Tĩnh.
               </p>
-
-              {/* Social icons */}
-              <div style={{ display: "flex", gap: "10px", marginBottom: "32px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                 <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#1877F2", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
                   <svg width="22" height="22" fill="#fff" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
                 </a>
@@ -159,8 +206,10 @@ export default async function HomePage() {
                   <svg width="22" height="22" fill="#fff" viewBox="0 0 24 24"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon fill="#FF0000" points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/><polygon fill="#fff" points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>
                 </a>
               </div>
+            </div>
 
-              {/* Hotline card */}
+            {/* ── 4: Hotline / Button ── */}
+            <div className="dj-media-btn anim-fade-in" data-d="4" style={{ marginTop: "10px" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "16px", background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: "16px", padding: "14px 24px", boxShadow: "0 4px 18px rgba(0,0,0,.07)" }}>
                 <div style={{ width: "48px", height: "48px", flexShrink: 0, background: "linear-gradient(135deg,#fbbf24,#f59e0b)", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Phone size={22} strokeWidth={2} style={{ color: "#fff" }} />
@@ -169,19 +218,6 @@ export default async function HomePage() {
                   <p style={{ fontSize: ".78rem", color: "#64748b", margin: "0 0 3px", fontWeight: "500" }}>Hotline (CEO – Phạm Hữu Dũng)</p>
                   <p style={{ fontSize: "1.25rem", fontWeight: "800", color: "#f97316", margin: 0, letterSpacing: ".5px" }}>0828.118.789</p>
                 </div>
-              </div>
-            </div>
-
-            {/* ── Right: Image ── */}
-            <div style={{ flex: "0 0 480px", position: "relative" }} className="anim-scale-in expert-img-col">
-              <div style={{ borderRadius: "24px", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,.16)", aspectRatio: "4/3", background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/dj-media-classroom.jpg" alt="DJ Media Agency – Lớp học thực chiến" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-              </div>
-              <div style={{ position: "absolute", bottom: "24px", left: "24px", background: "#fff", borderRadius: "16px", padding: "14px 20px", boxShadow: "0 12px 32px rgba(0,0,0,.14)", zIndex: 2, animation: "float 5s ease-in-out infinite" }}>
-                <div style={{ fontSize: "1.8rem", fontWeight: "900", color: "#f59e0b", lineHeight: 1 }}>10+</div>
-                <div style={{ fontSize: ".73rem", color: "#334155", fontWeight: "600", marginTop: "4px" }}>Năm Kinh Nghiệm</div>
-                <div style={{ fontSize: ".73rem", color: "#334155", fontWeight: "600" }}>Thực Chiến</div>
               </div>
             </div>
 
@@ -195,7 +231,7 @@ export default async function HomePage() {
         style={{
           position: "relative",
           zIndex: 0,
-          background: "#ffffff",
+          background: "linear-gradient(180deg,#eef5ff 0%,#f7fbff 40%,#ffffff 100%)",
           overflow: "hidden",
           padding: "100px 0 80px",
           display: "flex",
@@ -238,11 +274,10 @@ export default async function HomePage() {
         }} />
 
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", position: "relative", zIndex: 2, width: "100%" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "60px" }} className="hero-inner-flex">
+          <div className="hero-grid">
 
-            {/* Content */}
-            <div style={{ flex: 1 }} className="anim-fade-up">
-              {/* Badge */}
+            {/* ── 1: Badge + Title ── */}
+            <div className="hero-title-block anim-fade-up" data-d="1">
               <div style={{
                 display: "inline-flex", alignItems: "center", gap: "8px",
                 background: "rgba(0,102,255,.08)", border: "1px solid rgba(0,102,255,.2)",
@@ -263,38 +298,23 @@ export default async function HomePage() {
                 </span>
                 Hệ thống MMO &amp; Tài nguyên số 5.0 chính thức ra mắt
               </div>
-
-              {/* taste-skill §4.7: hero max 4 elements — eyebrow·H1·subtext·CTAs */}
               <h1 style={{
                 fontSize: "clamp(2.2rem,5vw,4.2rem)",
-                lineHeight: "1.15", fontWeight: "900", color: "#0f172a", marginBottom: "20px",
+                lineHeight: "1.15", fontWeight: "900", color: "#0f172a", marginBottom: "0",
                 letterSpacing: "-0.03em",
               }}>
                 HỆ THỐNG MMO &amp;<br />
-                <span style={{ color: "#0066ff" }}>TÀI NGUYÊN SỐ 5.0</span>
+                <span style={{
+                  background: "linear-gradient(90deg,#0066ff 0%,#60a5fa 50%,#0066ff 100%)",
+                  backgroundSize: "200% auto",
+                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+                  animation: "gradShift 4s ease infinite",
+                }}>TÀI NGUYÊN SỐ 5.0</span>
               </h1>
-
-              <p style={{
-                fontSize: "1.05rem", color: "#64748b", marginBottom: "36px",
-                maxWidth: "480px", lineHeight: "1.75",
-              }}>
-                Nền tảng giao dịch MMO cho Facebook, TikTok, Google Ads — khóa học, dịch vụ, tài nguyên số.
-              </p>
-
-              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                <Link href="/tai-nguyen-mmo" className="btn-canva-outline">
-                  <Search size={16} strokeWidth={2} />
-                  Khám Phá Tài Nguyên
-                </Link>
-                <Link href="/khoa-hoc" className="btn-canva-primary">
-                  Đăng Ký Khóa Học
-                  <ArrowRight size={16} strokeWidth={2} />
-                </Link>
-              </div>
             </div>
 
-            {/* Portrait */}
-            <div style={{ flex: "0 0 420px" }} className="hero-image-col anim-scale-in">
+            {/* ── 2: Portrait ── */}
+            <div className="hero-img-block anim-scale-in" data-d="2">
               <div style={{ position: "relative", width: "380px", margin: "0 auto" }}>
                 {/* Orbit halo */}
                 <div style={{
@@ -332,7 +352,7 @@ export default async function HomePage() {
                   animation: "float 6s ease-in-out infinite",
                   left: "-40px", top: "30%",
                 }}>
-                  <div style={{ fontSize: "1.3rem", fontWeight: "800", color: "#0066ff", lineHeight: 1 }}>98%</div>
+                  <div style={{ fontSize: "1.3rem", fontWeight: "800", color: "#0066ff", lineHeight: 1 }}>99.9%</div>
                   <div style={{ fontSize: ".7rem", color: "#64748b", fontWeight: "600", marginTop: "2px" }}>Hài lòng</div>
                 </div>
                 <div style={{
@@ -342,9 +362,33 @@ export default async function HomePage() {
                   animation: "float 6s ease-in-out -4s infinite",
                   right: "-40px", bottom: "25%",
                 }}>
-                  <div style={{ fontSize: "1.3rem", fontWeight: "800", color: "#0066ff", lineHeight: 1 }}>5+</div>
+                  <div style={{ fontSize: "1.3rem", fontWeight: "800", color: "#0066ff", lineHeight: 1 }}>7+</div>
                   <div style={{ fontSize: ".7rem", color: "#64748b", fontWeight: "600", marginTop: "2px" }}>Năm KN</div>
                 </div>
+              </div>
+            </div>
+
+            {/* ── 3: Description ── */}
+            <div className="hero-desc-block anim-fade-up" data-d="3">
+              <p style={{
+                fontSize: "1.05rem", color: "#64748b", marginBottom: "0",
+                maxWidth: "480px", lineHeight: "1.75",
+              }}>
+                Nền tảng hàng đầu Việt Nam cho Facebook, TikTok, Google Ads. Hơn 59.000 khách hàng tin dùng dịch vụ, tài nguyên và khóa học thực chiến.
+              </p>
+            </div>
+
+            {/* ── 4: Buttons ── */}
+            <div className="hero-btn-block anim-fade-in" data-d="4">
+              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                <Link href="/tai-nguyen-mmo" className="btn-canva-outline">
+                  <Search size={16} strokeWidth={2} />
+                  Khám Phá Tài Nguyên
+                </Link>
+                <Link href="/khoa-hoc" className="btn-canva-primary">
+                  Đăng Ký Khóa Học
+                  <ArrowRight size={16} strokeWidth={2} />
+                </Link>
               </div>
             </div>
 
@@ -355,9 +399,17 @@ export default async function HomePage() {
       {/* ── ABOUT / EXPERT ────────────────────────────── */}
       <section style={{ padding: "80px 0", background: "#fff", overflow: "hidden" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
-          <div style={{ display: "flex", gap: "70px", alignItems: "center" }} className="expert-flex">
+          <div className="exp-grid">
 
-            <div style={{ flex: "0 0 400px", position: "relative" }} className="anim-slide-left expert-img-col">
+            {/* ── 1: Title ── */}
+            <div className="exp-title anim-slide-right" data-d="1">
+              <h2 style={{ fontSize: "clamp(1.8rem,3.5vw,2.8rem)", fontWeight: "800", lineHeight: "1.2", marginBottom: "0", color: "#0f172a" }}>
+                CHUYÊN GIA<br />DIGITAL MARKETING
+              </h2>
+            </div>
+
+            {/* ── 2: Image ── */}
+            <div style={{ position: "relative" }} className="exp-img anim-slide-left" data-d="2">
               <div style={{
                 position: "absolute", inset: "-20px",
                 background: "linear-gradient(135deg,rgba(0,102,255,.06),rgba(0,102,255,.03))",
@@ -382,17 +434,15 @@ export default async function HomePage() {
                 boxShadow: "0 12px 30px rgba(0,0,0,.12)", zIndex: 2,
                 textAlign: "center", animation: "float 5s ease-in-out infinite",
               }}>
-                <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0066ff", lineHeight: 1 }}>5+</div>
+                <div style={{ fontSize: "2rem", fontWeight: "900", color: "#0066ff", lineHeight: 1 }}>7+</div>
                 <div style={{ fontSize: ".7rem", color: "#64748b", fontWeight: "600", marginTop: "4px" }}>Năm kinh nghiệm</div>
               </div>
             </div>
 
-            <div style={{ flex: 1 }} className="anim-slide-right">
-              <h2 style={{ fontSize: "clamp(1.8rem,3.5vw,2.8rem)", fontWeight: "800", lineHeight: "1.2", marginBottom: "20px", color: "#0f172a" }}>
-                CHUYÊN GIA<br />DIGITAL MARKETING
-              </h2>
+            {/* ── 3: Description ── */}
+            <div className="exp-desc anim-fade-up" data-d="3">
               <p style={{ fontSize: "1.05rem", color: "#64748b", lineHeight: "1.85", marginBottom: "20px" }}>
-                Tôi là <strong style={{ color: "#0f172a" }}>Chu Quang Doanh</strong>, với hơn 5 năm kinh nghiệm thực chiến trong việc triển khai các chiến dịch quảng cáo triệu đô trên TikTok và Facebook.
+                Tôi là <strong style={{ color: "#0f172a" }}>Chu Quang Doanh</strong>, với hơn 7 năm kinh nghiệm thực chiến trong việc triển khai các chiến dịch quảng cáo triệu đô trên TikTok và Facebook.
               </p>
               <p style={{ fontSize: "1.05rem", color: "#64748b", lineHeight: "1.85", marginBottom: "20px" }}>
                 Sứ mệnh của tôi là giúp các doanh nghiệp SME tối ưu hóa chi phí và bùng nổ doanh số bền vững.
@@ -401,11 +451,15 @@ export default async function HomePage() {
                 borderLeft: "4px solid #0066ff",
                 padding: "16px 20px",
                 background: "rgba(0,102,255,.04)", borderRadius: "0 12px 12px 0",
-                fontStyle: "italic", fontSize: "1rem", lineHeight: "1.75", marginBottom: "32px",
+                fontStyle: "italic", fontSize: "1rem", lineHeight: "1.75", marginBottom: "0",
                 color: "#334155",
               }}>
                 &ldquo;Kết quả thực tế của khách hàng chính là thước đo thành công của chúng tôi.&rdquo;
               </blockquote>
+            </div>
+
+            {/* ── 4: Button ── */}
+            <div className="exp-btn anim-fade-in" data-d="4">
               <Link href="/gioi-thieu" className="btn-hero-primary" style={{
                 display: "inline-flex", alignItems: "center", gap: "10px",
                 background: "#0066ff", color: "#fff",
@@ -424,8 +478,161 @@ export default async function HomePage() {
       {/* ── COURSE SLIDER ─────────────────────────────── */}
       <CourseSlider courses={featuredCourses} />
 
+      {/* ── BÁO CHÍ / TRUYỀN THÔNG ────────────────────── */}
+      <section style={{ padding: "72px 0 64px", background: "#f0f5ff" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
+
+          {/* Header */}
+          <div style={{ textAlign: "center", marginBottom: "48px" }}>
+            {/* Badge */}
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: "7px",
+              background: "rgba(0,102,255,.07)", color: "#0066ff",
+              padding: "5px 16px", borderRadius: "100px",
+              fontSize: ".72rem", fontWeight: "700", letterSpacing: "1.4px",
+              textTransform: "uppercase", marginBottom: "18px",
+              border: "1px solid rgba(0,102,255,.15)",
+            }}>
+              <Newspaper size={13} strokeWidth={2} />
+              Truyền thông
+            </div>
+
+            {/* Title */}
+            <h2 style={{
+              fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: "900",
+              color: "#0f172a", margin: "0 0 14px", letterSpacing: "-0.02em",
+              lineHeight: "1.15",
+            }}>
+              BÁO CHÍ NÓI GÌ VỀ CHÚNG TÔI
+            </h2>
+
+            {/* Subtitle */}
+            <p style={{ fontSize: ".95rem", color: "#64748b", margin: "0 auto", maxWidth: "460px", lineHeight: "1.7" }}>
+              Hơn 50+ bài báo truyền thông uy tín đã đưa tin<br />
+              về hệ sinh thái MMO và những giá trị chúng tôi mang lại
+            </p>
+
+            {/* Decorative divider */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginTop: "22px" }}>
+              <div style={{ width: "48px", height: "1.5px", background: "linear-gradient(to right, transparent, #0066ff)" }} />
+              <div style={{ width: "7px", height: "7px", background: "#0066ff", borderRadius: "2px", transform: "rotate(45deg)" }} />
+              <div style={{ width: "48px", height: "1.5px", background: "linear-gradient(to left, transparent, #0066ff)" }} />
+            </div>
+          </div>
+
+          {/* 3 Press Cards */}
+          <div className="press-grid">
+            {PRESS_CARDS.map((card, i) => (
+              <a
+                key={i}
+                href={card.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="press-card anim-card-in"
+                data-d={String(i + 1)}
+                style={{ textDecoration: "none" }}
+              >
+                <div style={{ padding: "26px 26px 22px", display: "flex", flexDirection: "column", height: "100%" }}>
+
+                  {/* Logo + tag row */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+                    {/* Logo */}
+                    {card.logoType === "vnexpress" && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0" }}>
+                          <span style={{
+                            background: "#e52c2c", color: "#fff", fontWeight: "900",
+                            fontSize: ".75rem", padding: "2px 6px", borderRadius: "4px",
+                            letterSpacing: "0.3px", lineHeight: "1.4",
+                          }}>VN</span>
+                          <span style={{
+                            fontWeight: "900", fontSize: "1rem", color: "#111827",
+                            letterSpacing: "-0.5px", paddingLeft: "3px",
+                          }}>EXPRESS</span>
+                        </div>
+                        <span style={{ fontSize: ".65rem", color: "#94a3b8", fontWeight: "500", paddingLeft: "2px" }}>kinh doanh số</span>
+                      </div>
+                    )}
+                    {card.logoType === "dantri" && (
+                      <div>
+                        <span style={{
+                          fontWeight: "900", fontSize: "1.2rem", color: "#009b5e",
+                          letterSpacing: "1px", textTransform: "uppercase", lineHeight: "1",
+                        }}>DAN TRI</span>
+                      </div>
+                    )}
+                    {card.logoType === "24h" && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <div style={{
+                          width: "28px", height: "28px", borderRadius: "50%",
+                          background: "linear-gradient(135deg,#f97316,#ea580c)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                          <Clock size={14} strokeWidth={2.5} style={{ color: "#fff" }} />
+                        </div>
+                        <span style={{ fontWeight: "900", fontSize: "1.1rem", color: "#111827", letterSpacing: "-0.5px" }}>24h</span>
+                      </div>
+                    )}
+
+                    {/* Tag chip */}
+                    <span style={{
+                      fontSize: ".7rem", fontWeight: "600", color: card.tagColor,
+                      background: `${card.tagColor}12`,
+                      border: `1px solid ${card.tagColor}30`,
+                      padding: "4px 12px", borderRadius: "100px",
+                      whiteSpace: "nowrap",
+                    }}>{card.tag}</span>
+                  </div>
+
+                  {/* Quote + headline + desc */}
+                  <div style={{ flex: 1 }}>
+                    {/* Large opening quote */}
+                    <div style={{
+                      fontSize: "2.8rem", fontWeight: "900", color: "#0066ff",
+                      lineHeight: "1", marginBottom: "6px", fontFamily: "Georgia, serif",
+                      opacity: 0.25,
+                    }}>&ldquo;</div>
+
+                    <p style={{
+                      fontSize: ".975rem", fontWeight: "700", color: "#0f172a",
+                      lineHeight: "1.6", margin: "0 0 12px",
+                    }}>
+                      {card.headline}
+                    </p>
+                    <p style={{
+                      fontSize: ".875rem", color: "#64748b",
+                      lineHeight: "1.7", margin: 0,
+                    }}>
+                      {card.desc}
+                    </p>
+                  </div>
+
+                  {/* Footer: date + link */}
+                  <div style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    paddingTop: "18px", marginTop: "20px",
+                    borderTop: "1px solid #f1f5f9",
+                  }}>
+                    <span style={{ fontSize: ".78rem", color: "#94a3b8", fontWeight: "500" }}>{card.date}</span>
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: "5px",
+                      fontSize: ".82rem", fontWeight: "600", color: "#0066ff",
+                    }}>
+                      Đọc bài viết
+                      <ExternalLink size={13} strokeWidth={2} />
+                    </span>
+                  </div>
+
+                </div>
+              </a>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
       {/* ── DỊCH VỤ CHUYÊN NGHIỆP CỦA CHÚNG TÔI ─────── */}
-      <section style={{ padding: "60px 0", background: "#f8fafc" }}>
+      <section style={{ padding: "60px 0", background: "#fff" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
             <div>
@@ -558,101 +765,24 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* ── CATEGORY NAV BAR ──────────────────────────── */}
-      <div style={{
-        background: "linear-gradient(135deg,#064e3b 0%,#065f46 100%)",
-        borderBottom: "2px solid rgba(255,255,255,.1)",
-        padding: "0 24px",
-      }}>
-        <div style={{
-          maxWidth: "1200px", margin: "0 auto",
-          display: "flex", alignItems: "center", gap: "0",
-          overflowX: "auto",
-        }} className="no-scrollbar cat-nav-row">
-          <span style={{
-            color: "#6ee7b7", fontWeight: "700", fontSize: ".8rem",
-            letterSpacing: "1px", textTransform: "uppercase",
-            whiteSpace: "nowrap", padding: "14px 20px 14px 0",
-            borderRight: "1px solid rgba(255,255,255,.15)", marginRight: "4px", flexShrink: 0,
-            display: "inline-flex", alignItems: "center", gap: "6px",
-          }}>
-            <FolderOpen size={14} strokeWidth={1.75} />
-            DANH MỤC TÀI NGUYÊN
-          </span>
-          {[
-            { label: "Tất cả sản phẩm", href: "/tai-nguyen-mmo" },
-            { label: "Facebook",        href: "/tai-nguyen-mmo?category=Facebook" },
-            { label: "Game",            href: "/tai-nguyen-mmo?category=Game" },
-            { label: "TikTok",          href: "/tai-nguyen-mmo?category=TikTok" },
-          ].map(({ label, href }) => (
-            <Link
-              key={label}
-              href={href}
-              className="cat-nav-link"
-              style={{
-                color: "rgba(255,255,255,.85)", fontSize: ".875rem", fontWeight: "600",
-                padding: "14px 18px", whiteSpace: "nowrap", textDecoration: "none",
-                transition: "color .2s ease, background .2s ease",
-                borderRadius: "0",
-              }}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* ── CATEGORY ICONS ────────────────────────────── */}
-      <section style={{ background: "#f8fafc", padding: "40px 24px" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <div style={{
-            display: "flex",
-            justifyContent: "center",
-            flexWrap: "wrap",
-            gap: "16px",
-          }}>
-            {CATEGORY_ICONS.map(({ label, href, Icon }, i) => (
-              <Link
-                key={label}
-                href={href}
-                className="cat-icon-card anim-card-in"
-                data-d={String(i + 1)}
-                style={{
-                  display: "flex", flexDirection: "column", alignItems: "center",
-                  gap: "10px", padding: "20px 16px",
-                  background: "#fff", borderRadius: "16px",
-                  border: "1.5px solid #e2e8f0",
-                  textDecoration: "none",
-                  boxShadow: "0 2px 6px rgba(0,0,0,.04)",
-                  minWidth: "120px", maxWidth: "160px", flex: "0 0 auto",
-                }}
-              >
-                <div style={{
-                  width: "52px", height: "52px", borderRadius: "14px",
-                  background: "rgba(0,102,255,.07)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}>
-                  <Icon size={26} strokeWidth={1.75} style={{ color: "#0066ff" }} />
-                </div>
-                <span style={{
-                  fontSize: ".72rem", fontWeight: "700", color: "#334155",
-                  textAlign: "center", lineHeight: "1.35",
-                }}>{label}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ── TUT HOT NHẤT HÔM NAY ──────────────────────── */}
-      <section style={{ padding: "60px 0", background: "#fff" }}>
+      <section style={{ padding: "60px 0", background: "#f4f7fb" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
           {/* Section header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <Flame size={22} strokeWidth={1.75} style={{ color: "#ef4444", flexShrink: 0 }} />
-              <h2 style={{ fontSize: "1.4rem", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+            <div>
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: "6px",
+                background: "rgba(239,68,68,.08)", color: "#ef4444",
+                padding: "5px 14px", borderRadius: "100px",
+                fontSize: ".72rem", fontWeight: "700", letterSpacing: "1.2px",
+                textTransform: "uppercase", marginBottom: "8px",
+              }}>
+                <Flame size={13} strokeWidth={1.75} />
+                Nổi bật
+              </div>
+              <h2 style={{ fontSize: "clamp(1.3rem,3vw,1.8rem)", fontWeight: "800", color: "#0f172a", margin: 0 }}>
                 TUT HOT NHẤT HÔM NAY
               </h2>
             </div>
@@ -824,18 +954,69 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── CATEGORY NAV BAR ──────────────────────────── */}
+      <div style={{
+        background: "linear-gradient(135deg,#0f172a 0%,#1e293b 100%)",
+        borderBottom: "2px solid rgba(255,255,255,.06)",
+        padding: "0 24px",
+      }}>
+        <div style={{
+          maxWidth: "1200px", margin: "0 auto",
+          display: "flex", alignItems: "center", gap: "0",
+          overflowX: "auto",
+        }} className="no-scrollbar cat-nav-row">
+          <span style={{
+            color: "#93c5fd", fontWeight: "700", fontSize: ".8rem",
+            letterSpacing: "1px", textTransform: "uppercase",
+            whiteSpace: "nowrap", padding: "14px 20px 14px 0",
+            borderRight: "1px solid rgba(255,255,255,.15)", marginRight: "4px", flexShrink: 0,
+            display: "inline-flex", alignItems: "center", gap: "6px",
+          }}>
+            <FolderOpen size={14} strokeWidth={1.75} />
+            DANH MỤC TÀI NGUYÊN
+          </span>
+          {[
+            { label: "Tất cả sản phẩm", href: "/tai-nguyen-mmo" },
+            { label: "Facebook",        href: "/tai-nguyen-mmo?category=Facebook" },
+            { label: "Game",            href: "/tai-nguyen-mmo?category=Game" },
+            { label: "TikTok",          href: "/tai-nguyen-mmo?category=TikTok" },
+          ].map(({ label, href }) => (
+            <Link
+              key={label}
+              href={href}
+              className="cat-nav-link"
+              style={{
+                color: "rgba(255,255,255,.85)", fontSize: ".875rem", fontWeight: "600",
+                padding: "14px 18px", whiteSpace: "nowrap", textDecoration: "none",
+                transition: "color .2s ease, background .2s ease",
+                borderRadius: "0",
+              }}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
       {/* ── SẢN PHẨM MMO NỔI BẬT ─────────────────────── */}
-      <section style={{ padding: "60px 0", background: "#f8fafc" }}>
+      <section style={{ padding: "60px 0", background: "#fff" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
-          {/* Section header — left-accent border style (different family from icon+title) */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-            <h2 style={{
-              fontSize: "1.4rem", fontWeight: "800", color: "#0f172a", margin: 0,
-              paddingLeft: "16px",
-              borderLeft: "4px solid #0066ff",
-            }}>
-              SẢN PHẨM MMO NỔI BẬT
-            </h2>
+            <div>
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: "6px",
+                background: "rgba(0,102,255,.08)", color: "#0066ff",
+                padding: "5px 14px", borderRadius: "100px",
+                fontSize: ".72rem", fontWeight: "700", letterSpacing: "1.2px",
+                textTransform: "uppercase", marginBottom: "8px",
+              }}>
+                <ShoppingBag size={13} strokeWidth={1.75} />
+                Bán chạy
+              </div>
+              <h2 style={{ fontSize: "clamp(1.3rem,3vw,1.8rem)", fontWeight: "800", color: "#0f172a", margin: 0 }}>
+                SẢN PHẨM MMO NỔI BẬT
+              </h2>
+            </div>
             <Link href="/tai-nguyen-mmo" style={{
               fontSize: ".875rem", fontWeight: "600", color: "#0066ff",
               textDecoration: "none", border: "1.5px solid #0066ff",
@@ -894,9 +1075,11 @@ export default async function HomePage() {
                     )}
                     <span style={{
                       position: "absolute", top: "8px", left: "8px", zIndex: 2,
-                      background: "#ef4444", color: "#fff",
-                      fontSize: ".6rem", fontWeight: "800", padding: "2px 7px", borderRadius: "4px",
-                    }}>HOT</span>
+                      background: i === 0 ? "#f59e0b" : i === 1 ? "#94a3b8" : "#b45309",
+                      color: "#fff",
+                      fontSize: ".65rem", fontWeight: "900", padding: "2px 8px", borderRadius: "4px",
+                      letterSpacing: ".5px",
+                    }}>#{i + 1} BÁN CHẠY</span>
                   </div>
 
                   {/* Content */}
@@ -974,7 +1157,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── FAQ ───────────────────────────────────────── */}
-      <section style={{ padding: "100px 0", background: "#fff" }}>
+      <section style={{ padding: "100px 0", background: "#f4f7fb" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
           <div style={{ display: "flex", gap: "60px", alignItems: "flex-start" }} className="faq-cta-flex">
 
@@ -991,12 +1174,12 @@ export default async function HomePage() {
             {/* CTA Card */}
             <div style={{ flex: "0 0 340px" }} className="cta-card-col">
               <div style={{
-                background: "linear-gradient(135deg,rgba(6,78,59,.93) 0%,rgba(6,95,70,.93) 100%)",
+                background: "linear-gradient(135deg,rgba(0,64,179,.95) 0%,rgba(0,90,230,.95) 100%)",
                 backdropFilter: "blur(24px)",
                 WebkitBackdropFilter: "blur(24px)",
-                border: "1px solid rgba(255,255,255,.12)",
+                border: "1px solid rgba(255,255,255,.15)",
                 borderRadius: "24px", padding: "40px 32px",
-                boxShadow: "0 20px 50px rgba(6,78,59,.35), 0 1px 0 rgba(255,255,255,.08) inset",
+                boxShadow: "0 20px 50px rgba(0,64,179,.35), 0 1px 0 rgba(255,255,255,.1) inset",
                 textAlign: "center",
                 position: "sticky", top: "100px",
               }}>
@@ -1011,7 +1194,7 @@ export default async function HomePage() {
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   <Link href="/dang-ky" style={{
-                    background: "#FF4500", color: "#fff",
+                    background: "#fff", color: "#0052cc",
                     padding: "14px 24px", borderRadius: "12px",
                     fontWeight: "700", fontSize: ".95rem", textDecoration: "none",
                     textAlign: "center", transition: "background .3s ease, transform .3s ease, box-shadow .3s ease",
@@ -1087,7 +1270,7 @@ export default async function HomePage() {
         .btn-hero-primary:hover {
           transform: translateY(-3px) scale(1.02);
           animation: none;
-          box-shadow: 0 12px 32px rgba(255,69,0,.45);
+          box-shadow: 0 12px 32px rgba(0,102,255,.45);
         }
         .btn-hero-outline {
           transition: background .3s ease, color .3s ease, border-color .3s ease, box-shadow .3s ease, transform .3s ease;
@@ -1144,7 +1327,7 @@ export default async function HomePage() {
         /* Expert image */
         .expert-img-hover:hover { transform: scale(1.03); }
         /* CTA buttons */
-        .cta-btn-green:hover { background: #D03A00 !important; transform: translateY(-2px); }
+        .cta-btn-green:hover { background: #e8f0ff !important; transform: translateY(-2px); }
         .cta-btn-outline:hover { background: rgba(255,255,255,.2) !important; }
 
         /* ── Category icon card — icon box hover ── */
@@ -1170,11 +1353,29 @@ export default async function HomePage() {
         }
         .section-link:hover { background: #0066ff; color: #fff; }
 
+        /* ── Press cards ── */
+        .press-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+        }
+        .press-card {
+          background: #fff;
+          border: 1.5px solid #e8edf2;
+          border-radius: 16px;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 2px 12px rgba(0,0,0,.05);
+          transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
+        }
+        .press-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 20px 48px rgba(0,0,0,.11);
+          border-color: rgba(0,102,255,.3);
+        }
+
         /* ── Layout ── */
-        .hero-inner-flex   { flex-direction: row; }
-        .hero-image-col    { display: block; }
-        .expert-flex       { flex-direction: row; }
-        .expert-img-col    { display: block; }
         .stats-grid-responsive { grid-template-columns: repeat(5,1fr); }
         .grid-3-responsive { grid-template-columns: repeat(3,1fr); }
         .grid-4-responsive { grid-template-columns: repeat(4,1fr); }
@@ -1183,6 +1384,46 @@ export default async function HomePage() {
         .product-grid      { grid-template-columns: repeat(3,1fr); }
         .faq-cta-flex      { flex-direction: row; align-items: flex-start; }
         .cta-card-col      { display: block; }
+
+        /* ── Section 1: DJ Media Grid ── */
+        .dj-media-grid {
+          display: grid;
+          grid-template-columns: 1fr 480px;
+          grid-template-rows: auto auto auto;
+          column-gap: 64px;
+          align-items: start;
+        }
+        .dj-media-title { grid-column: 1; grid-row: 1; }
+        .dj-media-desc  { grid-column: 1; grid-row: 2; }
+        .dj-media-btn   { grid-column: 1; grid-row: 3; }
+        .dj-media-img   { grid-column: 2; grid-row: 1 / 4; align-self: center; }
+
+        /* ── Section 2: Hero Grid ── */
+        .hero-grid {
+          display: grid;
+          grid-template-columns: 1fr 420px;
+          grid-template-rows: auto auto auto;
+          column-gap: 60px;
+          align-items: start;
+        }
+        .hero-title-block { grid-column: 1; grid-row: 1; }
+        .hero-desc-block  { grid-column: 1; grid-row: 2; }
+        .hero-btn-block   { grid-column: 1; grid-row: 3; }
+        .hero-img-block   { grid-column: 2; grid-row: 1 / 4; align-self: center; }
+
+        /* ── Section 3: Expert Grid ── */
+        .exp-grid {
+          display: grid;
+          grid-template-columns: 400px 1fr;
+          grid-template-rows: auto auto auto;
+          column-gap: 70px;
+          align-items: start;
+        }
+        .exp-title { grid-column: 2; grid-row: 1; }
+        .exp-desc  { grid-column: 2; grid-row: 2; }
+        .exp-btn   { grid-column: 2; grid-row: 3; }
+        .exp-img   { grid-column: 1; grid-row: 1 / 4; align-self: center; }
+
         /* Social icon buttons */
         .social-icon-btn:hover {
           transform: translateY(-4px) scale(1.08);
@@ -1196,10 +1437,10 @@ export default async function HomePage() {
         }
 
         @media (max-width: 1024px) {
-          .hero-inner-flex   { gap: 40px; }
-          .hero-image-col    { flex: 0 0 320px !important; }
-          .expert-flex       { gap: 50px; }
-          .expert-img-col    { flex: 0 0 300px !important; }
+          .press-grid     { grid-template-columns: repeat(2, 1fr); }
+          .dj-media-grid  { grid-template-columns: 1fr 380px; column-gap: 40px; }
+          .hero-grid      { grid-template-columns: 1fr 320px; column-gap: 40px; }
+          .exp-grid       { grid-template-columns: 300px 1fr; column-gap: 50px; }
           .stats-grid-responsive { grid-template-columns: repeat(3,1fr) !important; }
           .cat-icons-grid    { grid-template-columns: repeat(4,1fr) !important; }
           .grid-4-responsive { grid-template-columns: repeat(4,1fr) !important; }
@@ -1210,10 +1451,43 @@ export default async function HomePage() {
           .grid-4-responsive { grid-template-columns: repeat(2,1fr) !important; }
         }
         @media (max-width: 768px) {
-          .hero-inner-flex   { flex-direction: column !important; text-align: center; }
-          .hero-image-col    { flex: unset !important; width: 100%; order: -1; }
-          .expert-flex       { flex-direction: column !important; }
-          .expert-img-col    { flex: unset !important; width: 100%; max-width: 360px; margin: 0 auto; }
+          .press-grid { grid-template-columns: 1fr; gap: 16px; }
+
+          /* Section 1 mobile: title → image → desc → button */
+          .dj-media-grid {
+            grid-template-columns: 1fr;
+            column-gap: 0;
+            row-gap: 20px;
+          }
+          .dj-media-title { grid-column: 1; grid-row: 1; }
+          .dj-media-img   { grid-column: 1; grid-row: 2; }
+          .dj-media-desc  { grid-column: 1; grid-row: 3; }
+          .dj-media-btn   { grid-column: 1; grid-row: 4; }
+
+          /* Section 2 mobile: title → image → desc → button */
+          .hero-grid {
+            grid-template-columns: 1fr;
+            column-gap: 0;
+            row-gap: 20px;
+            text-align: center;
+          }
+          .hero-title-block { grid-column: 1; grid-row: 1; }
+          .hero-img-block   { grid-column: 1; grid-row: 2; width: 100%; }
+          .hero-desc-block  { grid-column: 1; grid-row: 3; }
+          .hero-btn-block   { grid-column: 1; grid-row: 4; }
+          .hero-btn-block > div { justify-content: center; }
+
+          /* Section 3 mobile: title → image → desc → button */
+          .exp-grid {
+            grid-template-columns: 1fr;
+            column-gap: 0;
+            row-gap: 20px;
+          }
+          .exp-title { grid-column: 1; grid-row: 1; }
+          .exp-img   { grid-column: 1; grid-row: 2; max-width: 360px; margin: 0 auto; }
+          .exp-desc  { grid-column: 1; grid-row: 3; }
+          .exp-btn   { grid-column: 1; grid-row: 4; }
+
           .stats-grid-responsive { grid-template-columns: repeat(3,1fr) !important; }
           .grid-3-responsive { grid-template-columns: repeat(2,1fr) !important; gap: 18px !important; }
           .grid-4-responsive { grid-template-columns: repeat(2,1fr) !important; }

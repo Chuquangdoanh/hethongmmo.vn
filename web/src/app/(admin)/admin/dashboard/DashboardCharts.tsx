@@ -150,8 +150,8 @@ export default function DashboardCharts({
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="deposits"     name="Nạp tiền"         fill="#7C3AED" radius={[3, 3, 0, 0]} maxBarSize={20} />
-                <Bar dataKey="orderRevenue" name="Doanh thu SP bán" fill="#10B981" radius={[3, 3, 0, 0]} maxBarSize={20} />
+                <Bar dataKey="deposits"     name="Nạp tiền"      fill="#7C3AED" radius={[3, 3, 0, 0]} maxBarSize={20} />
+                <Bar dataKey="orderRevenue" name="Tổng doanh thu" fill="#10B981" radius={[3, 3, 0, 0]} maxBarSize={20} />
               </BarChart>
             </ResponsiveContainer>
           )}

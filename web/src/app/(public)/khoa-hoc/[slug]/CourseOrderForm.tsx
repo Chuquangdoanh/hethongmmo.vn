@@ -13,6 +13,7 @@ interface Props {
   isOnSale: boolean;
   isLoggedIn: boolean;
   userName?: string;
+  discountPct?: number;
 }
 
 export default function CourseOrderForm({
@@ -23,7 +24,9 @@ export default function CourseOrderForm({
   isOnSale,
   isLoggedIn,
   userName = "",
+  discountPct = 0,
 }: Props) {
+  const discountedPrice = discountPct > 0 ? Math.round(price * (1 - discountPct / 100)) : price;
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [name, setName] = useState(userName);
@@ -61,7 +64,7 @@ export default function CourseOrderForm({
         setError(json.error ?? "Đặt hàng thất bại, thử lại sau.");
         return;
       }
-      router.push("/don-hang");
+      router.push("/cam-on?type=khoa-hoc");
     } catch {
       setError("Lỗi kết nối, vui lòng thử lại.");
     } finally {
@@ -118,13 +121,23 @@ export default function CourseOrderForm({
       >
         <span className="flex items-center gap-1.5 text-xs font-semibold text-[#92400e]">
           <Tag size={13} strokeWidth={1.75} style={{ color: "#d97706" }} />
-          Giá ưu đãi
+          Giá thanh toán
         </span>
         <div className="flex items-center gap-2">
-          {isOnSale && (
-            <span className="text-xs text-[#92400e]/60 line-through">{formatVnd(originalPrice)}</span>
+          {discountPct > 0 ? (
+            <>
+              <span className="text-xs text-[#92400e]/60 line-through">{formatVnd(price)}</span>
+              <span className="text-sm font-extrabold text-[#E53E3E]">{formatVnd(discountedPrice)}</span>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">-{discountPct}%</span>
+            </>
+          ) : (
+            <>
+              {isOnSale && (
+                <span className="text-xs text-[#92400e]/60 line-through">{formatVnd(originalPrice)}</span>
+              )}
+              <span className="text-sm font-extrabold text-[#E53E3E]">{formatVnd(price)}</span>
+            </>
           )}
-          <span className="text-sm font-extrabold text-[#E53E3E]">{formatVnd(price)}</span>
         </div>
       </div>
 

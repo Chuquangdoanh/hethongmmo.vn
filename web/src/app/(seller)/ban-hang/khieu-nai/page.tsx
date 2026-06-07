@@ -97,13 +97,13 @@ export default async function SellerKhieuNaiPage() {
                           <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium border ${statusCls}`}>
                             {STATUS_LABEL[c.status] ?? c.status}
                           </span>
-                          {c.chatRoom && c.status === "RESOLVED" ? (
+                          {c.status === "RESOLVED" ? (
                             <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
                               ✅ Hoàn thành
                             </span>
-                          ) : c.chatRoom && c.status === "REJECTED" ? (
-                            <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-50 text-gray-500 border border-gray-200">
-                              🚫 Từ chối
+                          ) : c.status === "REJECTED" ? (
+                            <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-50 text-red-600 border border-red-200">
+                              ✕ Từ chối
                             </span>
                           ) : c.chatRoom ? (
                             <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200 flex items-center gap-1">
@@ -118,10 +118,14 @@ export default async function SellerKhieuNaiPage() {
                           <p className="text-xs text-gray-500 mt-1.5 truncate">
                             <span className="font-medium">{lastMsg.senderName}:</span> {lastMsg.content}
                           </p>
+                        ) : c.status === "REJECTED" ? (
+                          <p className="text-xs text-red-500 mt-1.5">Khiếu nại đã bị từ chối</p>
+                        ) : c.status === "RESOLVED" ? (
+                          <p className="text-xs text-emerald-600 mt-1.5">Khiếu nại đã được giải quyết</p>
                         ) : c.chatRoom ? (
                           <p className="text-xs text-gray-400 mt-1.5">Chưa có tin nhắn nào</p>
                         ) : (
-                          <p className="text-xs text-amber-600 mt-1.5">⏳ Chờ Admin mở chat</p>
+                          <p className="text-xs text-amber-600 mt-1.5">⏳ Hệ Thống MMO đang xử lý</p>
                         )}
                       </div>
                       <ChevronRight size={16} className="text-violet-500 shrink-0 mt-0.5" />

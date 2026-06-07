@@ -22,15 +22,15 @@ const STATUS_LABELS: Record<string, string> = {
   REJECTED: "Từ chối", REVOKED: "Thu hồi",
 };
 
-const TIER_STYLES: Record<string, string> = {
-  STANDARD: "bg-gray-100 text-gray-600",
-  SILVER:   "bg-slate-100 text-slate-600",
-  GOLD:     "bg-amber-100 text-amber-700",
-  VIP:      "bg-violet-100 text-violet-700",
-};
-
-const TIER_LABELS: Record<string, string> = {
-  STANDARD: "Standard", SILVER: "Silver", GOLD: "Gold", VIP: "VIP",
+const BADGE_COLOR_CLASSES: Record<string, string> = {
+  gray:   "bg-gray-100 text-gray-600",
+  slate:  "bg-slate-100 text-slate-600",
+  amber:  "bg-amber-100 text-amber-700",
+  violet: "bg-violet-100 text-violet-700",
+  green:  "bg-green-100 text-green-700",
+  blue:   "bg-blue-100 text-blue-700",
+  rose:   "bg-rose-100 text-rose-700",
+  orange: "bg-orange-100 text-orange-700",
 };
 
 type SortKey = "revenue_desc" | "revenue_asc" | "rating_desc" | "rating_asc";
@@ -56,6 +56,15 @@ export default async function AdminSellersPage({
   const activeSort = VALID_SORTS.includes(sortParam as SortKey)
     ? sortParam as SortKey
     : undefined;
+
+  // Fetch tiers dynamically from DB
+  const tierDefs = await prisma.sellerTierDefinition.findMany({
+    where: { isActive: true },
+    orderBy: { displayOrder: "asc" },
+    select: { key: true, label: true, badgeColor: true },
+  });
+  const tierLabelMap = new Map(tierDefs.map((t) => [t.key, t.label]));
+  const tierColorMap = new Map(tierDefs.map((t) => [t.key, t.badgeColor]));
 
   const userFilter: Record<string, unknown> = {};
   if (tier)   userFilter.sellerTier = tier;
@@ -188,7 +197,7 @@ export default async function AdminSellersPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Seller Requests</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Danh sách người bán</h1>
         <span className="text-sm text-gray-500">{total.toLocaleString("vi-VN")} tổng</span>
       </div>
 
@@ -223,19 +232,23 @@ export default async function AdminSellersPage({
 
         <div className="h-5 w-px bg-gray-200 mx-1" />
 
-        {/* Tier chips — hidden inputs keep other params when submitting search */}
-        {[
-          { key: "",         label: "Tất cả hạng" },
-          { key: "STANDARD", label: "Standard" },
-          { key: "SILVER",   label: "Silver" },
-          { key: "GOLD",     label: "Gold" },
-          { key: "VIP",      label: "VIP" },
-        ].map(({ key, label }) => (
+        {/* Tier chips — dynamic từ DB */}
+        <a
+          href={buildHref({ status, tier: undefined, q: search })}
+          className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+            !tier
+              ? "bg-[#7C3AED] text-white"
+              : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
+          }`}
+        >
+          Tất cả hạng
+        </a>
+        {tierDefs.map(({ key, label }) => (
           <a
             key={key}
-            href={buildHref({ status, tier: key || undefined, q: search })}
+            href={buildHref({ status, tier: key, q: search })}
             className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-              tier === key || (!tier && !key)
+              tier === key
                 ? "bg-[#7C3AED] text-white"
                 : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
             }`}
@@ -328,8 +341,8 @@ export default async function AdminSellersPage({
                 </td>
                 <td className="px-4 py-3">
                   {r.status === "APPROVED" ? (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${TIER_STYLES[r.user.sellerTier] ?? TIER_STYLES.STANDARD}`}>
-                      {TIER_LABELS[r.user.sellerTier] ?? r.user.sellerTier}
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${BADGE_COLOR_CLASSES[tierColorMap.get(r.user.sellerTier) ?? "gray"] ?? "bg-gray-100 text-gray-600"}`}>
+                      {tierLabelMap.get(r.user.sellerTier) ?? r.user.sellerTier}
                     </span>
                   ) : (
                     <span className="text-xs text-gray-400">—</span>

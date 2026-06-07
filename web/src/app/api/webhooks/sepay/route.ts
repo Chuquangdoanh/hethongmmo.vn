@@ -28,28 +28,44 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // 1. Read raw body BEFORE anything else
   const rawBody = await req.text();
 
-  // 2. Verify HMAC signature (skip if no secret configured)
-  const secret = process.env.SEPAY_WEBHOOK_SECRET;
-  if (secret) {
-    const signature =
-      req.headers.get("x-sepay-signature") ??
-      req.headers.get("X-SePay-Signature") ??
+  // 1a. IP whitelist — defense-in-depth layer behind HMAC (optional, set SEPAY_IP_WHITELIST)
+  const ipWhitelist = process.env.SEPAY_IP_WHITELIST;
+  if (ipWhitelist) {
+    const allowedIPs = ipWhitelist.split(",").map(ip => ip.trim()).filter(Boolean);
+    const clientIP =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      req.headers.get("x-real-ip") ??
       "";
-    const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
-    let valid = false;
-    try {
-      const sigBuf = Buffer.from(signature, "hex");
-      const expBuf = Buffer.from(expected, "hex");
-      if (sigBuf.length === expBuf.length) {
-        valid = timingSafeEqual(sigBuf, expBuf);
-      }
-    } catch {
-      valid = false;
+    if (allowedIPs.length > 0 && !allowedIPs.includes(clientIP)) {
+      logger.warn({ clientIP }, "SePay webhook: IP not in whitelist");
+      return NextResponse.json({ success: false, message: "Forbidden" }, { status: 200 });
     }
-    if (!valid) {
-      logger.warn({ signature: signature.slice(0, 8) + "..." }, "SePay HMAC mismatch");
-      return NextResponse.json({ success: false, message: "Invalid signature" }, { status: 200 });
+  }
+
+  // 2. Verify HMAC signature — hard-fail if secret not configured (fail-closed)
+  const secret = process.env.SEPAY_WEBHOOK_SECRET;
+  if (!secret) {
+    logger.error("SEPAY_WEBHOOK_SECRET is not configured — rejecting all webhook requests");
+    return NextResponse.json({ success: false, message: "Webhook not configured" }, { status: 200 });
+  }
+  const signature =
+    req.headers.get("x-sepay-signature") ??
+    req.headers.get("X-SePay-Signature") ??
+    "";
+  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
+  let valid = false;
+  try {
+    const sigBuf = Buffer.from(signature, "hex");
+    const expBuf = Buffer.from(expected, "hex");
+    if (sigBuf.length === expBuf.length) {
+      valid = timingSafeEqual(sigBuf, expBuf);
     }
+  } catch {
+    valid = false;
+  }
+  if (!valid) {
+    logger.warn({ signature: signature.slice(0, 8) + "..." }, "SePay HMAC mismatch");
+    return NextResponse.json({ success: false, message: "Invalid signature" }, { status: 200 });
   }
 
   // 3. Parse + Zod validate
@@ -65,6 +81,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: false, message: "Invalid payload" }, { status: 200 });
   }
   const payload = parsed.data;
+
+  // 3a. Timestamp sanity check — reject future-dated transactions (clock manipulation)
+  const txDateNorm = payload.transactionDate.includes("T")
+    ? payload.transactionDate
+    : payload.transactionDate.replace(" ", "T");
+  const txDate = new Date(txDateNorm);
+  if (!isNaN(txDate.getTime())) {
+    const nowMs = Date.now();
+    const txMs  = txDate.getTime();
+    if (txMs - nowMs > 60_000) {
+      logger.warn({ transactionDate: payload.transactionDate }, "SePay webhook: future-dated transaction — rejected");
+      return NextResponse.json({ success: true }, { status: 200 });
+    }
+    if (nowMs - txMs > 30 * 60_000) {
+      logger.warn(
+        { transactionDate: payload.transactionDate, ageMinutes: Math.round((nowMs - txMs) / 60_000) },
+        "SePay webhook: stale transaction — possible delayed SePay notification",
+      );
+    }
+  }
 
   // 4. Only process incoming transfers >= 10,000đ
   if (payload.transferType !== "in" || payload.transferAmount < 10_000) {

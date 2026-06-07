@@ -58,6 +58,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         token.status = (user as { status?: string }).status ?? "ACTIVE";
         token.sellerStatus = (user as { sellerStatus?: string }).sellerStatus ?? "NONE";
         token.fullName = (user as { fullName?: string }).fullName ?? "";
+        token.requiresTwoFactor = (user as { requiresTwoFactor?: boolean }).requiresTwoFactor ?? false;
         token.statusCheckedAt = Date.now();
         return token;
       }
@@ -69,12 +70,13 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         try {
           const fresh = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { status: true, role: true, sellerStatus: true },
+            select: { status: true, role: true, sellerStatus: true, twoFactorEnabled: true },
           });
           if (fresh) {
             token.status = fresh.status;
             token.role = fresh.role;
             token.sellerStatus = fresh.sellerStatus;
+            token.requiresTwoFactor = (fresh.role === "ADMIN" || fresh.role === "STAFF") && !fresh.twoFactorEnabled;
             token.statusCheckedAt = Date.now();
           }
         } catch {
@@ -103,7 +105,10 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
 
         const { email, password, captchaToken } = parsed.data;
 
-        if (captchaToken) {
+        // Fail-closed: khi Turnstile đã cấu hình, bắt buộc phải có token hợp lệ
+        const turnstileConfigured = !!process.env.TURNSTILE_SECRET;
+        if (turnstileConfigured) {
+          if (!captchaToken) throw new CaptchaFailedError();
           const captchaOk = await verifyCaptcha(captchaToken, ip);
           if (!captchaOk) throw new CaptchaFailedError();
         }
@@ -120,6 +125,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             sellerStatus: true,
             failedLoginCount: true,
             lockedUntil: true,
+            twoFactorEnabled: true,
           },
         });
 
@@ -203,6 +209,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           role: user.role as Role,
           status: user.status as AccountStatus,
           sellerStatus: user.sellerStatus as SellerStatus,
+          requiresTwoFactor: (user.role === "ADMIN" || user.role === "STAFF") && !user.twoFactorEnabled,
         };
       },
     }),

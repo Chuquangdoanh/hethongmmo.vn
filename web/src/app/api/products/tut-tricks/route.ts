@@ -77,7 +77,7 @@ const tutTrickCreateSchema = z.object({
   tier: z.string().max(50).default("Miễn phí"),
   price: z.number().min(0).max(100_000_000),
   description: z.string().max(10_000).optional(),
-  contentUrl: z.string().url("contentUrl phải là URL hợp lệ").optional(),
+  contentUrl: z.string().max(2000).optional(),
   docs: z.string().max(50_000).optional(),
   seoTitle: z.string().max(255).optional(),
   seoDescription: z.string().max(500).optional(),

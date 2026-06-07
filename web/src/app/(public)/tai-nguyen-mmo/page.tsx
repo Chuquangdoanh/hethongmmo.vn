@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
+import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ProductBuyButton from "./_components/ProductBuyButton";
 import { FilterSidebar } from "./_components/FilterSidebar";
@@ -50,6 +51,7 @@ type UnifiedProduct = {
   sellerName: string;
   purchasedByMe: boolean;
   reviewedByMe: boolean;
+  category: string;
 };
 
 function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }) {
@@ -75,6 +77,7 @@ export default async function TaiNguyenMmoPage({
 }: {
   searchParams: Promise<{ category?: string; sort?: string; q?: string; price?: string; page?: string }>;
 }) {
+  await guardPublicPage("tai-nguyen-mmo");
   const [{ category, sort: sortParam, q: rawQ, price: priceParam, page: pageParam }, session] = await Promise.all([
     searchParams,
     auth(),
@@ -132,7 +135,7 @@ export default async function TaiNguyenMmoPage({
         ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
         ...priceFilter,
       },
-      orderBy: [{ categoryGroup: "asc" }, { isFeatured: "desc" }, { displayOrder: "asc" }],
+      orderBy: [{ isFeatured: "desc" }, { displayOrder: "asc" }],
       select: {
         id: true, slug: true, name: true, thumbnail: true, description: true,
         categoryGroup: true, price: true,
@@ -186,6 +189,7 @@ export default async function TaiNguyenMmoPage({
       orderBy: { sellerCategory: "asc" },
     }),
     prisma.resourceCategory.findMany({
+      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       select: { name: true, iconUrl: true },
     }),
   ]);
@@ -221,10 +225,14 @@ export default async function TaiNguyenMmoPage({
   );
   const categoryIconMap = new Map(resourceCategories.map((c) => [c.name, c.iconUrl]));
 
-  // Build unified category list
+  // Build unified category list — sorted by resourceCategory displayOrder
   const mmoGroupSet = new Set(allMmoGroups.map((c) => c.categoryGroup));
   const sellerCatSet = new Set(allSellerCats.map((c) => c.sellerCategory));
-  const allCategories = [...new Set([...mmoGroupSet, ...sellerCatSet])].sort();
+  const allCategoryNames = new Set([...mmoGroupSet, ...sellerCatSet]);
+  const allCategories = [
+    ...resourceCategories.map((c) => c.name).filter((n) => allCategoryNames.has(n)),
+    ...[...allCategoryNames].filter((n) => !resourceCategories.some((r) => r.name === n)).sort(),
+  ];
 
   // Compute per-category counts from current result set
   const mmoGrouped = mmoProducts.reduce<Record<string, number>>((acc, p) => {
@@ -264,6 +272,7 @@ export default async function TaiNguyenMmoPage({
         reviewCount: review?.count ?? 0,
         salesCount: p.totalOrders,
         available: p._count.items,
+        category: p.categoryGroup,
         isNew: p.createdAt > fourteenDaysAgo,
         isHot: p.isFeatured,
         href: `/tai-nguyen-mmo/${p.slug}`,
@@ -293,12 +302,17 @@ export default async function TaiNguyenMmoPage({
         sellerName: `#${sp.seller.id.slice(0, 8).toUpperCase()}`,
         purchasedByMe: purchasedSellerIds.has(sp.id),
         reviewedByMe: reviewedSellerIds.has(sp.id),
+        category: sp.sellerCategory,
       };
     }),
   ];
 
-  // Sort unified list
+  // Sort unified list — category displayOrder is always the primary key
+  const resCatOrder = new Map(resourceCategories.map((c, idx) => [c.name, idx]));
   const sortedProducts = [...allProducts].sort((a, b) => {
+    const oa = resCatOrder.get(a.category) ?? 999;
+    const ob = resCatOrder.get(b.category) ?? 999;
+    if (oa !== ob) return oa - ob;
     if (activeSort === "ban-chay") return b.salesCount - a.salesCount;
     if (activeSort === "moi-nhat") return b.createdAt.getTime() - a.createdAt.getTime();
     if (activeSort === "gia-cao")  return b.price - a.price;
@@ -332,7 +346,7 @@ export default async function TaiNguyenMmoPage({
           {/* Filter sidebar — top on mobile, sticky left column on desktop */}
           <Suspense
             fallback={
-              <aside className="w-full lg:w-52">
+              <aside className="w-full lg:w-70">
                 <div className="bg-white rounded-xl border border-border h-40 lg:h-120 animate-pulse" />
               </aside>
             }

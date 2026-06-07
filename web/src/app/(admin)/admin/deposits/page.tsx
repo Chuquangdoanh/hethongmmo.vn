@@ -166,6 +166,9 @@ export default async function AdminDepositsPage({
         </p>
       )}
 
+      {/* Manual top-up user summary — only when MANUAL filter active */}
+      {type === "MANUAL" && !search && <ManualDepositUserList />}
+
       {/* Table */}
       <div className="rounded-xl border border-gray-200 overflow-x-auto">
         <table className="w-full min-w-[560px]">
@@ -222,6 +225,90 @@ export default async function AdminDepositsPage({
           searchParams={paginationParams}
         />
       )}
+    </div>
+  );
+}
+
+async function ManualDepositUserList() {
+  const grouped = await prisma.transaction.groupBy({
+    by: ["userId"],
+    where: { type: "DEPOSIT_MANUAL" as never },
+    _sum:   { amount: true },
+    _count: { id: true },
+    _max:   { createdAt: true },
+    orderBy: { _sum: { amount: "desc" } },
+  });
+
+  if (grouped.length === 0) return null;
+
+  const userIds = grouped.map((g) => g.userId).filter(Boolean) as string[];
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, email: true, fullName: true },
+  });
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  return (
+    <div className="rounded-xl border border-[#F59E0B]/30 bg-white overflow-hidden">
+      <div className="px-5 py-3.5 border-b border-[#F59E0B]/20 bg-[#F59E0B]/5 flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-bold text-[#92400e]">Danh sách user đã nạp thủ công</h2>
+          <p className="text-[11px] text-[#b45309] mt-0.5">{grouped.length} người dùng</p>
+        </div>
+        <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-[#F59E0B]/15 text-[#92400e]">
+          {formatVnd(grouped.reduce((s, g) => s + Number(g._sum.amount ?? 0), 0))} tổng
+        </span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-140">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-100">
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">#</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Người dùng</th>
+              <th className="px-4 py-2.5 text-right text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Tổng nạp</th>
+              <th className="px-4 py-2.5 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Số lần</th>
+              <th className="px-4 py-2.5 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Lần cuối</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {grouped.map((g, idx) => {
+              const user = userMap.get(g.userId ?? "");
+              const total = Number(g._sum.amount ?? 0);
+              const lastDate = g._max.createdAt;
+              return (
+                <tr key={g.userId ?? idx} className="hover:bg-[#F59E0B]/3 transition-colors">
+                  <td className="px-4 py-3 text-xs text-gray-400 font-medium">{idx + 1}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-[#F59E0B]/15 flex items-center justify-center shrink-0">
+                        <span className="text-[11px] font-bold text-[#92400e]">
+                          {(user?.fullName ?? user?.email ?? "?")[0]?.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{user?.fullName || "—"}</p>
+                        <p className="text-[11px] text-gray-400 font-mono truncate">{user?.email ?? g.userId}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span className="text-sm font-bold text-[#F59E0B]">+{formatVnd(total)}</span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#F59E0B]/10 text-[11px] font-bold text-[#92400e]">
+                      {g._count.id}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-500">
+                    {lastDate ? formatDate(lastDate) : "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

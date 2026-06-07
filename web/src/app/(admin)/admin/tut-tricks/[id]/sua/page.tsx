@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
+import { decrypt } from "@/lib/security/encryption";
 import TutTrickForm from "../../_components/TutTrickForm";
 
 export const metadata: Metadata = { title: "Admin — Sửa Tut/Trick" };
@@ -24,12 +25,17 @@ export default async function AdminTutTrickEditPage({
         isActive: true, isFeatured: true,
         seoTitle: true, seoDescription: true,
         requiresAccountType: true, requiresCccd: true,
+        contentUrlEnc: true,
       },
     }),
-    prisma.tutTrickCategory.findMany({ orderBy: { name: "asc" }, select: { name: true } }),
+    prisma.tutTrickCategory.findMany({ orderBy: [{ displayOrder: "asc" }, { name: "asc" }], select: { name: true } }),
   ]);
 
   if (!item) notFound();
+
+  const contentUrl = item.contentUrlEnc
+    ? decrypt(Buffer.from(item.contentUrlEnc as unknown as Buffer))
+    : undefined;
 
   return (
     <div className="space-y-6">
@@ -49,6 +55,7 @@ export default async function AdminTutTrickEditPage({
           price: Number(item.price),
           description: item.description ?? undefined,
           docs: item.docs ?? undefined,
+          contentUrl,
           successRate: item.successRate,
           rating: item.rating,
           totalOrders: item.totalOrders,

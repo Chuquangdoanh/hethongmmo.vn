@@ -12,7 +12,7 @@ export async function GET(): Promise<NextResponse> {
     requireUser(session);
 
     const categories = await prisma.resourceCategory.findMany({
-      orderBy: { name: "asc" },
+      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       select: { id: true, name: true, iconUrl: true },
     });
 

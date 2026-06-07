@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { guardPublicPage } from "@/lib/utils/public-page-guard";
 
 export const metadata: Metadata = {
   title: "Chính sách nhà bán hàng — hethongmmo.vn",
@@ -144,7 +145,8 @@ const SECTIONS: ({ id: string; title: string } & SectionType)[] = [
 
 const TOC = SECTIONS.map((s, i) => ({ id: s.id, label: `${i + 1}. ${s.title}` }));
 
-export default function ChinhSachNhaBanHangPage() {
+export default async function ChinhSachNhaBanHangPage() {
+  await guardPublicPage("chinh-sach-nha-ban-hang");
   return (
     <div className="mx-auto max-w-[1100px] px-4 md:px-6 lg:px-8 py-12">
 

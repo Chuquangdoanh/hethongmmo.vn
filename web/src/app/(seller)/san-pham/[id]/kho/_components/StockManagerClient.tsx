@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Package, AlertTriangle, Pencil, Trash2,
   ChevronLeft, ChevronRight, CheckCircle,
+  Upload, FileText, X,
 } from "lucide-react";
 
 type StockStatus = "AVAILABLE" | "SOLD" | "RESERVED";
@@ -67,6 +68,14 @@ export default function StockManagerClient({
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState("");
+
+  // ── TXT upload state ──────────────────────────────────────────────
+  const txtInputRef = useRef<HTMLInputElement>(null);
+  const [txtItems, setTxtItems] = useState<string[]>([]);
+  const [txtFileName, setTxtFileName] = useState("");
+  const [txtUploading, setTxtUploading] = useState(false);
+  const [txtResult, setTxtResult] = useState<{ added: number; failed: number } | null>(null);
+  const [txtError, setTxtError] = useState("");
 
   const fetchPage = useCallback(async (status: string, p: number) => {
     setLoading(true);
@@ -156,8 +165,151 @@ export default function StockManagerClient({
 
   const offset = (page - 1) * 30;
 
+  // ── TXT handlers ─────────────────────────────────────────────────
+  function handleTxtSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setTxtFileName(file.name);
+    setTxtResult(null);
+    setTxtError("");
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = (ev.target?.result ?? "") as string;
+      const lines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+      setTxtItems(lines);
+    };
+    reader.readAsText(file, "utf-8");
+    e.target.value = "";
+  }
+
+  function clearTxt() {
+    setTxtItems([]);
+    setTxtFileName("");
+    setTxtResult(null);
+    setTxtError("");
+  }
+
+  async function handleTxtUpload() {
+    if (txtItems.length === 0) return;
+    setTxtUploading(true);
+    setTxtError("");
+    setTxtResult(null);
+    const BATCH = 500;
+    let added = 0;
+    let failed = 0;
+    try {
+      for (let i = 0; i < txtItems.length; i += BATCH) {
+        const batch = txtItems.slice(i, i + BATCH);
+        const res = await fetch(`/api/seller/products/${productId}/stock`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: batch }),
+        });
+        const json = await res.json() as { data?: { addedCount: number }; error?: string };
+        if (res.ok && json.data) {
+          added += json.data.addedCount;
+        } else {
+          failed += batch.length;
+        }
+      }
+      setTxtResult({ added, failed });
+      setTxtItems([]);
+      setTxtFileName("");
+      setTotal((t) => t + added);
+      void fetchPage("AVAILABLE", 1);
+      router.refresh();
+    } catch {
+      setTxtError("Lỗi kết nối. Vui lòng thử lại.");
+    } finally {
+      setTxtUploading(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
+
+      {/* ── Upload TXT ─────────────────────────────────────── */}
+      {!isRestricted && (
+        <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <FileText size={15} className="text-violet-600 shrink-0" />
+            <p className="text-sm font-semibold text-violet-800">Thêm kho từ file TXT</p>
+            <span className="text-[10px] text-violet-500 ml-1">(mỗi dòng = 1 item)</span>
+          </div>
+
+          {/* Result banner */}
+          {txtResult && (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg mb-3 text-xs font-medium ${
+              txtResult.failed === 0
+                ? "bg-emerald-50 border border-emerald-200 text-emerald-700"
+                : "bg-amber-50 border border-amber-200 text-amber-700"
+            }`}>
+              <CheckCircle size={13} />
+              Đã thêm <strong>{txtResult.added.toLocaleString("vi-VN")}</strong> item
+              {txtResult.failed > 0 && <> · <span className="text-red-500">{txtResult.failed} thất bại</span></>}
+            </div>
+          )}
+
+          {txtError && (
+            <p className="text-xs text-red-500 mb-3">{txtError}</p>
+          )}
+
+          {txtItems.length > 0 ? (
+            /* Preview + confirm */
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-violet-200">
+                <FileText size={13} className="text-violet-400 shrink-0" />
+                <span className="text-xs text-gray-700 flex-1 truncate">{txtFileName}</span>
+                <span className="text-xs font-bold text-violet-700 shrink-0">
+                  {txtItems.length.toLocaleString("vi-VN")} dòng
+                </span>
+                <button onClick={clearTxt} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <X size={13} />
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => void handleTxtUpload()}
+                  disabled={txtUploading}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 disabled:opacity-60 transition-colors"
+                >
+                  <Upload size={12} />
+                  {txtUploading
+                    ? `Đang upload... (${txtItems.length.toLocaleString("vi-VN")} items)`
+                    : `Upload ${txtItems.length.toLocaleString("vi-VN")} items`}
+                </button>
+                <button
+                  onClick={clearTxt}
+                  disabled={txtUploading}
+                  className="px-3 py-2 rounded-lg border border-gray-200 text-gray-500 text-xs hover:border-gray-300 transition-colors"
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Drop zone */
+            <div>
+              <input
+                ref={txtInputRef}
+                type="file"
+                accept=".txt,text/plain"
+                className="hidden"
+                onChange={handleTxtSelect}
+              />
+              <button
+                onClick={() => txtInputRef.current?.click()}
+                className="w-full flex flex-col items-center gap-2 rounded-lg border-2 border-dashed border-violet-300 bg-white py-6 text-center hover:border-violet-500 hover:bg-violet-50/50 transition-colors"
+              >
+                <Upload size={20} className="text-violet-400" />
+                <p className="text-xs text-violet-600 font-medium">Click để chọn file .txt</p>
+                <p className="text-[10px] text-gray-400">Mỗi dòng một item · Tối đa không giới hạn (upload theo batch 500)</p>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex items-center gap-2 flex-wrap">
         {STATUS_TABS.map(({ key, label }) => (

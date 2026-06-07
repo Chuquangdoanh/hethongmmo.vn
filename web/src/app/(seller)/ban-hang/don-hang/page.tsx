@@ -125,7 +125,7 @@ export default async function SellerDonHangPage({
                         >
                           <td className="px-4 py-3 text-[11px] font-mono text-gray-400">{order.orderCode}</td>
                           <td className="px-4 py-3 text-sm text-gray-800 font-medium max-w-40 truncate">{order.itemName}</td>
-                          <td className="px-4 py-3 text-sm text-violet-600 font-semibold">{formatVnd(Number(order.finalPrice))}</td>
+                          <td className="px-4 py-3 text-sm text-red-500 font-semibold">{formatVnd(Number(order.finalPrice))}</td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${st.cls}`}>{st.label}</span>
                           </td>

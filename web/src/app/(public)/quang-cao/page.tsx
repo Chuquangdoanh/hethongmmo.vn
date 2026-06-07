@@ -1,7 +1,11 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckCircle, Phone, Zap, ShieldCheck, Star } from "lucide-react";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/db/prisma";
+import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import AdServiceTabs from "./_components/AdServiceTabs";
+import { guardPublicPage } from "@/lib/utils/public-page-guard";
 
 export const metadata: Metadata = {
   title: "Hệ Thống MMO",
@@ -48,24 +52,22 @@ const STEPS = [
   },
 ];
 
-const STAFF = [
-  {
-    name: "Chu Quang Doanh",
-    role: "Founder & CEO",
-    branch: "Trưởng CN Toàn Quốc",
-    badge: "TOP SPECIALIST",
-    img: "/images/Chu Quang Doanh.png",
-  },
-  {
-    name: "Nguyễn Thế Anh",
-    role: "Trưởng Nhóm Hà Nội",
-    branch: "CN Nhóm Hà Nội",
-    badge: "TOP SPECIALIST",
-    img: "/images/anhquan.png",
-  },
-];
 
-export default function QuangCaoAdsPage() {
+export default async function QuangCaoAdsPage() {
+  await guardPublicPage("quang-cao");
+
+  const session = await auth();
+  const sessionUser = session?.user as AuthenticatedUser | undefined;
+
+  let userInfo: { name: string; phone: string } | null = null;
+  if (sessionUser?.id) {
+    const row = await prisma.user.findUnique({
+      where: { id: sessionUser.id },
+      select: { fullName: true, phone: true },
+    });
+    if (row) userInfo = { name: row.fullName, phone: row.phone ?? "" };
+  }
+
   return (
     <>
       <style>{`
@@ -162,7 +164,7 @@ export default function QuangCaoAdsPage() {
             </p>
           </div>
 
-          <AdServiceTabs />
+          <AdServiceTabs userInfo={userInfo} />
         </div>
       </section>
 
@@ -314,80 +316,6 @@ export default function QuangCaoAdsPage() {
         </div>
       </section>
 
-      {/* ── STAFF ────────────────────────────────────────────────── */}
-      <section style={{ padding: "0 24px 72px", background: "#fff" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 36 }}>
-            <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "#0066ff", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>
-              Đội ngũ hỗ trợ
-            </p>
-            <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "#0f172a", margin: 0 }}>
-              Gặp gỡ nhân viên tiếp nhận
-            </h2>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-5">
-            {STAFF.map(({ name, role, branch, badge, img }) => (
-              <div
-                key={name}
-                style={{
-                  width: 220,
-                  borderRadius: 18,
-                  border: "1.5px solid #e2e8f0",
-                  background: "#fff",
-                  overflow: "hidden",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
-                  transition: "all 0.22s",
-                }}
-                className="hover:shadow-lg hover:-translate-y-1"
-              >
-                {/* Photo */}
-                <div style={{ height: 160, background: "#f1f5f9", position: "relative", overflow: "hidden" }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={img}
-                    alt={name}
-                    style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }}
-                  />
-                </div>
-                <div style={{ padding: "16px 16px 20px" }}>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      marginBottom: 8,
-                      padding: "2px 8px",
-                      borderRadius: 999,
-                      background: "#f59e0b",
-                      color: "#fff",
-                      fontSize: "0.6rem",
-                      fontWeight: 800,
-                      letterSpacing: "0.06em",
-                    }}
-                  >
-                    {badge}
-                  </span>
-                  <p style={{ fontSize: "0.9rem", fontWeight: 800, color: "#0f172a", marginBottom: 3 }}>{name}</p>
-                  <p style={{ fontSize: "0.75rem", color: "#64748b", marginBottom: 12 }}>{branch}</p>
-                  <Link
-                    href="/lien-he"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 6,
-                      fontSize: "0.75rem",
-                      fontWeight: 700,
-                      color: "#0066ff",
-                      textDecoration: "none",
-                    }}
-                  >
-                    XEM THÔNG TIN →
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
     </>
   );
 }

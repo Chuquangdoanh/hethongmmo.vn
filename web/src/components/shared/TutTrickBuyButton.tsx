@@ -7,7 +7,7 @@ import { formatVnd } from "@/lib/utils/format";
 import SafeHtml from "@/components/shared/SafeHtml";
 import {
   X, CheckCircle, Copy, Check, AlertTriangle,
-  PartyPopper, LogIn, Star,
+  PartyPopper, LogIn, Star, Download,
 } from "lucide-react";
 
 export interface TutTrickItem {
@@ -37,6 +37,7 @@ interface OrderResult {
 function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () => void }) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [copiedAll, setCopiedAll] = useState(false);
 
   useEffect(() => {
     document.documentElement.style.overflow = "hidden";
@@ -57,10 +58,43 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
     setTimeout(() => setCopied(false), 2000);
   }
 
+  function stripHtml(html: string): string {
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    return (div.innerText || div.textContent || "").trim();
+  }
+
+  function buildFullText(): string {
+    const parts: string[] = [`=== ĐƠN HÀNG: ${result.orderCode} ===`];
+    if (deliveredContent) parts.push(`[LINK NHẬN HÀNG]\n${deliveredContent}`);
+    if (docs) parts.push(`[NỘI DUNG HƯỚNG DẪN]\n${stripHtml(docs)}`);
+    return parts.join("\n\n");
+  }
+
+  async function handleCopyAll() {
+    await navigator.clipboard.writeText(buildFullText());
+    setCopiedAll(true);
+    setTimeout(() => setCopiedAll(false), 2000);
+  }
+
+  function handleDownload() {
+    const text = buildFullText();
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tuttrick-${result.orderCode}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   function handleClose() { onClose(); router.refresh(); }
 
-  const driveLink = result.deliveredContent ?? "";
+  const deliveredContent = result.deliveredContent ?? "";
   const docs = result.tutTrickDocs ?? null;
+  const isUrl = deliveredContent.startsWith("http://") || deliveredContent.startsWith("https://");
 
   return (
     <div
@@ -91,22 +125,32 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
             <p className="text-xs text-gray-500 mt-1">Sản phẩm đã được giao. Lưu thông tin bên dưới.</p>
           </div>
 
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 overflow-hidden">
-            <div className="flex items-center gap-2 px-3.5 py-2 border-b border-emerald-200 bg-emerald-100">
-              <span className="text-base leading-none">📁</span>
-              <span className="text-xs font-semibold text-emerald-800">Link Google Drive</span>
+          {deliveredContent && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 overflow-hidden">
+              <div className="flex items-center gap-2 px-3.5 py-2 border-b border-emerald-200 bg-emerald-100">
+                <span className="text-base leading-none">{isUrl ? "📁" : "🔑"}</span>
+                <span className="text-xs font-semibold text-emerald-800">
+                  {isUrl ? "Link nhận hàng" : "Nội dung nhận hàng"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 px-3.5 py-3">
+                {isUrl ? (
+                  <a href={deliveredContent} target="_blank" rel="noopener noreferrer"
+                    className="flex-1 text-sm text-blue-600 hover:underline break-all font-medium leading-snug">
+                    {deliveredContent}
+                  </a>
+                ) : (
+                  <span className="flex-1 text-sm text-gray-800 break-all font-medium leading-snug select-all">
+                    {deliveredContent}
+                  </span>
+                )}
+                <button onClick={handleCopy}
+                  className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-[11px] font-semibold transition-colors whitespace-nowrap">
+                  {copied ? <><Check size={11} /> Đã chép</> : <><Copy size={11} /> Sao chép</>}
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2 px-3.5 py-3">
-              <a href={driveLink} target="_blank" rel="noopener noreferrer"
-                className="flex-1 text-sm text-blue-600 hover:underline break-all font-medium leading-snug">
-                {driveLink}
-              </a>
-              <button onClick={handleCopy}
-                className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-[11px] font-semibold transition-colors whitespace-nowrap">
-                {copied ? <><Check size={11} /> Đã chép</> : <><Copy size={11} /> Sao chép</>}
-              </button>
-            </div>
-          </div>
+          )}
 
           {docs && (
             <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
@@ -127,6 +171,24 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
               <span className="font-semibold underline cursor-pointer" onClick={() => router.push("/don-hang")}>Lịch sử đơn hàng</span>.
             </p>
           </div>
+
+          {/* Sao chép tất cả + Tải file .txt */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleCopyAll}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-semibold transition-colors"
+            >
+              {copiedAll
+                ? <><Check size={13} className="text-emerald-500" /> Đã sao chép</>
+                : <><Copy size={13} /> Sao chép tất cả</>}
+            </button>
+            <button
+              onClick={handleDownload}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-semibold transition-colors"
+            >
+              <Download size={13} /> Tải file .txt
+            </button>
+          </div>
         </div>
 
         <div className="px-5 py-4 border-t border-gray-100 shrink-0">
@@ -142,15 +204,17 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
 
 // ─── BuyConfirmPopup ──────────────────────────────────────────────────────────
 function BuyConfirmPopup({
-  item, onClose, onConfirm, loading, error,
+  item, onClose, onConfirm, loading, error, discountPct = 0,
 }: {
   item: TutTrickItem;
   onClose: () => void;
   onConfirm: () => void;
   loading: boolean;
   error: string;
+  discountPct?: number;
 }) {
   const isFree = item.price === 0;
+  const discountedPrice = !isFree && discountPct > 0 ? Math.round(item.price * (1 - discountPct / 100)) : item.price;
   const [balance, setBalance] = useState<number | null>(null);
 
   // Fetch số dư khi popup mở
@@ -177,7 +241,7 @@ function BuyConfirmPopup({
     };
   }, [onClose]);
 
-  const remaining = !isFree && balance !== null ? balance - item.price : null;
+  const remaining = !isFree && balance !== null ? balance - discountedPrice : null;
   const isInsufficient = !isFree && remaining !== null && remaining < 0;
 
   // Dòng chi tiết dịch vụ (không bao gồm rating/khách hàng — đã đưa lên stats bar)
@@ -192,7 +256,15 @@ function BuyConfirmPopup({
       : []),
     {
       label: "Chi phí",
-      value: isFree ? "Miễn phí" : formatVnd(item.price),
+      value: isFree ? "Miễn phí" : (
+        discountPct > 0 ? (
+          <span className="flex items-center gap-1.5 justify-end">
+            <span className="line-through text-gray-400 text-xs font-normal">{formatVnd(item.price)}</span>
+            {formatVnd(discountedPrice)}
+            <span className="text-emerald-600 text-[10px] font-bold bg-emerald-50 px-1 py-0.5 rounded">-{discountPct}%</span>
+          </span>
+        ) : formatVnd(item.price)
+      ),
       variant: isFree ? "emerald" as const : "red" as const,
     },
     ...(remaining !== null
@@ -321,9 +393,10 @@ interface Props {
   isLoggedIn: boolean;
   variant?: "default" | "dark" | "outline-red" | "solid-red";
   label?: string;
+  discountPct?: number;
 }
 
-export default function TutTrickBuyButton({ item, isLoggedIn, variant = "default", label }: Props) {
+export default function TutTrickBuyButton({ item, isLoggedIn, variant = "default", label, discountPct = 0 }: Props) {
   const router = useRouter();
   const [showPopup, setShowPopup] = useState(false);
   const [loading, setLoading]     = useState(false);
@@ -355,7 +428,7 @@ export default function TutTrickBuyButton({ item, isLoggedIn, variant = "default
         return;
       }
       setShowPopup(false);
-      if (json.data.deliveredContent) {
+      if (json.data.deliveredContent || json.data.tutTrickDocs) {
         setResult(json.data);
       } else {
         router.push("/don-hang");
@@ -371,10 +444,11 @@ export default function TutTrickBuyButton({ item, isLoggedIn, variant = "default
   const isOutlineRed = variant === "outline-red";
   const isSolidRed   = variant === "solid-red";
   const isFree       = item.price === 0;
+  const displayPrice = isFree ? 0 : (discountPct > 0 ? Math.round(item.price * (1 - discountPct / 100)) : item.price);
 
   const btnLabel = label ?? (
     isLoggedIn
-      ? (isDark || isOutlineRed || isSolidRed) ? "MUA NGAY" : `Mua ngay · ${formatVnd(item.price)}`
+      ? (isDark || isOutlineRed || isSolidRed) ? "MUA NGAY" : `Mua ngay · ${isFree ? "Miễn phí" : formatVnd(displayPrice)}`
       : (isDark || isOutlineRed || isSolidRed)
         ? <span className="flex items-center justify-center gap-1.5"><LogIn size={13} /> Đăng nhập</span>
         : "Đăng nhập để mua"
@@ -383,7 +457,7 @@ export default function TutTrickBuyButton({ item, isLoggedIn, variant = "default
   return (
     <>
       {/* Render portal ra ngoài DOM tree của card để tránh bị ảnh hưởng bởi overflow/transform */}
-      {isMounted && result?.deliveredContent && createPortal(
+      {isMounted && result && createPortal(
         <DeliveryModal result={result} onClose={() => { setResult(null); router.refresh(); }} />,
         document.body,
       )}
@@ -394,6 +468,7 @@ export default function TutTrickBuyButton({ item, isLoggedIn, variant = "default
           onConfirm={handleConfirm}
           loading={loading}
           error={error}
+          discountPct={discountPct}
         />,
         document.body,
       )}

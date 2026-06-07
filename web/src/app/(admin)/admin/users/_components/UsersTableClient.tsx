@@ -19,9 +19,19 @@ type User = {
   role: string;
   status: string;
   balance: { toString(): string } | number | string;
+  totalDeposited: number;
+  discountPercent: number;
   createdAt: Date;
   _count: { orders: number };
 };
+
+function getDiscountDisplay(totalDeposited: number, discountPercent: number) {
+  if (discountPercent > 0) return { pct: discountPercent, label: "Override", isOverride: true };
+  if (totalDeposited >= 200_000_000) return { pct: 10, label: "Gold",   isOverride: false };
+  if (totalDeposited >= 100_000_000) return { pct: 7,  label: "Silver", isOverride: false };
+  if (totalDeposited >= 50_000_000)  return { pct: 5,  label: "Thẻ",    isOverride: false };
+  return { pct: 0, label: "Thường", isOverride: false };
+}
 
 interface Props {
   users: User[];
@@ -101,7 +111,7 @@ export default function UsersTableClient({ users, currentUserId, total, role, q 
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[740px]">
+        <table className="w-full min-w-[960px]">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="px-4 py-3 w-10">
@@ -117,6 +127,8 @@ export default function UsersTableClient({ users, currentUserId, total, role, q 
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Trạng thái</th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Số dư</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Tổng nạp</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Giảm giá</th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Đơn hàng</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Ngày tạo</th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Hành động</th>
@@ -125,7 +137,7 @@ export default function UsersTableClient({ users, currentUserId, total, role, q 
           <tbody className="divide-y divide-gray-100">
             {users.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-16 text-center">
+                <td colSpan={10} className="px-4 py-16 text-center">
                   <p className="text-4xl mb-3">👤</p>
                   <p className="text-sm font-medium text-gray-600">Không tìm thấy người dùng</p>
                   <p className="text-xs text-gray-400 mt-1">Thử thay đổi từ khóa tìm kiếm</p>
@@ -173,6 +185,25 @@ export default function UsersTableClient({ users, currentUserId, total, role, q 
                     <span className={`text-sm font-bold ${Number(u.balance) > 0 ? "text-[#10B981]" : "text-gray-400"}`}>
                       {formatVnd(Number(u.balance))}
                     </span>
+                  </td>
+                  <td className="px-4 py-3.5 text-right">
+                    <span className={`text-sm font-bold ${u.totalDeposited > 0 ? "text-emerald-600" : "text-gray-400"}`}>
+                      {formatVnd(u.totalDeposited)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3.5 text-center">
+                    {(() => {
+                      const d = getDiscountDisplay(u.totalDeposited, u.discountPercent);
+                      return (
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                          d.isOverride            ? "bg-amber-100 text-amber-700" :
+                          d.pct === 0             ? "bg-gray-100 text-gray-500"   :
+                                                    "bg-emerald-100 text-emerald-700"
+                        }`}>
+                          {d.pct}% {d.label}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3.5 text-center text-sm font-semibold text-[#A855F7]">
                     {u._count.orders.toLocaleString("vi-VN")}

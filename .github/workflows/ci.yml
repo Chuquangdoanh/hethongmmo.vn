@@ -57,6 +57,9 @@ jobs:
         env:
           DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_db"
 
+      - name: Generate next-env.d.ts
+        run: printf '/// <reference types="next" />\n/// <reference types="next/image-types/global" />\n' > next-env.d.ts
+
       - name: TypeScript strict check
         run: pnpm typecheck
 

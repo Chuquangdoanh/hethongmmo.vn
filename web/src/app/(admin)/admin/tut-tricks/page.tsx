@@ -48,7 +48,7 @@ export default async function AdminTutTricksPage({
     prisma.tutTrick.count({ where: { deletedAt: null } }),
     prisma.tutTrick.count({ where: { deletedAt: null, isActive: true } }),
     prisma.tutTrick.count({ where: { deletedAt: null, tier: "Miễn phí" } }),
-    prisma.tutTrickCategory.findMany({ orderBy: { name: "asc" }, select: { name: true, iconUrl: true } }),
+    prisma.tutTrickCategory.findMany({ orderBy: [{ displayOrder: "asc" }, { name: "asc" }], select: { name: true, iconUrl: true } }),
   ]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);

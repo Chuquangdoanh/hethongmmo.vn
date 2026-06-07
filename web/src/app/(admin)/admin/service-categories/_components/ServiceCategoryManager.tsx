@@ -27,6 +27,7 @@ interface Category {
   id: string;
   name: string;
   iconUrl: string | null;
+  displayOrder: number;
 }
 
 interface Props {
@@ -52,6 +53,10 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
   const [isDragging, setIsDragging] = useState(false);
 
   const [importUrl, setImportUrl] = useState("");
+
+  const nextOrder = categories.length > 0
+    ? Math.max(...categories.map((c) => c.displayOrder)) + 1
+    : 1;
   const [importing, setImporting] = useState(false);
 
   function startEdit(cat: Category) {
@@ -89,12 +94,9 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
       if (editingId) {
         setCategories((prev) =>
           prev.map((c) => c.id === editingId ? (json.data ?? c) : c)
-            .sort((a, b) => a.name.localeCompare(b.name))
         );
       } else {
-        setCategories((prev) =>
-          [...prev, json.data!].sort((a, b) => a.name.localeCompare(b.name))
-        );
+        setCategories((prev) => [...prev, json.data!]);
       }
       router.refresh();
       cancelEdit();
@@ -178,9 +180,17 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
       {/* ── Cột trái: Form thêm / sửa (6/10) ── */}
       <div className="lg:col-span-6">
       <section className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-900">
-          {editingId ? "Sửa danh mục" : "Thêm danh mục mới"}
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-900">
+            {editingId ? "Sửa danh mục" : "Thêm danh mục mới"}
+          </h2>
+          {!editingId && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#7C3AED] bg-[#7C3AED]/8 border border-[#7C3AED]/20 rounded-full px-2.5 py-1">
+              <span className="w-4 h-4 rounded-full bg-[#7C3AED] text-white text-[9px] font-bold flex items-center justify-center">{nextOrder}</span>
+              Số thứ tự tiếp theo
+            </span>
+          )}
+        </div>
 
         <div>
           <label className="block text-xs text-gray-500 mb-1.5">Tên danh mục *</label>
@@ -328,35 +338,41 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
           <div className="px-4 py-8 text-center text-sm text-gray-500">Chưa có danh mục nào</div>
         ) : (
           <ul className="divide-y divide-gray-100">
-            {categories.map((cat) => (
-              <li key={cat.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
-                <div className="w-9 h-9 rounded-lg border border-gray-200 bg-white flex items-center justify-center shrink-0 p-1.5">
-                  {cat.iconUrl && cat.iconUrl.startsWith("http") ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={cat.iconUrl} alt={cat.name} className="w-full h-full object-contain" />
-                  ) : (
-                    <span className="text-base">📁</span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{cat.name}</p>
-                  <p className="text-[10px] text-gray-400 truncate">{cat.iconUrl ?? "Chưa có icon"}</p>
-                </div>
-                <div className="flex gap-3 shrink-0">
-                  <button type="button" onClick={() => startEdit(cat)} className="text-xs text-[#7C3AED] hover:text-[#A855F7] transition-colors">
-                    Sửa
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleDelete(cat.id, cat.name)}
-                    disabled={loading}
-                    className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors"
-                  >
-                    Xóa
-                  </button>
-                </div>
-              </li>
-            ))}
+            {categories
+              .slice()
+              .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name))
+              .map((cat) => (
+                <li key={cat.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                  <div className="w-7 h-7 rounded-full bg-[#7C3AED]/10 border border-[#7C3AED]/25 flex items-center justify-center shrink-0">
+                    <span className="text-[11px] font-bold text-[#7C3AED]">{cat.displayOrder}</span>
+                  </div>
+                  <div className="w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center shrink-0 p-1.5">
+                    {cat.iconUrl && cat.iconUrl.startsWith("http") ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={cat.iconUrl} alt={cat.name} className="w-full h-full object-contain" />
+                    ) : (
+                      <span className="text-base">📁</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">{cat.name}</p>
+                    <p className="text-[10px] text-gray-400 truncate">{cat.iconUrl ?? "Chưa có icon"}</p>
+                  </div>
+                  <div className="flex gap-3 shrink-0">
+                    <button type="button" onClick={() => startEdit(cat)} className="text-xs text-[#7C3AED] hover:text-[#A855F7] transition-colors">
+                      Sửa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleDelete(cat.id, cat.name)}
+                      disabled={loading}
+                      className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors"
+                    >
+                      Xóa
+                    </button>
+                  </div>
+                </li>
+              ))}
           </ul>
         )}
       </section>

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { guardPublicPage } from "@/lib/utils/public-page-guard";
 
 export const metadata: Metadata = {
   title: "Điều khoản dịch vụ — hethongmmo.vn",
-  description: "Điều khoản sử dụng nền tảng MMO Marketplace. Cập nhật lần cuối: 02/06/2026.",
+  description: "Điều khoản sử dụng nền tảng MMO Marketplace. Cập nhật lần cuối: 06/06/2026.",
 };
 
 const SECTIONS = [
@@ -85,11 +86,45 @@ const SECTIONS = [
         items: ["Không nhận được sản phẩm.", "Sản phẩm không đúng mô tả.", "Sản phẩm lỗi không thể sử dụng."],
       },
       {
+        label: "Phương thức hoàn tiền:",
+        items: [
+          "Mọi khoản hoàn trả được ghi nhận vào số dư ví nội bộ trên nền tảng, không hoàn trực tiếp vào tài khoản ngân hàng.",
+          "Số dư ví nội bộ có thể dùng để mua sản phẩm/dịch vụ khác trên sàn.",
+          "Việc rút số dư về tài khoản ngân hàng có thể phát sinh phí rút tiền theo quy định hiện hành.",
+        ],
+      },
+      {
         label: "Sàn có quyền:",
         items: ["Tạm giữ thanh toán.", "Yêu cầu bằng chứng từ hai bên.", "Ra quyết định cuối cùng dựa trên dữ liệu giao dịch."],
       },
     ],
     type: "grouped" as const,
+  },
+  {
+    id: "bao-hanh",
+    title: "Chính sách bảo hành",
+    intro: "Điều kiện và phạm vi bảo hành:",
+    items: [
+      "Bảo hành 1-1: Trong thời hạn bảo hành ghi trên sản phẩm, sản phẩm lỗi do nguyên nhân từ người bán sẽ được đổi mới tương đương.",
+      "Thời hạn bảo hành được ghi rõ tại trang mô tả từng sản phẩm; hết hạn bảo hành thì không áp dụng đổi/trả.",
+      "Sàn có quyền từ chối bảo hành nếu người mua vi phạm chính sách của nền tảng thứ ba (ví dụ: sử dụng tài khoản để chạy quảng cáo gian lận, vi phạm điều khoản nhà cung cấp dịch vụ).",
+      "Bảo hành không áp dụng nếu người mua tự ý thay đổi thông tin tài khoản (mật khẩu, email liên kết, số điện thoại) trước khi báo cáo lỗi.",
+      "Khiếu nại bảo hành phải có bằng chứng cụ thể và được gửi trong thời hạn khiếu nại quy định tại mục Khiếu nại & Tranh chấp.",
+    ],
+    type: "list" as const,
+  },
+  {
+    id: "giu-doanh-thu",
+    title: "Cơ chế giữ doanh thu (Escrow)",
+    intro: "Quy trình giữ và giải phóng doanh thu người bán:",
+    items: [
+      "Doanh thu từ mỗi giao dịch thành công sẽ được giữ từ 24–72 giờ trước khi cộng vào số dư khả dụng của người bán.",
+      "Thời gian giữ tạo cửa sổ khiếu nại cho người mua; trong thời gian này sàn có thể can thiệp nếu có tranh chấp hợp lệ.",
+      "Sau khi hết thời gian giữ và không có tranh chấp, doanh thu được giải phóng hoàn toàn về ví người bán.",
+      "Nếu có khiếu nại được xác nhận trong thời gian giữ, sàn có quyền điều chỉnh doanh thu theo kết quả xử lý tranh chấp.",
+      "Thời gian giữ cụ thể có thể thay đổi tùy loại sản phẩm và lịch sử giao dịch của người bán.",
+    ],
+    type: "list" as const,
   },
   {
     id: "quyen-san",
@@ -130,14 +165,52 @@ const SECTIONS = [
   {
     id: "khieu-nai-tranh-chap",
     title: "Khiếu nại & Tranh chấp",
-    type: "list" as const,
-    items: [
-      "Thời gian khiếu nại: 7 ngày kể từ khi nhận sản phẩm.",
-      "Khiếu nại phải có bằng chứng kèm theo.",
-      "Hai bên có trách nhiệm hợp tác cung cấp thông tin.",
-      "Quyết định của hệ thống trọng tài nội bộ là căn cứ xử lý cuối cùng.",
-      "Trường hợp nghi ngờ gian lận, sàn có quyền tạm giữ thanh toán để xác minh.",
+    type: "grouped" as const,
+    groups: [
+      {
+        label: "Thời hạn khiếu nại theo loại sản phẩm:",
+        items: [
+          "Sản phẩm số (tài khoản, tài nguyên, via, clone, source code): 24–48 giờ kể từ khi nhận sản phẩm.",
+          "Dịch vụ dài hạn (Website, Hosting, Khóa học, VPS): 7 ngày kể từ khi bàn giao.",
+        ],
+      },
+      {
+        label: "Quy trình xử lý:",
+        items: [
+          "Khiếu nại phải có bằng chứng cụ thể kèm theo (ảnh chụp màn hình, video, log lỗi).",
+          "Hai bên có trách nhiệm hợp tác cung cấp thông tin trong vòng 24 giờ kể từ khi được yêu cầu.",
+          "Quyết định của hệ thống trọng tài nội bộ là căn cứ xử lý cuối cùng.",
+          "Trường hợp nghi ngờ gian lận, sàn có quyền tạm giữ thanh toán để xác minh.",
+        ],
+      },
     ],
+  },
+  {
+    id: "chong-rua-tien",
+    title: "Phòng chống rửa tiền (AML)",
+    intro: "Cam kết của người dùng và quyền của sàn:",
+    items: [
+      "Tên tài khoản ngân hàng đăng ký rút tiền phải khớp chính xác với tên đã xác minh danh tính (KYC) trên hệ thống.",
+      "Sàn có quyền tạm khóa tài khoản và phong tỏa số dư nếu phát hiện giao dịch bất thường hoặc nghi ngờ gian lận, rửa tiền.",
+      "Trong trường hợp có yêu cầu hợp pháp từ cơ quan chức năng, sàn sẽ cung cấp đầy đủ thông tin giao dịch theo quy định pháp luật.",
+      "Người dùng cam kết không sử dụng nền tảng cho mục đích rửa tiền, tài trợ khủng bố, hoặc bất kỳ hoạt động phi pháp nào.",
+      "Vi phạm các quy định AML có thể dẫn đến khóa tài khoản vĩnh viễn và hợp tác xử lý với cơ quan công an.",
+    ],
+    type: "list" as const,
+  },
+  {
+    id: "so-huu-tri-tue",
+    title: "Sở hữu trí tuệ & Bản quyền",
+    intro: "Nghiêm cấm các hành vi vi phạm sau:",
+    items: [
+      "Sao chép, tái phân phối, hoặc bán lại sản phẩm số (tài khoản, khóa học, phần mềm, tài nguyên) của thành viên khác trên nền tảng mà không có sự đồng ý bằng văn bản của chủ sở hữu.",
+      "Đăng bán phần mềm, khóa học, nội dung số chưa được cấp phép hợp lệ hoặc có nguồn gốc không rõ ràng.",
+      "Mọi vi phạm bản quyền có thể bị xử lý theo Luật Sở hữu trí tuệ Việt Nam 2022 và các quy định liên quan.",
+      "Chủ sở hữu nội dung có quyền yêu cầu gỡ bỏ sản phẩm vi phạm và yêu cầu bồi thường thiệt hại.",
+      "Sàn không chịu trách nhiệm về tranh chấp bản quyền phát sinh từ hành vi vi phạm của người dùng.",
+    ],
+    type: "list" as const,
+    accent: "red" as const,
   },
   {
     id: "thay-doi",
@@ -149,7 +222,8 @@ const SECTIONS = [
 
 const TOC = SECTIONS.map((s, i) => ({ id: s.id, label: `${i + 1}. ${s.title}` }));
 
-export default function DieuKhoanPage() {
+export default async function DieuKhoanPage() {
+  await guardPublicPage("dieu-khoan");
   return (
     <div className="mx-auto max-w-[1100px] px-4 md:px-6 lg:px-8 py-12">
 
@@ -174,7 +248,7 @@ export default function DieuKhoanPage() {
               </h1>
               <p className="text-sm text-[#64748b]">
                 Cập nhật lần cuối:{" "}
-                <span className="font-semibold text-[#0f172a]">02/06/2026</span>
+                <span className="font-semibold text-[#0f172a]">06/06/2026</span>
               </p>
             </div>
           </div>

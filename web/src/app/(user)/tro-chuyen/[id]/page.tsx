@@ -173,13 +173,23 @@ export default async function TroChuyenDetailPage({
                 initialChatEnded={chatEnded}
                 endedLabel={endedLabel}
               />
+            ) : chatEnded ? (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-6 flex gap-2.5">
+                <span className="text-gray-400 shrink-0 mt-0.5 text-lg">✓</span>
+                <div>
+                  <p className="text-sm font-semibold text-gray-700">Khiếu nại đã được xử lý</p>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    Bộ phận hỗ trợ đã xem xét và xử lý khiếu nại của bạn. Nếu cần thêm hỗ trợ, vui lòng liên hệ Zalo: 0393.118.789.
+                  </p>
+                </div>
+              </div>
             ) : (
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-6 flex gap-2.5">
                 <span className="text-amber-500 shrink-0 mt-0.5 text-lg">⏳</span>
                 <div>
-                  <p className="text-sm font-semibold text-amber-800">Chờ Admin mở chat</p>
+                  <p className="text-sm font-semibold text-amber-800">Vui lòng chờ</p>
                   <p className="text-xs text-amber-700 mt-1 leading-relaxed">
-                    Sau khi Admin xác nhận trò chuyện, bạn có thể trao đổi trực tiếp tại đây.
+                    Hệ Thống MMO đang xác minh đơn hàng. Quá trình này có thể mất vài phút, vui lòng kiên nhẫn chờ đợi.
                   </p>
                 </div>
               </div>

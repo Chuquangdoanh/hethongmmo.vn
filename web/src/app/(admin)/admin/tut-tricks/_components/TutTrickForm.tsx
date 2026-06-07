@@ -14,6 +14,7 @@ interface TutTrickData {
   price?: number;
   description?: string;
   docs?: string;
+  contentUrl?: string;
   successRate?: number;
   rating?: number;
   totalOrders?: number;
@@ -52,7 +53,7 @@ export default function TutTrickForm({ initial, categoryOptions = [] }: { initia
     displayOrder: initial?.displayOrder?.toString() ?? "0",
     publishedDate: initial?.publishedDate ? initial.publishedDate.slice(0, 10) : "",
     thumbnail: initial?.thumbnail ?? "",
-    contentUrl: "",
+    contentUrl: initial?.contentUrl ?? "",
     isActive: initial?.isActive ?? true,
     isFeatured: initial?.isFeatured ?? false,
     warrantyPolicy: initial?.warrantyPolicy ?? "",
@@ -63,6 +64,7 @@ export default function TutTrickForm({ initial, categoryOptions = [] }: { initia
     requiresCccd: initial?.requiresCccd ?? false,
   });
 
+  const [clearContent, setClearContent] = useState(false);
   const [thumbUploading, setThumbUploading] = useState(false);
   const [thumbError, setThumbError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -112,7 +114,7 @@ export default function TutTrickForm({ initial, categoryOptions = [] }: { initia
       ...(form.thumbnail ? { thumbnail: form.thumbnail } : {}),
       ...(form.description ? { description: form.description } : {}),
       ...(form.docs ? { docs: form.docs } : {}),
-      ...(form.contentUrl.trim() ? { contentUrl: form.contentUrl.trim() } : {}),
+      ...(clearContent ? { contentUrl: "" } : form.contentUrl.trim() ? { contentUrl: form.contentUrl.trim() } : {}),
       ...(form.publishedDate ? { publishedDate: new Date(form.publishedDate).toISOString() } : {}),
       ...(form.warrantyPolicy.trim() ? { warrantyPolicy: form.warrantyPolicy.trim() } : {}),
       ...(form.processingTime.trim() ? { processingTime: form.processingTime.trim() } : {}),
@@ -334,20 +336,36 @@ export default function TutTrickForm({ initial, categoryOptions = [] }: { initia
           <p className="text-[11px] text-gray-400">JPEG, PNG, WebP, GIF — tối đa 5 MB</p>
         </section>
 
-        {/* ── 3. Link Google Drive ── */}
+        {/* ── 3. Nội dung giao sau mua ── */}
         <section className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-3">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-gray-900">Link Google Drive</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Nội dung giao sau mua</h2>
             <span className="text-[10px] font-medium text-gray-400 bg-gray-100 rounded px-1.5 py-0.5">Không bắt buộc</span>
           </div>
           <input
-            type="url"
+            type="text"
             value={form.contentUrl}
-            onChange={(e) => set("contentUrl", e.target.value)}
-            placeholder={isEdit ? "Để trống = giữ nguyên link cũ" : "Để trống = không có link"}
-            className={inputCls}
+            onChange={(e) => { set("contentUrl", e.target.value); if (clearContent) setClearContent(false); }}
+            placeholder={isEdit ? "Để trống = giữ nguyên nội dung cũ" : "Link hoặc mã bí mật giao cho user sau khi mua"}
+            disabled={clearContent}
+            className={`${inputCls} disabled:opacity-40 disabled:cursor-not-allowed`}
           />
-          <p className="text-[11px] text-gray-400">Để trống nếu không có. Link được mã hóa và chỉ giao cho user sau khi mua thành công.</p>
+          {isEdit && (
+            <label className="flex items-center gap-2 cursor-pointer w-fit">
+              <input
+                type="checkbox"
+                checked={clearContent}
+                onChange={(e) => { setClearContent(e.target.checked); if (e.target.checked) set("contentUrl", ""); }}
+                className="rounded border-gray-300 text-[#EF4444]"
+              />
+              <span className="text-xs text-[#EF4444] font-medium">Xóa nội dung giao hiện tại</span>
+            </label>
+          )}
+          <p className="text-[11px] text-gray-400">
+            {isEdit
+              ? "Để trống = giữ nguyên. Nhập mới = cập nhật. Tick checkbox đỏ = xóa hẳn."
+              : "Có thể là link Google Drive, link bất kỳ, hoặc chuỗi văn bản. Được mã hóa, chỉ giao cho user sau khi mua thành công."}
+          </p>
         </section>
 
         {/* ── 6. SEO ── */}
