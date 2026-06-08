@@ -150,6 +150,7 @@ services:
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - nginx_cache:/var/cache/nginx/proxy
+      - ./infra/nginx/ssl:/etc/nginx/ssl:ro
     ports:
       - "80:80"
       - "443:443"
