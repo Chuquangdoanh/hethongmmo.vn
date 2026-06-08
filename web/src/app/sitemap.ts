@@ -1,10 +1,12 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/db/prisma";
 
+export const dynamic = "force-dynamic";
+
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hethongmmo.com";
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://hethongmmo.vn";
   const now = new Date();
 
   // Static routes

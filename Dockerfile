@@ -8,13 +8,17 @@ RUN addgroup --system --gid 1001 nodejs && \
 FROM base AS builder
 WORKDIR /app
 COPY web/package.json web/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+# --ignore-scripts: prevent postinstall from running prisma generate before schema is copied
+# --shamefully-hoist: flatten node_modules so standalone output can find all deps
+RUN pnpm install --frozen-lockfile --ignore-scripts --shamefully-hoist
 COPY web/ .
-RUN pnpm prisma generate
+RUN node_modules/.bin/prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
+# Dummy DATABASE_URL so Next.js static generation doesn't try to connect to DB at build time
+ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY
-RUN pnpm build
+RUN node_modules/.bin/next build
 
 # ── runner ────────────────────────────────────────────────────────────
 FROM base AS runner
@@ -25,13 +29,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/cluster.js ./
 
 # Prisma schema + migrations (needed for prisma migrate deploy at deploy time)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
-# Generated Prisma client — standalone trace may miss .prisma/client
+# Prisma client — standalone trace may not include all engine/adapter files
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
 # Prisma CLI — devDependency, not in standalone, needed for migrate deploy
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
@@ -42,4 +46,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "cluster.js"]
+# Run standalone server directly — cluster mode requires server.js as main module
+CMD ["node", "server.js"]

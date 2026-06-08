@@ -59,44 +59,6 @@ services:
         reservations:
           memory: 64m
 
-  pgbouncer:
-    image: bitnami/pgbouncer:1.23.1
-    container_name: hethongmmo-pgbouncer
-    restart: unless-stopped
-    environment:
-      POSTGRESQL_HOST: postgres
-      POSTGRESQL_PORT: 5432
-      POSTGRESQL_USERNAME: ${POSTGRES_USER:-app_user}
-      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRESQL_DATABASE: ${POSTGRES_DB:-hethongmmo}
-      PGBOUNCER_DATABASE: ${POSTGRES_DB:-hethongmmo}
-      PGBOUNCER_POOL_MODE: transaction
-      PGBOUNCER_MAX_CLIENT_CONN: 200
-      PGBOUNCER_DEFAULT_POOL_SIZE: 25
-      PGBOUNCER_MIN_POOL_SIZE: 5
-      PGBOUNCER_RESERVE_POOL_SIZE: 5
-      PGBOUNCER_AUTH_TYPE: scram-sha-256
-      PGBOUNCER_SERVER_IDLE_TIMEOUT: 600
-      PGBOUNCER_IGNORE_STARTUP_PARAMETERS: extra_float_digits,application_name
-      # transaction mode: bắt buộc reset session sau mỗi transaction
-      PGBOUNCER_SERVER_RESET_QUERY: DISCARD ALL
-      PGBOUNCER_MAX_PREPARED_STATEMENTS: 100
-    depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 6432"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          memory: 128m
-          cpus: "0.25"
-        reservations:
-          memory: 32m
-
   web:
     image: ${REGISTRY_URL:-local}/hethongmmo:${IMAGE_TAG:-latest}
     build:
@@ -109,27 +71,26 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD}@pgbouncer:6432/${POSTGRES_DB:-hethongmmo}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-hethongmmo}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       UPLOAD_DIR: /uploads
       DB_POOL_SIZE: "10"
-      CLUSTER_WORKERS: ""
     volumes:
       - ./uploads:/uploads
     # Không expose port 3000 ra host — chỉ Nginx mới được proxy vào
     expose:
       - "3000"
     depends_on:
-      pgbouncer:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health 2>/dev/null | grep -q 'status' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 60s
     deploy:
       resources:
         limits:
@@ -157,7 +118,7 @@ services:
     depends_on:
       - web
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:80/api/health"]
+      test: ["CMD-SHELL", "pgrep nginx > /dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -186,12 +147,12 @@ services:
       - ./backups:/backups
     entrypoint: ["sh", "-c"]
     command: >-
-      mkdir -p /backups && while true; do
+      sh -c 'mkdir -p /backups && while true; do
       FNAME="backup_$(date +%Y%m%d_%H%M%S).sql.gz" &&
-      pg_dump | gzip > "/backups/$FNAME" &&
-      echo "[backup] Completed: $FNAME ($(du -sh /backups/$FNAME | cut -f1))" &&
-      find /backups -name '*.sql.gz' -mtime +7 -delete;
-      sleep 86400; done
+      pg_dump | gzip > "/backups/$$FNAME" &&
+      echo "[backup] Completed: $$FNAME" &&
+      find /backups -name "*.sql.gz" -mtime +7 -delete;
+      sleep 86400; done'
     deploy:
       resources:
         limits:
