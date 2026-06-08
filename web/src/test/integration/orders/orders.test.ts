@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
-    user: { findUnique: vi.fn().mockResolvedValue(null) },
+    user: { findUnique: vi.fn() },
     service: { findUnique: vi.fn() },
     course: { findUnique: vi.fn() },
     tutTrick: { findUnique: vi.fn() },
@@ -17,13 +17,14 @@ vi.mock("@/lib/services/purchase.service", () => ({ purchaseProduct: vi.fn() }))
 vi.mock("@/lib/security/rate-limit", () => ({
   apiRatelimit: {},
   orderRatelimit: null,
-  checkRateLimit: vi.fn().mockResolvedValue({ success: true, remaining: 29 }),
+  checkRateLimit: vi.fn(),
 }));
 
 import { GET, POST } from "@/app/api/orders/route";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import { purchaseProduct } from "@/lib/services/purchase.service";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 import { InsufficientBalanceError } from "@/lib/errors";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,10 +53,20 @@ function makePostRequest(body: unknown) {
 }
 
 function makeGetRequest(params = ""): NextRequest {
-  return new NextRequest(`http://localhost/api/orders${params}`);
+  // Use a plain object instead of NextRequest to avoid nextUrl initialization
+  // issues in Node.js test environments outside of a Next.js server context.
+  return {
+    nextUrl: new URL(`http://localhost/api/orders${params}`),
+  } as unknown as NextRequest;
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  // Explicitly re-establish persistent mock implementations after clearAllMocks,
+  // because Vitest ESM mock behavior on Linux may clear these between tests.
+  vi.mocked(checkRateLimit).mockResolvedValue({ success: true, remaining: 29 });
+  vi.mocked(prisma.user.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+});
 
 describe("GET /api/orders", () => {
   it("returns 401 when not authenticated", async () => {
