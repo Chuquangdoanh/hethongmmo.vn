@@ -60,7 +60,7 @@ services:
           memory: 64m
 
   web:
-    image: ${REGISTRY_URL:-local}/hethongmmo:${IMAGE_TAG:-latest}
+    image: ${REGISTRY_URL:-ghcr.io/chuquangdoanh}/hethongmmo:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile

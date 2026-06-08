@@ -1,8 +1,7 @@
 name: Deploy — Staging
 
 on:
-  push:
-    branches: ["develop"]
+  workflow_dispatch:  # Manual only — no staging server yet
 
 concurrency:
   group: deploy-staging

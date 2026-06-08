@@ -33,6 +33,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Prisma schema + migrations (needed for prisma migrate deploy at deploy time)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
+# prisma.config.ts — Prisma 7 config (provides DATABASE_URL since schema.prisma has no url)
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./
+
 # Prisma client — standalone trace may not include all engine/adapter files
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
@@ -40,6 +43,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modul
 # Prisma CLI — devDependency, not in standalone, needed for migrate deploy
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+
+# dotenv — required by prisma.config.ts (not in standalone trace)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/dotenv ./node_modules/dotenv
 
 USER nextjs
 EXPOSE 3000
