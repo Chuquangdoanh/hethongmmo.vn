@@ -10,7 +10,7 @@ WORKDIR /app
 COPY web/package.json web/pnpm-lock.yaml ./
 # --ignore-scripts: prevent postinstall from running prisma generate before schema is copied
 # --shamefully-hoist: flatten node_modules so standalone output can find all deps
-RUN pnpm install --frozen-lockfile --ignore-scripts --shamefully-hoist
+RUN pnpm install --frozen-lockfile --ignore-scripts --node-linker=hoisted
 COPY web/ .
 RUN node_modules/.bin/prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1

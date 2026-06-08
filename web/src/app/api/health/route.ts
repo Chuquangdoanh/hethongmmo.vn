@@ -61,7 +61,9 @@ export async function GET(): Promise<NextResponse> {
     status = "healthy";
   }
 
-  const httpStatus = status === "unhealthy" ? 503 : 200;
+  // Always return 200 so Docker HEALTHCHECK (wget) doesn't fail on HTTP error codes.
+  // Actual health status is in the JSON body for external monitors to read.
+  const httpStatus = 200;
 
   return NextResponse.json(
     {
