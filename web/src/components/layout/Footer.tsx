@@ -78,7 +78,7 @@ export default function Footer() {
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0066ff] hover:bg-[#0052cc] text-white text-sm font-semibold transition-colors whitespace-nowrap">
               Khám phá dịch vụ <ChevronRight size={14} />
             </Link>
-            <Link href="/lien-he"
+            <Link href="https://facebook.com/hethongmmovn/"
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors whitespace-nowrap"
               style={{ border: "1px solid rgba(255,255,255,0.3)" }}
               onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.65)")}

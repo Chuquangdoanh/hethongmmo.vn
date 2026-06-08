@@ -124,21 +124,13 @@ export default async function KhoaHocPage({
       <CourseScrollHelper />
 
       {/* ══ HERO SECTION ══ */}
-      <div
-        className="relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #0c1445 0%, #1a237e 60%, #1e3a5f 100%)" }}
-      >
-        {/* Decorative blobs */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-0 w-80 h-80 rounded-full blur-3xl opacity-20" style={{ background: "#f59e0b" }} />
-          <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full blur-3xl opacity-10" style={{ background: "#0066ff" }} />
-        </div>
+      <div className="relative overflow-hidden bg-[#f1f5f9] border-b border-border">
 
         <div className="relative mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-14">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
 
             {/* Left: text */}
-            <div className="lg:col-span-7 text-white">
+            <div className="lg:col-span-7">
               <span
                 className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full mb-5 uppercase tracking-widest"
                 style={{ background: "rgba(245,158,11,0.15)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.35)" }}
@@ -160,10 +152,10 @@ export default async function KhoaHocPage({
                   Thực chiến
                 </span>
                 <br />
-                <span className="text-white/90">MMO 2025</span>
+                <span className="text-[#374151]">MMO 2025</span>
               </h1>
 
-              <p className="text-white/70 text-sm leading-relaxed mb-8 max-w-lg">
+              <p className="text-[#6b7280] text-sm leading-relaxed mb-8 max-w-lg">
                 Hệ thống khóa học Digital Marketing, Facebook Ads, TikTok Ads, Google Ads
                 và xây dựng thương hiệu giúp bạn kiếm tiền online bền vững.
               </p>
@@ -174,13 +166,13 @@ export default async function KhoaHocPage({
                   <div key={label} className="flex items-center gap-2.5">
                     <div
                       className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ background: "rgba(255,255,255,0.1)" }}
+                      style={{ background: "rgba(0,0,0,0.07)" }}
                     >
-                      <Icon size={16} strokeWidth={1.75} className="text-white" />
+                      <Icon size={16} strokeWidth={1.75} className="text-[#374151]" />
                     </div>
                     <div>
-                      <p className="text-lg font-extrabold text-white leading-none">{value}</p>
-                      <p className="text-[11px] text-white/55 leading-tight">{label}</p>
+                      <p className="text-lg font-extrabold text-[#111827] leading-none">{value}</p>
+                      <p className="text-[11px] text-[#6b7280] leading-tight">{label}</p>
                     </div>
                   </div>
                 ))}
@@ -198,7 +190,7 @@ export default async function KhoaHocPage({
                 </Link>
                 <Link
                   href="/dich-vu"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-white/90 border border-white/20 hover:bg-white/10 transition-all"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-[#374151] border border-[#d1d5db] hover:bg-[#e5e7eb] transition-all"
                 >
                   Dịch vụ MXH
                 </Link>
@@ -232,17 +224,17 @@ export default async function KhoaHocPage({
                 </div>
               ) : (
                 <div
-                  className="rounded-2xl flex flex-col items-center justify-center gap-4 text-white text-center"
+                  className="rounded-2xl flex flex-col items-center justify-center gap-4 text-[#111827] text-center"
                   style={{
                     aspectRatio: "16/9",
-                    background: "rgba(255,255,255,0.08)",
-                    border: "1px solid rgba(255,255,255,0.15)",
+                    background: "rgba(0,0,0,0.04)",
+                    border: "1px solid rgba(0,0,0,0.1)",
                   }}
                 >
-                  <GraduationCap size={56} strokeWidth={1.5} className="text-white/40" />
+                  <GraduationCap size={56} strokeWidth={1.5} className="text-[#9ca3af]" />
                   <div>
                     <p className="text-2xl font-extrabold">{courses.length}+</p>
-                    <p className="text-sm text-white/55">Khóa học đang mở</p>
+                    <p className="text-sm text-[#6b7280]">Khóa học đang mở</p>
                   </div>
                 </div>
               )}

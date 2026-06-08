@@ -38,19 +38,24 @@ function assertRole(session: Session | null, minRole: Role): AuthenticatedUser {
   if (ROLE_LEVELS[user.role] < ROLE_LEVELS[minRole]) {
     throw new AppAuthError("Bạn không có quyền thực hiện hành động này", "FORBIDDEN", 403);
   }
-  if ((user.role === "ADMIN" || user.role === "STAFF") && user.requiresTwoFactor) {
-    throw new AppAuthError(
-      "Tài khoản Admin/Staff phải kích hoạt xác thực 2 bước (2FA). Vào phần cài đặt bảo mật để bật 2FA.",
-      "ADMIN_2FA_REQUIRED",
-      403,
-    );
-  }
   return user;
 }
 
 /** Requires any authenticated user (USER and above). */
 export function requireUser(session: Session | null): AuthenticatedUser {
   return assertRole(session, "USER");
+}
+
+/** Same as requireUser but skips the 2FA check — only use in 2FA setup/enable routes. */
+export function requireUserFor2FASetup(session: Session | null): AuthenticatedUser {
+  if (!session?.user?.id) {
+    throw new AppAuthError("Bạn chưa đăng nhập", "UNAUTHORIZED", 401);
+  }
+  const user = session.user as AuthenticatedUser;
+  if (user.status === "BANNED") {
+    throw new AppAuthError("Tài khoản đã bị khóa", "ACCOUNT_BANNED", 403);
+  }
+  return user;
 }
 
 /** Requires SELLER role or above. */
@@ -74,13 +79,6 @@ export function requireAdmin(session: Session | null): AuthenticatedUser {
   }
   if (user.role !== "ADMIN") {
     throw new AppAuthError("Chỉ Admin mới có quyền truy cập", "ADMIN_REQUIRED", 403);
-  }
-  if (user.requiresTwoFactor) {
-    throw new AppAuthError(
-      "Tài khoản Admin phải kích hoạt xác thực 2 bước (2FA). Vào phần cài đặt bảo mật để bật 2FA.",
-      "ADMIN_2FA_REQUIRED",
-      403,
-    );
   }
   return user;
 }

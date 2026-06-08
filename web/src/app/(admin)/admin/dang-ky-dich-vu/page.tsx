@@ -304,7 +304,7 @@ export default async function DangKyDichVuPage({
                   adsRows.map((row) => (
                     <tr key={row.id} className="hover:bg-gray-50 transition-colors">
                       <td style={tdStyle}>
-                        <StatusToggle id={row.id} type="ads" initialStatus={row.status} />
+                        <StatusToggle id={row.id} type="ads" initialStatus={row.status} initialNote={row.note ?? undefined} />
                       </td>
                       <td style={{ ...tdStyle, color: "#64748b", fontSize: 12 }}>
                         {formatDate(row.createdAt)}
@@ -386,7 +386,7 @@ export default async function DangKyDichVuPage({
                   fpRows.map((row) => (
                     <tr key={row.id} className="hover:bg-gray-50 transition-colors">
                       <td style={tdStyle}>
-                        <StatusToggle id={row.id} type="fanpage" initialStatus={row.status} />
+                        <StatusToggle id={row.id} type="fanpage" initialStatus={row.status} initialNote={row.note ?? undefined} />
                       </td>
                       <td style={{ ...tdStyle, color: "#64748b", fontSize: 12 }}>
                         {formatDate(row.createdAt)}

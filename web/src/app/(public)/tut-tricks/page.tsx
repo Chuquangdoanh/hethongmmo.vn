@@ -79,43 +79,34 @@ export default async function TutTricksPage({
   return (
     <div>
       {/* ── Hero ── */}
-      <section className="relative bg-[#06060f] py-14 text-center overflow-hidden select-none">
-        <div
-          aria-hidden
-          className="absolute inset-0 opacity-25"
-          style={{
-            backgroundImage: "radial-gradient(circle, #ffffff1a 1px, transparent 1px)",
-            backgroundSize: "26px 26px",
-          }}
-        />
-        <div aria-hidden className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 bg-[#ef4444]/10 blur-3xl rounded-full pointer-events-none" />
+      <section className="relative bg-[#f1f5f9] py-14 text-center overflow-hidden select-none border-b border-border">
 
         <div className="relative z-10 mx-auto max-w-2xl px-4">
           <span className="inline-flex items-center gap-1.5 mb-5 px-4 py-1.5 rounded-full text-[11px] font-extrabold tracking-widest bg-[#f59e0b] text-black uppercase shadow-lg">
             ⚡ KHO TUT TRICK ĐỘC QUYỀN
           </span>
-          <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-1 tracking-tight leading-tight">
+          <h1 className="text-5xl md:text-7xl font-extrabold text-[#111827] mb-1 tracking-tight leading-tight">
             TUT / <span className="text-[#ef4444]">TRICK</span>
           </h1>
-          <h2 className="text-xl md:text-2xl font-bold text-white mb-4 tracking-wide">
+          <h2 className="text-2xl md:text-4xl font-bold text-[#111827] mb-4 tracking-wide">
             Cộng Đồng MMO Việt Nam
           </h2>
-          <p className="text-sm text-[#94a3b8] leading-relaxed mb-10">
+          <p className="text-base md:text-lg text-[#6b7280] leading-relaxed mb-10">
             Bí quyết tăng trưởng chiến, kiếm tiền online — tổng hợp độc quyền, cập nhật liên tục từ các chuyên gia.
           </p>
 
-          <div className="inline-flex items-center divide-x divide-[#1e293b] rounded-2xl border border-[#1e293b] bg-[#0d1117] px-2 py-1">
+          <div className="inline-flex items-center divide-x divide-[#e5e7eb] rounded-2xl border border-[#e5e7eb] bg-white px-2 py-1 shadow-sm">
             <div className="px-5 py-2 text-center">
-              <p className="text-xl font-extrabold text-white">{paidCount}</p>
-              <p className="text-[10px] text-[#64748b] uppercase tracking-wide mt-0.5 leading-tight max-w-[72px]">TutTrick có phí</p>
+              <p className="text-xl font-extrabold text-[#111827]">{paidCount}</p>
+              <p className="text-[10px] text-[#6b7280] uppercase tracking-wide mt-0.5 leading-tight max-w-[72px]">TutTrick có phí</p>
             </div>
             <div className="px-5 py-2 text-center">
-              <p className="text-xl font-extrabold text-white">100%</p>
-              <p className="text-[10px] text-[#64748b] uppercase tracking-wide mt-0.5 leading-tight max-w-[90px]">Tut được cập nhật mới nhất bởi chuyên gia</p>
+              <p className="text-xl font-extrabold text-[#111827]">100%</p>
+              <p className="text-[10px] text-[#6b7280] uppercase tracking-wide mt-0.5 leading-tight max-w-[90px]">Tut được cập nhật mới nhất bởi chuyên gia</p>
             </div>
             <div className="px-5 py-2 text-center">
-              <p className="text-xl font-extrabold text-white">24/7</p>
-              <p className="text-[10px] text-[#64748b] uppercase tracking-wide mt-0.5 leading-tight">Hỗ trợ trực tuyến</p>
+              <p className="text-xl font-extrabold text-[#111827]">24/7</p>
+              <p className="text-[10px] text-[#6b7280] uppercase tracking-wide mt-0.5 leading-tight">Hỗ trợ trực tuyến</p>
             </div>
           </div>
         </div>
@@ -153,7 +144,7 @@ export default async function TutTricksPage({
             {tier ? ` · ${tier}` : ""}
             {category ? ` · ${category}` : ""}
           </p>
-          <span className="text-[11px] font-semibold text-white bg-[#0f172a] px-3 py-1 rounded-full">
+          <span className="text-[11px] font-semibold text-[#374151] bg-[#e5e7eb] px-3 py-1 rounded-full">
             {items.length} sản phẩm
           </span>
         </div>

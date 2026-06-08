@@ -69,6 +69,7 @@ export default function Pagination({
       return (
         <Link
           href={buildHref(basePath, page, searchParams, pageParam)}
+          scroll={false}
           className={cls}
           aria-current={isActive ? "page" : undefined}
         >
@@ -78,6 +79,7 @@ export default function Pagination({
     }
     return (
       <button
+        type="button"
         onClick={() => onPageChange?.(page)}
         className={cls}
         aria-current={isActive ? "page" : undefined}
@@ -95,6 +97,7 @@ export default function Pagination({
         {basePath ? (
           <Link
             href={buildHref(basePath, currentPage - 1, searchParams, pageParam)}
+            scroll={false}
             aria-disabled={prevDisabled}
             aria-label="Trang trước"
             className={`${arrowBase} ${prevDisabled ? arrowDisabled : arrowEnabled}`}
@@ -103,6 +106,7 @@ export default function Pagination({
           </Link>
         ) : (
           <button
+            type="button"
             onClick={() => onPageChange?.(currentPage - 1)}
             disabled={prevDisabled}
             aria-label="Trang trước"
@@ -121,6 +125,7 @@ export default function Pagination({
         {basePath ? (
           <Link
             href={buildHref(basePath, currentPage + 1, searchParams, pageParam)}
+            scroll={false}
             aria-disabled={nextDisabled}
             aria-label="Trang sau"
             className={`${arrowBase} ${nextDisabled ? arrowDisabled : arrowEnabled}`}
@@ -129,6 +134,7 @@ export default function Pagination({
           </Link>
         ) : (
           <button
+            type="button"
             onClick={() => onPageChange?.(currentPage + 1)}
             disabled={nextDisabled}
             aria-label="Trang sau"
@@ -144,6 +150,7 @@ export default function Pagination({
         {basePath ? (
           <Link
             href={buildHref(basePath, currentPage - 1, searchParams, pageParam)}
+            scroll={false}
             aria-disabled={prevDisabled}
             className={`${arrowBase} gap-1 px-3 w-auto text-sm font-medium ${prevDisabled ? arrowDisabled : arrowEnabled}`}
           >
@@ -152,6 +159,7 @@ export default function Pagination({
           </Link>
         ) : (
           <button
+            type="button"
             onClick={() => onPageChange?.(currentPage - 1)}
             disabled={prevDisabled}
             className={`${arrowBase} gap-1 px-3 w-auto text-sm font-medium ${prevDisabled ? arrowDisabled : arrowEnabled}`}
@@ -168,6 +176,7 @@ export default function Pagination({
         {basePath ? (
           <Link
             href={buildHref(basePath, currentPage + 1, searchParams, pageParam)}
+            scroll={false}
             aria-disabled={nextDisabled}
             className={`${arrowBase} gap-1 px-3 w-auto text-sm font-medium ${nextDisabled ? arrowDisabled : arrowEnabled}`}
           >
@@ -176,6 +185,7 @@ export default function Pagination({
           </Link>
         ) : (
           <button
+            type="button"
             onClick={() => onPageChange?.(currentPage + 1)}
             disabled={nextDisabled}
             className={`${arrowBase} gap-1 px-3 w-auto text-sm font-medium ${nextDisabled ? arrowDisabled : arrowEnabled}`}

@@ -10,9 +10,10 @@ import { User, CreditCard, Package, Store, LayoutDashboard } from "lucide-react"
 interface UserMenuProps {
   user: AuthenticatedUser;
   balance: number | null;
+  avatarUrl?: string | null;
 }
 
-export default function UserMenu({ user, balance }: UserMenuProps) {
+export default function UserMenu({ user, balance, avatarUrl }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -55,28 +56,26 @@ export default function UserMenu({ user, balance }: UserMenuProps) {
       >
         {/* Avatar */}
         <div style={{ position: "relative", flexShrink: 0 }}>
-          <div style={{
-            width: "28px",
-            height: "28px",
-            borderRadius: "50%",
-            background: "linear-gradient(135deg,#3b82f6,#1d4ed8)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}>
-            <span style={{ color: "white", fontSize: "11px", fontWeight: "800", lineHeight: 1 }}>
-              {initials}
-            </span>
-          </div>
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatarUrl} alt={user.fullName ?? ""} style={{
+              width: "28px", height: "28px", borderRadius: "50%", objectFit: "cover",
+            }} />
+          ) : (
+            <div style={{
+              width: "28px", height: "28px", borderRadius: "50%",
+              background: "linear-gradient(135deg,#3b82f6,#1d4ed8)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ color: "white", fontSize: "11px", fontWeight: "800", lineHeight: 1 }}>
+                {initials}
+              </span>
+            </div>
+          )}
           <span style={{
             position: "absolute",
-            width: "8px",
-            height: "8px",
-            right: 0,
-            bottom: 0,
-            borderRadius: "50%",
-            background: "#22c55e",
-            outline: "2px solid #f8fafc",
+            width: "8px", height: "8px", right: 0, bottom: 0,
+            borderRadius: "50%", background: "#22c55e", outline: "2px solid #f8fafc",
           }} />
         </div>
 

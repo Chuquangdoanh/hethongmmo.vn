@@ -12,7 +12,7 @@ const addStockSchema = z.object({
   items: z
     .array(z.string().min(1).max(2000))
     .min(1, "Cần ít nhất 1 item")
-    .max(500, "Tối đa 500 items mỗi lần"),
+    .max(200, "Tối đa 200 items mỗi lần"),
 });
 
 const PAGE_SIZE = 30;

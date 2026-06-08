@@ -21,7 +21,7 @@ export default function OrderSearchInput() {
       sp.delete("page");
     }
     startTransition(() => {
-      router.push(`/admin/orders?${sp.toString()}`);
+      router.push(`/admin/orders?${sp.toString()}`, { scroll: false });
     });
   }
 
@@ -58,6 +58,7 @@ export default function OrderSearchInput() {
       )}
       {!isPending && currentQ && (
         <button
+          type="button"
           onClick={handleClear}
           className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
         >

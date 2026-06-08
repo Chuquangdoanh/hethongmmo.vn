@@ -121,6 +121,7 @@ export default function CourseDetailTabs({
         {TABS.map(({ id, label }) => (
           <button
             key={id}
+            type="button"
             onClick={() => setTab(id)}
             className={`px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
               tab === id
@@ -296,6 +297,7 @@ export default function CourseDetailTabs({
             {STATIC_FAQS.map((faq, i) => (
               <div key={i} className="border border-[#e2e8f0] rounded-xl overflow-hidden">
                 <button
+                  type="button"
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   className="w-full flex items-center justify-between px-5 py-4 text-left bg-white hover:bg-[#f8fafc] transition-colors"
                 >

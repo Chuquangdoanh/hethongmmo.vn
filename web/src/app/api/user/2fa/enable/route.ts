@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { requireUser, AppAuthError } from "@/lib/auth/rbac";
+import { requireUserFor2FASetup, AppAuthError } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { encryptTotpSecret, verifyTotp } from "@/lib/auth/two-factor";
 import { writeAuditLog } from "@/lib/security/audit";
@@ -18,7 +18,7 @@ const enableSchema = z.object({
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    const me = requireUser(session);
+    const me = requireUserFor2FASetup(session);
 
     const body: unknown = await req.json();
     const parsed = enableSchema.safeParse(body);

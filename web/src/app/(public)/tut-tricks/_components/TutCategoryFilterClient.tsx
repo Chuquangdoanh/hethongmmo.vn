@@ -2,27 +2,6 @@
 
 import { useRouter } from "next/navigation";
 
-function smoothScrollTo(targetY: number, duration = 900) {
-  const startY = window.scrollY;
-  const distance = targetY - startY;
-  if (Math.abs(distance) < 8) return;
-  let startTime: number | null = null;
-  const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
-  const animate = (now: number) => {
-    if (startTime === null) startTime = now;
-    const progress = Math.min((now - startTime) / duration, 1);
-    window.scrollTo(0, startY + distance * easeOutCubic(progress));
-    if (progress < 1) requestAnimationFrame(animate);
-  };
-  requestAnimationFrame(animate);
-}
-
-function getGridTarget() {
-  const grid = document.getElementById("tut-tricks-grid");
-  if (!grid) return null;
-  return grid.getBoundingClientRect().top + window.scrollY - 72;
-}
-
 interface Props {
   categories: { name: string; icon: string }[];
   activeCategory: string | undefined;
@@ -41,19 +20,18 @@ export default function TutCategoryFilterClient({ categories, activeCategory, ac
   }
 
   function handleClick(category?: string) {
-    const targetY = getGridTarget();
-    if (targetY !== null) smoothScrollTo(targetY);
     router.push(buildHref(category), { scroll: false });
   }
 
   return (
     <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 flex-wrap justify-center">
       <button
+        type="button"
         onClick={() => handleClick(undefined)}
-        className={`flex-shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+        className={`shrink-0 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
           !activeCategory
-            ? "bg-[#0066ff] text-white shadow-sm"
-            : "border border-[#e2e8f0] text-[#64748b] hover:border-[#0066ff] hover:text-[#0066ff]"
+            ? "bg-primary text-white shadow-sm"
+            : "border border-border text-text-muted hover:border-primary hover:text-primary"
         }`}
       >
         Tất cả
@@ -62,11 +40,12 @@ export default function TutCategoryFilterClient({ categories, activeCategory, ac
       {categories.map(({ name, icon }) => (
         <button
           key={name}
+          type="button"
           onClick={() => handleClick(name)}
-          className={`flex-shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+          className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
             activeCategory === name
-              ? "bg-[#0066ff] text-white shadow-sm"
-              : "border border-[#e2e8f0] text-[#64748b] hover:border-[#0066ff] hover:text-[#0066ff]"
+              ? "bg-primary text-white shadow-sm"
+              : "border border-border text-text-muted hover:border-primary hover:text-primary"
           }`}
         >
           {icon && (

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 const AVATAR_COLORS = [
   { label: "Xanh dương", value: "#0066ff" },
@@ -70,8 +71,30 @@ export default function TestimonialForm({
   // State riêng cho cascading select dịch vụ
   const [serviceCategory, setServiceCategory] = useState(initialServiceCategory);
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
+  const [loading, setLoading]               = useState(false);
+  const [error, setError]                   = useState("");
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarUploadError, setAvatarUploadError] = useState("");
+  const avatarFileRef = useRef<HTMLInputElement>(null);
+
+  async function handleAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { setAvatarUploadError("Ảnh quá lớn, tối đa 2 MB"); return; }
+    const fd = new FormData();
+    fd.append("file", file);
+    setAvatarUploadError("");
+    setAvatarUploading(true);
+    try {
+      const res  = await fetch("/api/admin/upload/thumbnail?type=testimonial-avatar", { method: "POST", body: fd });
+      const json = (await res.json()) as { data?: { url: string }; error?: string };
+      if (!res.ok) { setAvatarUploadError(json.error ?? "Upload thất bại"); return; }
+      set("reviewerAvatar", json.data?.url ?? "");
+    } finally {
+      setAvatarUploading(false);
+      if (avatarFileRef.current) avatarFileRef.current.value = "";
+    }
+  }
 
   function set(field: string, value: string | boolean) {
     setForm((p) => ({ ...p, [field]: value }));
@@ -286,8 +309,59 @@ export default function TestimonialForm({
             </div>
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-xs text-gray-500 mb-1.5">URL ảnh đại diện (tùy chọn)</label>
-            <input type="url" value={form.reviewerAvatar} onChange={(e) => set("reviewerAvatar", e.target.value)} placeholder="https://..." className={inputCls} />
+            <label className="block text-xs text-gray-500 mb-1.5">Ảnh đại diện (tùy chọn)</label>
+            {/* Hidden file input */}
+            <input
+              ref={avatarFileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={handleAvatarFile}
+            />
+            {form.reviewerAvatar ? (
+              /* Đã có ảnh — chỉ hiển thị preview + nút đổi/xóa */
+              <div className="flex items-center gap-3">
+                <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-gray-200">
+                  <Image src={form.reviewerAvatar} alt="avatar" fill className="object-cover" />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => avatarFileRef.current?.click()}
+                    disabled={avatarUploading}
+                    className="text-xs text-[#7C3AED] hover:text-[#6D28D9] disabled:opacity-60 transition-colors"
+                  >
+                    {avatarUploading ? <><span className="animate-spin inline-block">⟳</span> Đang tải...</> : "Đổi ảnh"}
+                  </button>
+                  <span className="text-gray-300">|</span>
+                  <button
+                    type="button"
+                    onClick={() => { set("reviewerAvatar", ""); setAvatarUploadError(""); }}
+                    className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    Xóa ảnh
+                  </button>
+                </div>
+                {avatarUploadError && <p className="text-[11px] text-red-500">{avatarUploadError}</p>}
+              </div>
+            ) : (
+              /* Chưa có ảnh — hiển thị nút upload */
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onClick={() => avatarFileRef.current?.click()}
+                  disabled={avatarUploading}
+                  className="flex items-center gap-1.5 w-full justify-center px-4 py-2.5 rounded-lg border border-dashed border-gray-300 hover:border-[#7C3AED] hover:bg-[#7C3AED]/5 text-sm text-gray-500 hover:text-[#7C3AED] transition-colors disabled:opacity-60"
+                >
+                  {avatarUploading ? (
+                    <><span className="animate-spin inline-block">⟳</span> Đang tải lên...</>
+                  ) : (
+                    <>↑ Tải ảnh lên (JPEG/PNG/WebP · tối đa 2 MB)</>
+                  )}
+                </button>
+                {avatarUploadError && <p className="text-[11px] text-red-500">{avatarUploadError}</p>}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -330,14 +404,18 @@ export default function TestimonialForm({
       </div>
 
       {/* ── Preview ── */}
-      <div className="rounded-xl border border-[#e2e8f0] bg-white p-4">
+      <div className="rounded-xl border border-border bg-white p-4">
         <p className="text-xs text-gray-400 mb-3">Preview</p>
         <div className="flex gap-3">
           <div
-            className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-white text-sm font-bold"
-            style={{ background: form.reviewerColor }}
+            className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-white text-sm font-bold overflow-hidden relative"
+            style={{ background: form.reviewerAvatar ? undefined : form.reviewerColor }}
           >
-            {form.reviewerInitials || form.reviewerName.split(" ").map((w) => w[0]?.toUpperCase()).slice(0, 2).join("")}
+            {form.reviewerAvatar ? (
+              <Image src={form.reviewerAvatar} alt="avatar" fill className="object-cover" />
+            ) : (
+              form.reviewerInitials || form.reviewerName.split(" ").map((w) => w[0]?.toUpperCase()).slice(0, 2).join("")
+            )}
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 flex-wrap">

@@ -32,12 +32,16 @@ export default async function Header() {
     .map((l) => ({ ...l, isFeatured: featuredSet.has(l.href.replace(/^\//, "")) }));
 
   let balance: number | null = null;
+  let avatarUrl: string | null = null;
   if (sessionUser?.id) {
     const row = await prisma.user.findUnique({
       where: { id: sessionUser.id },
-      select: { balance: true },
+      select: { balance: true, avatarUrl: true },
     });
-    if (row) balance = Number(row.balance);
+    if (row) {
+      balance   = Number(row.balance);
+      avatarUrl = row.avatarUrl ?? null;
+    }
   }
 
   return (
@@ -57,7 +61,7 @@ export default async function Header() {
         <div className="hdr-actions">
           <div className="hdr-desktop-auth">
             {sessionUser ? (
-              <UserMenu user={sessionUser} balance={balance} />
+              <UserMenu user={sessionUser} balance={balance} avatarUrl={avatarUrl} />
             ) : (
               <>
                 <Link href="/dang-nhap" className="hdr-btn-login">Đăng nhập</Link>
@@ -70,6 +74,7 @@ export default async function Header() {
             isLoggedIn={!!sessionUser}
             user={sessionUser}
             balance={balance}
+            avatarUrl={avatarUrl}
           />
         </div>
 

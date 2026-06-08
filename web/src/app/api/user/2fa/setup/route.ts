@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { requireUser } from "@/lib/auth/rbac";
-import { AppAuthError } from "@/lib/auth/rbac";
+import { requireUserFor2FASetup, AppAuthError } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { generateTotpSecret } from "@/lib/auth/two-factor";
 import { apiOk, apiCatch, apiError } from "@/lib/api-response";
@@ -12,7 +11,7 @@ export const runtime = "nodejs";
 export async function GET(): Promise<NextResponse> {
   try {
     const session = await auth();
-    const me = requireUser(session);
+    const me = requireUserFor2FASetup(session);
 
     const user = await prisma.user.findUnique({
       where: { id: me.id },

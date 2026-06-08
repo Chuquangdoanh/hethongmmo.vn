@@ -28,7 +28,7 @@ export default function DepositFilter() {
     next.delete("page");
     if (min !== null) next.set("depositMin", String(min)); else next.delete("depositMin");
     if (max !== null) next.set("depositMax", String(max)); else next.delete("depositMax");
-    router.push(`${pathname}?${next.toString()}`);
+    router.push(`${pathname}?${next.toString()}`, { scroll: false });
   }
 
   function applyCustom() {

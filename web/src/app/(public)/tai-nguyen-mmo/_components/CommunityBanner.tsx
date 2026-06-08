@@ -6,20 +6,20 @@ import { X, FileText, ShieldCheck, AlertTriangle, CheckCircle, ExternalLink } fr
 type ModalId = "rules" | "commitments" | "warnings";
 
 const MODAL_CONFIG: Record<ModalId, { title: string; accent: string; Icon: typeof FileText }> = {
-  rules:       { title: "Quy định hỗ trợ – Bảo hành – Khiếu nại", accent: "#10b981", Icon: FileText      },
-  commitments: { title: "Cam kết của Hệ Thống MMO",                accent: "#10b981", Icon: ShieldCheck   },
+  rules:       { title: "Quy định hỗ trợ – Bảo hành – Khiếu nại", accent: "#3b82f6", Icon: FileText      },
+  commitments: { title: "Cam kết của Hệ Thống MMO",                accent: "#3b82f6", Icon: ShieldCheck   },
   warnings:    { title: "Lưu ý quan trọng",                        accent: "#f59e0b", Icon: AlertTriangle },
 };
 
 function ModalContent({ id }: { id: ModalId }) {
   if (id === "rules") {
     return (
-      <div className="space-y-4 text-sm text-[#94a3b8]">
+      <div className="space-y-4 text-sm text-[#374151]">
         <div className="flex items-start gap-2.5">
-          <CheckCircle size={14} strokeWidth={2.5} className="text-[#10b981] mt-0.5 shrink-0" />
+          <CheckCircle size={14} strokeWidth={2.5} className="text-[#3b82f6] mt-0.5 shrink-0" />
           <p className="leading-relaxed">
             Hỗ trợ bảo hành và xử lý khiếu nại trong vòng{" "}
-            <strong className="text-white">24 giờ</strong>{" "}
+            <strong className="text-[#111827]">24 giờ</strong>{" "}
             kể từ thời điểm đơn hàng được bàn giao thành công.
           </p>
         </div>
@@ -33,13 +33,13 @@ function ModalContent({ id }: { id: ModalId }) {
             "Sản phẩm không đúng nội dung đã cam kết.",
           ].map((item) => (
             <div key={item} className="flex items-start gap-2 pl-6 mb-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] mt-1.5 shrink-0" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] mt-1.5 shrink-0" />
               <p className="text-[13px] leading-relaxed">{item}</p>
             </div>
           ))}
         </div>
         <div className="flex items-start gap-2.5">
-          <CheckCircle size={14} strokeWidth={2.5} className="text-[#10b981] mt-0.5 shrink-0" />
+          <CheckCircle size={14} strokeWidth={2.5} className="text-[#3b82f6] mt-0.5 shrink-0" />
           <p className="leading-relaxed">
             Đơn hàng khiếu nại hợp lệ sẽ được ưu tiên xử lý nhanh bởi Seller và đội ngũ hỗ trợ của{" "}
             <span className="text-warning font-semibold">Hệ Thống MMO</span>.
@@ -60,8 +60,8 @@ function ModalContent({ id }: { id: ModalId }) {
           "Nói không với lừa đảo, gian lận và các hành vi gây ảnh hưởng đến cộng đồng.",
         ].map((item) => (
           <div key={item} className="flex items-start gap-2.5">
-            <CheckCircle size={14} strokeWidth={2.5} className="text-[#10b981] mt-0.5 shrink-0" />
-            <p className="text-sm text-[#94a3b8] leading-relaxed">{item}</p>
+            <CheckCircle size={14} strokeWidth={2.5} className="text-[#3b82f6] mt-0.5 shrink-0" />
+            <p className="text-sm text-[#374151] leading-relaxed">{item}</p>
           </div>
         ))}
       </div>
@@ -80,7 +80,7 @@ function ModalContent({ id }: { id: ModalId }) {
         ].map((item) => (
           <div key={item} className="flex items-start gap-2.5">
             <AlertTriangle size={13} strokeWidth={2.5} className="text-warning mt-0.5 shrink-0" />
-            <p className="text-sm text-[#94a3b8] leading-relaxed">{item}</p>
+            <p className="text-sm text-[#374151] leading-relaxed">{item}</p>
           </div>
         ))}
       </div>
@@ -96,7 +96,7 @@ function ModalContent({ id }: { id: ModalId }) {
         ].map((item) => (
           <div key={item} className="flex items-start gap-2 mb-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-warning mt-1.5 shrink-0" />
-            <p className="text-[13px] text-[#94a3b8] leading-relaxed">{item}</p>
+            <p className="text-[13px] text-[#374151] leading-relaxed">{item}</p>
           </div>
         ))}
       </div>
@@ -127,17 +127,20 @@ export function CommunityBanner() {
   return (
     <>
       {/* ── BANNER ── */}
-      <div className="bg-[#0d1117] border-b border-[#10b981]/20">
+      <div className="bg-[#f1f5f9] border-b border-border">
         <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-8">
 
           {/* Title */}
           <div className="flex items-center gap-3 mb-8">
-            <span className="h-px flex-1 bg-[#10b981]/20" />
-            <h2 className="text-sm font-extrabold text-white tracking-wider text-center whitespace-nowrap">
-              CỘNG ĐỒNG MMO —{" "}
-              <span className="text-warning">HỆ THỐNG MMO</span>{" "}5.0
+            <span className="hidden md:block h-px flex-1 bg-[#e5e7eb]" />
+            <h2 className="text-2xl md:text-3xl font-extrabold text-[#111827] tracking-wider text-center flex-1 md:flex-none">
+              <span className="block md:inline">CỘNG ĐỒNG MMO</span>
+              <span className="hidden md:inline"> — </span>
+              <span className="block md:inline">
+                <span className="text-[#d97706]">HỆ THỐNG MMO</span>{" "}5.0
+              </span>
             </h2>
-            <span className="h-px flex-1 bg-[#10b981]/20" />
+            <span className="hidden md:block h-px flex-1 bg-[#e5e7eb]" />
           </div>
 
           {/* Community channels — centered text layout */}
@@ -145,62 +148,63 @@ export function CommunityBanner() {
 
             {/* Zalo */}
             <div>
-              <p className="text-sm font-semibold text-white mb-0.5">
-                🔹 Nhóm Zalo – Cộng đồng Update Biến Chuyển Meta
+              <p className="text-sm font-semibold text-[#111827] mb-0.5">
+                🔹 Nhóm Telegram – Cộng đồng Update Biến Chuyển Meta
               </p>
               <a
-                href="https://zalo.me/g/dctpdv219"
+                href="https://t.me/hethongmmovn"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-primary hover:underline underline-offset-2"
               >
-                https://zalo.me/g/dctpdv219 <ExternalLink size={10} strokeWidth={2} />
+                https://t.me/hethongmmovn <ExternalLink size={10} strokeWidth={2} />
               </a>
             </div>
 
             {/* Telegram */}
             <div>
-              <p className="text-sm font-semibold text-white mb-0.5">🔹 Nhóm Telegram</p>
-              <p className="text-sm text-[#94a3b8]">
+              <p className="text-sm font-semibold text-[#111827] mb-0.5">🔹 Chăm sóc khách hàng</p>
+              <p className="text-sm text-[#374151]">
                 <span className="text-warning font-extrabold">HỆ THỐNG MMO</span>
-                {" "}- TÀI NGUYÊN SỐ 5.0
+                {" "}- Telegram : <span className="text-[#1d4ed8] font-extrabold">@hethongmmo.vn</span>
+                <span className="block sm:inline"> (Hỗ trợ 24/7 mọi ngày)</span>
               </p>
             </div>
 
             {/* Community */}
             <div>
-              <p className="text-sm font-semibold text-white mb-0.5">🔹 Cộng Đồng MMO</p>
-              <p className="text-xs text-[#94a3b8] leading-relaxed">
+              <p className="text-sm font-semibold text-[#111827] mb-0.5">🔹 Cộng Đồng MMO</p>
+              <p className="text-xs text-[#374151] leading-relaxed">
                 Nơi giao lưu, chia sẻ kiến thức, tài nguyên và cập nhật các xu hướng mới nhất về MMO, Facebook Ads, Marketing và kiếm tiền online.
               </p>
             </div>
 
             {/* TikTok */}
             <div>
-              <p className="text-sm font-semibold text-white mb-0.5">🔹 Kênh TikTok</p>
+              <p className="text-sm font-semibold text-[#111827] mb-0.5">🔹 Kênh Fanpage Chính Thức</p>
               <a
-                href="https://www.tiktok.com/@chuquangdoanhads"
+                href="https://www.facebook.com/hethongmmo.vn/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-primary hover:underline underline-offset-2"
               >
-                https://www.tiktok.com/@chuquangdoanhads <ExternalLink size={10} strokeWidth={2} />
+                https://www.facebook.com/hethongmmo.vn/ <ExternalLink size={10} strokeWidth={2} />
               </a>
             </div>
           </div>
 
           {/* Divider */}
           <div className="flex items-center gap-3 max-w-xl mx-auto mb-6">
-            <span className="h-px flex-1 bg-white/10" />
+            <span className="h-px flex-1 bg-[#e5e7eb]" />
             <span className="text-[10px] text-text-muted uppercase tracking-widest font-semibold">Chính sách & cam kết</span>
-            <span className="h-px flex-1 bg-white/10" />
+            <span className="h-px flex-1 bg-[#e5e7eb]" />
           </div>
 
           {/* 3 popup trigger buttons */}
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={() => setOpen("rules")}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#10b981]/40 text-xs font-semibold text-[#10b981] bg-[#10b981]/10 hover:bg-[#10b981]/20 hover:border-[#10b981] transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#1d4ed8]/40 text-xs font-semibold text-[#1d4ed8] bg-[#1d4ed8]/10 hover:bg-[#1d4ed8]/20 hover:border-[#1d4ed8] transition-all"
             >
               <FileText size={13} strokeWidth={2} />
               Quy định hỗ trợ
@@ -214,7 +218,7 @@ export function CommunityBanner() {
             </button>
             <button
               onClick={() => setOpen("warnings")}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/20 text-xs font-semibold text-[#94a3b8] bg-white/5 hover:bg-white/10 hover:border-white/40 transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#d1d5db] text-xs font-semibold text-[#374151] bg-[#f9fafb] hover:bg-[#f3f4f6] hover:border-[#9ca3af] transition-all"
             >
               <AlertTriangle size={13} strokeWidth={2} />
               Lưu ý quan trọng
@@ -228,15 +232,15 @@ export function CommunityBanner() {
       {open && cfg && (
         <div
           className="fixed inset-0 z-9999 flex items-center justify-center p-4"
-          style={{ backgroundColor: "rgba(0,0,0,0.75)" }}
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
           onClick={() => setOpen(null)}
         >
           <div
-            className="bg-[#0d1117] border border-white/10 rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-2xl"
+            className="bg-white border border-[#e5e7eb] rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#e5e7eb] bg-[#f9fafb] rounded-t-2xl shrink-0">
               <div className="flex items-center gap-2.5">
                 <div
                   className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
@@ -244,11 +248,11 @@ export function CommunityBanner() {
                 >
                   <cfg.Icon size={15} strokeWidth={2} style={{ color: cfg.accent }} />
                 </div>
-                <h3 className="text-sm font-extrabold text-white">{cfg.title}</h3>
+                <h3 className="text-sm font-extrabold text-[#111827]">{cfg.title}</h3>
               </div>
               <button
                 onClick={() => setOpen(null)}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-white/10 text-[#94a3b8] hover:bg-white/20 hover:text-white transition-colors shrink-0"
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-[#f3f4f6] text-[#374151] hover:bg-[#e5e7eb] hover:text-[#111827] transition-colors shrink-0"
               >
                 <X size={14} strokeWidth={2} />
               </button>

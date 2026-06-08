@@ -323,8 +323,8 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
           onClick={handleClick}
           className={`w-full rounded-xl font-bold active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2 ${
             props.compact
-              ? "py-2 text-sm bg-[#C53030] hover:bg-[#C53030] text-white"
-              : "py-3.5 text-sm bg-[#C53030] hover:bg-[#C53030] text-white shadow-md"
+              ? "py-2 text-sm bg-[#C53030] hover:bg-[#9B2C2C] text-white"
+              : "py-3.5 text-sm bg-[#C53030] hover:bg-[#9B2C2C] text-white shadow-md"
           }`}
         >
           {!props.compact && <Zap size={16} />}

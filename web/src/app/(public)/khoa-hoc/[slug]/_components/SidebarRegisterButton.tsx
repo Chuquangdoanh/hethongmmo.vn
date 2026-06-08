@@ -9,6 +9,7 @@ export default function SidebarRegisterButton() {
 
   return (
     <button
+      type="button"
       onClick={handleClick}
       className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98]"
       style={{ background: "linear-gradient(135deg, #C53030, #9B1C1C)", boxShadow: "0 4px 14px rgba(197,48,48,0.35)" }}

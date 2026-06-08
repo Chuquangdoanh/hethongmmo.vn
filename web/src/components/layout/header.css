@@ -295,6 +295,12 @@
   font-weight: 800;
   line-height: 1;
 }
+.hdr-drawer-avatar .hdr-avatar-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
 .hdr-drawer-avatar .hdr-dot {
   position: absolute;
   width: 10px;

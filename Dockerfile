@@ -25,6 +25,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/cluster.js ./
 
 # Prisma schema + migrations (needed for prisma migrate deploy at deploy time)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
@@ -41,4 +42,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["node", "cluster.js"]

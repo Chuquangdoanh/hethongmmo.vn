@@ -169,7 +169,7 @@ export default function WithdrawalForm({
       </form>
 
       <p className="text-[10px] text-gray-400 text-center">
-        Admin sẽ xác nhận và chuyển khoản thủ công sau 1-2 ngày làm việc
+        Hệ Thống sẽ xác nhận và chuyển khoản thủ công sau 1-2 ngày làm việc
       </p>
     </div>
   );

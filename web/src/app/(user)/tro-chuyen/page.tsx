@@ -30,7 +30,7 @@ export default async function TroChuyenPage() {
       where: { id: me.id },
       select: {
         balance: true, totalDeposited: true, totalSpent: true,
-        uidPrefix: true, fullName: true, email: true, role: true,
+        uidPrefix: true, fullName: true, email: true, role: true, avatarUrl: true,
       },
     }),
     prisma.transaction.findFirst({
@@ -78,6 +78,7 @@ export default async function TroChuyenPage() {
         totalSpent={Number(user.totalSpent)}
         lastDepositAt={lastDeposit?.createdAt ?? null}
         activeTab="chat"
+        avatarUrl={user.avatarUrl ?? null}
       />
 
       <div className="bg-gray-50 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-6 min-h-[60vh]">

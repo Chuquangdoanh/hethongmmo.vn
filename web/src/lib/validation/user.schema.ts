@@ -47,6 +47,7 @@ export const updateProfileSchema = z.object({
   bankAccountHolder: z.string().max(100).trim().optional(),
   cccdImageUrl: z.string().url().optional(),
   portraitImageUrl: z.string().url().optional(),
+  avatarUrl: z.string().url().max(500).optional().nullable(),
   facebookUrl: z.string().max(500).trim().optional(),
   telegramUsername: z.string().max(100).trim().optional(),
 });

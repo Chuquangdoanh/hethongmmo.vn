@@ -1,3 +1,6 @@
+// ISR: homepage không có auth() → cache 60s, rebuild khi có traffic sau khi stale
+export const revalidate = 60;
+
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
@@ -43,31 +46,31 @@ const POPULAR_SERVICES = [
 
 const PRESS_CARDS = [
   {
-    logoType: "vnexpress",
-    tag: "Kinh doanh số",
+    logoType: "Báo Quốc Tế",
+    tag: "Báo Quốc Tế",
     tagColor: "#0066ff",
     headline: "Hệ sinh thái MMO giúp hàng nghìn người Việt bứt phá thu nhập online",
     desc: "Nền tảng công nghệ giúp kết nối, đào tạo và hỗ trợ người dùng phát triển công việc kinh doanh online một cách bền vững.",
-    date: "12/03/2025",
-    href: "#",
+    date: "22/04/2025",
+    href: "https://baoquocte.vn/pham-huu-dung-nguoi-con-vung-dat-ha-tinh-va-hanh-trinh-tro-thanh-ceo-dj-media-311953.html",
   },
   {
-    logoType: "dantri",
-    tag: "Công nghệ",
+    logoType: "VTV",
+    tag: "VTV",
     tagColor: "#0891b2",
-    headline: "Công nghệ AI và tự động hóa đang thay đổi cuộc chơi MMO tại Việt Nam",
-    desc: "Ứng dụng AI và tự động hóa giúp tối ưu hiệu suất, tiết kiệm thời gian và gia tăng hiệu quả cho cộng đồng kinh doanh online.",
-    date: "25/02/2025",
-    href: "#",
+    headline: "DJ Media: Đối tác tin cậy cho quảng cáo mạng xã hội",
+    desc: "VTV.vn - Mạng xã hội là công cụ hiệu quả giúp cá nhân, doanh nghiệp quảng bá thương hiệu, sản phẩm và dịch vụ trong thời đại số.",
+    date: "10/04/2025",
+    href: "https://vtv.vn/goc-doanh-nghiep/dj-media-doi-tac-tin-cay-cho-quang-cao-mang-xa-hoi-20250409204644991.htm",
   },
   {
-    logoType: "24h",
-    tag: "Khởi nghiệp",
+    logoType: "Ngôi Sao VN",
+    tag: "Ngôi Sao VN",
     tagColor: "#7c3aed",
     headline: "MMO – Cơ hội khởi nghiệp ít vốn nhưng tiềm năng lớn cho người trẻ",
     desc: "Xu hướng khởi nghiệp online đang mở ra cơ hội cho người trẻ Việt Nam tự do tài chính và làm chủ cuộc sống.",
-    date: "18/02/2025",
-    href: "#",
+    date: "10/06/2025",
+    href: "https://ngoisao.vn/theo-dong-su-kien/doanh-nghiep/ceo-pham-huu-dung-va-hanh-trinh-xay-dung-nen-thanh-cong-cua-dj-media-d457781.html",
   },
 ];
 
@@ -423,8 +426,8 @@ export default async function HomePage() {
               }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src="/images/Chu Quang Doanh.png"
-                  alt="Chu Quang Doanh — Chuyên gia Digital Marketing"
+                  src="/images/phamhuudung.jpg"
+                  alt="Phạm Hữu Dũng — Chuyên gia Digital Marketing"
                   style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                 />
               </div>
@@ -442,10 +445,10 @@ export default async function HomePage() {
             {/* ── 3: Description ── */}
             <div className="exp-desc anim-fade-up" data-d="3">
               <p style={{ fontSize: "1.05rem", color: "#64748b", lineHeight: "1.85", marginBottom: "20px" }}>
-                Tôi là <strong style={{ color: "#0f172a" }}>Chu Quang Doanh</strong>, với hơn 7 năm kinh nghiệm thực chiến trong việc triển khai các chiến dịch quảng cáo triệu đô trên TikTok và Facebook.
+                Tôi là <strong style={{ color: "#0f172a" }}>Phạm Hữu Dũng</strong>, CEO &amp; Chuyên gia Digital Marketing với hơn 7 năm kinh nghiệm thực chiến triển khai các chiến dịch quảng cáo triệu đô trên TikTok, Facebook và Google Ads.
               </p>
               <p style={{ fontSize: "1.05rem", color: "#64748b", lineHeight: "1.85", marginBottom: "20px" }}>
-                Sứ mệnh của tôi là giúp các doanh nghiệp SME tối ưu hóa chi phí và bùng nổ doanh số bền vững.
+                Sứ mệnh của tôi là giúp các doanh nghiệp Việt Nam tối ưu hóa chi phí quảng cáo và bùng nổ doanh số bền vững thông qua chiến lược marketing số toàn diện, thúc đẩy sự tăng trưởng bền vững cho các đối tác.
               </p>
               <blockquote style={{
                 borderLeft: "4px solid #0066ff",
@@ -459,17 +462,7 @@ export default async function HomePage() {
             </div>
 
             {/* ── 4: Button ── */}
-            <div className="exp-btn anim-fade-in" data-d="4">
-              <Link href="/gioi-thieu" className="btn-hero-primary" style={{
-                display: "inline-flex", alignItems: "center", gap: "10px",
-                background: "#0066ff", color: "#fff",
-                padding: "15px 36px", borderRadius: "12px",
-                fontWeight: "700", fontSize: "1rem", textDecoration: "none",
-                transition: "background .3s ease, box-shadow .3s ease, transform .3s ease",
-              }}>
-                Xem thêm về tôi →
-              </Link>
-            </div>
+           
 
           </div>
         </div>
@@ -477,6 +470,75 @@ export default async function HomePage() {
 
       {/* ── COURSE SLIDER ─────────────────────────────── */}
       <CourseSlider courses={featuredCourses} />
+
+      {/* ── CEO / NHÀ SÁNG LẬP ───────────────────────── */}
+      <section style={{ padding: "80px 0", background: "#f4f7fb", overflow: "hidden" }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
+          <div className="ceo-intro-grid">
+
+            {/* ── 1: Title ── */}
+            <div className="ceo-intro-title anim-slide-left" data-d="1">
+              <h2 style={{ fontSize: "clamp(1.8rem,3.5vw,2.8rem)", fontWeight: "800", lineHeight: "1.2", marginBottom: "0", color: "#0f172a" }}>
+              SÁNG LẬP &amp;<br /> ĐIỀU HÀNH HỆ THỐNG MMO
+              </h2>
+            </div>
+
+            {/* ── 2: Image ── */}
+            <div style={{ position: "relative" }} className="ceo-intro-img anim-slide-right" data-d="2">
+              <div style={{
+                position: "absolute", inset: "-20px",
+                background: "linear-gradient(135deg,rgba(245,158,11,.08),rgba(249,115,22,.04))",
+                borderRadius: "50px", zIndex: 0,
+              }} />
+              <div className="ceo-img-hover" style={{
+                width: "100%", aspectRatio: "1",
+                borderRadius: "30px", position: "relative", zIndex: 1,
+                boxShadow: "0 20px 50px rgba(0,0,0,.15)",
+                overflow: "hidden", transition: "transform .5s ease",
+              }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/Chu Quang Doanh.png"
+                  alt="Chu Quang Doanh — Nhà sáng lập & Giám đốc điều hành Hệ Thống MMO"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                />
+              </div>
+              <div style={{
+                position: "absolute", bottom: "-20px", left: "-20px",
+                background: "#fff", borderRadius: "18px", padding: "16px 20px",
+                boxShadow: "0 12px 30px rgba(0,0,0,.12)", zIndex: 2,
+                textAlign: "center", animation: "float 5s ease-in-out infinite",
+              }}>
+                <div style={{ fontSize: "2rem", fontWeight: "900", color: "#f59e0b", lineHeight: 1 }}>59K+</div>
+                <div style={{ fontSize: ".7rem", color: "#64748b", fontWeight: "600", marginTop: "4px" }}>Khách hàng</div>
+              </div>
+            </div>
+
+            {/* ── 3: Description ── */}
+            <div className="ceo-intro-desc anim-fade-up" data-d="3">
+              <p style={{ fontSize: "1.05rem", color: "#64748b", lineHeight: "1.85", marginBottom: "20px" }}>
+                Tôi là <strong style={{ color: "#0f172a" }}>Chu Quang Doanh</strong>, nhà sáng lập &amp; Giám đốc điều hành Hệ Thống MMO — nền tảng tài nguyên số hàng đầu Việt Nam, được xây dựng với sứ mệnh giúp người Việt phát triển kinh doanh online bền vững.
+              </p>
+              <p style={{ fontSize: "1.05rem", color: "#64748b", lineHeight: "1.85", marginBottom: "20px" }}>
+                Từ một ý tưởng nhỏ, tôi đã xây dựng và vận hành hệ thống phục vụ hơn <strong style={{ color: "#0f172a" }}>59.000 khách hàng</strong>, xử lý hơn <strong style={{ color: "#0f172a" }}>363.000 giao dịch</strong> với đầy đủ dịch vụ — từ tài khoản số, TUT MMO đến khóa học và quảng cáo ADS.
+              </p>
+              <blockquote style={{
+                borderLeft: "4px solid #f59e0b",
+                padding: "16px 20px",
+                background: "rgba(245,158,11,.05)", borderRadius: "0 12px 12px 0",
+                fontStyle: "italic", fontSize: "1rem", lineHeight: "1.75", marginBottom: "0",
+                color: "#334155",
+              }}>
+                &ldquo;Tôi xây dựng hệ thống này không chỉ để kinh doanh — mà để tạo ra một hệ sinh thái nơi mọi người có thể học, làm và phát triển cùng nhau.&rdquo;
+              </blockquote>
+            </div>
+
+            {/* ── 4: Button ── */}
+            
+
+          </div>
+        </div>
+      </section>
 
       {/* ── BÁO CHÍ / TRUYỀN THÔNG ────────────────────── */}
       <section style={{ padding: "72px 0 64px", background: "#f0f5ff" }}>
@@ -1424,6 +1486,20 @@ export default async function HomePage() {
         .exp-btn   { grid-column: 2; grid-row: 3; }
         .exp-img   { grid-column: 1; grid-row: 1 / 4; align-self: center; }
 
+        /* ── Section CEO Intro Grid ── */
+        .ceo-intro-grid {
+          display: grid;
+          grid-template-columns: 1fr 400px;
+          grid-template-rows: auto auto auto;
+          column-gap: 70px;
+          align-items: start;
+        }
+        .ceo-intro-title { grid-column: 1; grid-row: 1; }
+        .ceo-intro-desc  { grid-column: 1; grid-row: 2; }
+        .ceo-intro-btn   { grid-column: 1; grid-row: 3; }
+        .ceo-intro-img   { grid-column: 2; grid-row: 1 / 4; align-self: center; }
+        .ceo-img-hover:hover { transform: scale(1.03); }
+
         /* Social icon buttons */
         .social-icon-btn:hover {
           transform: translateY(-4px) scale(1.08);
@@ -1441,6 +1517,7 @@ export default async function HomePage() {
           .dj-media-grid  { grid-template-columns: 1fr 380px; column-gap: 40px; }
           .hero-grid      { grid-template-columns: 1fr 320px; column-gap: 40px; }
           .exp-grid       { grid-template-columns: 300px 1fr; column-gap: 50px; }
+          .ceo-intro-grid { grid-template-columns: 1fr 300px; column-gap: 50px; }
           .stats-grid-responsive { grid-template-columns: repeat(3,1fr) !important; }
           .cat-icons-grid    { grid-template-columns: repeat(4,1fr) !important; }
           .grid-4-responsive { grid-template-columns: repeat(4,1fr) !important; }
@@ -1487,6 +1564,17 @@ export default async function HomePage() {
           .exp-img   { grid-column: 1; grid-row: 2; max-width: 360px; margin: 0 auto; }
           .exp-desc  { grid-column: 1; grid-row: 3; }
           .exp-btn   { grid-column: 1; grid-row: 4; }
+
+          /* CEO intro mobile: title → image → desc → button */
+          .ceo-intro-grid {
+            grid-template-columns: 1fr;
+            column-gap: 0;
+            row-gap: 20px;
+          }
+          .ceo-intro-title { grid-column: 1; grid-row: 1; }
+          .ceo-intro-img   { grid-column: 1; grid-row: 2; max-width: 360px; margin: 0 auto; }
+          .ceo-intro-desc  { grid-column: 1; grid-row: 3; }
+          .ceo-intro-btn   { grid-column: 1; grid-row: 4; }
 
           .stats-grid-responsive { grid-template-columns: repeat(3,1fr) !important; }
           .grid-3-responsive { grid-template-columns: repeat(2,1fr) !important; gap: 18px !important; }

@@ -20,7 +20,7 @@ export function SearchInput() {
     }
     sp.delete("page");
     startTransition(() => {
-      router.push(`/admin/dang-ky-dich-vu?${sp.toString()}`);
+      router.push(`/admin/dang-ky-dich-vu?${sp.toString()}`, { scroll: false });
     });
   }
 
@@ -57,6 +57,7 @@ export function SearchInput() {
       )}
       {!isPending && currentQ && (
         <button
+          type="button"
           onClick={handleClear}
           className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
         >

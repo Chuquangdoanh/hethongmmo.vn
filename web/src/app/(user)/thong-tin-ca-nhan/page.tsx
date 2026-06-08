@@ -36,7 +36,7 @@ export default async function ThongTinCaNhanPage() {
         balance: true, totalDeposited: true, totalSpent: true,
         twoFactorEnabled: true, emailVerifiedAt: true,
         sellerStatus: true, sellerCategory: true, maxSellerProducts: true,
-        uidPrefix: true,
+        uidPrefix: true, avatarUrl: true,
       },
     }),
     prisma.transaction.findFirst({
@@ -78,6 +78,7 @@ export default async function ThongTinCaNhanPage() {
         totalSpent={totalSpent}
         lastDepositAt={lastDeposit?.createdAt ?? null}
         activeTab="profile"
+        avatarUrl={user.avatarUrl ?? null}
       />
 
       <div className="bg-gray-50 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-6 min-h-[60vh]">
@@ -88,9 +89,18 @@ export default async function ThongTinCaNhanPage() {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               {/* Avatar */}
               <div className="flex flex-col items-center text-center mb-5">
-                <div className="w-20 h-20 rounded-full bg-linear-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white text-2xl font-bold shadow-md mb-3">
-                  {initials}
-                </div>
+                {user.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.fullName}
+                    className="w-20 h-20 rounded-full object-cover ring-2 ring-white shadow-md mb-3"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-full bg-linear-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white text-2xl font-bold shadow-md mb-3">
+                    {initials}
+                  </div>
+                )}
                 <h2 className="text-base font-semibold text-gray-900">{user.fullName}</h2>
                 {user.emailVerifiedAt && (
                   <p className="text-xs text-emerald-600 flex items-center gap-1 mt-0.5 font-medium">
@@ -289,6 +299,7 @@ export default async function ThongTinCaNhanPage() {
               phone={user.phone ?? ""}
               facebookUrl={facebookUrl ?? ""}
               telegramUsername={telegramUsername ?? ""}
+              avatarUrl={user.avatarUrl ?? null}
             />
             <ChangePasswordForm />
           </div>

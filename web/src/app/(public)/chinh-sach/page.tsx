@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
+import {
+  ShieldCheck, Info, Settings2, Mail, Send, MapPin, CheckCircle2,
+  UserRound, CreditCard, Monitor,
+} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Chính sách bảo mật — hethongmmo.vn",
@@ -111,17 +115,17 @@ const TOC = SECTIONS.map((s, i) => ({ id: s.id, label: `${i + 1}. ${s.title}` })
 
 const DATA_GROUPS = [
   {
-    icon: "👤",
+    icon: <UserRound size={18} strokeWidth={1.75} style={{ color: "#059669" }} />,
     label: "Thông tin tài khoản",
     items: ["Họ tên", "Email", "Số điện thoại", "Ảnh đại diện"],
   },
   {
-    icon: "💳",
+    icon: <CreditCard size={18} strokeWidth={1.75} style={{ color: "#059669" }} />,
     label: "Thông tin giao dịch",
     items: ["Lịch sử mua bán", "Thanh toán", "Đơn hàng"],
   },
   {
-    icon: "🖥️",
+    icon: <Monitor size={18} strokeWidth={1.75} style={{ color: "#059669" }} />,
     label: "Dữ liệu kỹ thuật",
     items: ["Địa chỉ IP", "Cookie", "Thiết bị truy cập", "Nhật ký hoạt động"],
   },
@@ -152,9 +156,7 @@ export default async function ChinhSachBaoMatPage() {
         <div className="rounded-2xl border border-[#e2e8f0] bg-white p-8 mb-6">
           <div className="flex items-start gap-5">
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0" style={{ background: ACCENT.bg }}>
-              <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke={ACCENT.color} strokeWidth="1.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-              </svg>
+              <ShieldCheck size={28} strokeWidth={1.5} style={{ color: ACCENT.color }} />
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-[#0f172a] mb-2">
@@ -169,9 +171,7 @@ export default async function ChinhSachBaoMatPage() {
 
           <div className="mt-6 pt-6 border-t border-[#f1f5f9]">
             <div className="flex items-start gap-3 p-4 rounded-xl border" style={{ background: ACCENT.light, borderColor: ACCENT.border }}>
-              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={ACCENT.color} strokeWidth="2" className="shrink-0 mt-0.5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-              </svg>
+              <Info size={18} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: ACCENT.color }} />
               <p className="text-sm text-[#065f46] leading-relaxed">
                 Chúng tôi cam kết bảo vệ dữ liệu cá nhân của người dùng theo quy định pháp luật Việt Nam, bao gồm{" "}
                 <span className="font-semibold">Nghị định 13/2023/NĐ-CP</span>{" "}
@@ -195,10 +195,7 @@ export default async function ChinhSachBaoMatPage() {
                   <li key={id}>
                     <a
                       href={`#${id}`}
-                      className="block text-sm text-[#64748b] hover:bg-[#f0fdf4] rounded-lg px-3 py-2 transition-all leading-snug"
-                      style={{ ["--tw-text-opacity" as string]: 1 }}
-                      onMouseEnter={e => (e.currentTarget.style.color = ACCENT.color)}
-                      onMouseLeave={e => (e.currentTarget.style.color = "")}
+                      className="block text-sm text-[#64748b] hover:text-[#059669] hover:bg-[#f0fdf4] rounded-lg px-3 py-2 transition-all leading-snug"
                     >
                       {label}
                     </a>
@@ -211,9 +208,7 @@ export default async function ChinhSachBaoMatPage() {
           {/* GDPR badge */}
           <div className="mt-4 rounded-xl border p-4 text-center" style={{ background: ACCENT.light, borderColor: ACCENT.border }}>
             <div className="w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center" style={{ background: ACCENT.bg }}>
-              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={ACCENT.color} strokeWidth="1.75">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-              </svg>
+              <ShieldCheck size={20} strokeWidth={1.75} style={{ color: ACCENT.color }} />
             </div>
             <p className="text-xs font-bold text-[#065f46] mb-0.5">Tuân thủ pháp luật</p>
             <p className="text-[11px] text-[#047857]">Nghị định 13/2023/NĐ-CP</p>
@@ -248,9 +243,7 @@ export default async function ChinhSachBaoMatPage() {
                   {/* Text */}
                   {section.type === "text" && (
                     <div className="flex items-start gap-3 p-4 rounded-xl border border-[#f1f5f9] bg-[#f8fafc]">
-                      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#64748b" strokeWidth="2" className="shrink-0 mt-0.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-                      </svg>
+                      <Info size={16} strokeWidth={2} className="shrink-0 mt-0.5 text-text-muted" />
                       <p className="text-sm text-[#374151] leading-relaxed">{section.text}</p>
                     </div>
                   )}
@@ -264,12 +257,7 @@ export default async function ChinhSachBaoMatPage() {
                       <ul className="space-y-2">
                         {section.items.map((item) => (
                           <li key={item} className="flex items-start gap-3">
-                            <div
-                              className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center mt-0.5"
-                              style={{ background: ACCENT.bg }}
-                            >
-                              <span style={{ color: ACCENT.color, fontSize: "10px", fontWeight: 700, lineHeight: 1 }}>✓</span>
-                            </div>
+                            <CheckCircle2 size={17} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: ACCENT.color }} />
                             <span className="text-sm text-[#374151] leading-relaxed">{item}</span>
                           </li>
                         ))}
@@ -289,18 +277,15 @@ export default async function ChinhSachBaoMatPage() {
                             style={{ background: ACCENT.light, borderColor: ACCENT.border }}
                           >
                             <div className="flex items-center gap-2 mb-3">
-                              <span className="text-lg">{icon}</span>
+                              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: ACCENT.bg }}>
+                                {icon}
+                              </div>
                               <p className="text-xs font-bold text-[#065f46]">{label}</p>
                             </div>
                             <ul className="space-y-1.5">
                               {items.map((item) => (
                                 <li key={item} className="flex items-center gap-2">
-                                  <div
-                                    className="w-4 h-4 rounded-full shrink-0 flex items-center justify-center"
-                                    style={{ background: ACCENT.bg }}
-                                  >
-                                    <span style={{ color: ACCENT.color, fontSize: "8px", fontWeight: 700, lineHeight: 1 }}>✓</span>
-                                  </div>
+                                  <CheckCircle2 size={13} strokeWidth={2.5} className="shrink-0" style={{ color: ACCENT.color }} />
                                   <span className="text-xs text-[#374151]">{item}</span>
                                 </li>
                               ))}
@@ -319,19 +304,14 @@ export default async function ChinhSachBaoMatPage() {
                         <ul className="space-y-2">
                           {COOKIE_PURPOSES.map((item) => (
                             <li key={item} className="flex items-start gap-3">
-                              <div className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center mt-0.5" style={{ background: ACCENT.bg }}>
-                                <span style={{ color: ACCENT.color, fontSize: "10px", fontWeight: 700, lineHeight: 1 }}>✓</span>
-                              </div>
+                              <CheckCircle2 size={17} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: ACCENT.color }} />
                               <span className="text-sm text-[#374151] leading-relaxed">{item}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
-                      <div className="flex items-center gap-3 p-3 rounded-xl bg-[#f8fafc] border border-[#e2e8f0]">
-                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#64748b" strokeWidth="2" className="shrink-0">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-light border border-border">
+                        <Settings2 size={16} strokeWidth={2} className="shrink-0 text-text-muted" />
                         <p className="text-xs text-[#374151]">Người dùng có thể tắt Cookie trong cài đặt trình duyệt.</p>
                       </div>
                     </div>
@@ -343,32 +323,19 @@ export default async function ChinhSachBaoMatPage() {
                       <p className="text-sm font-medium text-[#374151] mb-4">Bộ phận pháp lý &amp; bảo mật</p>
                       {[
                         {
-                          icon: (
-                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke={ACCENT.color} strokeWidth="2">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                            </svg>
-                          ),
+                          icon: <Mail size={14} strokeWidth={2} style={{ color: ACCENT.color }} />,
                           label: "Email",
                           value: "support@hethongmmo.vn",
                           href: "mailto:support@hethongmmo.vn",
                         },
                         {
-                          icon: (
-                            <svg width="14" height="14" fill={ACCENT.color} viewBox="0 0 24 24">
-                              <path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
-                            </svg>
-                          ),
+                          icon: <Send size={14} strokeWidth={2} style={{ color: ACCENT.color }} />,
                           label: "Telegram",
                           value: "@BossMeta789",
                           href: "https://t.me/BossMeta789",
                         },
                         {
-                          icon: (
-                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke={ACCENT.color} strokeWidth="2">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-                            </svg>
-                          ),
+                          icon: <MapPin size={14} strokeWidth={2} style={{ color: ACCENT.color }} />,
                           label: "Địa chỉ",
                           value: "Hà Nội, Việt Nam",
                           href: null,

@@ -10,13 +10,14 @@ import {
   ChevronRight, LayoutGrid, SortAsc,
 } from "lucide-react";
 
-// ─── Tier config ──────────────────────────────────────────────────────────────
-
-const TIER_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  STANDARD: { label: "Tiêu chuẩn", color: "#64748b", bg: "#f1f5f9" },
-  SILVER:   { label: "Bạc",        color: "#475569", bg: "#e2e8f0" },
-  GOLD:     { label: "Vàng",       color: "#b45309", bg: "#fef3c7" },
-  VIP:      { label: "VIP",        color: "#6d28d9", bg: "#ede9fe" },
+const BADGE_STYLE_MAP: Record<string, string> = {
+  gray:   "bg-gray-100 text-gray-600",
+  slate:  "bg-slate-100 text-slate-600",
+  amber:  "bg-amber-100 text-amber-700",
+  violet: "bg-violet-100 text-violet-700",
+  blue:   "bg-blue-100 text-blue-700",
+  green:  "bg-green-100 text-green-700",
+  red:    "bg-red-100 text-red-700",
 };
 
 const SORT_OPTIONS = [
@@ -47,10 +48,10 @@ export async function generateMetadata({
   const { sellerId } = await params;
   const seller = await prisma.user.findUnique({
     where: { id: sellerId, sellerStatus: "APPROVED" },
-    select: { id: true },
+    select: { fullName: true },
   });
   if (!seller) return { title: "Không tìm thấy" };
-  return { title: `Seller #${seller.id.slice(0, 8).toUpperCase()} — Tài nguyên MMO` };
+  return { title: `${seller.fullName} — Tài nguyên MMO` };
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -67,12 +68,13 @@ export default async function SellerProfilePage({
   const activeCategory = sp.category ?? "all";
   const activeSort     = (sp.sort ?? "newest") as SortId;
 
-  const [seller, completedOrders, reviewStats, allProducts] = await Promise.all([
+  const [seller, completedOrders, reviewStats, allProducts, tierDef] = await Promise.all([
     prisma.user.findUnique({
       where: { id: sellerId, sellerStatus: "APPROVED" },
       select: {
         id: true,
         fullName: true,
+        avatarUrl: true,
         sellerTier: true,
         telegramUsername: true,
         createdAt: true,
@@ -91,6 +93,10 @@ export default async function SellerProfilePage({
         price: true, salesCount: true, createdAt: true,
         _count: { select: { stockItems: { where: { status: "AVAILABLE" } } } },
       },
+    }),
+    prisma.sellerTierDefinition.findMany({
+      where: { isActive: true },
+      select: { key: true, label: true, badgeColor: true },
     }),
   ]);
 
@@ -113,8 +119,9 @@ export default async function SellerProfilePage({
   else if (activeSort === "price_desc") products = [...products].sort((a, b) => Number(b.price) - Number(a.price));
   else products = [...products].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-  const sellerName  = `Seller #${seller.id.slice(0, 8).toUpperCase()}`;
-  const tier        = TIER_CFG[seller.sellerTier] ?? TIER_CFG["STANDARD"]!;
+  const sellerName = seller.fullName;
+  const tierDefs   = tierDef as { key: string; label: string; badgeColor: string }[];
+  const tier       = tierDefs.find((t) => t.key === seller.sellerTier) ?? { label: "Tiêu chuẩn", badgeColor: "gray" };
   const avgRating   = reviewStats._avg.rating ?? 0;
   const reviewCount = reviewStats._count.id;
   const positiveReviews = await prisma.review.count({
@@ -152,11 +159,18 @@ export default async function SellerProfilePage({
         <div className="flex items-start gap-5 flex-wrap">
           {/* Avatar */}
           <div className="relative shrink-0">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#0d9488] to-[#0284c7] overflow-hidden ring-4 ring-white shadow-md">
-              <div className="w-full h-full flex items-center justify-center">
+            {seller.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={seller.avatarUrl}
+                alt={seller.fullName ?? ""}
+                className="w-20 h-20 rounded-full object-cover ring-4 ring-white shadow-md"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-linear-to-br from-[#0d9488] to-[#0284c7] overflow-hidden ring-4 ring-white shadow-md flex items-center justify-center">
                 <Store size={36} strokeWidth={1.5} className="text-white" />
               </div>
-            </div>
+            )}
             {/* Online dot */}
             <span className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-[#22c55e] border-2 border-white" />
           </div>
@@ -172,7 +186,7 @@ export default async function SellerProfilePage({
                 <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] inline-block" />
                 Online
               </span>
-              <span style={{ background: tier.bg, color: tier.color }} className="px-2 py-0.5 rounded-full text-[11px] font-bold">
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${BADGE_STYLE_MAP[tier.badgeColor] ?? BADGE_STYLE_MAP["gray"]}`}>
                 {tier.label}
               </span>
             </div>

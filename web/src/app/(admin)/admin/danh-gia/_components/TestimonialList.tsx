@@ -1,15 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ServiceFilterPanel from "./ServiceFilterPanel";
+import type { ServiceStat } from "./ServiceFilterPanel";
 
 interface Testimonial {
   id: string;
   type: "COURSE" | "SERVICE";
+  serviceId: string | null;
   category: string | null;
   reviewerName: string;
   reviewerRole: string | null;
+  reviewerAvatar: string | null;
   reviewerColor: string | null;
   reviewerInitials: string | null;
   content: string;
@@ -19,12 +24,27 @@ interface Testimonial {
   course: { id: string; name: string; slug: string } | null;
 }
 
-export default function TestimonialList({ items: initial }: { items: Testimonial[] }) {
+export default function TestimonialList({
+  items: initial,
+  serviceStats,
+  courseStats,
+}: {
+  items: Testimonial[];
+  serviceStats: ServiceStat[];
+  courseStats: ServiceStat[];
+}) {
   const router = useRouter();
-  const [tab, setTab]           = useState<"ALL" | "COURSE" | "SERVICE">("ALL");
-  const [toggling, setToggling] = useState<string | null>(null);
+  const [tab, setTab]                               = useState<"ALL" | "COURSE" | "SERVICE">("ALL");
+  const [selectedServiceId, setSelectedServiceId]   = useState<string | null>(null);
+  const [selectedCourseId,  setSelectedCourseId]    = useState<string | null>(null);
+  const [toggling, setToggling]                     = useState<string | null>(null);
 
-  const filtered = initial.filter((t) => tab === "ALL" || t.type === tab);
+  const filtered = initial.filter((t) => {
+    if (tab !== "ALL" && t.type !== tab) return false;
+    if (selectedServiceId && t.serviceId !== selectedServiceId) return false;
+    if (selectedCourseId  && t.course?.id !== selectedCourseId) return false;
+    return true;
+  });
 
   async function toggleActive(id: string, current: boolean) {
     setToggling(id);
@@ -46,14 +66,37 @@ export default function TestimonialList({ items: initial }: { items: Testimonial
     { id: "SERVICE" as const, label: `Dịch vụ (${initial.filter(t => t.type === "SERVICE").length})` },
   ];
 
+  const serviceItems = initial.filter((t) => t.type === "SERVICE");
+  const courseItems  = initial.filter((t) => t.type === "COURSE");
+
   return (
-    <div>
+    <div className="space-y-4">
+      {/* Filter panels */}
+      {tab === "SERVICE" && (
+        <ServiceFilterPanel
+          title="Lọc theo dịch vụ"
+          services={serviceStats}
+          selectedId={selectedServiceId}
+          totalServiceCount={serviceItems.length}
+          onSelect={setSelectedServiceId}
+        />
+      )}
+      {tab === "COURSE" && (
+        <ServiceFilterPanel
+          title="Lọc theo khóa học"
+          services={courseStats}
+          selectedId={selectedCourseId}
+          totalServiceCount={courseItems.length}
+          onSelect={setSelectedCourseId}
+        />
+      )}
+
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200 mb-5">
+      <div className="flex gap-1 border-b border-gray-200">
         {TABS.map(({ id, label }) => (
           <button
             key={id}
-            onClick={() => setTab(id)}
+            onClick={() => { setTab(id); setSelectedServiceId(null); setSelectedCourseId(null); }}
             className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
               tab === id
                 ? "bg-[#7C3AED]/10 text-[#7C3AED] border-b-2 border-[#7C3AED]"
@@ -78,10 +121,14 @@ export default function TestimonialList({ items: initial }: { items: Testimonial
             >
               {/* Avatar */}
               <div
-                className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-white text-sm font-bold"
-                style={{ background: t.reviewerColor ?? "#7c3aed" }}
+                className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-white text-sm font-bold overflow-hidden relative"
+                style={{ background: t.reviewerAvatar ? undefined : (t.reviewerColor ?? "#7c3aed") }}
               >
-                {t.reviewerInitials ?? t.reviewerName.slice(0, 2).toUpperCase()}
+                {t.reviewerAvatar ? (
+                  <Image src={t.reviewerAvatar} alt={t.reviewerName} fill className="object-cover" />
+                ) : (
+                  t.reviewerInitials ?? t.reviewerName.slice(0, 2).toUpperCase()
+                )}
               </div>
 
               {/* Content */}
@@ -93,7 +140,7 @@ export default function TestimonialList({ items: initial }: { items: Testimonial
                     {t.type === "COURSE" ? "📚 Khóa học" : "⚡ Dịch vụ"}
                   </span>
                   {t.category && <span className="text-[10px] text-[#7C3AED] bg-[#7C3AED]/10 px-2 py-0.5 rounded-full">{t.category}</span>}
-                  {t.course && <span className="text-[10px] text-gray-500 truncate max-w-[120px]">{t.course.name}</span>}
+                  {t.course && <span className="text-[10px] text-gray-500 truncate max-w-30">{t.course.name}</span>}
                 </div>
                 <p className="text-[11px] text-amber-500 mb-1">{"★".repeat(t.rating)}{"☆".repeat(5 - t.rating)}</p>
                 <p className="text-xs text-gray-600 line-clamp-2">{t.content}</p>

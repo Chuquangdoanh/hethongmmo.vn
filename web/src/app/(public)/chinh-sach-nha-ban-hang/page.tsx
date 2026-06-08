@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
+import { Store, Zap, ShieldCheck, CheckCircle2, XCircle, Info } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Chính sách nhà bán hàng — hethongmmo.vn",
@@ -178,12 +179,14 @@ export default async function ChinhSachNhaBanHangPage() {
 
           <div className="mt-6 pt-6 border-t border-[#f1f5f9] grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
-              { icon: "🏪", title: "Gian hàng minh bạch", desc: "Thông tin sản phẩm rõ ràng, chính xác." },
-              { icon: "⚡", title: "Xử lý nhanh", desc: "Giao hàng và hỗ trợ đúng cam kết." },
-              { icon: "🛡️", title: "Chống gian lận", desc: "Hệ thống phát hiện vi phạm tự động." },
+              { icon: <Store size={18} strokeWidth={1.75} className="text-[#d97706]" />, title: "Gian hàng minh bạch", desc: "Thông tin sản phẩm rõ ràng, chính xác." },
+              { icon: <Zap size={18} strokeWidth={1.75} className="text-[#d97706]" />, title: "Xử lý nhanh", desc: "Giao hàng và hỗ trợ đúng cam kết." },
+              { icon: <ShieldCheck size={18} strokeWidth={1.75} className="text-[#d97706]" />, title: "Chống gian lận", desc: "Hệ thống phát hiện vi phạm tự động." },
             ].map(({ icon, title, desc }) => (
               <div key={title} className="flex items-start gap-3 p-3 rounded-xl bg-[#f8fafc] border border-[#f1f5f9]">
-                <span className="text-xl shrink-0">{icon}</span>
+                <div className="w-8 h-8 rounded-lg bg-[#fef3c7] flex items-center justify-center shrink-0">
+                  {icon}
+                </div>
                 <div>
                   <p className="text-xs font-semibold text-[#0f172a]">{title}</p>
                   <p className="text-xs text-[#64748b] leading-snug mt-0.5">{desc}</p>
@@ -289,15 +292,10 @@ export default async function ChinhSachNhaBanHangPage() {
                       <ul className="space-y-2">
                         {section.items.map((item) => (
                           <li key={item} className="flex items-start gap-3">
-                            <div
-                              className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center mt-0.5"
-                              style={isRed ? { background: "#fee2e2" } : { background: "#fef3c7" }}
-                            >
-                              {isRed
-                                ? <span style={{ color: "#dc2626", fontSize: "10px", fontWeight: 700, lineHeight: 1 }}>✕</span>
-                                : <span style={{ color: "#d97706", fontSize: "10px", fontWeight: 700, lineHeight: 1 }}>✓</span>
-                              }
-                            </div>
+                            {isRed
+                              ? <XCircle size={17} strokeWidth={2} className="shrink-0 mt-0.5 text-[#dc2626]" />
+                              : <CheckCircle2 size={17} strokeWidth={2} className="shrink-0 mt-0.5 text-[#d97706]" />
+                            }
                             <span className="text-sm text-[#374151] leading-relaxed">{item}</span>
                           </li>
                         ))}
@@ -316,15 +314,10 @@ export default async function ChinhSachNhaBanHangPage() {
                             <ul className="space-y-2">
                               {group.items.map((item) => (
                                 <li key={item} className="flex items-start gap-3">
-                                  <div
-                                    className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center mt-0.5"
-                                    style={groupRed ? { background: "#fee2e2" } : { background: "#fef3c7" }}
-                                  >
-                                    {groupRed
-                                      ? <span style={{ color: "#dc2626", fontSize: "10px", fontWeight: 700, lineHeight: 1 }}>✕</span>
-                                      : <span style={{ color: "#d97706", fontSize: "10px", fontWeight: 700, lineHeight: 1 }}>✓</span>
-                                    }
-                                  </div>
+                                  {groupRed
+                                    ? <XCircle size={17} strokeWidth={2} className="shrink-0 mt-0.5 text-[#dc2626]" />
+                                    : <CheckCircle2 size={17} strokeWidth={2} className="shrink-0 mt-0.5 text-[#d97706]" />
+                                  }
                                   <span className="text-sm text-[#374151] leading-relaxed">{item}</span>
                                 </li>
                               ))}
@@ -366,17 +359,13 @@ export default async function ChinhSachNhaBanHangPage() {
                       <ul className="space-y-2 mb-4">
                         {section.items.map((item) => (
                           <li key={item} className="flex items-start gap-3">
-                            <div className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center mt-0.5 bg-[#fef3c7]">
-                              <span style={{ color: "#d97706", fontSize: "10px", fontWeight: 700, lineHeight: 1 }}>✓</span>
-                            </div>
+                            <CheckCircle2 size={17} strokeWidth={2} className="shrink-0 mt-0.5 text-[#d97706]" />
                             <span className="text-sm text-[#374151] leading-relaxed">{item}</span>
                           </li>
                         ))}
                       </ul>
                       <div className="flex items-center gap-2 p-3 rounded-lg bg-[#f8fafc] border border-[#e2e8f0]">
-                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#0066ff" strokeWidth="2">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                        <Info size={14} strokeWidth={2} className="shrink-0 text-primary" />
                         <p className="text-xs text-[#374151]">{section.note}</p>
                       </div>
                     </>

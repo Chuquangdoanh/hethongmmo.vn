@@ -31,6 +31,7 @@ export async function GET(): Promise<NextResponse> {
           totalDeposited: true,
           totalSpent: true,
           uidPrefix: true,
+          avatarUrl: true,
           twoFactorEnabled: true,
           lastLoginAt: true,
           lastLoginIp: true,
@@ -83,7 +84,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     const {
       fullName, phone,
       bankName, bankAccountNumber, bankAccountHolder,
-      cccdImageUrl, portraitImageUrl,
+      cccdImageUrl, portraitImageUrl, avatarUrl,
       facebookUrl, telegramUsername,
     } = parsed.data;
 
@@ -95,6 +96,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     if (bankAccountHolder !== undefined) updateData.bankAccountHolderEnc = encrypt(bankAccountHolder) as unknown as Uint8Array<ArrayBuffer>;
     if (cccdImageUrl !== undefined) updateData.cccdImageUrl = cccdImageUrl;
     if (portraitImageUrl !== undefined) updateData.portraitImageUrl = portraitImageUrl;
+    if (avatarUrl !== undefined) updateData.avatarUrl = avatarUrl ?? null;
 
     const hasSocial = facebookUrl !== undefined || telegramUsername !== undefined;
     if (Object.keys(updateData).length === 0 && !hasSocial) {

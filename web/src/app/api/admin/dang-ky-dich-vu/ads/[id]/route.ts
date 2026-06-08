@@ -15,7 +15,7 @@ export async function PATCH(
     requireStaff(session);
 
     const { id } = await params;
-    const body = await req.json() as { status?: string };
+    const body = await req.json() as { status?: string; note?: string };
 
     if (!body.status || !["PENDING", "DONE"].includes(body.status)) {
       return apiError("Status không hợp lệ", "INVALID_STATUS", 400);
@@ -23,8 +23,11 @@ export async function PATCH(
 
     const updated = await prisma.adsRegistration.update({
       where: { id },
-      data: { status: body.status },
-      select: { id: true, status: true },
+      data: {
+        status: body.status,
+        ...(body.note !== undefined ? { note: body.note || null } : {}),
+      },
+      select: { id: true, status: true, note: true },
     });
 
     return apiOk(updated);

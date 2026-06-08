@@ -8,7 +8,16 @@ function createPrismaClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error("DATABASE_URL is not set");
 
-  const pool = new Pool({ connectionString });
+  // DB_POOL_SIZE: số connections mỗi worker process
+  // Với clustering: tổng = CLUSTER_WORKERS × DB_POOL_SIZE → vào PgBouncer → 25 connections thực đến PostgreSQL
+  // Default 10: 2 workers × 10 = 20 (bằng pool cũ), 4 workers × 10 = 40 (PgBouncer handle)
+  const max = parseInt(process.env.DB_POOL_SIZE ?? "10", 10);
+  const pool = new Pool({
+    connectionString,
+    max,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 5_000,
+  });
   const adapter = new PrismaPg(pool);
 
   return new PrismaClient({

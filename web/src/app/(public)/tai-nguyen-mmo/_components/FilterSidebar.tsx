@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Search, X, SlidersHorizontal } from "lucide-react";
 
 const PRICE_RANGES = [
@@ -9,14 +9,6 @@ const PRICE_RANGES = [
   { label: "100.000đ - 500.000đ",   value: "100000-500000"      },
   { label: "500.000đ - 1.000.000đ", value: "500000-1000000"     },
   { label: "Trên 1.000.000đ",       value: "1000000-9999999999" },
-] as const;
-
-const SORT_OPTIONS = [
-  { id: "noi-bat",  label: "Nổi Bật"  },
-  { id: "ban-chay", label: "Bán Chạy" },
-  { id: "moi-nhat", label: "Mới Nhất" },
-  { id: "gia-cao",  label: "Giá Cao"  },
-  { id: "gia-thap", label: "Giá Thấp" },
 ] as const;
 
 export interface CategoryItem {
@@ -37,9 +29,10 @@ export function FilterSidebar({ categories, totalCount }: FilterSidebarProps) {
   // eslint-disable-next-line react-hooks/refs
   searchParamsRef.current = searchParams;
 
+  const [isPending, startTransition] = useTransition();
+
   const activeCategory = searchParams.get("category") ?? "";
   const priceParam     = searchParams.get("price")    ?? "";
-  const activeSort     = searchParams.get("sort")     ?? "noi-bat";
   const qParam         = searchParams.get("q")        ?? "";
 
   const [searchValue, setSearchValue] = useState(qParam);
@@ -54,19 +47,29 @@ export function FilterSidebar({ categories, totalCount }: FilterSidebarProps) {
       const params = new URLSearchParams(searchParamsRef.current.toString());
       const trimmed = searchValue.trim();
       if (trimmed) params.set("q", trimmed); else params.delete("q");
-      router.push(`/tai-nguyen-mmo?${params.toString()}`, { scroll: false });
-    }, 350);
+      params.delete("page");
+      startTransition(() => {
+        router.replace(`/tai-nguyen-mmo?${params.toString()}`, { scroll: false });
+      });
+    }, 400);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [searchValue, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchValue]);
 
   function setParam(key: string, value: string) {
     const params = new URLSearchParams(searchParamsRef.current.toString());
     if (value) params.set(key, value); else params.delete(key);
-    router.push(`/tai-nguyen-mmo?${params.toString()}`, { scroll: false });
+    params.delete("page");
+    startTransition(() => {
+      router.replace(`/tai-nguyen-mmo?${params.toString()}`, { scroll: false });
+    });
   }
 
   return (
-    <aside className="w-full lg:w-70 lg:shrink-0 lg:sticky lg:top-24 self-start">
+    <aside
+      className="w-full lg:w-70 lg:shrink-0 lg:sticky lg:top-24 self-start"
+      aria-busy={isPending}
+    >
       <div className="bg-white rounded-xl border border-border overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3 bg-light border-b border-border">
@@ -176,20 +179,6 @@ export function FilterSidebar({ categories, totalCount }: FilterSidebarProps) {
                 </label>
               ))}
             </div>
-          </div>
-
-          {/* Sort */}
-          <div className="px-4 py-4">
-            <p className="text-[13px] font-bold text-[#94a3b8] uppercase tracking-widest mb-2">Sắp xếp</p>
-            <select
-              value={activeSort}
-              onChange={(e) => setParam("sort", e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-light text-[#374151] focus:border-[#3b82f6] focus:outline-none cursor-pointer"
-            >
-              {SORT_OPTIONS.map(({ id, label }) => (
-                <option key={id} value={id}>{label}</option>
-              ))}
-            </select>
           </div>
 
         </div>

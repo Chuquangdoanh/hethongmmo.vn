@@ -374,7 +374,7 @@ function ServiceOrderPanel({
     const pErr = validatePhone(form.zaloPhone);
     const gErr = validateGmail(form.gmailPass);
     const wErr = validateWarranty(form.warranty);
-    const cErr = (!isICloud && service.requiresCccd && !cccdUrl) ? "Vui lòng tải lên ảnh CCCD mặt trước." : "";
+    const cErr = (service.requiresCccd && !cccdUrl) ? "Vui lòng tải lên ảnh CCCD mặt trước." : "";
     setLinkTouched(true);    setLinkError(lErr);
     setPhoneTouched(true);   setPhoneError(pErr);
     setGmailTouched(true);   setGmailError(gErr);
@@ -389,8 +389,8 @@ function ServiceOrderPanel({
         accountPass: form.accountPass.trim() || undefined,
         gmailPass: form.gmailPass.trim() || undefined,
         zaloPhone: form.zaloPhone.trim(),
-        accountType: (!isICloud && service.requiresAccountType) ? form.accountType : undefined,
-        cccdUrl: (!isICloud && service.requiresCccd) ? (cccdUrl || undefined) : undefined,
+        accountType: service.requiresAccountType ? form.accountType : undefined,
+        cccdUrl: service.requiresCccd ? (cccdUrl || undefined) : undefined,
         note: form.note.trim() || undefined,
       });
 
@@ -599,8 +599,8 @@ function ServiceOrderPanel({
             )}
           </div>
 
-          {/* Account type — chỉ hiện khi service bật flag và không phải iCloud */}
-          {!isICloud && service.requiresAccountType && (
+          {/* Account type — hiện khi service bật flag requiresAccountType */}
+          {service.requiresAccountType && (
             <div>
               <label className="flex items-center gap-1.5 text-xs font-semibold text-[#374151] mb-2">
                 <Shield size={12} strokeWidth={2} className="text-[#0d9488]" />
@@ -633,8 +633,8 @@ function ServiceOrderPanel({
             </div>
           )}
 
-          {/* CCCD — chỉ hiện khi service bật flag và không phải iCloud */}
-          {!isICloud && service.requiresCccd && (
+          {/* CCCD — hiện khi service bật flag requiresCccd */}
+          {service.requiresCccd && (
             <div>
               <label className="flex items-center gap-1.5 text-xs font-semibold text-[#374151] mb-2">
                 <BadgeCheck size={12} strokeWidth={2} className="text-[#7c3aed]" />

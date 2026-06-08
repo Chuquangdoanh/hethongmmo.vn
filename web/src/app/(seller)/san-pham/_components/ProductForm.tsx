@@ -44,17 +44,32 @@ export default function ProductForm({ mode, sellerCategory, initialData }: Produ
     setUploadError("");
     setUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("purpose", "product-image");
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
 
-      const res = await fetch("/api/storage/upload", { method: "POST", body: fd });
-      const json = await res.json() as { publicUrl?: string; error?: string };
-      if (!res.ok || !json.publicUrl) {
-        setUploadError(json.error ?? "Upload thất bại. Vui lòng thử lại.");
+      // Bước 1: lấy presigned URL từ VPS (không upload file lên VPS)
+      const presignRes = await fetch("/api/storage/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ purpose: "product-image", contentType: file.type, fileExtension: ext }),
+      });
+      const presignJson = await presignRes.json() as { uploadUrl?: string; publicUrl?: string; error?: string };
+      if (!presignRes.ok || !presignJson.uploadUrl) {
+        setUploadError(presignJson.error ?? "Không lấy được URL upload.");
         return;
       }
-      setForm((f) => ({ ...f, imageUrl: json.publicUrl! }));
+
+      // Bước 2: upload thẳng từ browser lên R2 (không qua VPS)
+      const uploadRes = await fetch(presignJson.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!uploadRes.ok) {
+        setUploadError("Upload ảnh thất bại. Vui lòng thử lại.");
+        return;
+      }
+
+      setForm((f) => ({ ...f, imageUrl: presignJson.publicUrl! }));
     } finally {
       setUploading(false);
     }
@@ -288,7 +303,7 @@ export default function ProductForm({ mode, sellerCategory, initialData }: Produ
               <div className="p-6 space-y-5 flex flex-col">
                 <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Kho hàng *</p>
                 <p className="text-[11px] text-gray-400 -mt-3">
-                  Nhập mỗi item trên 1 dòng (email:pass, cookie, key...). Tối thiểu 1 item.
+                  Nhập mỗi item trên 1 dòng (email:pass, cookie, key...). Tối thiểu 1, tối đa 100 items. Thêm tiếp sau khi tạo xong.
                 </p>
                 <textarea
                   value={stockText}

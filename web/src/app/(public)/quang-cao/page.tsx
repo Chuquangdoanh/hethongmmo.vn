@@ -113,8 +113,8 @@ export default async function QuangCaoAdsPage() {
                 và tối đa hóa tỷ lệ chuyển đổi.
               </p>
               <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-                <a href="https://m.me/chuquangdoanh" target="_blank" rel="noopener noreferrer" className="qc-btn-orange">
-                  Nhận tư vấn miễn phí
+                <a href="https://www.facebook.com/hethongmmo.vn/" target="_blank" rel="noopener noreferrer" className="qc-btn-orange">
+                  Tư vấn miễn phí
                 </a>
                 <a href="tel:0828118789" className="qc-btn-green">
                   <Phone size={16} strokeWidth={2} />
@@ -310,7 +310,7 @@ export default async function QuangCaoAdsPage() {
             Đừng để đối thủ vượt mặt. Liên hệ với đội ngũ chuyên gia của chúng tôi để nhận
             lộ trình quảng cáo tối ưu nhất.
           </p>
-          <a href="https://m.me/chuquangdoanh" target="_blank" rel="noopener noreferrer" className="qc-btn-blue">
+          <a href="https://www.facebook.com/hethongmmo.vn/" target="_blank" rel="noopener noreferrer" className="qc-btn-blue">
             Tư vấn miễn phí
           </a>
         </div>

@@ -25,6 +25,7 @@ interface Props {
   isLoggedIn: boolean;
   user?: AuthenticatedUser;
   balance?: number | null;
+  avatarUrl?: string | null;
 }
 
 const NAV_ICONS: Record<string, { Icon: React.ElementType; bg: string; color: string }> = {
@@ -37,7 +38,7 @@ const NAV_ICONS: Record<string, { Icon: React.ElementType; bg: string; color: st
   "/NetWorks":       { Icon: Globe,         bg: "#fee2e2", color: "#dc2626" },
 };
 
-export default function MobileMenu({ navLinks, isLoggedIn, user, balance }: Props) {
+export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatarUrl }: Props) {
   const [open, setOpen]       = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname              = usePathname();
@@ -124,7 +125,12 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance }: Prop
           <div className="hdr-drawer-user">
             <div className="hdr-drawer-user-card">
               <div className="hdr-drawer-avatar">
-                <span className="hdr-initials">{initials}</span>
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt={user?.fullName ?? ""} className="hdr-avatar-img" />
+                ) : (
+                  <span className="hdr-initials">{initials}</span>
+                )}
                 <span className="hdr-dot" />
               </div>
               <div className="hdr-drawer-user-info">

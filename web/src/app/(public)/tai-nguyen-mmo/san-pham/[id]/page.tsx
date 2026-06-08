@@ -46,6 +46,16 @@ const COMMITMENTS = [
   { Icon: Headphones,  color: "#f59e0b", title: "Hỗ trợ 24/7",             desc: "Đội ngũ hỗ trợ chuyên nghiệp" },
 ];
 
+const BADGE_STYLE_MAP: Record<string, string> = {
+  gray:   "bg-gray-100 text-gray-600",
+  slate:  "bg-slate-100 text-slate-600",
+  amber:  "bg-amber-100 text-amber-700",
+  violet: "bg-violet-100 text-violet-700",
+  blue:   "bg-blue-100 text-blue-700",
+  green:  "bg-green-100 text-green-700",
+  red:    "bg-red-100 text-red-700",
+};
+
 const HOW_IT_WORKS = [
   { Icon: ShoppingCart, color: "#0066ff", title: "Đặt hàng",      desc: "Chọn sản phẩm và thanh toán" },
   { Icon: Zap,          color: "#10b981", title: "Nhận thông tin", desc: "Hệ thống gửi thông tin ngay lập tức" },
@@ -80,7 +90,7 @@ export default async function SellerProductDetailPage({
       select: {
         id: true, name: true, imageUrl: true, sellerCategory: true,
         price: true, salesCount: true, description: true, createdAt: true,
-        seller: { select: { id: true } },
+        seller: { select: { id: true, fullName: true, sellerTier: true, avatarUrl: true } },
         _count: { select: { stockItems: { where: { status: "AVAILABLE" } } } },
       },
     }),
@@ -92,9 +102,9 @@ export default async function SellerProductDetailPage({
   const me = session?.user as AuthenticatedUser | undefined;
   const available = product._count.stockItems;
   const isOutOfStock = available === 0;
-  const sellerName = `Seller #${product.seller.id.slice(0, 8).toUpperCase()}`;
+  const sellerName = product.seller.fullName;
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, tierDef] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "SELLER_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -128,6 +138,10 @@ export default async function SellerProductDetailPage({
       by: ["rating"],
       where: { productType: "SELLER_PRODUCT", productId: product.id },
       _count: { id: true },
+    }),
+    prisma.sellerTierDefinition.findUnique({
+      where: { key: product.seller.sellerTier },
+      select: { label: true, badgeColor: true },
     }),
   ]);
 
@@ -209,14 +223,28 @@ export default async function SellerProductDetailPage({
       href={`/tai-nguyen-mmo/nguoi-ban/${product.seller.id}`}
       className="rounded-2xl border border-border bg-white p-4 flex items-center gap-4 hover:border-primary hover:shadow-sm transition-all group"
     >
-      <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-[#0d9488] to-[#0284c7] flex items-center justify-center shrink-0 shadow-sm">
-        <Store size={26} strokeWidth={1.75} className="text-white" />
-      </div>
+      {product.seller.avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={product.seller.avatarUrl}
+          alt={sellerName}
+          className="w-14 h-14 rounded-2xl object-cover shrink-0 shadow-sm"
+        />
+      ) : (
+        <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-[#0d9488] to-[#0284c7] flex items-center justify-center shrink-0 shadow-sm">
+          <Store size={26} strokeWidth={1.75} className="text-white" />
+        </div>
+      )}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 mb-0.5">
+        <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
           <p className="text-sm font-extrabold text-text-dark group-hover:text-primary transition-colors truncate">
             {sellerName}
           </p>
+          {tierDef && (
+            <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold ${BADGE_STYLE_MAP[tierDef.badgeColor] ?? BADGE_STYLE_MAP["gray"]}`}>
+              {tierDef.label}
+            </span>
+          )}
           <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/20">
             Uy tín
           </span>

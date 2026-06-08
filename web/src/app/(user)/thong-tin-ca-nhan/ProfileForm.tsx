@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PenLine, ExternalLink, Send, AlertTriangle, CheckCircle, Save } from "lucide-react";
+import { PenLine, ExternalLink, Send, AlertTriangle, CheckCircle, Save, Camera, Loader2 } from "lucide-react";
 
 interface Props {
   id: string;
@@ -11,6 +11,7 @@ interface Props {
   phone: string;
   facebookUrl: string;
   telegramUsername: string;
+  avatarUrl: string | null;
 }
 
 export default function ProfileForm({
@@ -19,15 +20,41 @@ export default function ProfileForm({
   phone: initialPhone,
   facebookUrl: initialFacebook,
   telegramUsername: initialTelegram,
+  avatarUrl: initialAvatarUrl,
 }: Props) {
   const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
+
   const [fullName, setFullName] = useState(initialName);
   const [phone, setPhone] = useState(initialPhone);
   const [facebookUrl, setFacebookUrl] = useState(initialFacebook);
   const [telegramUsername, setTelegramUsername] = useState(initialTelegram);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(initialAvatarUrl);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/user/upload?type=avatar", { method: "POST", body: fd });
+      const json = await res.json() as { data?: { url: string }; error?: string };
+      if (!res.ok || !json.data?.url) {
+        setError(json.error ?? "Upload ảnh thất bại.");
+        return;
+      }
+      setAvatarUrl(json.data.url);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,6 +70,7 @@ export default function ProfileForm({
           phone: phone.trim() || undefined,
           facebookUrl: facebookUrl.trim() || undefined,
           telegramUsername: telegramUsername.trim() || undefined,
+          avatarUrl: avatarUrl ?? null,
         }),
       });
       const json = await res.json() as { success: boolean; error?: string };
@@ -57,6 +85,8 @@ export default function ProfileForm({
     }
   }
 
+  const initials = (fullName || email).slice(0, 2).toUpperCase();
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
       <h2 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -65,6 +95,52 @@ export default function ProfileForm({
         </div>
         Chỉnh sửa thông tin
       </h2>
+
+      {/* Avatar upload */}
+      <div className="flex items-center gap-4 mb-5 pb-5 border-b border-gray-100">
+        <div className="relative shrink-0">
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={avatarUrl}
+              alt="Avatar"
+              className="w-16 h-16 rounded-full object-cover ring-2 ring-white shadow-md"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-linear-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white text-xl font-bold shadow-md">
+              {initials}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shadow hover:bg-blue-700 transition-colors disabled:opacity-60"
+          >
+            {uploading ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />}
+          </button>
+        </div>
+        <div>
+          <p className="text-xs font-medium text-gray-700">Ảnh đại diện</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">JPEG, PNG, WebP · Tối đa 5 MB</p>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="mt-1.5 text-[11px] text-blue-600 hover:underline disabled:opacity-50"
+          >
+            {uploading ? "Đang tải lên..." : "Thay đổi ảnh"}
+          </button>
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={handleAvatarChange}
+        />
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs text-gray-500 mb-1.5">Email</label>
@@ -147,7 +223,7 @@ export default function ProfileForm({
         )}
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || uploading}
           className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
         >
           <Save size={14} />

@@ -120,41 +120,76 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-  build:
-    name: Build
+  docker:
+    name: Build & Push Docker image
     runs-on: ubuntu-latest
     needs: [lint, typecheck, test]
-    env:
-      DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci_db"
-      AUTH_SECRET: "ci-auth-secret-32-bytes-minimum!!"
-      ENCRYPTION_KEY: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
-      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
-      RESEND_API_KEY: "re_placeholder"
-      REDIS_URL: "redis://localhost:6379"
-      S3_ENDPOINT: "https://placeholder.r2.cloudflarestorage.com"
-      S3_ACCESS_KEY_ID: "placeholder"
-      S3_SECRET_ACCESS_KEY: "placeholder"
-      S3_BUCKET: "placeholder"
-      S3_PUBLIC_URL: "https://placeholder.example.com"
-      SEPAY_WEBHOOK_SECRET: "ci-sepay-secret"
+    # Chỉ build image khi push lên main (không build cho PR)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    defaults:
+      run:
+        working-directory: "."
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
         with:
-          version: 9
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/setup-node@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
         with:
-          node-version: "20"
-          cache: "pnpm"
-          cache-dependency-path: web/pnpm-lock.yaml
+          context: .
+          file: ./Dockerfile
+          target: runner
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/hethongmmo:latest
+          build-args: |
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+          # GHA cache: tái dụng layers giữa các lần build, tăng tốc ~60-80%
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: [docker]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: SSH deploy (zero-downtime rolling update)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          # Timeout cao hơn để chờ healthcheck pass trước khi báo xong
+          command_timeout: 5m
+          script: |
+            set -e
+            cd /opt/hethongmmo
 
-      - name: Prisma generate
-        run: pnpm prisma generate
+            # Đăng nhập registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build Next.js app
-        run: pnpm build
+            # Pull image mới (web mới, các service khác giữ nguyên)
+            docker compose pull web
+
+            # Rolling update: khởi container mới trước → đợi healthcheck OK → old container down
+            # --no-deps: không restart postgres/redis/nginx
+            # --wait: đợi healthcheck pass (start_period 30s + 3 retries × 30s = tối đa 120s)
+            docker compose up -d --no-deps --wait web
+
+            # Chạy migration TRONG container mới (đã healthy)
+            docker compose exec -T web node node_modules/.bin/prisma migrate deploy
+
+            # Dọn image cũ (giữ 2 bản gần nhất)
+            docker image prune -f

@@ -27,12 +27,13 @@ interface Props {
   totalSpent: number;
   lastDepositAt: Date | null;
   activeTab: "profile" | "deposit" | "orders" | "transactions" | "chat";
+  avatarUrl?: string | null;
 }
 
 export default function UserProfileHero({
   fullName, email, role, uidPrefix,
   balance, totalDeposited, totalSpent, lastDepositAt,
-  activeTab,
+  activeTab, avatarUrl,
 }: Props) {
   const initials   = (fullName || email).slice(0, 2).toUpperCase();
   const roleLabel  = ROLE_LABELS[role] ?? "Thành viên";
@@ -66,9 +67,18 @@ export default function UserProfileHero({
 
         {/* Identity row */}
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 rounded-full bg-linear-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white text-2xl font-bold shrink-0 shadow-lg ring-2 ring-white/20">
-            {initials}
-          </div>
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={avatarUrl}
+              alt={fullName}
+              className="w-16 h-16 rounded-full object-cover shrink-0 shadow-lg ring-2 ring-white/20"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-linear-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white text-2xl font-bold shrink-0 shadow-lg ring-2 ring-white/20">
+              {initials}
+            </div>
+          )}
           <div>
             <h1 className="text-xl font-bold text-white leading-tight">{fullName}</h1>
             <p className="text-[11px] text-slate-400 mt-0.5 font-mono">ID: {uidPrefix}...</p>

@@ -258,6 +258,7 @@ export default function AdServiceTabs({ userInfo }: Props) {
           return (
             <button
               key={t}
+              type="button"
               onClick={() => setTab(t)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 8,
@@ -320,6 +321,7 @@ export default function AdServiceTabs({ userInfo }: Props) {
               <p style={{ fontSize: 12, color: "#64748b", lineHeight: 1.65, margin: 0 }}>{svc.desc}</p>
             </div>
             <button
+              type="button"
               onClick={() => openForm(svc)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6,

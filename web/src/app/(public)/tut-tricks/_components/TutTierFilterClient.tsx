@@ -3,27 +3,6 @@
 import { Gem, Gift } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-function smoothScrollTo(targetY: number, duration = 900) {
-  const startY = window.scrollY;
-  const distance = targetY - startY;
-  if (Math.abs(distance) < 8) return;
-  let startTime: number | null = null;
-  const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
-  const animate = (now: number) => {
-    if (startTime === null) startTime = now;
-    const progress = Math.min((now - startTime) / duration, 1);
-    window.scrollTo(0, startY + distance * easeOutCubic(progress));
-    if (progress < 1) requestAnimationFrame(animate);
-  };
-  requestAnimationFrame(animate);
-}
-
-function getGridTarget() {
-  const grid = document.getElementById("tut-tricks-grid");
-  if (!grid) return null;
-  return grid.getBoundingClientRect().top + window.scrollY - 72;
-}
-
 interface Props {
   activeCategory: string | undefined;
   activeTier: string | undefined;
@@ -41,29 +20,29 @@ export default function TutTierFilterClient({ activeCategory, activeTier }: Prop
   }
 
   function handleClick(tier?: string) {
-    const targetY = getGridTarget();
-    if (targetY !== null) smoothScrollTo(targetY);
     router.push(buildHref(tier), { scroll: false });
   }
 
   return (
     <div className="flex items-center gap-2">
       <button
+        type="button"
         onClick={() => handleClick("Có phí")}
         className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold border transition-colors ${
           activeTier === "Có phí"
-            ? "bg-[#f59e0b] text-white border-[#f59e0b] shadow-sm"
-            : "border-[#e2e8f0] text-[#64748b] hover:border-[#f59e0b] hover:text-[#f59e0b]"
+            ? "bg-warning text-white border-warning shadow-sm"
+            : "border-border text-text-muted hover:border-warning hover:text-warning"
         }`}
       >
         <Gem size={12} className="shrink-0" /> Có phí
       </button>
       <button
+        type="button"
         onClick={() => handleClick("Miễn phí")}
         className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold border transition-colors ${
           activeTier === "Miễn phí"
             ? "bg-[#10b981] text-white border-[#10b981] shadow-sm"
-            : "border-[#e2e8f0] text-[#64748b] hover:border-[#10b981] hover:text-[#10b981]"
+            : "border-border text-text-muted hover:border-[#10b981] hover:text-[#10b981]"
         }`}
       >
         <Gift size={12} className="shrink-0" /> Miễn phí

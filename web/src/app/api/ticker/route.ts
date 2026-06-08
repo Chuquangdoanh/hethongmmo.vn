@@ -2,8 +2,26 @@ import { prisma } from "@/lib/db/prisma";
 import { checkRateLimit, tickerRatelimit } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
-// SSE must never be statically cached by Next.js
 export const dynamic = "force-dynamic";
+
+// In-memory cache — ticker text thay đổi rất hiếm, cache 60s toàn server
+let _tickerCache: { texts: { id: string; text: string; displayOrder: number }[]; ts: number } | null = null;
+const TICKER_CACHE_TTL = 60_000;
+
+async function getTickerTexts() {
+  const now = Date.now();
+  if (_tickerCache && now - _tickerCache.ts < TICKER_CACHE_TTL) {
+    return _tickerCache.texts;
+  }
+  const texts = await prisma.tickerText.findMany({
+    where: { isActive: true },
+    select: { id: true, text: true, displayOrder: true },
+    orderBy: { displayOrder: "asc" },
+    take: 20,
+  });
+  _tickerCache = { texts, ts: now };
+  return texts;
+}
 
 export async function GET(req: Request): Promise<Response> {
   // 1. Rate limit: 20 new SSE connections per IP per minute
@@ -33,20 +51,14 @@ export async function GET(req: Request): Promise<Response> {
         }
       };
 
-      // 3. Query DB and push one SSE ticker event
+      // 3. Lấy ticker texts (có cache 60s, không query DB mỗi 15s/user)
       const sendData = async () => {
         try {
-          const texts = await prisma.tickerText.findMany({
-            where:   { isActive: true },
-            select:  { id: true, text: true, displayOrder: true },
-            orderBy: { displayOrder: "asc" },
-            take:    20,
-          });
-
+          const texts = await getTickerTexts();
           const payload = { texts, ts: Date.now() };
           enqueue(`event: ticker\ndata: ${JSON.stringify(payload)}\n\n`);
         } catch (err) {
-          console.warn("[ticker] DB query failed:", err);
+          console.warn("[ticker] query failed:", err);
         }
       };
 

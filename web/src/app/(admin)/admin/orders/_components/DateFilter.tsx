@@ -25,7 +25,7 @@ export default function DateFilter() {
     if (from) sp.set("dateFrom", from);
     if (to) sp.set("dateTo", to);
     const q = sp.toString();
-    router.push(q ? `${pathname}?${q}` : pathname);
+    router.push(q ? `${pathname}?${q}` : pathname, { scroll: false });
   }
 
   const today = getDateStr(0);

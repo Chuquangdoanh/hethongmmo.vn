@@ -15,6 +15,7 @@ import {
   Pencil, CheckCircle,
 } from "lucide-react";
 import { CommunityBanner } from "./_components/CommunityBanner";
+import { SortSelect } from "./_components/SortSelect";
 
 const PAGE_SIZE = 20;
 
@@ -339,8 +340,25 @@ export default async function TaiNguyenMmoPage({
       {/* ── CỘNG ĐỒNG MMO (client component with popup modals) ── */}
       <CommunityBanner />
 
-      {/* ── MAIN LAYOUT ── */}
+{/* ── MAIN LAYOUT ── */}
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-6">
+
+        {/* View tabs + sort */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
+          <div className="flex items-center gap-0.5 bg-white rounded-xl border border-border p-1 w-fit">
+            <span className="px-4 py-2 text-sm font-bold text-white bg-primary rounded-lg whitespace-nowrap">
+              Tất cả sản phẩm
+            </span>
+            <Link href="/tai-nguyen-mmo/gian-hang" scroll={false} className="px-4 py-2 text-sm font-semibold text-text-muted hover:text-primary hover:bg-[#f1f5f9] rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap">
+              <Store size={14} strokeWidth={2} />
+              Gian hàng MMO
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <SortSelect />
+          </div>
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-5">
 
           {/* Filter sidebar — top on mobile, sticky left column on desktop */}
@@ -356,8 +374,8 @@ export default async function TaiNguyenMmoPage({
 
           {/* Right: Product grid */}
           <div className="flex-1 min-w-0">
-            {/* Result count + sort label */}
-            <div className="flex items-center justify-between mb-4 px-1">
+            {/* Result count */}
+            <div className="mb-4 px-1">
               <p className="text-sm text-text-muted">
                 <span className="font-semibold text-text-dark">{totalCount.toLocaleString("vi-VN")}</span>{" "}
                 sản phẩm
@@ -372,10 +390,6 @@ export default async function TaiNguyenMmoPage({
                   </span>
                 )}
               </p>
-              <span className="text-xs text-text-muted">
-                Sắp xếp:{" "}
-                <strong className="text-[#374151]">{SORT_LABELS[activeSort] ?? "Nổi Bật"}</strong>
-              </span>
             </div>
 
             {/* Empty state */}
@@ -446,11 +460,11 @@ export default async function TaiNguyenMmoPage({
                             </div>
                             {/* Shop chip with code */}
                             {p.kind === "mmo" ? (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-500/80 text-white backdrop-blur-sm">
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-600/80 text-white backdrop-blur-sm">
                                 <ShieldCheck size={8} strokeWidth={2.5} /> MMO
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-500/80 text-white backdrop-blur-sm">
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-600/80 text-white backdrop-blur-sm">
                                 <Store size={8} strokeWidth={2.5} /> {p.sellerName}
                               </span>
                             )}
@@ -490,7 +504,7 @@ export default async function TaiNguyenMmoPage({
                         {p.purchasedByMe && !p.reviewedByMe && (
                           <Link
                             href={p.href}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 transition-colors w-fit"
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors w-fit"
                           >
                             <Pencil size={9} strokeWidth={2} /> Đánh giá
                           </Link>

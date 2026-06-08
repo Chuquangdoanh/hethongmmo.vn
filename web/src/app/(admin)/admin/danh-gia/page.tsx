@@ -2,14 +2,62 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import TestimonialList from "./_components/TestimonialList";
+import type { ServiceStat } from "./_components/ServiceFilterPanel";
 
 export const metadata: Metadata = { title: "Admin — Đánh giá" };
 
 export default async function AdminTestimonialsPage() {
-  const items = await prisma.testimonial.findMany({
-    include: { course: { select: { id: true, name: true, slug: true } } },
-    orderBy: [{ type: "asc" }, { displayOrder: "asc" }, { createdAt: "desc" }],
-  });
+  const [items, allServices, serviceRatingGroups, allCourses, courseRatingGroups] = await Promise.all([
+    prisma.testimonial.findMany({
+      include: { course: { select: { id: true, name: true, slug: true } } },
+      orderBy: [{ type: "asc" }, { displayOrder: "asc" }, { createdAt: "desc" }],
+    }),
+    prisma.service.findMany({
+      select: { id: true, name: true, category: true },
+      where: { deletedAt: null },
+      orderBy: { name: "asc" },
+    }),
+    prisma.testimonial.groupBy({
+      by: ["serviceId"],
+      where: { type: "SERVICE", serviceId: { not: null } },
+      _avg: { rating: true },
+      _count: { id: true },
+    }),
+    prisma.course.findMany({
+      select: { id: true, name: true, category: true },
+      where: { deletedAt: null },
+      orderBy: { name: "asc" },
+    }),
+    prisma.testimonial.groupBy({
+      by: ["courseId"],
+      where: { type: "COURSE", courseId: { not: null } },
+      _avg: { rating: true },
+      _count: { id: true },
+    }),
+  ]);
+
+  const serviceRatingMap = new Map(
+    serviceRatingGroups.map((r) => [r.serviceId!, { avg: r._avg.rating ?? 0, count: r._count.id }])
+  );
+  const courseRatingMap = new Map(
+    courseRatingGroups.map((r) => [r.courseId!, { avg: r._avg.rating ?? 0, count: r._count.id }])
+  );
+
+  const serviceStats: ServiceStat[] = allServices.map((s) => ({
+    id: s.id,
+    name: s.name,
+    category: s.category,
+    reviewCount: serviceRatingMap.get(s.id)?.count ?? 0,
+    averageRating: serviceRatingMap.get(s.id)?.avg ?? 0,
+  }));
+
+  const courseStats: ServiceStat[] = allCourses.map((c) => ({
+    id: c.id,
+    name: c.name,
+    category: c.category,
+    reviewCount: courseRatingMap.get(c.id)?.count ?? 0,
+    averageRating: courseRatingMap.get(c.id)?.avg ?? 0,
+  }));
 
   return (
     <div className="space-y-6">
@@ -26,7 +74,7 @@ export default async function AdminTestimonialsPage() {
         </Link>
       </div>
 
-      <TestimonialList items={items} />
+      <TestimonialList items={items} serviceStats={serviceStats} courseStats={courseStats} />
     </div>
   );
 }

@@ -32,7 +32,7 @@ export default async function SellerProfileHero({ userId, activeTab }: Props) {
   const [user, tierDef, revenueAgg, pendingCount, productCount] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { fullName: true, email: true, uidPrefix: true, sellerTier: true },
+      select: { fullName: true, email: true, uidPrefix: true, sellerTier: true, avatarUrl: true },
     }),
     prisma.user.findUnique({ where: { id: userId }, select: { sellerTier: true } })
       .then((u) => prisma.sellerTierDefinition.findUnique({ where: { key: u?.sellerTier ?? "STANDARD" } })),
@@ -62,9 +62,18 @@ export default async function SellerProfileHero({ userId, activeTab }: Props) {
       <div className="px-4 md:px-6 lg:px-8 pt-8 pb-0">
         {/* Identity */}
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 rounded-full bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shrink-0 shadow-lg ring-2 ring-white/20">
-            {initials}
-          </div>
+          {user.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.avatarUrl}
+              alt={user.fullName ?? ""}
+              className="w-16 h-16 rounded-full object-cover shrink-0 shadow-lg ring-2 ring-white/20"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shrink-0 shadow-lg ring-2 ring-white/20">
+              {initials}
+            </div>
+          )}
           <div>
             <h1 className="text-xl font-bold text-white leading-tight">{user.fullName ?? user.email}</h1>
             <p className="text-[11px] text-slate-400 mt-0.5 font-mono">ID: {user.uidPrefix}...</p>
