@@ -5,10 +5,10 @@ vi.mock("@/lib/db/prisma", () => ({
 }));
 
 vi.mock("@/lib/services/seller.service", () => ({
-  getSellerConfig: vi.fn().mockResolvedValue({
-    withdrawal_fee_percent: 5,
-    min_withdrawal_amount: 200_000,
-    order_hold_days: 3,
+  getSellerTierConfig: vi.fn().mockResolvedValue({
+    fee_percent: 5,
+    min_withdrawal: 200_000,
+    hold_days: 3,
   }),
 }));
 

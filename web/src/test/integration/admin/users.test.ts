@@ -97,30 +97,48 @@ describe("PATCH /api/admin/users/[id]", () => {
   it("bans a user and writes audit log", async () => {
     mockAuth.mockResolvedValueOnce(ADMIN_SESSION);
     mockPrisma.user.findUnique.mockResolvedValueOnce(TARGET_USER);
-    mockPrisma.user.update.mockResolvedValueOnce({});
-    mockPrisma.auditLog.create.mockResolvedValueOnce({});
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let capturedTx: any;
+    mockPrisma.$transaction.mockImplementationOnce(async (fn: (tx: unknown) => unknown) => {
+      capturedTx = {
+        user: { update: vi.fn().mockResolvedValue({}) },
+        notification: { create: vi.fn() },
+        auditLog: { create: vi.fn() },
+      };
+      return fn(capturedTx);
+    });
 
     const res = await PATCH(makeRequest({ action: "ban" }) as never, { params: PARAMS });
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.success).toBe(true);
 
-    expect(mockPrisma.user.update).toHaveBeenCalledWith({
+    expect(capturedTx.user.update).toHaveBeenCalledWith({
       where: { id: TARGET_USER_ID },
       data: { status: "BANNED" },
     });
-    expect(mockPrisma.auditLog.create).toHaveBeenCalledOnce();
+    expect(capturedTx.auditLog.create).toHaveBeenCalledOnce();
   });
 
   it("unbans a user", async () => {
     mockAuth.mockResolvedValueOnce(ADMIN_SESSION);
     mockPrisma.user.findUnique.mockResolvedValueOnce({ ...TARGET_USER, status: "BANNED" });
-    mockPrisma.user.update.mockResolvedValueOnce({});
-    mockPrisma.auditLog.create.mockResolvedValueOnce({});
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let capturedTx: any;
+    mockPrisma.$transaction.mockImplementationOnce(async (fn: (tx: unknown) => unknown) => {
+      capturedTx = {
+        user: { update: vi.fn().mockResolvedValue({}) },
+        notification: { create: vi.fn() },
+        auditLog: { create: vi.fn() },
+      };
+      return fn(capturedTx);
+    });
 
     const res = await PATCH(makeRequest({ action: "unban" }) as never, { params: PARAMS });
     expect(res.status).toBe(200);
-    expect(mockPrisma.user.update).toHaveBeenCalledWith({
+    expect(capturedTx.user.update).toHaveBeenCalledWith({
       where: { id: TARGET_USER_ID },
       data: { status: "ACTIVE" },
     });
@@ -145,19 +163,27 @@ describe("PATCH /api/admin/users/[id]", () => {
   it("changes user role and writes audit log", async () => {
     mockAuth.mockResolvedValueOnce(ADMIN_SESSION);
     mockPrisma.user.findUnique.mockResolvedValueOnce(TARGET_USER);
-    mockPrisma.user.update.mockResolvedValueOnce({});
-    mockPrisma.auditLog.create.mockResolvedValueOnce({});
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let capturedTx: any;
+    mockPrisma.$transaction.mockImplementationOnce(async (fn: (tx: unknown) => unknown) => {
+      capturedTx = {
+        user: { update: vi.fn().mockResolvedValue({}) },
+        auditLog: { create: vi.fn() },
+      };
+      return fn(capturedTx);
+    });
 
     const res = await PATCH(
       makeRequest({ action: "change_role", role: "SELLER" }) as never,
       { params: PARAMS },
     );
     expect(res.status).toBe(200);
-    expect(mockPrisma.user.update).toHaveBeenCalledWith({
+    expect(capturedTx.user.update).toHaveBeenCalledWith({
       where: { id: TARGET_USER_ID },
       data: { role: "SELLER" },
     });
-    expect(mockPrisma.auditLog.create).toHaveBeenCalledOnce();
+    expect(capturedTx.auditLog.create).toHaveBeenCalledOnce();
   });
 
   it("adjusts balance inside a $transaction with audit log", async () => {

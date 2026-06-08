@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
+    user: { findUnique: vi.fn().mockResolvedValue(null) },
     service: { findUnique: vi.fn() },
     course: { findUnique: vi.fn() },
     tutTrick: { findUnique: vi.fn() },
@@ -41,16 +41,17 @@ const VALID_PURCHASE_BODY = {
   idempotencyKey: "22222222-2222-4222-8222-222222222222",
 };
 
-function makePostRequest(body: unknown): NextRequest {
-  return new NextRequest("http://localhost/api/orders", {
+// Use Request (not NextRequest) — NextRequest.json() is unreliable in vitest node env
+function makePostRequest(body: unknown) {
+  return new Request("http://localhost/api/orders", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-  });
+  }) as never;
 }
 
-function makeGetRequest(params = ""): NextRequest {
-  return new NextRequest(`http://localhost/api/orders${params}`);
+function makeGetRequest(params = "") {
+  return new Request(`http://localhost/api/orders${params}`) as never;
 }
 
 beforeEach(() => vi.clearAllMocks());
