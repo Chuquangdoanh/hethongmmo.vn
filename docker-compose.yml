@@ -59,6 +59,21 @@ services:
         reservations:
           memory: 64m
 
+  migrate:
+    image: ${REGISTRY_URL:-ghcr.io/chuquangdoanh}/hethongmmo-migrate:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    container_name: hethongmmo-migrate
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-hethongmmo}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   web:
     image: ${REGISTRY_URL:-ghcr.io/chuquangdoanh}/hethongmmo:${IMAGE_TAG:-latest}
     build:
@@ -85,6 +100,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health 2>/dev/null | grep -q 'status'"]
       interval: 30s

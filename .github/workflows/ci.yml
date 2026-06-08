@@ -145,7 +145,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
+      - name: Build and push web (runner)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -156,6 +156,18 @@ jobs:
           build-args: |
             NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
           # GHA cache: tái dụng layers giữa các lần build, tăng tốc ~60-80%
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push migrator
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          target: migrator
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/hethongmmo-migrate:latest
+          # Shares cache with runner build (deps layer is identical)
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -183,16 +195,16 @@ jobs:
             # Đăng nhập registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-            # Pull image mới (web mới, các service khác giữ nguyên)
-            docker compose pull web
+            # Pull image mới (web + migrator)
+            docker compose pull web migrate
+
+            # Chạy migration trước (migrate service dùng migrator image có full node_modules)
+            docker compose run --rm migrate
 
             # Rolling update: khởi container mới trước → đợi healthcheck OK → old container down
             # --no-deps: không restart postgres/redis/nginx
-            # --wait: đợi healthcheck pass (start_period 30s + 3 retries × 30s = tối đa 120s)
+            # --wait: đợi healthcheck pass (start_period 60s + 3 retries × 30s = tối đa 150s)
             docker compose up -d --no-deps --wait web
-
-            # Chạy migration TRONG container mới (đã healthy)
-            docker compose exec -T web node node_modules/.bin/prisma migrate deploy
 
             # Dọn image cũ (giữ 2 bản gần nhất)
             docker image prune -f
