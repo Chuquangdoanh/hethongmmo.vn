@@ -145,12 +145,10 @@ services:
       PGDATABASE: ${POSTGRES_DB:-hethongmmo}
     volumes:
       - ./backups:/backups
-    entrypoint: ["sh", "-c"]
     command: >-
       sh -c 'mkdir -p /backups && while true; do
-      FNAME="backup_$(date +%Y%m%d_%H%M%S).sql.gz" &&
-      pg_dump | gzip > "/backups/$$FNAME" &&
-      echo "[backup] Completed: $$FNAME" &&
+      pg_dump | gzip > "/backups/backup_$$(date +%Y%m%d_%H%M%S).sql.gz" &&
+      echo "[backup] Completed" &&
       find /backups -name "*.sql.gz" -mtime +7 -delete;
       sleep 86400; done'
     deploy:

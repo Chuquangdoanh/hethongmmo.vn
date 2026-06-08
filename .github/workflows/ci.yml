@@ -177,6 +177,9 @@ jobs:
             set -e
             cd /opt/hethongmmo
 
+            # Cập nhật source (docker-compose.yml, nginx.conf, scripts, v.v.)
+            git pull origin main
+
             # Đăng nhập registry
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
