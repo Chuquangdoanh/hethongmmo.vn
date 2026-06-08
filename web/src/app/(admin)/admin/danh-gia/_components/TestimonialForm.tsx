@@ -51,7 +51,7 @@ export default function TestimonialForm({
   const initialServiceCategory = useMemo(() => {
     if (!initial?.serviceId) return "";
     return services.find((s) => s.id === initial.serviceId)?.category ?? "";
-  }, [initial?.serviceId, services]);
+  }, [initial, services]);
 
   const [form, setForm] = useState({
     type:             initial?.type             ?? "SERVICE",

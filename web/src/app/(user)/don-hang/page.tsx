@@ -56,6 +56,7 @@ export default async function DonHangPage({
   const orderTypeFilter = TAB_TYPES[activeTab as keyof typeof TAB_TYPES];
 
   // Đơn tài nguyên / tut-trick chỉ hiện trong 7 ngày
+  // eslint-disable-next-line react-hooks/purity -- Server Component, Date.now() is safe per-request
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const dateFilter = EXPIRES_7_DAYS.has(activeTab) ? { createdAt: { gte: sevenDaysAgo } } : {};
   const ordersWhere = { userId: me.id, orderType: { in: orderTypeFilter }, ...dateFilter };
