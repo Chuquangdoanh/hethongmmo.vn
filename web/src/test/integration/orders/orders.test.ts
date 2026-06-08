@@ -1,37 +1,58 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { NextRequest } from "next/server";
 
-vi.mock("@/auth", () => ({ auth: vi.fn() }));
+// ── Stable mock references via vi.hoisted() ───────────────────────────────────
+// vi.hoisted() runs synchronously before all vi.mock() factories, making these
+// references available inside factories while avoiding the ESM live-binding
+// problem on Linux where an imported named export may be a different object
+// than the function actually invoked inside the route module.
+const {
+  mockAuth,
+  mockCheckRateLimit,
+  mockPurchaseProduct,
+  mockUserFindUnique,
+  mockServiceFindUnique,
+  mockCourseFindUnique,
+  mockTutTrickFindUnique,
+  mockMmoProductFindUnique,
+  mockSellerProductFindUnique,
+  mockOrderFindMany,
+  mockOrderCount,
+} = vi.hoisted(() => ({
+  mockAuth: vi.fn(),
+  mockCheckRateLimit: vi.fn(),
+  mockPurchaseProduct: vi.fn(),
+  mockUserFindUnique: vi.fn(),
+  mockServiceFindUnique: vi.fn(),
+  mockCourseFindUnique: vi.fn(),
+  mockTutTrickFindUnique: vi.fn(),
+  mockMmoProductFindUnique: vi.fn(),
+  mockSellerProductFindUnique: vi.fn(),
+  mockOrderFindMany: vi.fn(),
+  mockOrderCount: vi.fn(),
+}));
+
+vi.mock("@/auth", () => ({ auth: mockAuth }));
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
-    user: { findUnique: vi.fn() },
-    service: { findUnique: vi.fn() },
-    course: { findUnique: vi.fn() },
-    tutTrick: { findUnique: vi.fn() },
-    mmoProduct: { findUnique: vi.fn() },
-    sellerProduct: { findUnique: vi.fn() },
-    order: { findMany: vi.fn(), count: vi.fn() },
+    user: { findUnique: mockUserFindUnique },
+    service: { findUnique: mockServiceFindUnique },
+    course: { findUnique: mockCourseFindUnique },
+    tutTrick: { findUnique: mockTutTrickFindUnique },
+    mmoProduct: { findUnique: mockMmoProductFindUnique },
+    sellerProduct: { findUnique: mockSellerProductFindUnique },
+    order: { findMany: mockOrderFindMany, count: mockOrderCount },
   },
 }));
-vi.mock("@/lib/services/purchase.service", () => ({ purchaseProduct: vi.fn() }));
+vi.mock("@/lib/services/purchase.service", () => ({ purchaseProduct: mockPurchaseProduct }));
 vi.mock("@/lib/security/rate-limit", () => ({
   apiRatelimit: {},
   orderRatelimit: null,
-  checkRateLimit: vi.fn(),
+  checkRateLimit: mockCheckRateLimit,
 }));
 
 import { GET, POST } from "@/app/api/orders/route";
-import { auth } from "@/auth";
-import { prisma } from "@/lib/db/prisma";
-import { purchaseProduct } from "@/lib/services/purchase.service";
-import { checkRateLimit } from "@/lib/security/rate-limit";
 import { InsufficientBalanceError } from "@/lib/errors";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockAuth = auth as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockPrisma = prisma as any;
-const mockPurchase = purchaseProduct as ReturnType<typeof vi.fn>;
 
 const VALID_SESSION = {
   user: { id: "user-0001", email: "user@example.com", role: "USER", name: "Test User" },
@@ -53,8 +74,8 @@ function makePostRequest(body: unknown) {
 }
 
 function makeGetRequest(params = ""): NextRequest {
-  // Use a plain object instead of NextRequest to avoid nextUrl initialization
-  // issues in Node.js test environments outside of a Next.js server context.
+  // Plain object avoids NextRequest.nextUrl initialization issues in Node.js
+  // test environments outside a real Next.js server context (Linux CI).
   return {
     nextUrl: new URL(`http://localhost/api/orders${params}`),
   } as unknown as NextRequest;
@@ -62,10 +83,10 @@ function makeGetRequest(params = ""): NextRequest {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // Explicitly re-establish persistent mock implementations after clearAllMocks,
-  // because Vitest ESM mock behavior on Linux may clear these between tests.
-  vi.mocked(checkRateLimit).mockResolvedValue({ success: true, remaining: 29 });
-  vi.mocked(prisma.user.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+  // Default implementations needed on every authenticated request.
+  // Using the hoisted references directly — no ESM binding indirection.
+  mockCheckRateLimit.mockResolvedValue({ success: true, remaining: 29 });
+  mockUserFindUnique.mockResolvedValue(null);
 });
 
 describe("GET /api/orders", () => {
@@ -77,10 +98,10 @@ describe("GET /api/orders", () => {
 
   it("returns paginated orders for authenticated user", async () => {
     mockAuth.mockResolvedValueOnce(VALID_SESSION);
-    mockPrisma.order.findMany.mockResolvedValueOnce([
+    mockOrderFindMany.mockResolvedValueOnce([
       { id: "o1", orderCode: "ORD-001", status: "DONE", itemName: "Test", finalPrice: "50000" },
     ]);
-    mockPrisma.order.count.mockResolvedValueOnce(1);
+    mockOrderCount.mockResolvedValueOnce(1);
 
     const res = await GET(makeGetRequest());
     expect(res.status).toBe(200);
@@ -91,13 +112,13 @@ describe("GET /api/orders", () => {
 
   it("filters only the authenticated user's orders (IDOR protection)", async () => {
     mockAuth.mockResolvedValueOnce(VALID_SESSION);
-    mockPrisma.order.findMany.mockResolvedValueOnce([]);
-    mockPrisma.order.count.mockResolvedValueOnce(0);
+    mockOrderFindMany.mockResolvedValueOnce([]);
+    mockOrderCount.mockResolvedValueOnce(0);
 
     await GET(makeGetRequest());
 
-    const findManyCall = mockPrisma.order.findMany.mock.calls[0]?.[0];
-    expect(findManyCall?.where?.userId).toBe(VALID_SESSION.user.id);
+    const findManyArg = mockOrderFindMany.mock.calls[0]?.[0];
+    expect(findManyArg?.where?.userId).toBe(VALID_SESSION.user.id);
   });
 });
 
@@ -126,7 +147,7 @@ describe("POST /api/orders", () => {
 
   it("creates order successfully and returns 201", async () => {
     mockAuth.mockResolvedValueOnce(VALID_SESSION);
-    mockPrisma.service.findUnique.mockResolvedValueOnce({
+    mockServiceFindUnique.mockResolvedValueOnce({
       name: "Tăng Like Facebook",
       price: "50000",
     });
@@ -138,7 +159,7 @@ describe("POST /api/orders", () => {
       finalPrice: "50000",
       status: "DONE",
     };
-    mockPurchase.mockResolvedValueOnce({ order: createdOrder });
+    mockPurchaseProduct.mockResolvedValueOnce({ order: createdOrder });
 
     const res = await POST(makePostRequest(VALID_PURCHASE_BODY));
     expect(res.status).toBe(201);
@@ -149,11 +170,11 @@ describe("POST /api/orders", () => {
 
   it("returns 402 on InsufficientBalanceError", async () => {
     mockAuth.mockResolvedValueOnce(VALID_SESSION);
-    mockPrisma.service.findUnique.mockResolvedValueOnce({
+    mockServiceFindUnique.mockResolvedValueOnce({
       name: "Test",
       price: "50000",
     });
-    mockPurchase.mockRejectedValueOnce(new InsufficientBalanceError(10_000, 50_000));
+    mockPurchaseProduct.mockRejectedValueOnce(new InsufficientBalanceError(10_000, 50_000));
 
     const res = await POST(makePostRequest(VALID_PURCHASE_BODY));
     expect(res.status).toBe(402);
@@ -163,7 +184,7 @@ describe("POST /api/orders", () => {
 
   it("returns idempotent response for duplicate idempotencyKey", async () => {
     mockAuth.mockResolvedValueOnce(VALID_SESSION);
-    mockPrisma.service.findUnique.mockResolvedValueOnce({ name: "Test", price: "50000" });
+    mockServiceFindUnique.mockResolvedValueOnce({ name: "Test", price: "50000" });
     const existingOrder = {
       id: "order-existing",
       orderCode: "ORD-EXIST",
@@ -172,8 +193,7 @@ describe("POST /api/orders", () => {
       finalPrice: "50000",
       status: "DONE",
     };
-    // purchaseProduct returns existing order on dup key (no error)
-    mockPurchase.mockResolvedValueOnce({ order: existingOrder });
+    mockPurchaseProduct.mockResolvedValueOnce({ order: existingOrder });
 
     const res = await POST(makePostRequest(VALID_PURCHASE_BODY));
     expect(res.status).toBe(201);
