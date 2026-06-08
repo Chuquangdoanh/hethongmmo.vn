@@ -42,7 +42,14 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modul
 
 # Prisma CLI — devDependency, not in standalone, needed for migrate deploy
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+# Create a proper shim instead of copying the symlink target.
+# COPY resolves symlinks → __dirname becomes .bin/ instead of prisma/build/
+# → WASM files (e.g. prisma_schema_build_bg.wasm) would not be found.
+# This shim preserves the correct __dirname = node_modules/prisma/build/.
+RUN printf '#!/bin/sh\nexec node /app/node_modules/prisma/build/index.js "$@"\n' \
+      > /app/node_modules/.bin/prisma && \
+    chmod +x /app/node_modules/.bin/prisma && \
+    chown nextjs:nodejs /app/node_modules/.bin/prisma
 
 # dotenv — required by prisma.config.ts (not in standalone trace)
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/dotenv ./node_modules/dotenv
