@@ -7,6 +7,7 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     coverage: { reporter: ["text", "lcov"] },
     testTimeout: 15000,
+    exclude: ["**/node_modules/**", "**/.next/**"],
   },
   resolve: {
     alias: {
