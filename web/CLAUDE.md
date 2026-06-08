@@ -53,6 +53,7 @@ node node_modules/typescript/bin/tsc --noEmit
 
 # Prisma Studio (xem/sửa DB trực tiếp)
 pnpm db:studio
-
+# Xóa toàn bộ dữ liệu database 
+pnpm prisma migrate reset
 # Build production
 pnpm build
