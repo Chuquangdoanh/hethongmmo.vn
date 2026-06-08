@@ -159,9 +159,9 @@ jobs:
           tags: ghcr.io/${{ steps.owner.outputs.value }}/hethongmmo:latest
           build-args: |
             NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
-          # GHA cache: tái dụng layers giữa các lần build, tăng tốc ~60-80%
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # GHA cache: scope=v2 busts old node:20 poisoned cache
+          cache-from: type=gha,scope=buildcache-v2
+          cache-to: type=gha,mode=max,scope=buildcache-v2
 
       - name: Build and push migrator
         uses: docker/build-push-action@v6
@@ -171,9 +171,8 @@ jobs:
           target: migrator
           push: true
           tags: ghcr.io/${{ steps.owner.outputs.value }}/hethongmmo-migrate:latest
-          # Shares cache with runner build (deps layer is identical)
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=buildcache-v2
+          cache-to: type=gha,mode=max,scope=buildcache-v2
 
   deploy:
     name: Deploy to VPS
