@@ -126,7 +126,6 @@ jobs:
     needs: [lint, test]
     # Chỉ build image khi push lên main (không build cho PR)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: production
     permissions:
       contents: read
       packages: write
