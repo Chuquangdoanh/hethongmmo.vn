@@ -184,16 +184,26 @@ jobs:
     # Tách riêng với docker job để GITHUB_TOKEN của docker job không bị restrict
     environment: production
     steps:
+      - name: Validate secrets
+        run: |
+          [ -n "$HOST" ] && echo "PRODUCTION_HOST: set" || { echo "PRODUCTION_HOST: EMPTY ❌"; exit 1; }
+          [ -n "$KEY" ]  && echo "DEPLOY_SSH_KEY: set"  || { echo "DEPLOY_SSH_KEY: EMPTY ❌";  exit 1; }
+        env:
+          HOST: ${{ secrets.PRODUCTION_HOST }}
+          KEY:  ${{ secrets.DEPLOY_SSH_KEY }}
+
       - name: SSH deploy (zero-downtime rolling update)
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.PRODUCTION_HOST }}
-          username: deploy
+          username: root
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          # Timeout cao hơn để chờ healthcheck pass trước khi báo xong
-          command_timeout: 5m
+          port: 22
+          timeout: 60s
+          command_timeout: 20m
           script: |
             set -e
+            whoami
             cd /opt/hethongmmo
 
             # Cập nhật source (docker-compose.yml, nginx.conf, scripts, v.v.)
