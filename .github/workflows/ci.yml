@@ -180,6 +180,16 @@ jobs:
     needs: [docker]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
+      - name: Check secrets are set
+        run: |
+          [ -n "$HOST" ]  && echo "VPS_HOST: set"  || echo "VPS_HOST: EMPTY ❌"
+          [ -n "$USER" ]  && echo "VPS_USER: set"  || echo "VPS_USER: EMPTY ❌"
+          [ -n "$KEY" ]   && echo "VPS_SSH_KEY: set" || echo "VPS_SSH_KEY: EMPTY ❌"
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USER: ${{ secrets.VPS_USER }}
+          KEY:  ${{ secrets.VPS_SSH_KEY }}
+
       - name: SSH deploy (zero-downtime rolling update)
         uses: appleboy/ssh-action@v1
         with:
