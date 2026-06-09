@@ -183,6 +183,9 @@ jobs:
     # environment:production để đọc PRODUCTION_HOST và DEPLOY_SSH_KEY
     # Tách riêng với docker job để GITHUB_TOKEN của docker job không bị restrict
     environment: production
+    defaults:
+      run:
+        working-directory: "."
     steps:
       - name: Validate secrets
         run: |
