@@ -19,8 +19,8 @@ COPY web/ .
 RUN node_modules/.bin/prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
-ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4AAAAAADdtPd4eBWk-jqZ6
-ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
+ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-0x4AAAAAADdtPd4eBWk-jqZ6}
 RUN node_modules/.bin/next build
 
 # ── migrator ─────────────────────────────────────────────────────────
