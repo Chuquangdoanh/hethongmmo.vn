@@ -93,4 +93,7 @@ jobs:
             # Dọn image cũ
             docker image prune -f
 
+            # Reload nginx config (bind mount — không tự reload khi file thay đổi)
+            docker exec hethongmmo-nginx nginx -s reload || true
+
             echo "✅ Deploy xong: $(date)"
