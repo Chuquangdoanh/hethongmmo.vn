@@ -88,10 +88,10 @@ export function isKnownPurpose(p: string): p is UploadPurpose {
  * Returns the public URL for an R2 object.
  *
  * Production (R2_PUBLIC_URL set):
- *   → https://cdn.hethongmmo.vn/{key}   (Cloudflare custom domain)
+ *   → https://cdn.yourdomain.com/{key}   (Cloudflare custom domain)
  *
- * Local dev (R2_PUBLIC_URL not set):
- *   → http://localhost:3000/api/storage/image?key={key}  (absolute proxy URL)
+ * No CDN (AUTH_URL or NEXT_PUBLIC_APP_URL set):
+ *   → https://yourdomain.com/api/storage/image?key={key}  (in-app proxy)
  *
  * Always returns an absolute URL so Zod z.string().url() validation passes
  * when saving thumbnails to the database.
@@ -100,12 +100,22 @@ export function isKnownPurpose(p: string): p is UploadPurpose {
 export function buildCdnUrl(key: string): string {
   const base = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
   if (base) return `${base}/${key}`;
-  // Fallback to app base URL — ensures absolute URL for Zod .url() validation
+
+  // Fallback: use canonical app URL as proxy base.
+  // AUTH_URL is the Auth.js v5 canonical URL — always set in production.
   const appBase = (
     process.env.AUTH_URL ??
     process.env.NEXT_PUBLIC_APP_URL ??
-    "http://localhost:3000"
-  ).replace(/\/$/, "");
+    process.env.APP_URL
+  )?.replace(/\/$/, "");
+
+  if (!appBase) {
+    throw new Error(
+      "R2_PUBLIC_URL, AUTH_URL, or NEXT_PUBLIC_APP_URL must be set. " +
+      "Copy .env.example to .env and fill in the values.",
+    );
+  }
+
   return `${appBase}/api/storage/image?key=${encodeURIComponent(key)}`;
 }
 

@@ -6,7 +6,11 @@ export const dynamic = "force-dynamic";
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "https://hethongmmo.vn";
+  const base = (
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.AUTH_URL ??
+    "https://hethongmmo.vn"
+  ).replace(/\/$/, "");
   const now = new Date();
 
   // Static routes

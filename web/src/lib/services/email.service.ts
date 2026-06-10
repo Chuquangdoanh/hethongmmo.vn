@@ -3,7 +3,13 @@ import { logger } from "@/lib/utils/logger";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 
 const FROM = process.env.EMAIL_FROM ?? "noreply@hethongmmo.vn";
-const APP_URL = process.env.APP_URL ?? "https://hethongmmo.vn";
+// Priority: AUTH_URL > NEXT_PUBLIC_APP_URL > APP_URL (all three are set in .env.example)
+const APP_URL = (
+  process.env.AUTH_URL ??
+  process.env.NEXT_PUBLIC_APP_URL ??
+  process.env.APP_URL ??
+  "https://hethongmmo.vn"
+).replace(/\/$/, "");
 
 export interface EmailResult {
   success: boolean;

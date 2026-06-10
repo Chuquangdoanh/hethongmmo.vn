@@ -42,8 +42,10 @@ const nextConfig: NextConfig = {
   },
 
   env: {
-    NEXT_PUBLIC_TURNSTILE_SITE_KEY:
-      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAADdtPd4eBWk-jqZ6",
+    // Must be set per-domain in .env — Turnstile site keys are domain-specific.
+    // If missing, captcha widget is hidden and server-side verify is skipped
+    // (TURNSTILE_SECRET also unset → verifyCaptcha returns true).
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "",
   },
 
   serverExternalPackages: ["argon2", "@prisma/client"],
