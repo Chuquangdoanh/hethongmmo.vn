@@ -22,21 +22,6 @@ const nextConfig: NextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
           },
-          {
-            key: "Content-Security-Policy",
-            value: isDev
-              ? ""
-              : [
-                  "default-src 'self'",
-                  "script-src 'self' 'nonce-{nonce}'",
-                  "style-src 'self' 'unsafe-inline'",
-                  "img-src 'self' data: https:",
-                  "font-src 'self'",
-                  "connect-src 'self'",
-                  "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
-                  "frame-ancestors 'none'",
-                ].join("; "),
-          },
         ],
       },
     ];
