@@ -41,6 +41,11 @@ const nextConfig: NextConfig = {
         ];
   },
 
+  env: {
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY:
+      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "0x4AAAAAADdtPd4eBWk-jqZ6",
+  },
+
   serverExternalPackages: ["argon2", "@prisma/client"],
 
   images: {
