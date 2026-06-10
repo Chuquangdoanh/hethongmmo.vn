@@ -23,7 +23,7 @@ export default function CloseComplaintButton({ complaintId, complaintStatus }: P
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/admin/complaints/${complaintId}/confirm-order`, {
+      const res = await fetch(`/api/admin/complaints/${complaintId}/confirm-order`, { credentials: "include",
         method: "POST",
       });
       const json = await res.json() as { data?: { resolved?: boolean }; error?: string };

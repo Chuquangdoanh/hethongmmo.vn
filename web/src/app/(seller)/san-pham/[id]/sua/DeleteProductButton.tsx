@@ -18,7 +18,7 @@ export default function DeleteProductButton({ productId, productName }: Props) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/seller/products/${productId}`, {
+      const res = await fetch(`/api/seller/products/${productId}`, { credentials: "include",
         method: "DELETE",
       });
       const json = await res.json() as { success: boolean; error?: string };

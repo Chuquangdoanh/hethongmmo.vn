@@ -24,7 +24,7 @@ export function StatusToggle({ id, type, initialStatus, initialNote }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/dang-ky-dich-vu/${type}/${id}`, {
+      const res = await fetch(`/api/admin/dang-ky-dich-vu/${type}/${id}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "DONE", note: noteInput.trim() }),
@@ -49,7 +49,7 @@ export function StatusToggle({ id, type, initialStatus, initialNote }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/dang-ky-dich-vu/${type}/${id}`, {
+      const res = await fetch(`/api/admin/dang-ky-dich-vu/${type}/${id}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "PENDING" }),

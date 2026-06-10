@@ -47,7 +47,7 @@ export default function ProductForm({ mode, sellerCategory, initialData }: Produ
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
 
       // Bước 1: lấy presigned URL từ VPS (không upload file lên VPS)
-      const presignRes = await fetch("/api/storage/presign", {
+      const presignRes = await fetch("/api/storage/presign", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ purpose: "product-image", contentType: file.type, fileExtension: ext }),

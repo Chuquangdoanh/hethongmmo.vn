@@ -4,12 +4,26 @@
  */
 import type { NextAuthConfig } from "next-auth";
 
+const IS_PROD = process.env.NODE_ENV === "production";
+
 export const authConfig: NextAuthConfig = {
   providers: [], // Credentials provider added in src/auth.ts (Node.js only)
 
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+
+  cookies: {
+    sessionToken: {
+      name: IS_PROD ? "__Secure-authjs.session-token" : "authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: IS_PROD,
+      },
+    },
   },
 
   callbacks: {

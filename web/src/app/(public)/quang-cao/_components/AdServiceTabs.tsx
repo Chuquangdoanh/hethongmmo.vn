@@ -205,7 +205,7 @@ export default function AdServiceTabs({ userInfo }: Props) {
     setErrorMsg("");
 
     try {
-      const res = await fetch("/api/quang-cao/register", {
+      const res = await fetch("/api/quang-cao/register", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

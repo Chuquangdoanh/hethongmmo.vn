@@ -41,7 +41,7 @@ export default function CreateUserModal() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/users", {
+      const res = await fetch("/api/admin/users", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, phone: form.phone || undefined }),

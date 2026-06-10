@@ -33,7 +33,7 @@ export default function OrderStatusForm({ orderId, currentStatus }: Props) {
     setSuccess(false);
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/orders/${orderId}`, {
+      const res = await fetch(`/api/admin/orders/${orderId}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status, note: note.trim() || undefined }),

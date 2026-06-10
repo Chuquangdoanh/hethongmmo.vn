@@ -87,7 +87,7 @@ export default function TestimonialForm({
     setAvatarUploadError("");
     setAvatarUploading(true);
     try {
-      const res  = await fetch("/api/admin/upload/thumbnail?type=testimonial-avatar", { method: "POST", body: fd });
+      const res  = await fetch("/api/admin/upload/thumbnail?type=testimonial-avatar", { credentials: "include", method: "POST", body: fd });
       const json = (await res.json()) as { data?: { url: string }; error?: string };
       if (!res.ok) { setAvatarUploadError(json.error ?? "Upload thất bại"); return; }
       set("reviewerAvatar", json.data?.url ?? "");
@@ -168,7 +168,7 @@ export default function TestimonialForm({
     if (!confirm("Xóa đánh giá này?")) return;
     setLoading(true);
     try {
-      const res  = await fetch(`/api/admin/testimonials/${initial.id}`, { method: "DELETE" });
+      const res  = await fetch(`/api/admin/testimonials/${initial.id}`, { credentials: "include", method: "DELETE" });
       const json = (await res.json()) as { success: boolean; error?: string };
       if (!res.ok || !json.success) { setError(json.error ?? "Xóa thất bại."); return; }
       router.push("/admin/danh-gia");

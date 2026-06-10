@@ -44,7 +44,7 @@ export default function InlineUserStatusCell({
     const action = next === "BANNED" ? "ban" : next === "ACTIVE" ? "unban" : null;
     if (!action) { setLoading(false); return; }
     try {
-      const res = await fetch(`/api/admin/users/${userId}`, {
+      const res = await fetch(`/api/admin/users/${userId}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),

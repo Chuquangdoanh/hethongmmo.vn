@@ -76,7 +76,7 @@ export default function CoursesTable({ courses, total, category, q }: Props) {
 
     startTransition(async () => {
       try {
-        const res = await fetch("/api/admin/courses/bulk", {
+        const res = await fetch("/api/admin/courses/bulk", { credentials: "include",
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action, ids: Array.from(selected) }),

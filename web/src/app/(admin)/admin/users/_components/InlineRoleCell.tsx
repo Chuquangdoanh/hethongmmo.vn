@@ -42,7 +42,7 @@ export default function InlineRoleCell({
     setLoading(true);
     setErr(false);
     try {
-      const res = await fetch(`/api/admin/users/${userId}`, {
+      const res = await fetch(`/api/admin/users/${userId}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "change_role", role: next }),

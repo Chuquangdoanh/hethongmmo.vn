@@ -36,7 +36,7 @@ export default function RegisterSlotsModal({ packages, currentSlots, userBalance
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("/api/seller/buy-slots", {
+      const res = await fetch("/api/seller/buy-slots", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slots: selected.slots }),

@@ -50,7 +50,7 @@ function StockModal({
     setStockLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/seller/products/${productId}/stock`, {
+      const res = await fetch(`/api/seller/products/${productId}/stock`, { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: lines }),
@@ -248,7 +248,7 @@ export default function ProductActions({ productId, productName, isRestricted, s
   async function handleDelete() {
     setDeleteLoading(true);
     try {
-      const res = await fetch(`/api/seller/products/${productId}`, { method: "DELETE" });
+      const res = await fetch(`/api/seller/products/${productId}`, { credentials: "include", method: "DELETE" });
       const json = await res.json() as { error?: string };
       if (!res.ok) { setDeleteError(json.error ?? "Xóa thất bại"); return; }
       router.refresh();

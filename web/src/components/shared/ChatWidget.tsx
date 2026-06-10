@@ -76,7 +76,7 @@ export default function ChatWidget({
     setSending(true);
     setError("");
     try {
-      const res = await fetch(`/api/chats/${room.id}/messages`, {
+      const res = await fetch(`/api/chats/${room.id}/messages`, { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: input.trim() }),

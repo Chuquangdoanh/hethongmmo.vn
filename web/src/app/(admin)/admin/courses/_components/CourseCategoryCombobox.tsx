@@ -25,7 +25,7 @@ export default function CourseCategoryCombobox({ value, onChange, placeholder, r
 
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/course-categories");
+      const res = await fetch("/api/admin/course-categories", { credentials: "include" });
       const json = await res.json() as { data?: Category[] };
       if (json.data) setCategories(json.data);
     } catch {
@@ -66,7 +66,7 @@ export default function CourseCategoryCombobox({ value, onChange, placeholder, r
     setCreating(true);
     setCreateError("");
     try {
-      const res = await fetch("/api/admin/course-categories", {
+      const res = await fetch("/api/admin/course-categories", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, icon: "", displayOrder: 0 }),

@@ -76,7 +76,7 @@ export default function ReviewSection({
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("/api/user/reviews", {
+      const res = await fetch("/api/user/reviews", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId, rating, comment: comment.trim() || undefined }),

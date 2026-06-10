@@ -18,7 +18,7 @@ export default function ShopLockAdminButton({
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/admin/sellers/${requestId}`, {
+      const res = await fetch(`/api/admin/sellers/${requestId}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: locked ? "unlock_shop" : "lock_shop" }),

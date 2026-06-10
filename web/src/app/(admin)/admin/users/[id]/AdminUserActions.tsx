@@ -34,7 +34,7 @@ export default function AdminUserActions({ userId, currentRole, currentStatus, b
     setLoading(label);
     setError("");
     try {
-      const res = await fetch(`/api/admin/users/${userId}`, {
+      const res = await fetch(`/api/admin/users/${userId}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

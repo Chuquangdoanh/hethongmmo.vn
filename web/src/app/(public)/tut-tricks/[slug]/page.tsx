@@ -50,7 +50,7 @@ export default async function TutTrickDetailPage({
   const { slug } = await params;
 
   const [item, session] = await Promise.all([
-    prisma.tutTrick.findUnique({
+    prisma.tutTrick.findFirst({
       where: { slug, isActive: true, deletedAt: null },
       select: {
         id: true, name: true, slug: true, thumbnail: true,

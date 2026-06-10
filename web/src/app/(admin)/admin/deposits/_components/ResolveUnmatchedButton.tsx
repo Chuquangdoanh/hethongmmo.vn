@@ -20,7 +20,7 @@ export default function ResolveUnmatchedButton({ id, referenceCode, amount }: Pr
     setLoading(true);
     setResult(null);
     try {
-      const res = await fetch(`/api/admin/deposits/unmatched/${id}`, {
+      const res = await fetch(`/api/admin/deposits/unmatched/${id}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userEmail: email }),

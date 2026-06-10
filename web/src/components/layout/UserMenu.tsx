@@ -233,7 +233,7 @@ function LogoutBtn({ onLogout }: { onLogout: () => void }) {
   async function handleLogout() {
     onLogout();
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/auth/logout", { credentials: "include", method: "POST" });
     } catch {
       // proceed with signOut even if denylist call fails
     }

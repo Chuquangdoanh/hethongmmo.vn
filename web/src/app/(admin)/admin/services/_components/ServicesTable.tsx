@@ -65,7 +65,7 @@ export default function ServicesTable({ services, total, category, q }: Props) {
 
     startTransition(async () => {
       try {
-        const res = await fetch("/api/admin/services/bulk", {
+        const res = await fetch("/api/admin/services/bulk", { credentials: "include",
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action, ids: Array.from(selected) }),

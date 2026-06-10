@@ -44,7 +44,7 @@ export default function WithdrawalForm({
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("/api/seller/withdrawal", {
+      const res = await fetch("/api/seller/withdrawal", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderIds: qualifyingOrders.map((o) => o.id) }),

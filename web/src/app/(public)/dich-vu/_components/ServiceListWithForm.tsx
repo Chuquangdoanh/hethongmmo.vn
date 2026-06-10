@@ -355,7 +355,7 @@ function ServiceOrderPanel({
     fd.append("file", file);
     setCccdUploading(true);
     try {
-      const res = await fetch("/api/user/upload?type=cccd", { method: "POST", body: fd });
+      const res = await fetch("/api/user/upload?type=cccd", { credentials: "include", method: "POST", body: fd });
       const json = (await res.json()) as { data?: { url: string }; error?: string };
       if (!res.ok) { setCccdError(json.error ?? "Upload thất bại"); return; }
       setCccdUrl(json.data?.url ?? "");
@@ -395,7 +395,7 @@ function ServiceOrderPanel({
         note: form.note.trim() || undefined,
       });
 
-      const res = await fetch("/api/orders", {
+      const res = await fetch("/api/orders", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

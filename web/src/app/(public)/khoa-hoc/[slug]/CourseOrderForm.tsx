@@ -49,7 +49,7 @@ export default function CourseOrderForm({
         phone: phone.trim() || undefined,
         name: name.trim() || undefined,
       });
-      const res = await fetch("/api/orders", {
+      const res = await fetch("/api/orders", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

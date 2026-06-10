@@ -20,7 +20,7 @@ export default function AdminTickerClient({ texts: initialTexts }: Props) {
     if (!newText.trim()) return;
     setAddingText(true);
     try {
-      await fetch("/api/admin/tickers/texts", {
+      await fetch("/api/admin/tickers/texts", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: newText.trim() }),
@@ -33,12 +33,12 @@ export default function AdminTickerClient({ texts: initialTexts }: Props) {
   }
 
   async function deleteText(id: string) {
-    await fetch(`/api/admin/tickers/texts/${id}`, { method: "DELETE" });
+    await fetch(`/api/admin/tickers/texts/${id}`, { credentials: "include", method: "DELETE" });
     router.refresh();
   }
 
   async function toggleText(id: string, current: boolean) {
-    await fetch(`/api/admin/tickers/texts/${id}`, {
+    await fetch(`/api/admin/tickers/texts/${id}`, { credentials: "include",
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: !current }),

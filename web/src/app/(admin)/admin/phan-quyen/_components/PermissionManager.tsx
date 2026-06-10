@@ -106,7 +106,7 @@ export default function PermissionManager({
             isFeatured:  publicState[page.pageKey]?.isFeatured ?? false,
             customLabel: publicState[page.pageKey]?.customLabel.trim() || null,
           }));
-          const res = await fetch("/api/admin/public-page-configs", {
+          const res = await fetch("/api/admin/public-page-configs", { credentials: "include",
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ configs }),
@@ -119,7 +119,7 @@ export default function PermissionManager({
           }
         } else {
           const currentPerms = perms[activeTab];
-          const res = await fetch("/api/admin/page-permissions", {
+          const res = await fetch("/api/admin/page-permissions", { credentials: "include",
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ role: activeTab, permissions: currentPerms }),

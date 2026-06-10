@@ -22,7 +22,7 @@ export default function ReviewActions({ reviewId, initRating, initComment }: Pro
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/admin/reviews/${reviewId}`, {
+      const res = await fetch(`/api/admin/reviews/${reviewId}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rating, comment: comment.trim() || null }),
@@ -43,7 +43,7 @@ export default function ReviewActions({ reviewId, initRating, initComment }: Pro
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/admin/reviews/${reviewId}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/reviews/${reviewId}`, { credentials: "include", method: "DELETE" });
       if (!res.ok) {
         const d = await res.json() as { error?: string };
         setError(d.error ?? "Lỗi không xác định");

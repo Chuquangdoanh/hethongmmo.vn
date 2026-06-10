@@ -9,7 +9,7 @@ export default function PendingOrdersBadge({ initial }: { initial: number }) {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const res = await fetch("/api/admin/orders/pending-count");
+        const res = await fetch("/api/admin/orders/pending-count", { credentials: "include" });
         if (res.ok) {
           const json = (await res.json()) as { data?: { count: number } };
           if (typeof json.data?.count === "number") setCount(json.data.count);

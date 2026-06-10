@@ -219,7 +219,7 @@ function BuyConfirmPopup({
 
   // Fetch số dư khi popup mở
   useEffect(() => {
-    fetch("/api/user/profile")
+    fetch("/api/user/profile", { credentials: "include" })
       .then((r) => r.json())
       .then((d: { data?: { balance?: string | number } }) => {
         const b = d?.data?.balance;
@@ -417,7 +417,7 @@ export default function TutTrickBuyButton({ item, isLoggedIn, variant = "default
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("/api/orders", {
+      const res = await fetch("/api/orders", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderType: "TUTTRICK", itemId: item.id, idempotencyKey: crypto.randomUUID() }),

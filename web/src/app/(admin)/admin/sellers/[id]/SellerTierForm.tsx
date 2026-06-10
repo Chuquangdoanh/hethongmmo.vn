@@ -36,7 +36,7 @@ export default function SellerTierForm({ sellerId, currentTier, tiers }: Props) 
     setLoading(true);
     setMessage("");
     try {
-      const res = await fetch(`/api/admin/sellers/${sellerId}/tier`, {
+      const res = await fetch(`/api/admin/sellers/${sellerId}/tier`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tier: selected }),

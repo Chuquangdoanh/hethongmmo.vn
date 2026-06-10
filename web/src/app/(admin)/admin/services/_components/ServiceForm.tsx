@@ -176,7 +176,7 @@ export default function ServiceForm({ initial }: { initial?: ServiceData }) {
     fd.append("file", file);
     setThumbUploading(true);
     try {
-      const res = await fetch("/api/admin/upload/thumbnail?type=service-thumbnail", { method: "POST", body: fd });
+      const res = await fetch("/api/admin/upload/thumbnail?type=service-thumbnail", { credentials: "include", method: "POST", body: fd });
       const json = (await res.json()) as { data?: { url: string }; error?: string };
       if (!res.ok) {
         setThumbError(json.error ?? "Upload thất bại");
@@ -251,7 +251,7 @@ export default function ServiceForm({ initial }: { initial?: ServiceData }) {
     if (!confirm("Xóa dịch vụ này? Hành động không thể hoàn tác.")) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/products/services/${initial.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/products/services/${initial.id}`, { credentials: "include", method: "DELETE" });
       const json = (await res.json()) as { success: boolean; error?: string };
       if (!res.ok || !json.success) {
         setError(json.error ?? "Xóa thất bại.");

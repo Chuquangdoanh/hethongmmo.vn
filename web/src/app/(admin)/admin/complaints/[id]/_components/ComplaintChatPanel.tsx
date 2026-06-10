@@ -76,7 +76,7 @@ export default function ComplaintChatPanel({
     setCreating(true);
     setError("");
     try {
-      const res = await fetch(`/api/admin/complaints/${complaintId}/confirm-chat`, {
+      const res = await fetch(`/api/admin/complaints/${complaintId}/confirm-chat`, { credentials: "include",
         method: "POST",
       });
       const json = (await res.json()) as { success: boolean; data?: ChatRoomData; error?: string };
@@ -95,7 +95,7 @@ export default function ComplaintChatPanel({
     setSending(true);
     setError("");
     try {
-      const res = await fetch(`/api/chats/${room.id}/messages`, {
+      const res = await fetch(`/api/chats/${room.id}/messages`, { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: input.trim() }),
@@ -115,7 +115,7 @@ export default function ComplaintChatPanel({
     setResolving(true);
     setError("");
     try {
-      const res = await fetch(`/api/admin/complaints/${complaintId}/resolve`, { method: "POST" });
+      const res = await fetch(`/api/admin/complaints/${complaintId}/resolve`, { credentials: "include", method: "POST" });
       const json = (await res.json()) as { success: boolean; error?: string };
       if (!res.ok) { setError(json.error ?? "Thao tác thất bại"); return; }
       setStatus("REJECTED");
@@ -132,7 +132,7 @@ export default function ComplaintChatPanel({
     setResolving(true);
     setError("");
     try {
-      const res = await fetch(`/api/admin/complaints/${complaintId}/confirm-order`, { method: "POST" });
+      const res = await fetch(`/api/admin/complaints/${complaintId}/confirm-order`, { credentials: "include", method: "POST" });
       const json = (await res.json()) as { success: boolean; error?: string };
       if (!res.ok) { setError(json.error ?? "Thao tác thất bại"); return; }
       setStatus("RESOLVED");

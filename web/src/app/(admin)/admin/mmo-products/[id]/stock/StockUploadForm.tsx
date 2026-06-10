@@ -35,7 +35,7 @@ export default function StockUploadForm({ productId }: Props) {
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/products/mmo/${productId}/stock`, {
+      const res = await fetch(`/api/products/mmo/${productId}/stock`, { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items }),

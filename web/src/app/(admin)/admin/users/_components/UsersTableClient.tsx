@@ -77,7 +77,7 @@ export default function UsersTableClient({ users, currentUserId, total, role, q 
     startTransition(async () => {
       await Promise.all(
         ids.map((id) =>
-          fetch(`/api/admin/users/${id}`, { method: "DELETE" }).then((r) => r.json())
+          fetch(`/api/admin/users/${id}`, { credentials: "include", method: "DELETE" }).then((r) => r.json())
         )
       );
       setSelected(new Set());

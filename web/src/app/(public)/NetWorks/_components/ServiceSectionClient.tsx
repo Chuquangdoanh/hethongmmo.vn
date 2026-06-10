@@ -60,7 +60,7 @@ export default function ServiceSectionClient({ services, illustrations, userInfo
     setStatus("loading");
     setErrorMsg("");
     try {
-      const res = await fetch("/api/networks/register", {
+      const res = await fetch("/api/networks/register", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

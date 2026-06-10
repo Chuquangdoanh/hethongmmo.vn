@@ -22,7 +22,7 @@ export default function DeliveredContentLoader({ orderId, orderType }: Props) {
   const [copiedAll, setCopiedAll] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/orders/${orderId}`)
+    fetch(`/api/orders/${orderId}`, { credentials: "include" })
       .then((r) => r.json())
       .then((json: { success: boolean; data?: OrderData }) => {
         setData(json.data ?? null);

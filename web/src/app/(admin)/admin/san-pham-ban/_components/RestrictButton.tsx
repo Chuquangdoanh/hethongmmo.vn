@@ -22,7 +22,7 @@ export default function RestrictButton({ productId, productName, isRestricted }:
         ? { isRestricted: false }
         : { isRestricted: true, restrictReason: reason };
 
-      const res = await fetch(`/api/admin/seller-products/${productId}`, {
+      const res = await fetch(`/api/admin/seller-products/${productId}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

@@ -102,7 +102,7 @@ export default function TutTrickCategoryManager({ initialCategories }: Props) {
     if (!confirm(`Xóa danh mục "${catName}"?`)) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/tut-trick-categories/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/tut-trick-categories/${id}`, { credentials: "include", method: "DELETE" });
       const json = (await res.json()) as { error?: string };
       if (!res.ok) { setError(json.error ?? "Xóa thất bại"); return; }
       setCategories((prev) => prev.filter((c) => c.id !== id));
@@ -121,7 +121,7 @@ export default function TutTrickCategoryManager({ initialCategories }: Props) {
     fd.append("file", file);
     setUploading(true);
     try {
-      const res = await fetch("/api/admin/upload/thumbnail?type=service-icon", { method: "POST", body: fd });
+      const res = await fetch("/api/admin/upload/thumbnail?type=service-icon", { credentials: "include", method: "POST", body: fd });
       const json = (await res.json()) as { data?: { url: string }; error?: string };
       if (!res.ok) { setUploadError(json.error ?? "Upload thất bại"); return; }
       setIconUrl(json.data?.url ?? "");
@@ -148,7 +148,7 @@ export default function TutTrickCategoryManager({ initialCategories }: Props) {
     setUploadError("");
     setImporting(true);
     try {
-      const res = await fetch("/api/admin/upload/from-url", {
+      const res = await fetch("/api/admin/upload/from-url", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: importUrl.trim(), uploadType: "service-icon" }),

@@ -49,7 +49,7 @@ export default function TestimonialList({
   async function toggleActive(id: string, current: boolean) {
     setToggling(id);
     try {
-      await fetch(`/api/admin/testimonials/${id}`, {
+      await fetch(`/api/admin/testimonials/${id}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !current }),

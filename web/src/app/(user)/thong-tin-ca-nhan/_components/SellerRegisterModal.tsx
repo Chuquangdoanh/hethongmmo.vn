@@ -37,7 +37,7 @@ type Step = 1 | 2;
 async function uploadFile(file: File, type: "cccd" | "portrait"): Promise<string> {
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch(`/api/user/upload?type=${type}`, { method: "POST", body: fd });
+  const res = await fetch(`/api/user/upload?type=${type}`, { credentials: "include", method: "POST", body: fd });
   const json = await res.json() as { data?: { url?: string }; error?: string };
   if (!res.ok || !json.data?.url) {
     throw new Error(json.error ?? `Upload ${type} thất bại`);
@@ -79,7 +79,7 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
 
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await fetch("/api/user/resource-categories");
+      const res = await fetch("/api/user/resource-categories", { credentials: "include" });
       const json = await res.json() as { data?: ResourceCategory[] };
       if (json.data) setDbCategories(json.data);
     } catch {
@@ -139,7 +139,7 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
       ]);
 
       // Save bank info + image URLs
-      const profileRes = await fetch("/api/user/profile", {
+      const profileRes = await fetch("/api/user/profile", { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bankName, bankAccountNumber, bankAccountHolder, cccdImageUrl: cccdUrl, portraitImageUrl: portraitUrl }),
@@ -155,7 +155,7 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
         ? `${category}: ${categoryDetail.trim()}`
         : category;
 
-      const registerRes = await fetch("/api/seller/register", {
+      const registerRes = await fetch("/api/seller/register", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ category: finalCategory }),

@@ -52,7 +52,7 @@ export default function SellerSettingsForm({
     setSuccess(false);
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/seller-settings", {
+      const res = await fetch("/api/admin/seller-settings", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

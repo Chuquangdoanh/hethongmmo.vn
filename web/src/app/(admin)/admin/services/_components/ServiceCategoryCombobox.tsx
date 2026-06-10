@@ -22,7 +22,7 @@ export default function ServiceCategoryCombobox({ value, onChange, required }: P
 
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/service-categories");
+      const res = await fetch("/api/admin/service-categories", { credentials: "include" });
       const json = await res.json() as { data?: Category[] };
       if (json.data) setCategories(json.data);
     } catch {

@@ -81,7 +81,7 @@ export default function OtpForm() {
           ? { email, otpCode, password, confirmPassword: password }
           : { email, otpCode, password: "", confirmPassword: "" };
 
-      const res = await fetch("/api/auth/verify-otp", {
+      const res = await fetch("/api/auth/verify-otp", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -111,7 +111,7 @@ export default function OtpForm() {
     setResending(true);
     setError("");
     try {
-      const res = await fetch("/api/auth/resend-otp", {
+      const res = await fetch("/api/auth/resend-otp", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, purpose }),

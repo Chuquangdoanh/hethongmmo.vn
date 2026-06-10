@@ -27,7 +27,7 @@ export default function ChangePasswordForm() {
     setSuccess(false);
     setLoading(true);
     try {
-      const res = await fetch("/api/user/change-password", {
+      const res = await fetch("/api/user/change-password", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword: form.current, newPassword: form.newPwd }),

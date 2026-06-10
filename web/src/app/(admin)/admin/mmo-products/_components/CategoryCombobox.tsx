@@ -25,7 +25,7 @@ export default function CategoryCombobox({ value, onChange, placeholder, require
 
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/resource-categories");
+      const res = await fetch("/api/admin/resource-categories", { credentials: "include" });
       const json = await res.json() as { data?: Category[] };
       if (json.data) setCategories(json.data);
     } catch {
@@ -70,7 +70,7 @@ export default function CategoryCombobox({ value, onChange, placeholder, require
     setCreating(true);
     setCreateError("");
     try {
-      const res = await fetch("/api/admin/resource-categories", {
+      const res = await fetch("/api/admin/resource-categories", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),

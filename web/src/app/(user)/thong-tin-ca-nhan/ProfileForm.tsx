@@ -43,7 +43,7 @@ export default function ProfileForm({
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch("/api/user/upload?type=avatar", { method: "POST", body: fd });
+      const res = await fetch("/api/user/upload?type=avatar", { credentials: "include", method: "POST", body: fd });
       const json = await res.json() as { data?: { url: string }; error?: string };
       if (!res.ok || !json.data?.url) {
         setError(json.error ?? "Upload ảnh thất bại.");
@@ -62,7 +62,7 @@ export default function ProfileForm({
     setSuccess(false);
     setLoading(true);
     try {
-      const res = await fetch("/api/user/profile", {
+      const res = await fetch("/api/user/profile", { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

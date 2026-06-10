@@ -26,7 +26,7 @@ export default function SellerApproveForm({ requestId, category }: Props) {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/sellers/${requestId}`, {
+      const res = await fetch(`/api/admin/sellers/${requestId}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(

@@ -171,7 +171,7 @@ export default function CourseForm({ initial }: { initial?: CourseData }) {
     fd.append("file", file);
     setThumbUploading(true);
     try {
-      const res = await fetch("/api/admin/upload/thumbnail", { method: "POST", body: fd });
+      const res = await fetch("/api/admin/upload/thumbnail", { credentials: "include", method: "POST", body: fd });
       const json = (await res.json()) as { data?: { url: string }; error?: string };
       if (!res.ok) { setThumbError(json.error ?? "Upload thất bại"); return; }
       set("thumbnail", json.data?.url ?? "");
@@ -243,7 +243,7 @@ export default function CourseForm({ initial }: { initial?: CourseData }) {
     if (!confirm("Xóa khóa học này?")) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/products/courses/${initial.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/products/courses/${initial.id}`, { credentials: "include", method: "DELETE" });
       const json = (await res.json()) as { success: boolean; error?: string };
       if (!res.ok || !json.success) { setError(json.error ?? "Xóa thất bại."); return; }
       router.push("/admin/courses");

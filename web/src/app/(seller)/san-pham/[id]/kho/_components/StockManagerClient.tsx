@@ -83,7 +83,7 @@ export default function StockManagerClient({
     setFetchError("");
     try {
       const qs = new URLSearchParams({ status, page: String(p) });
-      const res = await fetch(`/api/seller/products/${productId}/stock?${qs}`);
+      const res = await fetch(`/api/seller/products/${productId}/stock?${qs}`, { credentials: "include" });
       const json = await res.json() as {
         data?: { items: StockItem[]; total: number; totalPages: number; page: number };
         error?: string;
@@ -133,7 +133,7 @@ export default function StockManagerClient({
     setSaving(true);
     setSaveError("");
     try {
-      const res = await fetch(`/api/seller/products/${productId}/stock/${id}`, {
+      const res = await fetch(`/api/seller/products/${productId}/stock/${id}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: editValue.trim() }),
@@ -153,7 +153,7 @@ export default function StockManagerClient({
     if (!confirm("Xóa item này khỏi kho?")) return;
     setDeletingId(id);
     try {
-      const res = await fetch(`/api/seller/products/${productId}/stock/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/seller/products/${productId}/stock/${id}`, { credentials: "include", method: "DELETE" });
       if (!res.ok) return;
       setItems((prev) => prev.filter((item) => item.id !== id));
       setTotal((t) => t - 1);
@@ -200,7 +200,7 @@ export default function StockManagerClient({
     try {
       for (let i = 0; i < txtItems.length; i += BATCH) {
         const batch = txtItems.slice(i, i + BATCH);
-        const res = await fetch(`/api/seller/products/${productId}/stock`, {
+        const res = await fetch(`/api/seller/products/${productId}/stock`, { credentials: "include",
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ items: batch }),

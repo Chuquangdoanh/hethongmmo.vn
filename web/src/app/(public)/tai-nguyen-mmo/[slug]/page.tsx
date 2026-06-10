@@ -20,7 +20,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = await prisma.mmoProduct.findUnique({
+  const product = await prisma.mmoProduct.findFirst({
     where: { slug, isActive: true, deletedAt: null },
     select: { name: true },
   });
@@ -76,7 +76,7 @@ export default async function MmoProductDetailPage({
   const reviewPage = Math.max(1, Number(sp.reviewPage ?? "1"));
 
   const [product, session] = await Promise.all([
-    prisma.mmoProduct.findUnique({
+    prisma.mmoProduct.findFirst({
       where: { slug, isActive: true, deletedAt: null },
       select: {
         id: true, name: true, slug: true, thumbnail: true,

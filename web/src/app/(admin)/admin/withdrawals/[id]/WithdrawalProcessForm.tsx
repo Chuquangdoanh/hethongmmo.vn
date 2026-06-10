@@ -36,7 +36,7 @@ export default function WithdrawalProcessForm({ withdrawalId, netAmount, complet
             ? { action: "complete" }
             : { action: "reject", rejectReason: rejectReason.trim() };
 
-      const res = await fetch(`/api/admin/withdrawals/${withdrawalId}`, {
+      const res = await fetch(`/api/admin/withdrawals/${withdrawalId}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

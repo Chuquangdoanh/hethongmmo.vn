@@ -17,7 +17,7 @@ interface Props {
 }
 
 async function fetchDelivered(orderId: string): Promise<string | null> {
-  const res = await fetch(`/api/orders/${orderId}`);
+  const res = await fetch(`/api/orders/${orderId}`, { credentials: "include" });
   const json = await res.json() as { success: boolean; data?: { deliveredContent?: string } };
   return json.data?.deliveredContent ?? null;
 }
@@ -48,7 +48,7 @@ function ComplaintPopup({
     setError("");
     setSubmitting(true);
     try {
-      const res = await fetch("/api/user/complaints", {
+      const res = await fetch("/api/user/complaints", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subject: reason, content: detail || reason, orderId }),

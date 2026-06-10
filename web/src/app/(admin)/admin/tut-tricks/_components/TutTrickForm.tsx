@@ -85,7 +85,7 @@ export default function TutTrickForm({ initial, categoryOptions = [] }: { initia
     fd.append("file", file);
     setThumbUploading(true);
     try {
-      const res = await fetch("/api/admin/upload/thumbnail?type=tut-trick-thumbnail", { method: "POST", body: fd });
+      const res = await fetch("/api/admin/upload/thumbnail?type=tut-trick-thumbnail", { credentials: "include", method: "POST", body: fd });
       const json = (await res.json()) as { data?: { url: string }; error?: string };
       if (!res.ok) { setThumbError(json.error ?? "Upload thất bại"); return; }
       set("thumbnail", json.data?.url ?? "");
@@ -148,7 +148,7 @@ export default function TutTrickForm({ initial, categoryOptions = [] }: { initia
     if (!confirm("Xóa tut/trick này?")) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/products/tut-tricks/${initial.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/products/tut-tricks/${initial.id}`, { credentials: "include", method: "DELETE" });
       const json = (await res.json()) as { success: boolean; error?: string };
       if (!res.ok || !json.success) { setError(json.error ?? "Xóa thất bại."); return; }
       router.push("/admin/tut-tricks");

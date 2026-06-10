@@ -161,7 +161,7 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
   useEffect(() => {
     async function fetchBadges() {
       try {
-        const res = await fetch("/api/admin/badges");
+        const res = await fetch("/api/admin/badges", { credentials: "include" });
         if (!res.ok) return;
         const json = (await res.json()) as { data?: Badges };
         if (!json.data) return;

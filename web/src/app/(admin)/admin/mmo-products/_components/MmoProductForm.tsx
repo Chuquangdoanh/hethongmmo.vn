@@ -71,7 +71,7 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
     fd.append("file", file);
     setThumbUploading(true);
     try {
-      const res = await fetch("/api/admin/upload/thumbnail?type=mmo-thumbnail", { method: "POST", body: fd });
+      const res = await fetch("/api/admin/upload/thumbnail?type=mmo-thumbnail", { credentials: "include", method: "POST", body: fd });
       const json = (await res.json()) as { data?: { url: string }; error?: string };
       if (!res.ok) { setThumbError(json.error ?? "Upload thất bại"); return; }
       set("thumbnail", json.data?.url ?? "");
@@ -102,7 +102,7 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
     setSgvlImporting(true);
     setThumbError("");
     try {
-      const res = await fetch("/api/admin/upload/from-url", {
+      const res = await fetch("/api/admin/upload/from-url", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, uploadType: "mmo-thumbnail" }),
@@ -171,7 +171,7 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
     if (!confirm("Xóa sản phẩm này?")) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/products/mmo/${initial.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/products/mmo/${initial.id}`, { credentials: "include", method: "DELETE" });
       const json = await res.json() as { success: boolean; error?: string };
       if (!res.ok || !json.success) { setError(json.error ?? "Xóa thất bại."); return; }
       router.push("/admin/mmo-products");

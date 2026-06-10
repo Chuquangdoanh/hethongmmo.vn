@@ -85,7 +85,7 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
     fd.append("file", file);
     setUploading(true);
     try {
-      const res = await fetch("/api/admin/upload/thumbnail?type=course-icon", { method: "POST", body: fd });
+      const res = await fetch("/api/admin/upload/thumbnail?type=course-icon", { credentials: "include", method: "POST", body: fd });
       const json = (await res.json()) as { data?: { url: string }; error?: string };
       if (!res.ok) { setUploadError(json.error ?? "Upload thất bại"); return; }
       setIcon(json.data?.url ?? "");
@@ -112,7 +112,7 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
     setUploadError("");
     setImporting(true);
     try {
-      const res = await fetch("/api/admin/upload/from-url", {
+      const res = await fetch("/api/admin/upload/from-url", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: importUrl.trim(), uploadType: "course-icon" }),
@@ -157,7 +157,7 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
     if (!confirm(`Xóa danh mục "${catName}"?`)) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/course-categories/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/course-categories/${id}`, { credentials: "include", method: "DELETE" });
       const json = (await res.json()) as { success: boolean; error?: string };
       if (!res.ok || !json.success) { setError(json.error ?? "Xóa thất bại"); return; }
       setCategories((prev) => prev.filter((c) => c.id !== id));

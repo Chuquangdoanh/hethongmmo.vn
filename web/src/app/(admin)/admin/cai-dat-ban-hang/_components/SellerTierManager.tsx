@@ -108,7 +108,7 @@ export default function SellerTierManager({ initialTiers }: { initialTiers: Tier
     setSaving((s) => ({ ...s, [tier.id]: true }));
     setErrors((e) => ({ ...e, [tier.id]: "" }));
     try {
-      const res = await fetch(`/api/admin/seller-tier-definitions/${tier.id}`, {
+      const res = await fetch(`/api/admin/seller-tier-definitions/${tier.id}`, { credentials: "include",
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -127,14 +127,14 @@ export default function SellerTierManager({ initialTiers }: { initialTiers: Tier
   async function deleteTier(tier: Tier) {
     if (!confirm(`Xóa hạng "${tier.label}"? Seller đang ở hạng này sẽ được chuyển về STANDARD.`)) return;
     startTransition(async () => {
-      const res = await fetch(`/api/admin/seller-tier-definitions/${tier.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/seller-tier-definitions/${tier.id}`, { credentials: "include", method: "DELETE" });
       if (res.ok) setTiers((ts) => ts.filter((t) => t.id !== tier.id));
     });
   }
 
   // ── Create new tier ──
   async function createTier() {
-    const res = await fetch("/api/admin/seller-tier-definitions", {
+    const res = await fetch("/api/admin/seller-tier-definitions", { credentials: "include",
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...newTier, displayOrder: tiers.length }),
