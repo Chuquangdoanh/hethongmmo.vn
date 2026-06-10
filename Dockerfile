@@ -31,8 +31,6 @@ FROM deps AS migrator
 COPY web/prisma ./prisma
 COPY web/prisma.config.ts ./
 ENV NODE_ENV=production
-RUN chown -R nextjs:nodejs /app/node_modules/@prisma /app/node_modules/.prisma 2>/dev/null || true
-USER nextjs
 ENTRYPOINT ["node", "node_modules/prisma/build/index.js"]
 CMD ["migrate", "deploy"]
 
