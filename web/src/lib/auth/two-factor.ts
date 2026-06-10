@@ -6,12 +6,12 @@ const ISSUER = "hethongmmo.vn";
 
 /**
  * Generates a new TOTP secret for 2FA setup.
- * Returns the base32 secret, otpauth URI, and a QR code URL.
+ * Returns the base32 secret and otpauth URI only — QR generation must happen client-side.
+ * NEVER call external QR services with the URI (it contains the secret).
  */
 export function generateTotpSecret(userEmail: string): {
   secret: string;
   uri: string;
-  qrUrl: string;
 } {
   const secret = new OTPAuth.Secret({ size: 20 });
   const totp = new OTPAuth.TOTP({
@@ -23,10 +23,7 @@ export function generateTotpSecret(userEmail: string): {
     secret,
   });
 
-  const uri = totp.toString();
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(uri)}`;
-
-  return { secret: secret.base32, uri, qrUrl };
+  return { secret: secret.base32, uri: totp.toString() };
 }
 
 /**

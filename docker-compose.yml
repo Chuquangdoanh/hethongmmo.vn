@@ -3,6 +3,8 @@ services:
     image: postgres:16-alpine
     container_name: hethongmmo-pg
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-app_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -149,43 +151,58 @@ services:
           memory: 32m
 
   backup:
-    image: postgres:16-alpine
+    # alpine:3.20 — script tự cài postgresql-client + rclone khi khởi động
+    image: alpine:3.20
     container_name: hethongmmo-backup
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
     environment:
+      # ── PostgreSQL ──────────────────────────────────────────────────────────
       PGHOST: postgres
       PGUSER: ${POSTGRES_USER:-app_user}
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGDATABASE: ${POSTGRES_DB:-hethongmmo}
+
+      # ── Offsite: Cloudflare R2 ──────────────────────────────────────────────
+      # Tạo bucket riêng trên Cloudflare R2 dashboard, đặt tên vào BACKUP_R2_BUCKET
+      BACKUP_R2_BUCKET: ${BACKUP_R2_BUCKET:-hethongmmo-backups}
+
+      # rclone đọc config từ env vars (không cần file rclone.conf)
+      # Reuse credentials R2 đã có — đảm bảo API token có quyền ghi bucket backup
+      RCLONE_CONFIG_R2_TYPE: s3
+      RCLONE_CONFIG_R2_PROVIDER: Cloudflare
+      RCLONE_CONFIG_R2_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      RCLONE_CONFIG_R2_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      RCLONE_CONFIG_R2_ENDPOINT: ${S3_ENDPOINT}
+      RCLONE_CONFIG_R2_NO_CHECK_BUCKET: "true"
     volumes:
-      - ./backups:/backups
-    command: >-
-      sh -c 'mkdir -p /backups && while true; do
-      pg_dump | gzip > "/backups/backup_$$(date +%Y%m%d_%H%M%S).sql.gz" &&
-      echo "[backup] Completed" &&
-      find /backups -name "*.sql.gz" -mtime +7 -delete;
-      sleep 86400; done'
+      - ./backups:/backups               # local backup storage
+      - ./uploads:/uploads:ro            # user-uploaded files (read-only)
+      - ./infra/nginx/ssl:/ssl:ro        # SSL certificates
+      - ./infra/backup/backup.sh:/backup.sh:ro
+    command: sh /backup.sh
     deploy:
       resources:
         limits:
-          memory: 128m
+          memory: 256m
           cpus: "0.25"
 
   # Monitoring — chỉ bind localhost, access qua SSH tunnel: ssh -L 19999:localhost:19999 user@vps
+  # Hardened: bỏ docker.sock, SYS_PTRACE, SYS_ADMIN, apparmor:unconfined
+  # Đánh đổi: mất per-container disk chart và eBPF metrics — CPU/RAM/network vẫn đầy đủ
   netdata:
     image: netdata/netdata:stable
     container_name: hethongmmo-netdata
     hostname: hethongmmo-vps
     restart: unless-stopped
-    pid: host
     cap_add:
       - SYS_PTRACE
-      - SYS_ADMIN
+    cap_drop:
+      - ALL
     security_opt:
-      - apparmor:unconfined
+      - no-new-privileges:true
     environment:
       NETDATA_CLAIM_TOKEN: ""
       NETDATA_CLAIM_URL: ""
@@ -198,7 +215,6 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /etc/os-release:/host/etc/os-release:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       - "127.0.0.1:19999:19999"
     deploy:

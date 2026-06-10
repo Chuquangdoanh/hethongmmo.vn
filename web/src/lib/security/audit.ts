@@ -13,7 +13,7 @@ interface AuditParams {
   userAgent?: string;
 }
 
-const AUDIT_RETENTION_DAYS = 7;
+const AUDIT_RETENTION_DAYS = 90;
 
 export async function writeAuditLog(params: AuditParams): Promise<void> {
   if (params.actorId) {

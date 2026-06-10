@@ -22,9 +22,10 @@ export async function GET(): Promise<NextResponse> {
       return apiError("2FA đã được bật", "ALREADY_ENABLED", 400);
     }
 
-    const { secret, uri, qrUrl } = generateTotpSecret(user.email);
+    const { secret, uri } = generateTotpSecret(user.email);
 
-    return apiOk({ secret, uri, qrUrl });
+    // qrUrl intentionally omitted — client generates QR from uri locally
+    return apiOk({ secret, uri });
   } catch (err) {
     if (err instanceof AppAuthError) {
       return NextResponse.json(

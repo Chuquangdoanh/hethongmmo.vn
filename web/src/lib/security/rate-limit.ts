@@ -50,8 +50,9 @@ export const resendOtpEmailRatelimit = createRatelimiter(3, "10 m");
 // Giới hạn resend OTP: 10 lần/10 phút theo IP
 export const resendOtpIpRatelimit = createRatelimiter(10, "10 m");
 
-// Giới hạn tạo đơn hàng: 5 lần/phút theo userId
-export const orderRatelimit = createRatelimiter(5, "1 m");
+// Giới hạn tạo đơn hàng: 20 lần/phút theo userId
+// idempotencyKey + $transaction + balance check đã chống double-buy và race condition
+export const orderRatelimit = createRatelimiter(20, "1 m");
 
 // Giới hạn đăng ký seller: 3 lần/giờ theo userId
 export const sellerRegisterRatelimit = createRatelimiter(3, "1 h");

@@ -10,6 +10,7 @@ import { prisma } from "@/lib/db/prisma";
 import { verifyPassword } from "@/lib/auth/password";
 import { loginSchema } from "@/lib/validation/user.schema";
 import { logger } from "@/lib/utils/logger";
+import { isSessionDenied } from "@/lib/auth/session-denylist";
 import type { Role, AccountStatus, SellerStatus } from "@prisma/client";
 
 class AccountBannedError extends CredentialsSignin {
@@ -50,9 +51,16 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   ...authConfig,
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      // Force DB re-check on session update (e.g. after 2FA setup)
+      if (trigger === "update") {
+        token.statusCheckedAt = 0;
+        return token;
+      }
+
       // First sign-in: populate token from authorize() return value
       if (user) {
+        token.jti = crypto.randomUUID();
         token.id = user.id;
         token.role = (user as { role?: string }).role ?? "USER";
         token.status = (user as { status?: string }).status ?? "ACTIVE";
@@ -67,6 +75,16 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       // Catches status/role changes (e.g. admin bans user) without requiring re-login
       const checkedAt = token.statusCheckedAt as number | undefined;
       if (token.id && (!checkedAt || Date.now() - checkedAt > FIVE_MIN_MS)) {
+        // Check session denylist (revokes stolen cookies after logout)
+        if (token.jti) {
+          try {
+            const denied = await isSessionDenied(token.jti);
+            if (denied) return null;
+          } catch {
+            // fail-open — don't break auth if Redis is unavailable
+          }
+        }
+
         try {
           const fresh = await prisma.user.findUnique({
             where: { id: token.id as string },

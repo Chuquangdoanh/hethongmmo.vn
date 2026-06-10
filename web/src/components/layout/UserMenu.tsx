@@ -230,9 +230,19 @@ function MenuItem({
 }
 
 function LogoutBtn({ onLogout }: { onLogout: () => void }) {
+  async function handleLogout() {
+    onLogout();
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // proceed with signOut even if denylist call fails
+    }
+    void signOut({ callbackUrl: "/" });
+  }
+
   return (
     <button
-      onClick={() => { onLogout(); void signOut({ callbackUrl: "/" }); }}
+      onClick={() => { void handleLogout(); }}
       className="Btn"
       style={{
         display: "flex",
