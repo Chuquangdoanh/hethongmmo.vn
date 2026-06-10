@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { requireStaff } from "@/lib/auth/rbac";
+import { requireUser } from "@/lib/auth/rbac";
 import { isValidLocalKey, readLocalFile } from "@/lib/storage/local";
 
 export const runtime = "nodejs";
@@ -8,12 +8,22 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireStaff(session); // STAFF và ADMIN đều có thể xem ảnh CCCD/portrait
+    const me = requireUser(session);
 
     const key = req.nextUrl.searchParams.get("key") ?? "";
 
     if (!isValidLocalKey(key)) {
       return new NextResponse("Not found", { status: 404 });
+    }
+
+    // STAFF/ADMIN xem được mọi file; user thường chỉ xem file của chính mình
+    // key format: cccd/{userId}/{filename} — parts[1] là userId
+    const isStaff = me.role === "ADMIN" || me.role === "STAFF";
+    if (!isStaff) {
+      const ownerId = key.split("/")[1];
+      if (ownerId !== me.id) {
+        return new NextResponse("Forbidden", { status: 403 });
+      }
     }
 
     let buffer: Buffer;

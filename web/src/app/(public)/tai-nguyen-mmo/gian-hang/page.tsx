@@ -7,6 +7,7 @@ import {
   Store, BadgeCheck, Star, ShoppingCart, Package, ChevronRight, Building2,
 } from "lucide-react";
 import { CommunityBanner } from "../_components/CommunityBanner";
+import { r2Url } from "@/lib/utils/image-url";
 import { SellerFilterSidebar } from "./_components/SellerFilterSidebar";
 import type { SellerCategoryItem } from "./_components/SellerFilterSidebar";
 import { SellerSortSelect } from "./_components/SellerSortSelect";
@@ -374,7 +375,7 @@ export default async function NhaBanHangPage({
                       {seller.avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={seller.avatarUrl}
+                          src={r2Url(seller.avatarUrl)}
                           alt={seller.name}
                           className="w-14 h-14 rounded-full object-cover ring-2 ring-white shadow-md"
                         />

@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { r2Url } from "@/lib/utils/image-url";
 
 const AVATAR_COLORS = [
   { label: "Xanh dương", value: "#0066ff" },
@@ -322,7 +323,7 @@ export default function TestimonialForm({
               /* Đã có ảnh — chỉ hiển thị preview + nút đổi/xóa */
               <div className="flex items-center gap-3">
                 <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-gray-200">
-                  <Image src={form.reviewerAvatar} alt="avatar" fill className="object-cover" />
+                  <Image src={r2Url(form.reviewerAvatar)} alt="avatar" fill className="object-cover" />
                 </div>
                 <div className="flex gap-2">
                   <button

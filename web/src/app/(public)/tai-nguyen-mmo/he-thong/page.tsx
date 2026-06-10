@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import {
   Building2, BadgeCheck, ShoppingCart, Star,
   MessageCircle, CheckCircle, Headphones, Package, RefreshCw,
@@ -305,9 +306,9 @@ export default async function SystemProfilePage({
                       {p.thumbnail ? (
                         <>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={p.thumbnail} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-45 pointer-events-none" loading="lazy" />
+                          <img src={r2Url(p.thumbnail)} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-45 pointer-events-none" loading="lazy" />
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={p.thumbnail} alt={p.name} className="relative z-10 w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                          <img src={r2Url(p.thumbnail)} alt={p.name} className="relative z-10 w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy" />
                         </>
                       ) : (
                         <div className="flex items-center justify-center h-full">

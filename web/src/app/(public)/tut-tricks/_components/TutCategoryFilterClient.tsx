@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { r2Url } from "@/lib/utils/image-url";
 
 interface Props {
   categories: { name: string; icon: string }[];
@@ -51,7 +52,7 @@ export default function TutCategoryFilterClient({ categories, activeCategory, ac
           {icon && (
             <span className={`flex items-center justify-center w-4 h-4 rounded p-0.5 shrink-0 ${activeCategory === name ? "bg-white/20" : "bg-white border border-gray-200"}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={icon} alt={name} width={12} height={12} loading="lazy" decoding="async" className="w-full h-full object-contain" />
+              <img src={r2Url(icon)} alt={name} width={12} height={12} loading="lazy" decoding="async" className="w-full h-full object-contain" />
             </span>
           )}
           {name}

@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Search, X, SlidersHorizontal } from "lucide-react";
+import { r2Url } from "@/lib/utils/image-url";
 
 const PRICE_RANGES = [
   { label: "Dưới 100.000đ",         value: "0-100000"           },
@@ -130,7 +131,7 @@ export function FilterSidebar({ categories, totalCount }: FilterSidebarProps) {
                   {iconUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={iconUrl}
+                      src={r2Url(iconUrl)}
                       alt=""
                       width={20}
                       height={20}

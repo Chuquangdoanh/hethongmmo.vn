@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { r2Url } from "@/lib/utils/image-url";
 
 const ACTIVE_STYLE: React.CSSProperties = {
   background: "linear-gradient(135deg, #e11d48, #be123c)",
@@ -50,7 +51,7 @@ export default function CategoryFilterClient({ categories, activeCategory }: Pro
           {icon && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={icon}
+              src={r2Url(icon)}
               alt={name}
               width={16}
               height={16}

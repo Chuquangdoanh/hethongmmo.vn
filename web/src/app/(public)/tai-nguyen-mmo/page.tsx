@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ProductBuyButton from "./_components/ProductBuyButton";
@@ -418,7 +419,7 @@ export default async function TaiNguyenMmoPage({
                           {p.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={p.imageUrl}
+                              src={r2Url(p.imageUrl)}
                               alt={p.name}
                               loading="lazy"
                               decoding="async"

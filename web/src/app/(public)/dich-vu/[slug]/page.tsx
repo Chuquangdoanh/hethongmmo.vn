@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import SafeHtml from "@/components/shared/SafeHtml";
 import ServiceOrderForm from "./ServiceOrderForm";
 import TestimonialsSection from "@/components/shared/TestimonialsSection";
@@ -171,7 +172,7 @@ export default async function DichVuDetailPage({ params }: Props) {
           {service.thumbnail && (
             <div className="rounded-xl overflow-hidden border border-border">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={service.thumbnail} alt={service.name} className="w-full object-cover max-h-64" />
+              <img src={r2Url(service.thumbnail)} alt={service.name} className="w-full object-cover max-h-64" />
             </div>
           )}
 

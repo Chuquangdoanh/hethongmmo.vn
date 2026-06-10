@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { formatVnd } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import { randomUUID } from "@/lib/utils/uuid";
 import {
   Users, Clock, CheckCircle, Zap,
@@ -92,7 +93,7 @@ function ServiceCard({
         <div className="flex flex-col flex-1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={service.thumbnail}
+            src={r2Url(service.thumbnail)}
             alt={service.name}
             className="w-full flex-1 object-cover"
             style={{ minHeight: "220px" }}

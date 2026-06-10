@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import { auth } from "@/auth";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ReviewSection from "@/components/shared/ReviewSection";
@@ -168,13 +169,13 @@ export default async function SellerProductDetailPage({
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={product.imageUrl} alt="" aria-hidden
+            src={r2Url(product.imageUrl)} alt="" aria-hidden
             className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-55 pointer-events-none"
             loading="lazy" decoding="async"
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={product.imageUrl} alt={product.name}
+            src={r2Url(product.imageUrl)} alt={product.name}
             className="relative z-10 w-full h-full object-contain"
             loading="eager" decoding="async"
           />
@@ -226,7 +227,7 @@ export default async function SellerProductDetailPage({
       {product.seller.avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={product.seller.avatarUrl}
+          src={r2Url(product.seller.avatarUrl)}
           alt={sellerName}
           className="w-14 h-14 rounded-2xl object-cover shrink-0 shadow-sm"
         />

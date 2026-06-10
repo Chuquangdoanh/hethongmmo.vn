@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import CourseCategoryCombobox from "./CourseCategoryCombobox";
+import { r2Url } from "@/lib/utils/image-url";
 
 const BADGES = ["NONE", "HOT", "POPULAR", "TREND", "NEW", "VIP"];
 const FORMATS = ["ONLINE", "OFFLINE", "HYBRID"];
@@ -600,7 +601,7 @@ export default function CourseForm({ initial }: { initial?: CourseData }) {
               <div className="shrink-0 w-28 h-20 rounded-lg border border-gray-200 bg-white overflow-hidden flex items-center justify-center">
                 {form.thumbnail ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={form.thumbnail} alt="thumbnail" className="w-full h-full object-cover" />
+                  <img src={r2Url(form.thumbnail)} alt="thumbnail" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-[#3F3F46] text-xs text-center px-2">Chưa có ảnh</span>
                 )}

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import { auth } from "@/auth";
 import SimpleOrderButton from "@/components/shared/SimpleOrderButton";
 import SafeHtml from "@/components/shared/SafeHtml";
@@ -85,7 +86,7 @@ export default async function TutTrickDetailPage({
             <div className="w-24 h-24 rounded-xl bg-[#f1f5f9] flex-shrink-0 overflow-hidden">
               {item.thumbnail ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.thumbnail} alt={item.name} className="w-full h-full object-cover" />
+                <img src={r2Url(item.thumbnail)} alt={item.name} className="w-full h-full object-cover" />
               ) : (
                 <div className="flex items-center justify-center h-full">
                   {PLATFORM_ICONS[item.platform] ? (

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Star, Users, Calendar, Clock, ShieldCheck } from "lucide-react";
 import { formatVnd } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import TutTrickBuyButton, { type TutTrickItem } from "@/components/shared/TutTrickBuyButton";
 
 interface TutTrickCardItem {
@@ -68,7 +69,7 @@ export default function TutTrickCard({ item, isLoggedIn, discountPct = 0 }: Prop
         <div className="flex flex-col flex-1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={item.thumbnail}
+            src={r2Url(item.thumbnail)}
             alt={item.name}
             className="w-full flex-1 object-cover"
             style={{ minHeight: "220px" }}
@@ -102,7 +103,7 @@ export default function TutTrickCard({ item, isLoggedIn, discountPct = 0 }: Prop
                 {item.catIcon && (
                   <span className="flex items-center justify-center w-3.5 h-3.5 bg-white rounded border border-gray-200 p-0.5 shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={item.catIcon} alt={item.category} width={12} height={12} loading="lazy" decoding="async" className="w-full h-full object-contain" />
+                    <img src={r2Url(item.catIcon)} alt={item.category} width={12} height={12} loading="lazy" decoding="async" className="w-full h-full object-contain" />
                   </span>
                 )}
                 {item.category}

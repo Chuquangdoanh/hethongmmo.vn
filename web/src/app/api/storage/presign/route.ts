@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { requireUser } from "@/lib/auth/rbac";
-import { AppAuthError } from "@/lib/auth/rbac";
-import { getPresignedUploadUrl, isAllowedContentType } from "@/lib/storage/s3";
-import { toApiError } from "@/lib/errors";
+import { getPresignedUploadUrl } from "@/lib/storage/s3";
+import { isAllowedMimeType } from "@/lib/storage/r2-upload";
+import { apiOk, apiError, apiCatch, apiValidationError } from "@/lib/api-response";
 
 export const runtime = "nodejs";
 
 const presignSchema = z.object({
-  purpose: z.enum(["avatar", "cccd", "portrait", "product-image"]),
-  contentType: z.string(),
+  // cccd/portrait removed — those must use /api/user/upload which routes to VPS disk
+  purpose:       z.enum(["avatar", "product-image"]),
+  contentType:   z.string(),
   fileExtension: z.string().regex(/^[a-z0-9]{1,10}$/),
 });
 
@@ -21,43 +22,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const body: unknown = await req.json();
     const parsed = presignSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ", code: "VALIDATION_ERROR" },
-        { status: 400 },
-      );
-    }
+    if (!parsed.success) return apiValidationError(parsed.error.issues);
 
     const { purpose, contentType, fileExtension } = parsed.data;
 
-    if (!isAllowedContentType(contentType)) {
-      return NextResponse.json(
-        { error: "Loại file không được phép. Chỉ chấp nhận JPEG, PNG, WebP, GIF.", code: "INVALID_CONTENT_TYPE" },
-        { status: 400 },
+    if (!isAllowedMimeType(contentType)) {
+      return apiError(
+        "Loại file không được phép. Chỉ chấp nhận JPEG, PNG, WebP, AVIF, GIF.",
+        "INVALID_CONTENT_TYPE",
+        400,
       );
     }
 
-    // CCCD and portrait require seller or above
-    if ((purpose === "cccd" || purpose === "portrait") && me.role === "USER") {
-      return NextResponse.json(
-        { error: "Chỉ seller mới có thể upload CCCD/ảnh chân dung", code: "FORBIDDEN" },
-        { status: 403 },
-      );
-    }
-
-    const result = await getPresignedUploadUrl({
-      userId: me.id,
-      purpose,
-      contentType,
-      fileExtension,
-    });
-
-    return NextResponse.json(result);
+    const result = await getPresignedUploadUrl({ userId: me.id, purpose, contentType, fileExtension });
+    return apiOk(result);
   } catch (err) {
-    if (err instanceof AppAuthError) {
-      return NextResponse.json({ error: err.message, code: err.code }, { status: err.statusCode });
-    }
-    const e = toApiError(err);
-    return NextResponse.json({ error: e.error, code: e.code }, { status: e.statusCode });
+    return apiCatch(err);
   }
 }

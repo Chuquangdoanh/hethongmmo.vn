@@ -7,6 +7,7 @@ import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import Pagination from "@/components/shared/Pagination";
 import { Users, TrendingUp, Star, CheckCircle, Headphones } from "lucide-react";
 import { getDiscountInfo } from "@/lib/utils/discount";
+import { r2Url } from "@/lib/utils/image-url";
 
 export const metadata: Metadata = {
   title: "Hệ Thống MMO",
@@ -184,7 +185,7 @@ export default async function DichVuPage({
                   {iconUrl && (
                     <span className="flex items-center justify-center w-4 h-4 bg-white rounded-sm p-0.5 shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={iconUrl} alt="" width={14} height={14} loading="lazy" decoding="async" className="w-full h-full object-contain" />
+                      <img src={r2Url(iconUrl)} alt="" width={14} height={14} loading="lazy" decoding="async" className="w-full h-full object-contain" />
                     </span>
                   )}
                   {cat}

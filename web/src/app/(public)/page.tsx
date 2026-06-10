@@ -5,6 +5,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { formatVnd } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import HeroScrollObserver from "@/components/home/HeroScrollObserver";
 import HomeDriftObserver from "@/components/home/HomeDriftObserver";
 import CourseSlider from "@/components/home/CourseSlider";
@@ -754,7 +755,7 @@ export default async function HomePage() {
                   }}>
                     {thumb ? (
                       /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={thumb} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} />
+                      <img src={r2Url(thumb)} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} />
                     ) : (
                       <span>{emoji}</span>
                     )}
@@ -908,7 +909,7 @@ export default async function HomePage() {
                     }}>
                       {tut.thumbnail ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={tut.thumbnail} alt={tut.name} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} />
+                        <img src={r2Url(tut.thumbnail)} alt={tut.name} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} />
                       ) : tut.platform === "TIKTOK" ? (
                         <Music2 size={52} strokeWidth={1.25} style={{ color: "rgba(255,255,255,0.7)" }} />
                       ) : tut.platform === "FACEBOOK" ? (
@@ -1127,10 +1128,10 @@ export default async function HomePage() {
                       <>
                         {/* Blurred background fill */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={p.imageUrl} alt="" aria-hidden style={{ width: "115%", height: "115%", objectFit: "cover", position: "absolute", inset: "-7.5%", filter: "blur(18px)", opacity: 0.5 }} />
+                        <img src={r2Url(p.imageUrl)} alt="" aria-hidden style={{ width: "115%", height: "115%", objectFit: "cover", position: "absolute", inset: "-7.5%", filter: "blur(18px)", opacity: 0.5 }} />
                         {/* Sharp foreground — contain để thấy blur viền */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={p.imageUrl} alt={p.name} style={{ position: "relative", zIndex: 1, width: "100%", height: "100%", objectFit: "contain" }} />
+                        <img src={r2Url(p.imageUrl)} alt={p.name} style={{ position: "relative", zIndex: 1, width: "100%", height: "100%", objectFit: "contain" }} />
                       </>
                     ) : (
                       <Lock size={36} strokeWidth={1.5} style={{ color: "#059669", opacity: 0.65 }} />

@@ -76,6 +76,10 @@ export default function LoginForm() {
           setError("Xác minh captcha thất bại. Vui lòng thử lại.");
           return;
         }
+        if (code === "PASSWORD_RESET_REQUIRED") {
+          router.push("/quen-mat-khau?reason=reset_required");
+          return;
+        }
         setError("Email hoặc mật khẩu không đúng.");
         return;
       }

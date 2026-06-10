@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { r2Url } from "@/lib/utils/image-url";
 
 const SVGL_PRESETS = [
   { name: "Facebook",    icon: "https://svgl.app/library/facebook-icon.svg" },
@@ -192,7 +193,7 @@ export default function TutTrickCategoryManager({ initialCategories }: Props) {
           {iconUrl && (
             <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={iconUrl} alt="icon preview" className="w-10 h-10 object-contain rounded border border-gray-200 bg-gray-50 p-1 shrink-0" />
+              <img src={r2Url(iconUrl)} alt="icon preview" className="w-10 h-10 object-contain rounded border border-gray-200 bg-gray-50 p-1 shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-500 truncate">{iconUrl}</p>
               </div>
@@ -264,7 +265,7 @@ export default function TutTrickCategoryManager({ initialCategories }: Props) {
               />
               {iconUrl && iconUrl.startsWith("http") && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={iconUrl} alt="preview" className="w-8 h-8 object-contain shrink-0 rounded border border-gray-200 bg-white p-1" />
+                <img src={r2Url(iconUrl)} alt="preview" className="w-8 h-8 object-contain shrink-0 rounded border border-gray-200 bg-white p-1" />
               )}
             </div>
           </div>
@@ -286,7 +287,7 @@ export default function TutTrickCategoryManager({ initialCategories }: Props) {
                   }`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.icon} alt={p.name} className="w-6 h-6 object-contain" />
+                  <img src={r2Url(p.icon)} alt={p.name} className="w-6 h-6 object-contain" />
                   <span className="text-[9px] text-gray-500 max-w-[52px] truncate">{p.name}</span>
                 </button>
               ))}
@@ -339,7 +340,7 @@ export default function TutTrickCategoryManager({ initialCategories }: Props) {
                     <div className="w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center shrink-0 p-1.5">
                       {cat.iconUrl && cat.iconUrl.startsWith("http") ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={cat.iconUrl} alt={cat.name} className="w-full h-full object-contain" />
+                        <img src={r2Url(cat.iconUrl)} alt={cat.name} className="w-full h-full object-contain" />
                       ) : (
                         <span className="text-base">📁</span>
                       )}

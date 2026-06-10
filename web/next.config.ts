@@ -59,6 +59,9 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["argon2", "@prisma/client"],
 
   images: {
+    // CDN (cdn.hethongmmo.vn) xử lý optimization — Next.js chỉ output URL thẳng
+    // Tránh Next.js image optimizer server-side fetch bị Cloudflare Bot Fight Mode chặn
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",

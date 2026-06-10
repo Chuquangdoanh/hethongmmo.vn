@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import {
   Store, BadgeCheck, ShoppingCart, Star,
   MessageCircle, UserPlus, Flag, Clock,
@@ -162,7 +163,7 @@ export default async function SellerProfilePage({
             {seller.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={seller.avatarUrl}
+                src={r2Url(seller.avatarUrl)}
                 alt={seller.fullName ?? ""}
                 className="w-20 h-20 rounded-full object-cover ring-4 ring-white shadow-md"
               />
@@ -369,9 +370,9 @@ export default async function SellerProfilePage({
                       {p.imageUrl ? (
                         <>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={p.imageUrl} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-45 pointer-events-none" loading="lazy" />
+                          <img src={r2Url(p.imageUrl)} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-45 pointer-events-none" loading="lazy" />
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={p.imageUrl} alt={p.name} className="relative z-10 w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                          <img src={r2Url(p.imageUrl)} alt={p.name} className="relative z-10 w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy" />
                         </>
                       ) : (
                         <div className="flex items-center justify-center h-full">

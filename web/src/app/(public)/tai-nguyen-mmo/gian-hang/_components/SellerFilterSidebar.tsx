@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Search, X, SlidersHorizontal, Star } from "lucide-react";
+import { r2Url } from "@/lib/utils/image-url";
 
 const RATING_OPTIONS = [
   { label: "Tất cả đánh giá", value: "" },
@@ -126,7 +127,7 @@ export function SellerFilterSidebar({ categories, totalCount }: Props) {
                   />
                   {iconUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={iconUrl} alt="" width={20} height={20} loading="lazy" decoding="async"
+                    <img src={r2Url(iconUrl)} alt="" width={20} height={20} loading="lazy" decoding="async"
                       className="w-5 h-5 rounded object-contain shrink-0" />
                   )}
                   <span className={`text-sm flex-1 truncate transition-colors ${activeCategory === name ? "font-semibold text-[#2563eb]" : "text-[#374151] group-hover:text-[#2563eb]"}`}>

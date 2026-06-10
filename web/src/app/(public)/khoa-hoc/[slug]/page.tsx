@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import { getDiscountInfo } from "@/lib/utils/discount";
 import {
   Clock, BookOpen, Users, Eye,
@@ -163,7 +164,7 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f1f5f9] border border-[#e2e8f0] text-xs font-semibold text-[#374151]">
                     <span className="flex items-center justify-center w-4 h-4 bg-white rounded-sm shrink-0 p-0.5">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={catIcon} alt={course.category} className="w-full h-full object-contain" />
+                      <img src={r2Url(catIcon)} alt={course.category} className="w-full h-full object-contain" />
                     </span>
                     {course.category}
                   </span>
@@ -224,7 +225,7 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                 style={{ aspectRatio: "16/9" }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={course.thumbnail} alt={course.name} className="w-full h-full object-cover" />
+                <img src={r2Url(course.thumbnail)} alt={course.name} className="w-full h-full object-cover" />
               </div>
             )}
 
@@ -352,7 +353,7 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={course.thumbnail}
+                    src={r2Url(course.thumbnail)}
                     alt={course.name}
                     className="w-full h-full object-cover"
                   />

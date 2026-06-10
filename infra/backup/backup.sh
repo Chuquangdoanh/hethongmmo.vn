@@ -103,6 +103,14 @@ while true; do
       && log "R2 uploads/ sync OK" \
       || { log "ERROR: R2 uploads/ sync thất bại!"; SYNC_OK=0; ERRORS=$((ERRORS + 1)); }
 
+    # Sync file-level (không nén) để web app có thể fallback đọc từng file khi VPS disk mất
+    if [ -d /uploads ] && [ "$(ls -A /uploads 2>/dev/null)" ]; then
+      rclone sync /uploads/ "r2:${BACKUP_R2_BUCKET}/uploads-live" \
+        --transfers=4 --stats-one-line --retries=3 2>&1 \
+        && log "R2 uploads-live/ sync OK" \
+        || log "WARN: R2 uploads-live/ sync thất bại (không critical)"
+    fi
+
     rclone copy /backups/ssl     "r2:${BACKUP_R2_BUCKET}/ssl"     \
       --transfers=2 --stats-one-line --retries=3 2>&1 \
       && log "R2 ssl/ sync OK" \

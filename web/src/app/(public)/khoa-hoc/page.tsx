@@ -9,6 +9,7 @@ import {
   Star, Users, Clock, Eye, CheckCircle,
   Zap, BookOpen, TrendingUp, Award, GraduationCap, ChevronRight,
 } from "lucide-react";
+import { r2Url } from "@/lib/utils/image-url";
 
 export const metadata: Metadata = {
   title: "Hệ Thống MMO",
@@ -206,7 +207,7 @@ export default async function KhoaHocPage({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={featuredCourse.thumbnail}
+                    src={r2Url(featuredCourse.thumbnail)}
                     alt="Khóa học thực chiến"
                     className="w-full h-full object-cover"
                   />
@@ -318,7 +319,7 @@ function CourseCard({
         {course.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={course.thumbnail}
+            src={r2Url(course.thumbnail)}
             alt={course.name}
             width={400}
             height={225}

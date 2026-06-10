@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import { auth } from "@/auth";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ReviewSection from "@/components/shared/ReviewSection";
@@ -153,13 +154,13 @@ export default async function MmoProductDetailPage({
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={product.thumbnail} alt="" aria-hidden
+            src={r2Url(product.thumbnail)} alt="" aria-hidden
             className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-55 pointer-events-none"
             loading="lazy" decoding="async"
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={product.thumbnail} alt={product.name}
+            src={r2Url(product.thumbnail)} alt={product.name}
             className="relative z-10 w-full h-full object-contain"
             loading="eager" decoding="async"
           />

@@ -52,14 +52,14 @@ export default function ProductForm({ mode, sellerCategory, initialData }: Produ
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ purpose: "product-image", contentType: file.type, fileExtension: ext }),
       });
-      const presignJson = await presignRes.json() as { uploadUrl?: string; publicUrl?: string; error?: string };
-      if (!presignRes.ok || !presignJson.uploadUrl) {
+      const presignJson = await presignRes.json() as { data?: { uploadUrl: string; publicUrl: string }; error?: string };
+      if (!presignRes.ok || !presignJson.data?.uploadUrl) {
         setUploadError(presignJson.error ?? "Không lấy được URL upload.");
         return;
       }
 
       // Bước 2: upload thẳng từ browser lên R2 (không qua VPS)
-      const uploadRes = await fetch(presignJson.uploadUrl, {
+      const uploadRes = await fetch(presignJson.data.uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": file.type },
         body: file,
@@ -69,7 +69,7 @@ export default function ProductForm({ mode, sellerCategory, initialData }: Produ
         return;
       }
 
-      setForm((f) => ({ ...f, imageUrl: presignJson.publicUrl! }));
+      setForm((f) => ({ ...f, imageUrl: presignJson.data!.publicUrl }));
     } finally {
       setUploading(false);
     }

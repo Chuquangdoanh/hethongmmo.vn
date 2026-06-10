@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import CategoryCombobox from "./CategoryCombobox";
+import { r2Url } from "@/lib/utils/image-url";
 
 interface MmoProductData {
   id?: string;
@@ -189,7 +190,7 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
           onClick={() => setPreviewFull(false)}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={form.thumbnail} alt="preview" className="max-w-[90vw] max-h-[90vh] rounded-xl object-contain" />
+          <img src={r2Url(form.thumbnail)} alt="preview" className="max-w-[90vw] max-h-[90vh] rounded-xl object-contain" />
           <button className="absolute top-4 right-4 text-white text-2xl">✕</button>
         </div>
       )}
@@ -311,7 +312,7 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
             {form.thumbnail && (
               <div className="relative w-40 h-28 rounded-lg overflow-hidden border border-gray-200 group">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={form.thumbnail} alt="thumbnail" className="w-full h-full object-cover" />
+                <img src={r2Url(form.thumbnail)} alt="thumbnail" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <button type="button" onClick={() => setPreviewFull(true)}
                     className="text-white text-xs bg-white/20 rounded px-2 py-1 hover:bg-white/30">

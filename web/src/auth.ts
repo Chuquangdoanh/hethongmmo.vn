@@ -29,6 +29,10 @@ class CaptchaFailedError extends CredentialsSignin {
   code = "CAPTCHA_FAILED";
 }
 
+class PasswordResetRequiredError extends CredentialsSignin {
+  code = "PASSWORD_RESET_REQUIRED";
+}
+
 async function verifyCaptcha(token: string, ip: string): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET;
   if (!secret) return true;
@@ -185,7 +189,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
 
         if (user.passwordHash === "$RESET_REQUIRED$") {
           void recordAttempt(false, "PASSWORD_RESET_REQUIRED");
-          throw new Error("PASSWORD_RESET_REQUIRED");
+          throw new PasswordResetRequiredError();
         }
 
         const valid = await verifyPassword(user.passwordHash, password);

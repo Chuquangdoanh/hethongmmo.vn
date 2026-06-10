@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ServiceCategoryCombobox from "./ServiceCategoryCombobox";
+import { r2Url } from "@/lib/utils/image-url";
 
 // ICU-safe number formatter — avoids hydration mismatch between Node.js and browser
 function fmtNum(n: number): string {
@@ -520,7 +521,7 @@ export default function ServiceForm({ initial }: { initial?: ServiceData }) {
           {form.thumbnail && (
             <div className="relative w-40 h-28 rounded-lg overflow-hidden border border-gray-200">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={form.thumbnail} alt="thumbnail" className="w-full h-full object-cover" />
+              <img src={r2Url(form.thumbnail)} alt="thumbnail" className="w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={() => set("thumbnail", "")}
