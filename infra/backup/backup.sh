@@ -39,7 +39,7 @@ while true; do
   # ── 1. Database ─────────────────────────────────────────────────────────────
   DB_FILE="/backups/db/db_${STAMP}.sql.gz"
   log "Đang dump database → $DB_FILE"
-  if pg_dump | gzip > "$DB_FILE"; then
+  if pg_dump --clean --if-exists --quote-all-identifiers | gzip > "$DB_FILE"; then
     SIZE=$(du -sh "$DB_FILE" | cut -f1)
     log "Database OK: $SIZE"
   else

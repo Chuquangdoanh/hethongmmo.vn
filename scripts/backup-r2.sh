@@ -1,21 +1,45 @@
 #!/usr/bin/env bash
-# backup-r2.sh — Backup PostgreSQL + uploads lên Cloudflare R2
-# Chạy thủ công hoặc qua cron trong Docker backup service
+# =============================================================================
+# backup-r2.sh — Manual backup PostgreSQL + uploads lên Cloudflare R2
 #
-# Yêu cầu biến môi trường trong .env:
-#   R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
-#   PGHOST, PGUSER, PGPASSWORD, PGDATABASE
+# Dùng BACKUP_R2_* credentials (bucket riêng, KHÔNG phải media bucket).
+# Cấu trúc khớp với infra/backup/backup.sh để restore.sh dùng được.
 #
 # Cách chạy thủ công từ host:
+#   cd /path/to/hethongmmo
+#   ./scripts/backup-r2.sh
+#
+# Hoặc từ trong backup container:
 #   docker compose exec backup sh /scripts/backup-r2.sh
-
+#
+# Yêu cầu biến môi trường trong .env:
+#   BACKUP_R2_ENDPOINT, BACKUP_R2_ACCESS_KEY_ID, BACKUP_R2_SECRET_ACCESS_KEY
+#   BACKUP_R2_BUCKET
+#   POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB (PGHOST, PGUSER, PGPASSWORD, PGDATABASE)
+# =============================================================================
 set -euo pipefail
 
+log() { echo "[backup-r2] $(date '+%Y-%m-%d %H:%M:%S') $*"; }
+
+### ── Load .env ──────────────────────────────────────────────────────────────
+if [[ -f ".env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+
+# Hỗ trợ cả BACKUP_R2_* và PG* naming conventions
+PGHOST="${PGHOST:-${POSTGRES_HOST:-postgres}}"
+PGUSER="${PGUSER:-${POSTGRES_USER}}"
+PGPASSWORD="${PGPASSWORD:-${POSTGRES_PASSWORD}}"
+PGDATABASE="${PGDATABASE:-${POSTGRES_DB}}"
+
 ### ── Kiểm tra biến môi trường bắt buộc ─────────────────────────────────────
-: "${R2_ENDPOINT:?R2_ENDPOINT chưa set}"
-: "${R2_ACCESS_KEY_ID:?R2_ACCESS_KEY_ID chưa set}"
-: "${R2_SECRET_ACCESS_KEY:?R2_SECRET_ACCESS_KEY chưa set}"
-: "${R2_BUCKET:?R2_BUCKET chưa set}"
+: "${BACKUP_R2_ENDPOINT:?BACKUP_R2_ENDPOINT chưa set}"
+: "${BACKUP_R2_ACCESS_KEY_ID:?BACKUP_R2_ACCESS_KEY_ID chưa set}"
+: "${BACKUP_R2_SECRET_ACCESS_KEY:?BACKUP_R2_SECRET_ACCESS_KEY chưa set}"
+: "${BACKUP_R2_BUCKET:?BACKUP_R2_BUCKET chưa set}"
 : "${PGHOST:?PGHOST chưa set}"
 : "${PGUSER:?PGUSER chưa set}"
 : "${PGPASSWORD:?PGPASSWORD chưa set}"
@@ -24,27 +48,37 @@ set -euo pipefail
 ### ── Config ─────────────────────────────────────────────────────────────────
 TIMESTAMP="$(date -u +%Y%m%d_%H%M%S)"
 LOCAL_TMP="/tmp/hethongmmo-backup-${TIMESTAMP}"
-UPLOAD_DIR_HOST="${UPLOAD_DIR_HOST:-/uploads}"
+UPLOAD_DIR="${UPLOAD_DIR_HOST:-${UPLOAD_DIR:-/uploads}}"
 RETAIN_DAYS="${BACKUP_RETAIN_DAYS:-7}"
 
 mkdir -p "${LOCAL_TMP}"
 
-### ── Cài aws CLI nếu chưa có (alpine) ──────────────────────────────────────
-if ! command -v aws &>/dev/null; then
-  echo "[backup] Installing aws-cli..."
-  apk add --quiet --no-cache aws-cli 2>/dev/null || pip3 install --quiet awscli 2>/dev/null
+### ── Cài rclone nếu chưa có ─────────────────────────────────────────────────
+if ! command -v rclone &>/dev/null; then
+  if command -v apk &>/dev/null; then
+    log "Cài rclone (Alpine)..."
+    apk add --quiet --no-cache rclone
+  elif command -v apt-get &>/dev/null; then
+    log "Cài rclone (Debian/Ubuntu)..."
+    apt-get install -y rclone >/dev/null 2>&1
+  else
+    echo "rclone không có. Cài từ: https://rclone.org/install/"
+    exit 1
+  fi
 fi
 
-export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
-export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
-export AWS_DEFAULT_REGION="auto"
-
-AWS_ARGS="--endpoint-url ${R2_ENDPOINT} --no-progress"
+### ── Cấu hình rclone từ BACKUP_R2_* vars ────────────────────────────────────
+export RCLONE_CONFIG_R2_TYPE=s3
+export RCLONE_CONFIG_R2_PROVIDER=Cloudflare
+export RCLONE_CONFIG_R2_ACCESS_KEY_ID="${BACKUP_R2_ACCESS_KEY_ID}"
+export RCLONE_CONFIG_R2_SECRET_ACCESS_KEY="${BACKUP_R2_SECRET_ACCESS_KEY}"
+export RCLONE_CONFIG_R2_ENDPOINT="${BACKUP_R2_ENDPOINT}"
+export RCLONE_CONFIG_R2_NO_CHECK_BUCKET=true
 
 ### ── 1. Dump PostgreSQL ──────────────────────────────────────────────────────
-echo "[backup] Dumping PostgreSQL ${PGDATABASE}..."
-DB_FILE="${LOCAL_TMP}/db_${PGDATABASE}_${TIMESTAMP}.sql.gz"
-pg_dump \
+log "Đang dump database ${PGDATABASE}..."
+DB_FILE="${LOCAL_TMP}/db_${TIMESTAMP}.sql.gz"
+PGPASSWORD="${PGPASSWORD}" pg_dump \
   -h "${PGHOST}" \
   -U "${PGUSER}" \
   -d "${PGDATABASE}" \
@@ -53,42 +87,40 @@ pg_dump \
   --if-exists \
   --quote-all-identifiers \
   | gzip -9 > "${DB_FILE}"
-echo "[backup] DB dump: $(du -sh "${DB_FILE}" | cut -f1)"
+log "DB dump OK: $(du -sh "${DB_FILE}" | cut -f1)"
 
 ### ── 2. Archive uploads ─────────────────────────────────────────────────────
-echo "[backup] Archiving uploads..."
-UPLOAD_FILE="${LOCAL_TMP}/uploads_${TIMESTAMP}.tar.gz"
-tar -czf "${UPLOAD_FILE}" -C "${UPLOAD_DIR_HOST}" . 2>/dev/null || {
-  echo "[backup] WARN: uploads dir empty or not mounted, skipping"
-  UPLOAD_FILE=""
-}
-
-### ── 3. Upload sang R2 ──────────────────────────────────────────────────────
-R2_PREFIX="backups/${TIMESTAMP}"
-
-echo "[backup] Uploading to R2 s3://${R2_BUCKET}/${R2_PREFIX}/"
-aws s3 cp "${DB_FILE}" "s3://${R2_BUCKET}/${R2_PREFIX}/$(basename "${DB_FILE}")" ${AWS_ARGS}
-
-if [[ -n "${UPLOAD_FILE}" ]]; then
-  aws s3 cp "${UPLOAD_FILE}" "s3://${R2_BUCKET}/${R2_PREFIX}/$(basename "${UPLOAD_FILE}")" ${AWS_ARGS}
+UPLOAD_FILE=""
+if [[ -d "${UPLOAD_DIR}" ]] && [[ -n "$(ls -A "${UPLOAD_DIR}" 2>/dev/null)" ]]; then
+  UPLOAD_FILE="${LOCAL_TMP}/uploads_${TIMESTAMP}.tar.gz"
+  log "Đang archive uploads từ ${UPLOAD_DIR}..."
+  tar -czf "${UPLOAD_FILE}" -C "${UPLOAD_DIR}" .
+  log "Uploads archive OK: $(du -sh "${UPLOAD_FILE}" | cut -f1)"
+else
+  log "Uploads trống hoặc chưa mount — bỏ qua."
 fi
 
-### ── 4. Xóa backup cũ trên R2 (giữ RETAIN_DAYS ngày) ──────────────────────
-echo "[backup] Pruning R2 backups older than ${RETAIN_DAYS} days..."
-CUTOFF="$(date -u -d "${RETAIN_DAYS} days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v -"${RETAIN_DAYS}"d +%Y-%m-%dT%H:%M:%SZ)"
-aws s3 ls "s3://${R2_BUCKET}/backups/" ${AWS_ARGS} \
-  | awk '{print $2}' \
-  | while read -r prefix; do
-      folder_ts="${prefix%/}"
-      # Chuyển folder timestamp YYYYMMDD_HHMMSS → ISO để so sánh
-      folder_iso="${folder_ts:0:4}-${folder_ts:4:2}-${folder_ts:6:2}T${folder_ts:9:2}:${folder_ts:11:2}:${folder_ts:13:2}Z"
-      if [[ "${folder_iso}" < "${CUTOFF}" ]]; then
-        echo "[backup] Deleting old backup: ${prefix}"
-        aws s3 rm "s3://${R2_BUCKET}/backups/${prefix}" --recursive ${AWS_ARGS}
-      fi
-    done
+### ── 3. Upload lên R2 ───────────────────────────────────────────────────────
+# Cấu trúc: r2:BUCKET/db/db_TIMESTAMP.sql.gz  (khớp với infra/backup/backup.sh)
+log "Upload lên R2: r2:${BACKUP_R2_BUCKET}/"
+
+rclone copyto "${DB_FILE}" "r2:${BACKUP_R2_BUCKET}/db/db_${TIMESTAMP}.sql.gz" \
+  --transfers=2 --retries=3
+log "R2 db/ upload OK."
+
+if [[ -n "${UPLOAD_FILE}" ]]; then
+  rclone copyto "${UPLOAD_FILE}" "r2:${BACKUP_R2_BUCKET}/uploads/uploads_${TIMESTAMP}.tar.gz" \
+    --transfers=2 --retries=3
+  log "R2 uploads/ upload OK."
+fi
+
+### ── 4. Xóa backup R2 cũ (giữ RETAIN_DAYS ngày) ──────────────────────────
+log "Dọn backup cũ hơn ${RETAIN_DAYS} ngày..."
+rclone delete "r2:${BACKUP_R2_BUCKET}/db"      --min-age="${RETAIN_DAYS}d" 2>/dev/null || true
+rclone delete "r2:${BACKUP_R2_BUCKET}/uploads" --min-age="${RETAIN_DAYS}d" 2>/dev/null || true
+log "Cleanup OK."
 
 ### ── 5. Dọn tmp ─────────────────────────────────────────────────────────────
 rm -rf "${LOCAL_TMP}"
 
-echo "[backup] Done — $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+log "====== Hoàn thành: ${TIMESTAMP} ======"
