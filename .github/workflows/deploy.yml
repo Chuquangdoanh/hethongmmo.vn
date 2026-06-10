@@ -3,10 +3,28 @@ name: CI/CD
 on:
   push:
     branches: [main]
-  workflow_dispatch:  # Cho phép chạy thủ công trên GitHub Actions
+  workflow_dispatch:
 
 jobs:
+  # Phát hiện file nào thay đổi
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            app:
+              - 'web/**'
+              - 'Dockerfile'
+
+  # Build image — chỉ chạy khi web/ hoặc Dockerfile thay đổi
   build:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     name: Build & Push Docker image
     runs-on: ubuntu-latest
     permissions:
@@ -49,10 +67,12 @@ jobs:
           cache-from: type=gha,scope=migrate
           cache-to: type=gha,mode=max,scope=migrate
 
+  # Deploy — luôn chạy, nhưng chỉ pull image khi app thay đổi
   deploy:
+    needs: [changes, build]
+    if: always() && !failure() && !cancelled()
     name: Deploy to VPS
     runs-on: ubuntu-latest
-    needs: [build]
     environment: production
     steps:
       - uses: actions/checkout@v4
@@ -80,20 +100,19 @@ jobs:
             set -e
             cd /opt/hethongmmo
 
-            # Login GHCR để pull image
-            echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ghcr.io \
-              -u "${{ secrets.REGISTRY_USER }}" --password-stdin
+            # Pull + restart app chỉ khi có image mới
+            if [ "${{ needs.changes.outputs.app }}" = "true" ]; then
+              echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ghcr.io \
+                -u "${{ secrets.REGISTRY_USER }}" --password-stdin
+              docker compose pull
+              docker compose up -d
+              docker image prune -f
+              echo "🐳 App image updated"
+            else
+              echo "⏭️  App không đổi — skip pull"
+            fi
 
-            # Pull images mới
-            docker compose pull
-
-            # Khởi động toàn bộ stack (migration tự chạy qua depends_on)
-            docker compose up -d
-
-            # Dọn image cũ
-            docker image prune -f
-
-            # Reload nginx config (bind mount — không tự reload khi file thay đổi)
+            # Luôn reload nginx để áp dụng config mới
             docker exec hethongmmo-nginx nginx -s reload || true
 
             echo "✅ Deploy xong: $(date)"
