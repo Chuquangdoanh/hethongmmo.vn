@@ -148,15 +148,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
   const payload = parsed.data;
 
-  // 3a. Timestamp sanity check — reject future-dated transactions (clock manipulation)
+  // 3a. Timestamp sanity check — SePay gửi thời gian theo UTC+7 (Vietnam)
+  // Phải append "+07:00" khi parse để tránh nhầm UTC → thấy giao dịch là "tương lai"
   const txDateNorm = payload.transactionDate.includes("T")
     ? payload.transactionDate
-    : payload.transactionDate.replace(" ", "T");
+    : payload.transactionDate.replace(" ", "T") + "+07:00";
   const txDate = new Date(txDateNorm);
   if (!isNaN(txDate.getTime())) {
     const nowMs = Date.now();
     const txMs  = txDate.getTime();
-    if (txMs - nowMs > 60_000) {
+    if (txMs - nowMs > 5 * 60_000) {
+      // Cho phép lệch 5 phút (clock skew), từ chối nếu tương lai quá rõ
       logger.warn({ transactionDate: payload.transactionDate }, "SePay webhook: future-dated transaction — rejected");
       return NextResponse.json({ success: true }, { status: 200 });
     }
