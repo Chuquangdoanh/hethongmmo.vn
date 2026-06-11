@@ -3,7 +3,7 @@ import { createHmac } from "crypto";
 
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
-    user: { findFirst: vi.fn() },
+    $queryRaw: vi.fn(),
     unmatchedTransfer: { upsert: vi.fn() },
     tickerNotification: { create: vi.fn() },
   },
@@ -20,6 +20,7 @@ import { DuplicateError } from "@/lib/errors";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockPrisma = prisma as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockProcessDeposit = processDeposit as ReturnType<typeof vi.fn>;
 
 const SECRET = process.env.SEPAY_WEBHOOK_SECRET!;
@@ -101,7 +102,7 @@ describe("POST /api/webhooks/sepay", () => {
   });
 
   it("saves unmatched transfer when user not found for uid_prefix", async () => {
-    mockPrisma.user.findFirst.mockResolvedValueOnce(null);
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
     const req = makeRequest(buildPayload());
     const res = await POST(req as never);
     expect(res.status).toBe(200);
@@ -110,10 +111,10 @@ describe("POST /api/webhooks/sepay", () => {
   });
 
   it("calls processDeposit successfully for valid deposit", async () => {
-    mockPrisma.user.findFirst.mockResolvedValueOnce({
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{
       id: USER_ID,
       email: "user@example.com",
-    });
+    }]);
     mockProcessDeposit.mockResolvedValueOnce({ id: "tx-001" });
 
     const payload = buildPayload();
@@ -132,10 +133,10 @@ describe("POST /api/webhooks/sepay", () => {
   });
 
   it("handles duplicate referenceCode gracefully (idempotent — no error returned)", async () => {
-    mockPrisma.user.findFirst.mockResolvedValueOnce({
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{
       id: USER_ID,
       email: "user@example.com",
-    });
+    }]);
     mockProcessDeposit.mockRejectedValueOnce(new DuplicateError("referenceCode"));
 
     const req = makeRequest(buildPayload({ referenceCode: "DUPLICATE-REF" }));
