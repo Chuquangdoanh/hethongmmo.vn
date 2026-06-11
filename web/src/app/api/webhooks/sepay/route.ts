@@ -90,8 +90,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     valid = hmacValid;
   }
 
-  // Mode B: Plain Apikey header (fallback)
-  const apiKey = req.headers.get("Apikey") ?? req.headers.get("apikey") ?? "";
+  // Mode B: Plain Apikey — SePay gửi qua "Authorization: Apikey <key>"
+  // hoặc trực tiếp qua header "Apikey: <key>"
+  const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
+  const apiKeyFromAuth = authHeader.startsWith("Apikey ") ? authHeader.slice(7).trim() : "";
+  const apiKey = apiKeyFromAuth || req.headers.get("Apikey") || req.headers.get("apikey") || "";
   let apiKeyValid = false;
   if (!valid && apiKey) {
     // Thử plain compare: apiKey === secret hoặc apiKey === secret.slice(6) nếu có prefix
@@ -119,6 +122,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     hasWhsecPrefix: secret.startsWith("whsec_"),
     secretLen: secret.length,
     apiKeyLen: apiKey.length,
+    authHeader: authHeader.slice(0, 12) || "none",
     bodyLen: rawBody.length,
     hmacValid,
     apiKeyValid,
