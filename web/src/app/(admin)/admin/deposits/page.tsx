@@ -45,8 +45,11 @@ export default async function AdminDepositsPage({
         type: true,
         amount: true,
         referenceCode: true,
+        description: true,
+        accountNumber: true,
+        transactionDate: true,
         createdAt: true,
-        user: { select: { email: true, fullName: true } },
+        user: { select: { id: true, email: true, fullName: true } },
       },
     }),
     prisma.transaction.count({ where }),
@@ -171,20 +174,21 @@ export default async function AdminDepositsPage({
 
       {/* Table */}
       <div className="rounded-xl border border-gray-200 overflow-x-auto">
-        <table className="w-full min-w-[560px]">
+        <table className="w-full min-w-200">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Người dùng</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Loại</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Số tiền</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Mã TK</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Nội dung / Ngân hàng</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Mã tham chiếu</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Ngày</th>
             </tr>
           </thead>
           <tbody>
             {transactions.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">
                   Không có giao dịch
                 </td>
               </tr>
@@ -192,8 +196,9 @@ export default async function AdminDepositsPage({
             {transactions.map((tx, i) => (
               <tr key={tx.id} className={`${i !== 0 ? "border-t border-gray-200" : ""} hover:bg-gray-50 transition-colors`}>
                 <td className="px-4 py-3">
-                  <p className="text-sm text-gray-900">{tx.user.fullName}</p>
+                  <p className="text-sm font-medium text-gray-900">{tx.user.fullName}</p>
                   <p className="text-[11px] text-gray-500">{tx.user.email}</p>
+                  <p className="text-[10px] text-gray-400 font-mono">{tx.user.id.replace(/-/g, "").slice(0, 8).toUpperCase()}</p>
                 </td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
@@ -201,16 +206,25 @@ export default async function AdminDepositsPage({
                       ? "bg-[#10B981]/10 text-[#10B981]"
                       : "bg-[#F59E0B]/10 text-[#F59E0B]"
                   }`}>
-                    {tx.type === "DEPOSIT_AUTO" ? "Auto" : "Manual"}
+                    {tx.type === "DEPOSIT_AUTO" ? "Auto" : "Thủ công"}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-sm font-semibold text-[#10B981]">
+                <td className="px-4 py-3 text-sm font-semibold text-[#10B981] whitespace-nowrap">
                   +{formatVnd(Number(tx.amount))}
                 </td>
-                <td className="px-4 py-3 text-xs font-mono text-gray-500">
+                <td className="px-4 py-3 max-w-60">
+                  <p className="text-xs text-gray-700 truncate" title={tx.description}>{tx.description}</p>
+                  {tx.accountNumber && (
+                    <p className="text-[10px] text-gray-400 mt-0.5">STK: {tx.accountNumber}</p>
+                  )}
+                  {tx.transactionDate && (
+                    <p className="text-[10px] text-gray-400">GD: {tx.transactionDate}</p>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-xs font-mono text-gray-500 whitespace-nowrap">
                   {tx.referenceCode ?? "—"}
                 </td>
-                <td className="px-4 py-3 text-xs text-gray-500">{formatDate(tx.createdAt)}</td>
+                <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{formatDate(tx.createdAt)}</td>
               </tr>
             ))}
           </tbody>
