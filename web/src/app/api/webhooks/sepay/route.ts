@@ -65,20 +65,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   let hmacValid = false;
   if (hmacSig) {
-    // Thử secret đầy đủ và secret không có prefix "whsec_"
-    const secretVariants = [
+    // Thử 3 variant của secret key:
+    // 1. Dùng nguyên chuỗi (UTF-8 bytes)
+    // 2. Bỏ prefix "whsec_", dùng phần còn lại là chuỗi UTF-8
+    // 3. Bỏ prefix "whsec_", base64-decode phần còn lại → raw bytes (Stripe-style)
+    const rawPart = secret.startsWith("whsec_") ? secret.slice(6) : null;
+    const keyVariants: Array<string | Buffer> = [
       secret,
-      ...(secret.startsWith("whsec_") ? [secret.slice(6)] : []),
+      ...(rawPart ? [rawPart, Buffer.from(rawPart, "base64")] : []),
     ];
-    for (const s of secretVariants) {
-      try {
-        const expected = createHmac("sha256", s).update(rawBody).digest("hex");
-        const sigBuf   = Buffer.from(hmacSig, "hex");
-        const expBuf   = Buffer.from(expected, "hex");
-        if (sigBuf.length === expBuf.length && sigBuf.length > 0) {
-          if (timingSafeEqual(sigBuf, expBuf)) { hmacValid = true; break; }
-        }
-      } catch { /* ignore — try next variant */ }
+    const sigBuf = Buffer.from(hmacSig, "hex");
+    if (sigBuf.length > 0) {
+      for (const key of keyVariants) {
+        try {
+          const expected = createHmac("sha256", key).update(rawBody).digest("hex");
+          const expBuf   = Buffer.from(expected, "hex");
+          if (sigBuf.length === expBuf.length && timingSafeEqual(sigBuf, expBuf)) {
+            hmacValid = true;
+            break;
+          }
+        } catch { /* ignore — try next variant */ }
+      }
     }
     valid = hmacValid;
   }
