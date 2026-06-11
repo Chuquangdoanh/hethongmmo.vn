@@ -90,8 +90,16 @@ const AUTH_ROUTES = [
   "/dat-lai-mat-khau",
 ];
 
+// 30-second TTL cache: reduces thundering-herd when Next.js RSC-prefetches
+// multiple routes simultaneously (each hitting the middleware in parallel).
+const _dpCache = new Map<string, { pages: string[]; exp: number }>();
+
 // Fetch disabled page keys for a role from Upstash REST API (fail-open).
 async function fetchDisabledPages(role: string): Promise<string[]> {
+  const now = Date.now();
+  const hit = _dpCache.get(role);
+  if (hit && hit.exp > now) return hit.pages;
+
   const url   = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return [];
@@ -104,8 +112,9 @@ async function fetchDisabledPages(role: string): Promise<string[]> {
     });
     if (!res.ok) return [];
     const json = (await res.json()) as { result: string | null };
-    if (!json.result) return [];
-    return JSON.parse(json.result) as string[];
+    const pages = json.result ? (JSON.parse(json.result) as string[]) : [];
+    _dpCache.set(role, { pages, exp: now + 30_000 });
+    return pages;
   } catch {
     return []; // fail-open: never block access due to Redis being unavailable
   }

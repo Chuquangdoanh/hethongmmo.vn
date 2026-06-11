@@ -19,17 +19,37 @@ export const loginSchema = z.object({
   captchaToken: z.string().optional(),
 });
 
+const newPasswordRules = z
+  .string()
+  .min(12, "Mật khẩu tối thiểu 12 ký tự")
+  .regex(/[A-Z]/, "Cần ít nhất 1 chữ hoa (A-Z)")
+  .regex(/[a-z]/, "Cần ít nhất 1 chữ thường (a-z)")
+  .regex(/[0-9]/, "Cần ít nhất 1 chữ số (0-9)")
+  .regex(/[^A-Za-z0-9]/, "Cần ít nhất 1 ký tự đặc biệt (!@#$%...)");
+
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1),
-    newPassword: z
-      .string()
-      .min(12, "Mật khẩu tối thiểu 12 ký tự")
-      .regex(/[A-Z]/, "Cần ít nhất 1 chữ hoa (A-Z)")
-      .regex(/[a-z]/, "Cần ít nhất 1 chữ thường (a-z)")
-      .regex(/[0-9]/, "Cần ít nhất 1 chữ số (0-9)")
-      .regex(/[^A-Za-z0-9]/, "Cần ít nhất 1 ký tự đặc biệt (!@#$%...)"),
+    newPassword: newPasswordRules,
     confirmPassword: z.string(),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: "Mật khẩu xác nhận không khớp",
+    path: ["confirmPassword"],
+  });
+
+// Bước 1: chỉ verify mật khẩu hiện tại → gửi OTP về email
+export const sendChangePasswordOtpSchema = z.object({
+  currentPassword: z.string().min(1),
+});
+
+// Bước 2: đổi mật khẩu kèm mã OTP xác nhận
+export const changePasswordWithOtpSchema = z
+  .object({
+    currentPassword: z.string().min(1),
+    newPassword: newPasswordRules,
+    confirmPassword: z.string(),
+    otpCode: z.string().length(6).regex(/^\d+$/, "Mã OTP gồm 6 chữ số"),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {
     message: "Mật khẩu xác nhận không khớp",

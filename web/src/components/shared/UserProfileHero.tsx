@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import { Wallet, TrendingUp, TrendingDown, Calendar } from "lucide-react";
+import CopyButton from "@/components/shared/CopyButton";
 
 const ROLE_LABELS: Record<string, string> = {
   USER:   "Thành viên",
@@ -81,7 +82,10 @@ export default function UserProfileHero({
           )}
           <div>
             <h1 className="text-xl font-bold text-white leading-tight">{fullName}</h1>
-            <p className="text-[11px] text-slate-400 mt-0.5 font-mono">ID: {uidPrefix}...</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-[11px] text-slate-400 font-mono">ID nạp tiền: <span className="text-slate-200 font-semibold">{uidPrefix.toUpperCase()}</span></p>
+              <CopyButton text={uidPrefix.toUpperCase()} className="px-1.5! py-0.5! text-[10px]!" />
+            </div>
             <span className="mt-1.5 inline-flex px-2.5 py-0.5 rounded-full border border-slate-500/60 text-slate-300 text-[11px] font-medium">
               {roleLabel}
             </span>

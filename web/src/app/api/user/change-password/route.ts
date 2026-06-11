@@ -9,7 +9,8 @@ import {
   validatePasswordStrength,
   checkPwnedPassword,
 } from "@/lib/auth/password";
-import { changePasswordSchema } from "@/lib/validation/user.schema";
+import { changePasswordWithOtpSchema } from "@/lib/validation/user.schema";
+import { verifyOtp } from "@/lib/services/otp.service";
 import { toApiError } from "@/lib/errors";
 import { logger } from "@/lib/utils/logger";
 
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const me = requireUser(session);
 
     const body: unknown = await req.json();
-    const parsed = changePasswordSchema.safeParse(body);
+    const parsed = changePasswordWithOtpSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
         { error: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ", code: "VALIDATION_ERROR" },
@@ -29,15 +30,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const { currentPassword, newPassword } = parsed.data;
+    const { currentPassword, newPassword, otpCode } = parsed.data;
 
-    // Fetch current password hash
+    // Fetch current password hash + email (cần email để verify OTP)
     const user = await prisma.user.findUnique({
       where: { id: me.id, deletedAt: null },
-      select: { id: true, passwordHash: true },
+      select: { id: true, email: true, passwordHash: true },
     });
     if (!user) {
-      return NextResponse.json({ error: "User not found", code: "NOT_FOUND" }, { status: 404 });
+      return NextResponse.json({ error: "Không tìm thấy tài khoản", code: "NOT_FOUND" }, { status: 404 });
+    }
+
+    // Verify OTP trước — tránh timing leak về mật khẩu
+    const otpResult = await verifyOtp(user.email, "SENSITIVE_ACTION", otpCode);
+    if (!otpResult.success) {
+      return NextResponse.json(
+        { error: otpResult.error ?? "Mã OTP không hợp lệ hoặc đã hết hạn", code: "INVALID_OTP" },
+        { status: 400 },
+      );
     }
 
     // Verify current password
