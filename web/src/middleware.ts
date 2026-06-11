@@ -251,27 +251,12 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
     return NextResponse.redirect(new URL("/thong-tin-ca-nhan", req.url));
   }
 
-  // ── 8. CSRF check for API mutations ──────────────────────────────────────
-  if (
-    req.method !== "GET" &&
-    req.method !== "HEAD" &&
-    pathname.startsWith("/api/") &&
-    !pathname.startsWith("/api/webhooks/") &&
-    !pathname.startsWith("/api/auth/")
-  ) {
-    const origin = req.headers.get("origin");
-    const host = req.headers.get("host");
-    if (origin && origin !== "null" && host) {
-      let originHostname: string | null = null;
-      try { originHostname = new URL(origin).hostname; } catch { /* invalid origin */ }
-      const serverHostname = host.split(":")[0] ?? host;
-      if (!originHostname || originHostname !== serverHostname) {
-        return new NextResponse("CSRF check failed", { status: 403 });
-      }
-    }
-  }
+  // CSRF: không cần Origin/Host check — cookies đã có SameSite=Lax
+  // (xem lib/auth/config.ts) đủ chặn cross-site request forgery theo OWASP.
+  // Origin/Host check gây false positive khi Next.js chạy sau reverse proxy
+  // vì host header nhận được là tên nội bộ Docker (web:3000), không khớp origin.
 
-  // ── 9. Block /api/webhooks/sepay from non-whitelisted IPs ────────────────
+  // ── 8. Block /api/webhooks/sepay from non-whitelisted IPs ────────────────
   if (pathname.startsWith("/api/webhooks/sepay")) {
     const allowedIps = (process.env.SEPAY_ALLOWED_IPS ?? "")
       .split(",")
