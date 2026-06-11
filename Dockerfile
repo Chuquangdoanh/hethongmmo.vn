@@ -8,10 +8,13 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Dependency install cached separately from app source.
 # node-linker=hoisted: actual files instead of pnpm symlinks — required for
 # reliable Docker COPY and for Prisma CLI to find its WASM / sibling modules.
+# --mount=type=cache: pnpm content-addressable store persists between builds
+# (exported via cache-to=type=gha,mode=max → restored on next CI run).
 FROM base AS deps
 WORKDIR /app
 COPY web/package.json web/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --ignore-scripts --node-linker=hoisted
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store,id=pnpm-store \
+    pnpm install --frozen-lockfile --ignore-scripts --node-linker=hoisted
 
 # ── builder ───────────────────────────────────────────────────────────
 FROM deps AS builder
@@ -21,7 +24,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-0x4AAAAAADdtPd4eBWk-jqZ6}
-RUN node_modules/.bin/next build
+# --mount=type=cache: Turbopack incremental cache persists between builds.
+# With cache-to=type=gha,mode=max this is exported to GHA and restored next run,
+# cutting next build from ~8 min → ~1-2 min for code-only changes.
+RUN --mount=type=cache,target=/app/.next/cache,id=nextjs-build-cache \
+    node_modules/.bin/next build
 
 # ── migrator ─────────────────────────────────────────────────────────
 # Reuses full node_modules from deps stage so Prisma CLI, @prisma/config,

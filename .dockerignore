@@ -1,8 +1,28 @@
-web/node_modules
-web/.next
-web/.env
-web/tsconfig.tsbuildinfo
-infra/nginx/ssl
+# Git
 .git
-.claude
-*.md
+.gitignore
+
+# Node deps — rebuilt inside Docker, không copy vào context
+web/node_modules
+
+# Next.js build output — rebuilt inside Docker
+web/.next
+web/.turbopack
+
+# Dev / local env files
+web/.env
+web/.env.local
+web/.env.development
+*.log
+
+# Test artifacts
+web/coverage
+web/playwright-report
+web/test-results
+
+# Editor / OS
+.vscode
+.idea
+*.swp
+.DS_Store
+Thumbs.db

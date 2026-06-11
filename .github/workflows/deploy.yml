@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       app: ${{ steps.filter.outputs.app }}
+      prisma: ${{ steps.filter.outputs.prisma }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -20,12 +21,50 @@ jobs:
             app:
               - 'web/**'
               - 'Dockerfile'
+            prisma:
+              - 'web/prisma/**'
+              - 'Dockerfile'
 
-  # Build image — chỉ chạy khi web/ hoặc Dockerfile thay đổi
-  build:
+  # Typecheck + unit/integration tests — chạy trước khi build Docker
+  # Tất cả tests đều mock prisma → không cần database
+  test:
     needs: changes
     if: needs.changes.outputs.app == 'true'
-    name: Build & Push Docker image
+    name: Type check & Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Generate Prisma client
+        run: pnpm prisma generate
+
+      - name: Type check
+        run: node node_modules/typescript/bin/tsc --noEmit
+
+      - name: Run tests
+        run: pnpm test
+
+  # Build web image — chỉ khi tests pass VÀ web/** hoặc Dockerfile thay đổi
+  build-web:
+    needs: [changes, test]
+    if: needs.changes.outputs.app == 'true'
+    name: Build & Push web image
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -53,8 +92,33 @@ jobs:
           tags: ghcr.io/chuquangdoanh/hethongmmo:latest
           build-args: |
             NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+          # mode=max: export tất cả layers kể cả cache mounts (pnpm store + .next/cache)
+          # → lần build sau dùng lại, next build chỉ compile phần thay đổi (~1-2 min)
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
+
+  # Build migrator — CHỈ khi prisma schema hoặc Dockerfile thay đổi
+  # Code-only push → skip hoàn toàn, tiết kiệm 1-2 phút
+  build-migrator:
+    needs: [changes, test]
+    if: needs.changes.outputs.prisma == 'true'
+    name: Build & Push migrator image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build and push migrator image
         uses: docker/build-push-action@v6
@@ -67,9 +131,9 @@ jobs:
           cache-from: type=gha,scope=migrate
           cache-to: type=gha,mode=max,scope=migrate
 
-  # Deploy — luôn chạy, nhưng chỉ pull image khi app thay đổi
+  # Deploy — chạy sau cả 2 build jobs (dù 1 trong 2 bị skip cũng không sao)
   deploy:
-    needs: [changes, build]
+    needs: [changes, build-web, build-migrator]
     if: always() && !failure() && !cancelled()
     name: Deploy to VPS
     runs-on: ubuntu-latest
@@ -108,6 +172,45 @@ jobs:
               docker compose up -d
               docker image prune -f
               echo "🐳 App image updated"
+
+              # Chờ container healthy (start_period=60s, interval=30s → tối đa ~120s)
+              echo "⏳ Chờ container healthy..."
+              ELAPSED=0
+              until docker inspect --format='{{.State.Health.Status}}' hethongmmo-web 2>/dev/null | grep -q '^healthy$'; do
+                if [ "$ELAPSED" -ge 120 ]; then
+                  echo "❌ Timeout: container không healthy sau 120s"
+                  docker logs hethongmmo-web --tail 50
+                  exit 1
+                fi
+                sleep 5
+                ELAPSED=$((ELAPSED + 5))
+              done
+              echo "✅ Container healthy sau ${ELAPSED}s"
+
+              # Smoke test qua IP máy chủ (127.0.0.1 → nginx → Next.js)
+              # Bypass Cloudflare hoàn toàn — test stack thật trên VPS
+              echo "🔍 Smoke test qua 127.0.0.1..."
+              curl -sf http://127.0.0.1/api/health -o /dev/null \
+                && echo "✅ /api/health OK" \
+                || { echo "❌ /api/health FAIL"; docker logs hethongmmo-web --tail 30; exit 1; }
+
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/)
+              if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
+                echo "✅ / → HTTP $STATUS OK"
+              else
+                echo "❌ / → HTTP $STATUS FAIL"
+                exit 1
+              fi
+
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/dang-nhap)
+              if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
+                echo "✅ /dang-nhap → HTTP $STATUS OK"
+              else
+                echo "❌ /dang-nhap → HTTP $STATUS FAIL"
+                exit 1
+              fi
+
+              echo "🎉 Smoke test passed"
             else
               echo "⏭️  App không đổi — skip pull"
             fi
