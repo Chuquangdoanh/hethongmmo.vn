@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createHmac, timingSafeEqual } from "crypto";
+import { timingSafeEqual } from "crypto";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { processDeposit } from "@/lib/services/deposit.service";
@@ -42,29 +42,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  // 2. Verify HMAC signature — hard-fail if secret not configured (fail-closed)
+  // 2. Verify API key — SePay sends plain key in "Apikey" header (not HMAC).
+  // Timing-safe compare to prevent timing attacks even on plain string.
   const secret = process.env.SEPAY_WEBHOOK_SECRET;
   if (!secret) {
     logger.error("SEPAY_WEBHOOK_SECRET is not configured — rejecting all webhook requests");
     return NextResponse.json({ success: false, message: "Webhook not configured" }, { status: 200 });
   }
-  const signature =
-    req.headers.get("x-sepay-signature") ??
-    req.headers.get("X-SePay-Signature") ??
+  // SePay gửi API key qua header "Apikey" (case-sensitive theo docs SePay)
+  const apiKey =
+    req.headers.get("Apikey") ??
+    req.headers.get("apikey") ??
+    req.headers.get("x-api-key") ??
     "";
-  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
   let valid = false;
   try {
-    const sigBuf = Buffer.from(signature, "hex");
-    const expBuf = Buffer.from(expected, "hex");
-    if (sigBuf.length === expBuf.length) {
-      valid = timingSafeEqual(sigBuf, expBuf);
+    const keyBuf    = Buffer.from(apiKey);
+    const secretBuf = Buffer.from(secret);
+    if (keyBuf.length === secretBuf.length) {
+      valid = timingSafeEqual(keyBuf, secretBuf);
     }
   } catch {
     valid = false;
   }
   if (!valid) {
-    logger.warn({ signature: signature.slice(0, 8) + "..." }, "SePay HMAC mismatch");
+    logger.warn({ keyPrefix: apiKey.slice(0, 6) + "***" }, "SePay API key mismatch");
     return NextResponse.json({ success: false, message: "Invalid signature" }, { status: 200 });
   }
 

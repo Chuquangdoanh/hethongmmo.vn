@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createHmac } from "crypto";
 
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
@@ -42,18 +41,13 @@ function buildPayload(overrides?: Partial<Record<string, unknown>>) {
   };
 }
 
-function sign(body: string): string {
-  return createHmac("sha256", SECRET).update(body).digest("hex");
-}
-
-function makeRequest(body: unknown, signature?: string): Request {
+function makeRequest(body: unknown, apiKey?: string): Request {
   const bodyStr = JSON.stringify(body);
-  const sig = signature ?? sign(bodyStr);
   return new Request("http://localhost/api/webhooks/sepay", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-sepay-signature": sig,
+      "Apikey": apiKey ?? SECRET,  // SePay gửi plain key qua Apikey header
     },
     body: bodyStr,
   });
@@ -65,13 +59,13 @@ beforeEach(() => {
 });
 
 describe("POST /api/webhooks/sepay", () => {
-  it("returns 200 with success:false for invalid HMAC signature", async () => {
-    const req = makeRequest(buildPayload(), "deadbeef".repeat(8));
+  it("returns 200 with success:false for invalid API key", async () => {
+    const req = makeRequest(buildPayload(), "wrong-api-key");
     const res = await POST(req as never);
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.success).toBe(false);
-    expect(json.message).toMatch(/signature/i);
+    expect(json.message).toMatch(/signature|key/i);
     expect(mockProcessDeposit).not.toHaveBeenCalled();
   });
 
@@ -149,10 +143,9 @@ describe("POST /api/webhooks/sepay", () => {
 
   it("returns 200 when payload fails Zod validation", async () => {
     const body = JSON.stringify({ invalid: "payload" });
-    const sig = sign(body);
     const req = new Request("http://localhost/api/webhooks/sepay", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-sepay-signature": sig },
+      headers: { "Content-Type": "application/json", "Apikey": SECRET },
       body,
     });
     const res = await POST(req as never);
