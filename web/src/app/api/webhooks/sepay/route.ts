@@ -56,52 +56,67 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   let valid = false;
 
   // Mode A: HMAC-SHA256 (x-sepay-signature header)
-  const hmacSig = req.headers.get("x-sepay-signature") ?? req.headers.get("X-SePay-Signature") ?? "";
+  // SePay có thể gửi signature theo các format:
+  //   - Hex thuần: "abcdef..."
+  //   - Có prefix: "sha256=abcdef..."
+  // Secret trong .env có thể có prefix "whsec_" — thử cả 2 variant.
+  const rawHmacSig = req.headers.get("x-sepay-signature") ?? req.headers.get("X-SePay-Signature") ?? "";
+  const hmacSig = rawHmacSig.startsWith("sha256=") ? rawHmacSig.slice(7) : rawHmacSig;
+
   let hmacValid = false;
   if (hmacSig) {
-    try {
-      const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
-      const sigBuf   = Buffer.from(hmacSig, "hex");
-      const expBuf   = Buffer.from(expected, "hex");
-      if (sigBuf.length === expBuf.length) {
-        hmacValid = timingSafeEqual(sigBuf, expBuf);
-        valid = hmacValid;
-      }
-    } catch { valid = false; }
+    // Thử secret đầy đủ và secret không có prefix "whsec_"
+    const secretVariants = [
+      secret,
+      ...(secret.startsWith("whsec_") ? [secret.slice(6)] : []),
+    ];
+    for (const s of secretVariants) {
+      try {
+        const expected = createHmac("sha256", s).update(rawBody).digest("hex");
+        const sigBuf   = Buffer.from(hmacSig, "hex");
+        const expBuf   = Buffer.from(expected, "hex");
+        if (sigBuf.length === expBuf.length && sigBuf.length > 0) {
+          if (timingSafeEqual(sigBuf, expBuf)) { hmacValid = true; break; }
+        }
+      } catch { /* ignore — try next variant */ }
+    }
+    valid = hmacValid;
   }
 
   // Mode B: Plain Apikey header (fallback)
   const apiKey = req.headers.get("Apikey") ?? req.headers.get("apikey") ?? "";
   let apiKeyValid = false;
   if (!valid && apiKey) {
-    try {
-      const keyBuf    = Buffer.from(apiKey);
-      const secretBuf = Buffer.from(secret);
-      if (keyBuf.length === secretBuf.length) {
-        apiKeyValid = timingSafeEqual(keyBuf, secretBuf);
-        valid = apiKeyValid;
-      }
-    } catch { valid = false; }
+    // Thử plain compare: apiKey === secret hoặc apiKey === secret.slice(6) nếu có prefix
+    const secretVariants = [
+      secret,
+      ...(secret.startsWith("whsec_") ? [secret.slice(6)] : []),
+    ];
+    for (const s of secretVariants) {
+      try {
+        const keyBuf = Buffer.from(apiKey);
+        const sBuf   = Buffer.from(s);
+        if (keyBuf.length === sBuf.length) {
+          if (timingSafeEqual(keyBuf, sBuf)) { apiKeyValid = true; break; }
+        }
+      } catch { /* ignore */ }
+    }
+    valid = apiKeyValid;
   }
 
-  // DEBUG: log auth details to diagnose failures (remove after confirmed working)
-  logger.info({
-    hasHmacHeader: !!hmacSig,
-    hasApiKeyHeader: !!apiKey,
-    hmacHeaderLen: hmacSig.length,
-    apiKeyLen: apiKey.length,
+  // WARN-level debug để chẩn đoán (xóa sau khi xác nhận hoạt động)
+  logger.warn({
+    rawSigLen: rawHmacSig.length,
+    sigLen: hmacSig.length,
+    hasSha256Prefix: rawHmacSig.startsWith("sha256="),
+    hasWhsecPrefix: secret.startsWith("whsec_"),
     secretLen: secret.length,
+    apiKeyLen: apiKey.length,
+    bodyLen: rawBody.length,
     hmacValid,
     apiKeyValid,
     valid,
-    bodyLen: rawBody.length,
-    allHeaders: Object.fromEntries(
-      [...["x-sepay-signature","X-SePay-Signature","Apikey","apikey","authorization","x-api-key"]
-        .map(h => [h, req.headers.get(h) ? "PRESENT(len=" + (req.headers.get(h)?.length ?? 0) + ")" : null])
-        .filter(([,v]) => v !== null)
-      ]
-    ),
-  }, "SePay webhook auth debug");
+  }, "SePay webhook auth detail");
 
   if (!valid) {
     logger.warn({ hasHmac: !!hmacSig, hasApiKey: !!apiKey }, "SePay auth mismatch — check SEPAY_WEBHOOK_SECRET in .env");
