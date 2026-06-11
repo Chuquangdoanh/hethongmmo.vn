@@ -124,6 +124,16 @@ const { auth } = NextAuth(authConfig);
 
 export default auth(async function middleware(req: NextRequest & { auth?: { user?: unknown } | null }) {
   const { pathname } = req.nextUrl;
+
+  // ── 0. Test bypass — chỉ hoạt động khi API_TEST_SECRET được set trong .env ──
+  // Không bao giờ set API_TEST_SECRET trên production để tắt hoàn toàn tính năng này.
+  const testSecret = process.env.API_TEST_SECRET;
+  if (testSecret && req.headers.get("x-api-test-secret") === testSecret) {
+    const h = new Headers(req.headers);
+    h.set("x-pathname", pathname);
+    return NextResponse.next({ request: { headers: h } });
+  }
+
   const session = (req as { auth?: { user?: { role?: string; status?: string; id?: string } } | null }).auth;
   const isAuthenticated = !!session?.user;
   const userRole = session?.user?.role;
