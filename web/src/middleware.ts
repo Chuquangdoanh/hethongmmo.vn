@@ -17,7 +17,7 @@ import { Redis } from "@upstash/redis";
 //   public    → 120 per IP          /api/products/*, /api/ticker, public reads
 //   fallback  → 100 per IP          everything else
 //
-// Skipped: /api/health, /api/webhooks/* (has HMAC)
+// Skipped: /api/health, /api/webhooks/* (has Apikey auth)
 // Fail-open when Upstash is down (Nginx zone=general still guards at IP level).
 
 function makeLimiter(
@@ -54,10 +54,17 @@ function getIp(req: NextRequest): string {
   );
 }
 
+// 800 ms timeout: if Upstash is slow, fail-open immediately instead of holding
+// the request for 3s and causing connection exhaustion → 503 cascade.
 async function allow(limiter: Ratelimit | null, key: string): Promise<boolean> {
   if (!limiter) return true;
   try {
-    const { success } = await limiter.limit(key);
+    const { success } = await Promise.race([
+      limiter.limit(key),
+      new Promise<{ success: boolean }>((resolve) =>
+        setTimeout(() => resolve({ success: true }), 800),
+      ),
+    ]);
     return success;
   } catch {
     return true; // Upstash unreachable → fail-open
@@ -90,34 +97,48 @@ const AUTH_ROUTES = [
   "/dat-lai-mat-khau",
 ];
 
-// 30-second TTL cache: reduces thundering-herd when Next.js RSC-prefetches
-// multiple routes simultaneously (each hitting the middleware in parallel).
-const _dpCache = new Map<string, { pages: string[]; exp: number }>();
+// ── Page permission cache ─────────────────────────────────────────────────────
+// Two-layer defence against thundering herd (10+ concurrent RSC prefetches):
+//   1. TTL cache (30s): subsequent requests within window skip Upstash entirely
+//   2. In-flight dedup: concurrent cache misses share one Upstash call instead
+//      of each making their own → eliminates the burst of parallel requests
+const _dpCache   = new Map<string, { pages: string[]; exp: number }>();
+const _dpInflight = new Map<string, Promise<string[]>>();
 
-// Fetch disabled page keys for a role from Upstash REST API (fail-open).
 async function fetchDisabledPages(role: string): Promise<string[]> {
   const now = Date.now();
   const hit = _dpCache.get(role);
   if (hit && hit.exp > now) return hit.pages;
 
-  const url   = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return [];
+  // Deduplicate: if another request is already fetching for this role, wait for it
+  const pending = _dpInflight.get(role);
+  if (pending) return pending;
 
-  try {
-    const key = encodeURIComponent(`page_perm:disabled:${role}`);
-    const res = await fetch(`${url}/get/${key}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal:  AbortSignal.timeout(3000),
-    });
-    if (!res.ok) return [];
-    const json = (await res.json()) as { result: string | null };
-    const pages = json.result ? (JSON.parse(json.result) as string[]) : [];
-    _dpCache.set(role, { pages, exp: now + 30_000 });
-    return pages;
-  } catch {
-    return []; // fail-open: never block access due to Redis being unavailable
-  }
+  const promise = (async (): Promise<string[]> => {
+    try {
+      const url   = process.env.UPSTASH_REDIS_REST_URL;
+      const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+      if (!url || !token) return [];
+
+      const key = encodeURIComponent(`page_perm:disabled:${role}`);
+      const res = await fetch(`${url}/get/${key}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal:  AbortSignal.timeout(2000), // reduced from 3s → 2s
+      });
+      if (!res.ok) return [];
+      const json = (await res.json()) as { result: string | null };
+      const pages = json.result ? (JSON.parse(json.result) as string[]) : [];
+      _dpCache.set(role, { pages, exp: Date.now() + 30_000 });
+      return pages;
+    } catch {
+      return [];
+    } finally {
+      _dpInflight.delete(role);
+    }
+  })();
+
+  _dpInflight.set(role, promise);
+  return promise;
 }
 
 function isDisabledPage(pathname: string, disabledKeys: string[]): boolean {
@@ -134,8 +155,7 @@ const { auth } = NextAuth(authConfig);
 export default auth(async function middleware(req: NextRequest & { auth?: { user?: unknown } | null }) {
   const { pathname } = req.nextUrl;
 
-  // ── 0. Test bypass — chỉ hoạt động khi API_TEST_SECRET được set trong .env ──
-  // Không bao giờ set API_TEST_SECRET trên production để tắt hoàn toàn tính năng này.
+  // ── 0. Test bypass ────────────────────────────────────────────────────────
   const testSecret = process.env.API_TEST_SECRET;
   if (testSecret && req.headers.get("x-api-test-secret") === testSecret) {
     const h = new Headers(req.headers);
@@ -149,8 +169,15 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
   const userStatus = session?.user?.status;
   const uid = session?.user?.id ?? null;
 
+  // RSC prefetch requests: Next.js fires these speculatively for links on the page.
+  // Skip heavy Upstash calls for prefetches — the actual navigation will be guarded.
+  const isRscPrefetch =
+    req.nextUrl.searchParams.has("_rsc") ||
+    req.headers.get("Next-Router-Prefetch") === "1";
+
   // ── 1. Rate limiting (API routes only) ────────────────────────────────────
   if (
+    !isRscPrefetch &&
     pathname.startsWith("/api/") &&
     pathname !== "/api/health" &&
     !pathname.startsWith("/api/webhooks/")
@@ -260,20 +287,11 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
     return NextResponse.redirect(new URL("/thong-tin-ca-nhan", req.url));
   }
 
-  // CSRF: không cần Origin/Host check — cookies đã có SameSite=Lax
-  // (xem lib/auth/config.ts) đủ chặn cross-site request forgery theo OWASP.
-  // Origin/Host check gây false positive khi Next.js chạy sau reverse proxy
-  // vì host header nhận được là tên nội bộ Docker (web:3000), không khớp origin.
-
-  // IP whitelist for /api/webhooks/sepay is handled inside the route handler
-  // (uses SEPAY_IP_WHITELIST env var). Middleware-level IP check removed because
-  // the real client IP behind Cloudflare requires cf-connecting-ip which is not
-  // reliably available at middleware level; HMAC verification is the primary guard.
-
-  // ── 10. Page permission check (Redis) ────────────────────────────────────
-  // ADMIN always has full access. Only check when Redis is configured.
-  // Skip the permission management page itself and API routes.
+  // ── 8. Page permission check (Redis) ─────────────────────────────────────
+  // Skip for RSC prefetch (speculative, guarded on actual navigation),
+  // API routes, admin (always full access), and the permission page itself.
   if (
+    !isRscPrefetch &&
     isAuthenticated &&
     userRole !== "ADMIN" &&
     !pathname.startsWith("/api/") &&
