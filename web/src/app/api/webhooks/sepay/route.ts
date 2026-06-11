@@ -109,14 +109,29 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true }, { status: 200 });
   }
 
-  const { referenceCode, transferAmount, content, gateway, transactionDate, accountNumber } = payload;
+  const { referenceCode, transferAmount, content, gateway, transactionDate, accountNumber, description } = payload;
 
   // 5. Find uid_prefix (8 lowercase hex chars) in transfer content
-  // Primary: match canonical "NAP XXXXXXXX" format (case-insensitive, flexible spacing)
-  // Fallback: bare 8-hex word boundary match
-  const uidMatch =
-    content.match(/\bNAP\s*([0-9a-fA-F]{8})\b/i) ??
-    content.match(/\b([0-9a-fA-F]{8})\b/);
+  // Search order: content first, description fallback (some banks put original text in description)
+  // Primary regex: "NAP"/"nap"/"nạp" keyword + 8 hex chars (handles Vietnamese diacritics)
+  // Fallback: bare 8-hex word boundary — risky if bank ref codes contain 8 hex chars,
+  //           only used when no NAP keyword found at all
+  const NAP_RE  = /\bn[aạ]p\s*([0-9a-fA-F]{8})\b/i;
+  const BARE_RE = /\b([0-9a-fA-F]{8})\b/;
+  const searchTargets = [content, description ?? ""].filter(Boolean);
+
+  let uidMatch: RegExpMatchArray | null = null;
+  for (const src of searchTargets) {
+    uidMatch = src.match(NAP_RE);
+    if (uidMatch) break;
+  }
+  if (!uidMatch) {
+    for (const src of searchTargets) {
+      uidMatch = src.match(BARE_RE);
+      if (uidMatch) break;
+    }
+  }
+
   const uidPrefix = uidMatch?.[1]?.toLowerCase();
 
   if (!uidPrefix) {
