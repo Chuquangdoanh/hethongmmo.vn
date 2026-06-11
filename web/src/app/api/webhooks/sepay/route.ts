@@ -57,33 +57,54 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // Mode A: HMAC-SHA256 (x-sepay-signature header)
   const hmacSig = req.headers.get("x-sepay-signature") ?? req.headers.get("X-SePay-Signature") ?? "";
+  let hmacValid = false;
   if (hmacSig) {
     try {
       const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
       const sigBuf   = Buffer.from(hmacSig, "hex");
       const expBuf   = Buffer.from(expected, "hex");
       if (sigBuf.length === expBuf.length) {
-        valid = timingSafeEqual(sigBuf, expBuf);
+        hmacValid = timingSafeEqual(sigBuf, expBuf);
+        valid = hmacValid;
       }
     } catch { valid = false; }
   }
 
   // Mode B: Plain Apikey header (fallback)
-  if (!valid) {
-    const apiKey = req.headers.get("Apikey") ?? req.headers.get("apikey") ?? "";
-    if (apiKey) {
-      try {
-        const keyBuf    = Buffer.from(apiKey);
-        const secretBuf = Buffer.from(secret);
-        if (keyBuf.length === secretBuf.length) {
-          valid = timingSafeEqual(keyBuf, secretBuf);
-        }
-      } catch { valid = false; }
-    }
+  const apiKey = req.headers.get("Apikey") ?? req.headers.get("apikey") ?? "";
+  let apiKeyValid = false;
+  if (!valid && apiKey) {
+    try {
+      const keyBuf    = Buffer.from(apiKey);
+      const secretBuf = Buffer.from(secret);
+      if (keyBuf.length === secretBuf.length) {
+        apiKeyValid = timingSafeEqual(keyBuf, secretBuf);
+        valid = apiKeyValid;
+      }
+    } catch { valid = false; }
   }
 
+  // DEBUG: log auth details to diagnose failures (remove after confirmed working)
+  logger.info({
+    hasHmacHeader: !!hmacSig,
+    hasApiKeyHeader: !!apiKey,
+    hmacHeaderLen: hmacSig.length,
+    apiKeyLen: apiKey.length,
+    secretLen: secret.length,
+    hmacValid,
+    apiKeyValid,
+    valid,
+    bodyLen: rawBody.length,
+    allHeaders: Object.fromEntries(
+      [...["x-sepay-signature","X-SePay-Signature","Apikey","apikey","authorization","x-api-key"]
+        .map(h => [h, req.headers.get(h) ? "PRESENT(len=" + (req.headers.get(h)?.length ?? 0) + ")" : null])
+        .filter(([,v]) => v !== null)
+      ]
+    ),
+  }, "SePay webhook auth debug");
+
   if (!valid) {
-    logger.warn({ hasHmac: !!hmacSig }, "SePay auth mismatch — check SEPAY_WEBHOOK_SECRET in .env");
+    logger.warn({ hasHmac: !!hmacSig, hasApiKey: !!apiKey }, "SePay auth mismatch — check SEPAY_WEBHOOK_SECRET in .env");
     return NextResponse.json({ success: false, message: "Invalid signature" }, { status: 200 });
   }
 
