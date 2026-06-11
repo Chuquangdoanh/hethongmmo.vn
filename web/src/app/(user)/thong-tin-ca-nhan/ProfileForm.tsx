@@ -38,6 +38,11 @@ export default function ProfileForm({
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Ảnh quá lớn. Vui lòng chọn ảnh dưới 5 MB.");
+      if (fileRef.current) fileRef.current.value = "";
+      return;
+    }
     setUploading(true);
     setError("");
     try {
