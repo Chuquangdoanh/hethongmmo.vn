@@ -191,19 +191,20 @@ jobs:
               echo "🔍 Smoke test..."
 
               # Helper: fail nếu endpoint trả 503 hoặc 429 (rate limit / down)
+              # KHÔNG dùng tên biến PATH — shadow $PATH khiến curl không tìm được
               check() {
-                local PATH="$1" EXPECT="$2"
+                local URLPATH="$1" EXPECT="$2"
                 local STATUS
-                STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1${PATH}")
+                STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1${URLPATH}")
                 if [ "$STATUS" = "503" ] || [ "$STATUS" = "429" ]; then
-                  echo "❌ ${PATH} → $STATUS (rate limit / service down)"
+                  echo "❌ ${URLPATH} → $STATUS (rate limit / service down)"
                   return 1
                 fi
                 if [ -n "$EXPECT" ] && [ "$STATUS" != "$EXPECT" ]; then
-                  echo "❌ ${PATH} → $STATUS (expected $EXPECT)"
+                  echo "❌ ${URLPATH} → $STATUS (expected $EXPECT)"
                   return 1
                 fi
-                echo "✅ ${PATH} → $STATUS"
+                echo "✅ ${URLPATH} → $STATUS"
               }
 
               # Health check
