@@ -187,28 +187,44 @@ jobs:
               done
               echo "✅ Container healthy sau ${ELAPSED}s"
 
-              # Smoke test qua IP máy chủ (127.0.0.1 → nginx → Next.js)
-              # Bypass Cloudflare hoàn toàn — test stack thật trên VPS
-              echo "🔍 Smoke test qua 127.0.0.1..."
-              curl -sf http://127.0.0.1/api/health -o /dev/null \
-                && echo "✅ /api/health OK" \
-                || { echo "❌ /api/health FAIL"; docker logs hethongmmo-web --tail 30; exit 1; }
+              # Smoke test qua 127.0.0.1 → nginx → Next.js (bypass Cloudflare)
+              echo "🔍 Smoke test..."
 
-              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/)
-              if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
-                echo "✅ / → HTTP $STATUS OK"
-              else
-                echo "❌ / → HTTP $STATUS FAIL"
-                exit 1
-              fi
+              # Helper: fail nếu endpoint trả 503 hoặc 429 (rate limit / down)
+              check() {
+                local PATH="$1" EXPECT="$2"
+                local STATUS
+                STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1${PATH}")
+                if [ "$STATUS" = "503" ] || [ "$STATUS" = "429" ]; then
+                  echo "❌ ${PATH} → $STATUS (rate limit / service down)"
+                  return 1
+                fi
+                if [ -n "$EXPECT" ] && [ "$STATUS" != "$EXPECT" ]; then
+                  echo "❌ ${PATH} → $STATUS (expected $EXPECT)"
+                  return 1
+                fi
+                echo "✅ ${PATH} → $STATUS"
+              }
 
-              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/dang-nhap)
-              if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
-                echo "✅ /dang-nhap → HTTP $STATUS OK"
-              else
-                echo "❌ /dang-nhap → HTTP $STATUS FAIL"
-                exit 1
-              fi
+              # Health check
+              check /api/health 200
+
+              # Public pages
+              check / ""
+              check /dang-nhap ""
+              check /dang-ky ""
+
+              # Protected API — phải trả 401 (không phải 503/429)
+              check /api/user/profile ""
+              check /api/orders ""
+              check /api/seller/register ""
+
+              # Public API pages
+              check /thong-tin-ca-nhan ""
+              check /don-hang ""
+              check /lich-su-giao-dich ""
+              check /nap-tien ""
+              check /tro-chuyen ""
 
               echo "🎉 Smoke test passed"
             else

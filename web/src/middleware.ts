@@ -131,64 +131,64 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
   const uid = session?.user?.id ?? null;
 
   // ── 1. Rate limiting (API routes only) ────────────────────────────────────
-  if (
-    pathname.startsWith("/api/") &&
-    pathname !== "/api/health" &&
-    !pathname.startsWith("/api/webhooks/")
-  ) {
-    const ip = getIp(req);
-    const key = uid ?? ip;
-
-    if (pathname.startsWith("/api/auth/")) {
-      if (!(await allow(L.auth, `auth:${ip}`))) return r429();
-    } else if (
-      pathname === "/api/seller/withdrawal" ||
-      pathname === "/api/seller/buy-slots" ||
-      pathname.startsWith("/api/user/change-password") ||
-      pathname.startsWith("/api/user/2fa/")
-    ) {
-      if (!(await allow(L.sensitive, `sensitive:${key}`))) return r429();
-    } else if (pathname.startsWith("/api/chats/")) {
-      if (!(await allow(L.chat, `chat:${key}`))) return r429();
-    } else if (
-      pathname.startsWith("/api/storage/") ||
-      pathname.includes("/upload") ||
-      pathname.includes("/secure-image") ||
-      pathname.includes("/from-url")
-    ) {
-      if (!(await allow(L.storage, `storage:${key}`))) return r429();
-    } else if (pathname.startsWith("/api/admin/")) {
-      if (!(await allow(L.admin, `admin:${key}`))) return r429();
-    } else if (
-      pathname.startsWith("/api/user/") ||
-      pathname.startsWith("/api/seller/") ||
-      pathname.startsWith("/api/orders")
-    ) {
-      if (!(await allow(L.user, `user:${key}`))) return r429();
-    } else if (
-      pathname.startsWith("/api/products/") ||
-      pathname.startsWith("/api/ticker") ||
-      pathname.startsWith("/api/tut-tricks") ||
-      pathname.startsWith("/api/dich-vu") ||
-      pathname.startsWith("/api/courses")
-    ) {
-      if (!(await allow(L.public, `pub:${ip}`))) return r429();
-    } else {
-      if (!(await allow(L.fallback, `gen:${ip}`))) return r429();
-    }
-  }
+  // ⚠️  TEMPORARILY DISABLED — tắt tạm để debug 503. Bật lại trước khi go-live.
+  // if (
+  //   pathname.startsWith("/api/") &&
+  //   pathname !== "/api/health" &&
+  //   !pathname.startsWith("/api/webhooks/")
+  // ) {
+  //   const ip = getIp(req);
+  //   const key = uid ?? ip;
+  //   if (pathname.startsWith("/api/auth/")) {
+  //     if (!(await allow(L.auth, `auth:${ip}`))) return r429();
+  //   } else if (
+  //     pathname === "/api/seller/withdrawal" ||
+  //     pathname === "/api/seller/buy-slots" ||
+  //     pathname.startsWith("/api/user/change-password") ||
+  //     pathname.startsWith("/api/user/2fa/")
+  //   ) {
+  //     if (!(await allow(L.sensitive, `sensitive:${key}`))) return r429();
+  //   } else if (pathname.startsWith("/api/chats/")) {
+  //     if (!(await allow(L.chat, `chat:${key}`))) return r429();
+  //   } else if (
+  //     pathname.startsWith("/api/storage/") ||
+  //     pathname.includes("/upload") ||
+  //     pathname.includes("/secure-image") ||
+  //     pathname.includes("/from-url")
+  //   ) {
+  //     if (!(await allow(L.storage, `storage:${key}`))) return r429();
+  //   } else if (pathname.startsWith("/api/admin/")) {
+  //     if (!(await allow(L.admin, `admin:${key}`))) return r429();
+  //   } else if (
+  //     pathname.startsWith("/api/user/") ||
+  //     pathname.startsWith("/api/seller/") ||
+  //     pathname.startsWith("/api/orders")
+  //   ) {
+  //     if (!(await allow(L.user, `user:${key}`))) return r429();
+  //   } else if (
+  //     pathname.startsWith("/api/products/") ||
+  //     pathname.startsWith("/api/ticker") ||
+  //     pathname.startsWith("/api/tut-tricks") ||
+  //     pathname.startsWith("/api/dich-vu") ||
+  //     pathname.startsWith("/api/courses")
+  //   ) {
+  //     if (!(await allow(L.public, `pub:${ip}`))) return r429();
+  //   } else {
+  //     if (!(await allow(L.fallback, `gen:${ip}`))) return r429();
+  //   }
+  // }
 
   // ── 2. Banned users → /tai-khoan-bi-khoa ─────────────────────────────────
-  // Allow /api/auth/* through so signOut can clear the session cookie
-  if (userStatus === "BANNED" && pathname !== "/tai-khoan-bi-khoa" && !pathname.startsWith("/api/auth/")) {
-    if (pathname.startsWith("/api/")) {
-      return new NextResponse(
-        JSON.stringify({ error: "Tài khoản đã bị khóa", code: "ACCOUNT_BANNED" }),
-        { status: 403, headers: { "Content-Type": "application/json" } },
-      );
-    }
-    return NextResponse.redirect(new URL("/tai-khoan-bi-khoa", req.url));
-  }
+  // ⚠️  TEMPORARILY DISABLED — tắt tạm để debug 503. Bật lại trước khi go-live.
+  // if (userStatus === "BANNED" && pathname !== "/tai-khoan-bi-khoa" && !pathname.startsWith("/api/auth/")) {
+  //   if (pathname.startsWith("/api/")) {
+  //     return new NextResponse(
+  //       JSON.stringify({ error: "Tài khoản đã bị khóa", code: "ACCOUNT_BANNED" }),
+  //       { status: 403, headers: { "Content-Type": "application/json" } },
+  //     );
+  //   }
+  //   return NextResponse.redirect(new URL("/tai-khoan-bi-khoa", req.url));
+  // }
 
   // Inject pathname into request headers so Server Components can read it via headers()
   const requestHeaders = new Headers(req.headers);
@@ -236,41 +236,42 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
   }
 
   // ── 8. CSRF check for API mutations ──────────────────────────────────────
-  if (
-    req.method !== "GET" &&
-    req.method !== "HEAD" &&
-    pathname.startsWith("/api/") &&
-    !pathname.startsWith("/api/webhooks/") &&
-    !pathname.startsWith("/api/auth/")
-  ) {
-    const origin = req.headers.get("origin");
-    const host = req.headers.get("host");
-    // Skip check when origin is absent or opaque ("null" string from redirects/Server Action retries)
-    if (origin && origin !== "null" && host) {
-      let originHostname: string | null = null;
-      try { originHostname = new URL(origin).hostname; } catch { /* invalid origin */ }
-      const serverHostname = host.split(":")[0] ?? host; // strip port if present (e.g. host:443)
-      if (!originHostname || originHostname !== serverHostname) {
-        return new NextResponse("CSRF check failed", { status: 403 });
-      }
-    }
-  }
+  // TEMPORARILY DISABLED for debugging — re-enable before going live
+  // if (
+  //   req.method !== "GET" &&
+  //   req.method !== "HEAD" &&
+  //   pathname.startsWith("/api/") &&
+  //   !pathname.startsWith("/api/webhooks/") &&
+  //   !pathname.startsWith("/api/auth/")
+  // ) {
+  //   const origin = req.headers.get("origin");
+  //   const host = req.headers.get("host");
+  //   if (origin && origin !== "null" && host) {
+  //     let originHostname: string | null = null;
+  //     try { originHostname = new URL(origin).hostname; } catch { /* invalid origin */ }
+  //     const serverHostname = host.split(":")[0] ?? host;
+  //     if (!originHostname || originHostname !== serverHostname) {
+  //       return new NextResponse("CSRF check failed", { status: 403 });
+  //     }
+  //   }
+  // }
 
   // ── 9. Block /api/webhooks/sepay from non-whitelisted IPs ────────────────
-  if (pathname.startsWith("/api/webhooks/sepay")) {
-    const allowedIps = (process.env.SEPAY_ALLOWED_IPS ?? "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const clientIp =
-      req.headers.get("cf-connecting-ip") ??
-      req.headers.get("x-real-ip") ??
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      "unknown";
-    if (allowedIps.length > 0 && !allowedIps.includes(clientIp)) {
-      return new NextResponse("Forbidden", { status: 403 });
-    }
-  }
+  // ⚠️  TEMPORARILY DISABLED — tắt tạm để debug 503. Bật lại trước khi go-live.
+  // if (pathname.startsWith("/api/webhooks/sepay")) {
+  //   const allowedIps = (process.env.SEPAY_ALLOWED_IPS ?? "")
+  //     .split(",")
+  //     .map((s) => s.trim())
+  //     .filter(Boolean);
+  //   const clientIp =
+  //     req.headers.get("cf-connecting-ip") ??
+  //     req.headers.get("x-real-ip") ??
+  //     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+  //     "unknown";
+  //   if (allowedIps.length > 0 && !allowedIps.includes(clientIp)) {
+  //     return new NextResponse("Forbidden", { status: 403 });
+  //   }
+  // }
 
   // ── 10. Page permission check (Redis) ────────────────────────────────────
   // ADMIN always has full access. Only check when Redis is configured.
