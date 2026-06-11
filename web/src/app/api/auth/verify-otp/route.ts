@@ -115,8 +115,14 @@ export async function POST(req: NextRequest) {
           passwordHash,
           status: "ACTIVE",
           emailVerifiedAt: new Date(),
-          uidPrefix: "",
+          uidPrefix: "",  // placeholder — sẽ update ngay dưới sau khi có UUID
         },
+      });
+
+      // Derive uidPrefix từ UUID đã gen (8 hex chars đầu, bỏ dấu -)
+      await tx.user.update({
+        where: { id: newUser.id },
+        data: { uidPrefix: newUser.id.replace(/-/g, "").slice(0, 8) },
       });
 
       await tx.pendingRegistration.delete({ where: { email } });

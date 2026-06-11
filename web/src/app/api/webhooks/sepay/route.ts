@@ -123,11 +123,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true }, { status: 200 });
   }
 
-  // 6. Match user by uid_prefix
-  const user = await prisma.user.findFirst({
-    where: { uidPrefix, status: "ACTIVE", deletedAt: null },
-    select: { id: true, email: true },
-  });
+  // 6. Match user by first 8 chars of UUID (id::text LIKE 'XXXXXXXX-%')
+  // Dùng raw query vì uid_prefix column có thể rỗng với user cũ (bug đã fix ở verify-otp).
+  // UUID format: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX → first 8 hex chars = first segment.
+  const userRows = await prisma.$queryRaw<Array<{ id: string; email: string }>>`
+    SELECT id::text AS id, email FROM users
+    WHERE id::text LIKE ${uidPrefix + "-%"}
+      AND status = 'ACTIVE'
+      AND deleted_at IS NULL
+    LIMIT 1
+  `;
+  const user = userRows[0] ?? null;
 
   if (!user) {
     await saveUnmatched(referenceCode, transferAmount, content, payload as Prisma.InputJsonObject, [uidPrefix]);

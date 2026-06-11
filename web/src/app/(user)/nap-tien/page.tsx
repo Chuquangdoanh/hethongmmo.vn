@@ -28,7 +28,7 @@ export default async function NapTienPage() {
       where: { id: me.id },
       select: {
         balance: true, totalDeposited: true, totalSpent: true,
-        uidPrefix: true, fullName: true, email: true, role: true, avatarUrl: true,
+        fullName: true, email: true, role: true, avatarUrl: true,
       },
     }),
     prisma.transaction.findFirst({
@@ -49,7 +49,9 @@ export default async function NapTienPage() {
   const balance        = Number(user.balance);
   const totalDeposited = Number(user.totalDeposited);
   const totalSpent     = Number(user.totalSpent);
-  const transferContent = `NAP ${user.uidPrefix.toUpperCase()}`;
+  // Derive từ UUID session — không phụ thuộc vào uid_prefix column (có thể rỗng)
+  const depositId      = me.id.replace(/-/g, "").slice(0, 8).toUpperCase();
+  const transferContent = `NAP ${depositId}`;
 
   return (
     <>
@@ -57,7 +59,7 @@ export default async function NapTienPage() {
         fullName={user.fullName}
         email={user.email}
         role={user.role}
-        uidPrefix={user.uidPrefix}
+        uidPrefix={depositId.toLowerCase()}
         balance={balance}
         totalDeposited={totalDeposited}
         totalSpent={totalSpent}

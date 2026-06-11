@@ -58,6 +58,8 @@ export default async function ThongTinCaNhanPage() {
   const totalSpent     = Number(user.totalSpent);
   const roleLabel      = ROLE_LABELS[user.role] ?? "Thành viên";
   const initials       = (user.fullName || user.email).slice(0, 2).toUpperCase();
+  // Luôn derive từ UUID để tránh phụ thuộc vào cột uid_prefix (có thể rỗng với user cũ)
+  const depositId      = user.id.replace(/-/g, "").slice(0, 8);
 
   const CONTACT_ROWS = [
     { Icon: Mail,         value: user.email,                    color: "text-blue-500" },
@@ -73,7 +75,7 @@ export default async function ThongTinCaNhanPage() {
         fullName={user.fullName}
         email={user.email}
         role={user.role}
-        uidPrefix={user.uidPrefix}
+        uidPrefix={depositId}
         balance={balance}
         totalDeposited={totalDeposited}
         totalSpent={totalSpent}
@@ -160,8 +162,8 @@ export default async function ThongTinCaNhanPage() {
                 <div>
                   <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Mã nạp tiền</p>
                   <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-700 font-mono flex items-center justify-between gap-2">
-                    <span className="font-semibold tracking-wider">{user.uidPrefix.toUpperCase()}</span>
-                    <CopyButton text={user.uidPrefix.toUpperCase()} className="shrink-0 px-1.5! py-0.5! text-[10px]!" />
+                    <span className="font-semibold tracking-wider">{depositId.toUpperCase()}</span>
+                    <CopyButton text={depositId.toUpperCase()} className="shrink-0 px-1.5! py-0.5! text-[10px]!" />
                   </div>
                 </div>
                 <div className="col-span-2">
