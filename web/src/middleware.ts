@@ -245,8 +245,14 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
   ) {
     const origin = req.headers.get("origin");
     const host = req.headers.get("host");
-    if (origin && host && !origin.endsWith(host)) {
-      return new NextResponse("CSRF check failed", { status: 403 });
+    // Skip check when origin is absent or opaque ("null" string from redirects/Server Action retries)
+    if (origin && origin !== "null" && host) {
+      let originHostname: string | null = null;
+      try { originHostname = new URL(origin).hostname; } catch { /* invalid origin */ }
+      const serverHostname = host.split(":")[0] ?? host; // strip port if present (e.g. host:443)
+      if (!originHostname || originHostname !== serverHostname) {
+        return new NextResponse("CSRF check failed", { status: 403 });
+      }
     }
   }
 
