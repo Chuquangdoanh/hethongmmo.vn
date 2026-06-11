@@ -265,21 +265,10 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
   // Origin/Host check gây false positive khi Next.js chạy sau reverse proxy
   // vì host header nhận được là tên nội bộ Docker (web:3000), không khớp origin.
 
-  // ── 8. Block /api/webhooks/sepay from non-whitelisted IPs ────────────────
-  if (pathname.startsWith("/api/webhooks/sepay")) {
-    const allowedIps = (process.env.SEPAY_ALLOWED_IPS ?? "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const clientIp =
-      req.headers.get("cf-connecting-ip") ??
-      req.headers.get("x-real-ip") ??
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      "unknown";
-    if (allowedIps.length > 0 && !allowedIps.includes(clientIp)) {
-      return new NextResponse("Forbidden", { status: 403 });
-    }
-  }
+  // IP whitelist for /api/webhooks/sepay is handled inside the route handler
+  // (uses SEPAY_IP_WHITELIST env var). Middleware-level IP check removed because
+  // the real client IP behind Cloudflare requires cf-connecting-ip which is not
+  // reliably available at middleware level; HMAC verification is the primary guard.
 
   // ── 10. Page permission check (Redis) ────────────────────────────────────
   // ADMIN always has full access. Only check when Redis is configured.
