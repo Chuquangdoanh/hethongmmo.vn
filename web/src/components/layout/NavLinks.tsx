@@ -37,6 +37,7 @@ export default function NavLinks({ links }: { links: NavLink[] }) {
               )}
               <Link
                 href={link.href}
+                prefetch={false}
                 data-href={link.href}
                 aria-current={isActive ? "page" : undefined}
                 className={isActive ? "hdr-nav-link hdr-active" : "hdr-nav-link"}

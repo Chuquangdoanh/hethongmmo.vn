@@ -151,7 +151,7 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
         {isLoggedIn && quickLinks.length > 0 && (
           <div className="hdr-drawer-quick">
             {quickLinks.map(({ href, Icon, bg, color, label }) => (
-              <Link key={href} href={href} className="hdr-drawer-quick-btn" onClick={close}>
+              <Link key={href} href={href} prefetch={false} className="hdr-drawer-quick-btn" onClick={close}>
                 <span style={{ width: 28, height: 28, borderRadius: 8, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <Icon size={14} strokeWidth={1.75} style={{ color }} />
                 </span>
@@ -171,6 +171,7 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
               <Link
                 key={href}
                 href={href}
+                prefetch={false}
                 className={`hdr-drawer-nav-link${isActive ? " hdr-active" : ""}`}
                 onClick={close}
               >
@@ -200,10 +201,10 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
             </button>
           ) : (
             <>
-              <Link href="/dang-nhap" className="hdr-drawer-foot-btn hdr-foot-login" onClick={close}>
+              <Link href="/dang-nhap" prefetch={false} className="hdr-drawer-foot-btn hdr-foot-login" onClick={close}>
                 Đăng nhập
               </Link>
-              <Link href="/dang-ky" className="hdr-drawer-foot-btn hdr-foot-register" onClick={close}>
+              <Link href="/dang-ky" prefetch={false} className="hdr-drawer-foot-btn hdr-foot-register" onClick={close}>
                 Đăng ký miễn phí
               </Link>
             </>

@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const SPEED_PX_PER_S = 80;
-const MAX_RETRIES    = 3;
-const EST_ITEM_W     = 500; // px ước lượng mỗi item — dùng để tính số copies cần thiết
+const SPEED_PX_PER_S  = 80;
+const EST_ITEM_W      = 500; // px ước lượng mỗi item — dùng để tính số copies cần thiết
+const RETRY_BASE_MS   = 3_000;
+const RETRY_MAX_MS    = 30_000;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,17 +58,20 @@ function ItemSpan({ item }: { item: DisplayItem }) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Ticker() {
-  const [items,   setItems]   = useState<DisplayItem[]>([]);
-  const [hovered, setHovered] = useState(false);
-  const [copies,  setCopies]  = useState(2);
+  const [items,       setItems]       = useState<DisplayItem[]>([]);
+  const [hovered,     setHovered]     = useState(false);
+  const [copies,      setCopies]      = useState(2);
+  const [connecting,  setConnecting]  = useState(true);
 
   // DOM refs
   const trackRef = useRef<HTMLDivElement>(null); // animated element
   const copy1Ref = useRef<HTMLDivElement>(null); // first copy — measured for halfW
 
   // SSE refs
-  const esRef      = useRef<EventSource | null>(null);
-  const retriesRef = useRef(0);
+  const esRef       = useRef<EventSource | null>(null);
+  const retryRef    = useRef(0);
+  const timerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const destroyedRef = useRef(false);
 
   // Animation refs — NO React state để tránh re-render làm gián đoạn animation
   const rafRef      = useRef<number | null>(null);
@@ -76,9 +80,13 @@ export default function Ticker() {
   const lastTsRef   = useRef<number | null>(null);
   const hoveredRef  = useRef(false);
 
-  // ── SSE connection ──────────────────────────────────────────────────────────
-  function connect() {
+  // ── SSE connection — retry vô hạn với exponential backoff ──────────────────
+  const connectRef = useRef<() => void>(() => { /* init */ });
+  connectRef.current = function connect() {
+    if (destroyedRef.current) return;
     if (esRef.current) esRef.current.close();
+    setConnecting(true);
+
     const es = new EventSource("/api/ticker");
     esRef.current = es;
 
@@ -86,24 +94,30 @@ export default function Ticker() {
       try {
         const p = JSON.parse(e.data as string) as TickerPayload;
         setItems(buildItems(p));
-        retriesRef.current = 0;
+        setConnecting(false);
+        retryRef.current = 0; // reset backoff on success
       } catch { /* ignore malformed data */ }
     });
 
     es.onerror = () => {
       es.close();
       esRef.current = null;
-      if (retriesRef.current < MAX_RETRIES) {
-        retriesRef.current += 1;
-        setTimeout(connect, 5_000);
-      }
+      if (destroyedRef.current) return;
+      // Exponential backoff: 3s → 6s → 12s → max 30s, retry forever
+      const delay = Math.min(RETRY_BASE_MS * 2 ** retryRef.current, RETRY_MAX_MS);
+      retryRef.current += 1;
+      timerRef.current = setTimeout(() => connectRef.current(), delay);
     };
-  }
+  };
 
   useEffect(() => {
-    connect();
-    return () => { esRef.current?.close(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    destroyedRef.current = false;
+    connectRef.current();
+    return () => {
+      destroyedRef.current = true;
+      esRef.current?.close();
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   // Sync hovered → ref để animation frame đọc không cần re-render
@@ -170,7 +184,8 @@ export default function Ticker() {
     };
   }, [items]);
 
-  if (items.length === 0) return null;
+  // Ẩn hoàn toàn chỉ khi chưa có dữ liệu lần đầu và đang kết nối
+  if (items.length === 0 && connecting) return null;
 
   const half = Array.from({ length: copies }, () => items).flat();
 
