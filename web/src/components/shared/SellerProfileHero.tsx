@@ -76,7 +76,7 @@ export default async function SellerProfileHero({ userId, activeTab }: Props) {
           )}
           <div>
             <h1 className="text-xl font-bold text-white leading-tight">{user.fullName ?? user.email}</h1>
-            <p className="text-[11px] text-slate-400 mt-0.5 font-mono">ID: {user.uidPrefix}...</p>
+            <p className="text-[11px] text-slate-400 mt-0.5 font-mono">id : {user.uidPrefix?.toUpperCase()}</p>
             <div className="mt-1.5 flex items-center gap-1.5">
               <span className="inline-flex px-2.5 py-0.5 rounded-full border border-violet-500/60 text-violet-300 text-[11px] font-medium">
                 Nhà bán hàng
