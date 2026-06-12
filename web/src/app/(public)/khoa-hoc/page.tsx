@@ -15,7 +15,7 @@ import { buildMeta } from "@/lib/utils/seo";
 export const metadata: Metadata = buildMeta({
   title: "Khóa Học MMO Thực Chiến | Hệ Thống MMO",
   description: "Hệ thống khóa học Digital Marketing, Facebook Ads, TikTok Ads, Google Ads và xây dựng thương hiệu giúp bạn kiếm tiền online bền vững.",
-  url: "/khoa-hoc",
+  url: "/images/dj-media-classroom.jpg",
 });
 
 const BADGE_STYLES: Record<string, { bg: string; color: string; label: string }> = {
@@ -128,12 +128,19 @@ export default async function KhoaHocPage({
 
       {/* ══ HERO SECTION ══ */}
       <div className="relative overflow-hidden bg-[#f1f5f9] border-b border-border">
-
         <div className="relative mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-14">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          {/*
+            Mobile (flex-col): order-1 → order-2 → order-3
+              1. Badge + Tiêu đề
+              2. Ảnh thumbnail
+              3. Mô tả + Icon stats + Button
 
-            {/* Left: text */}
-            <div className="lg:col-span-7">
+            Desktop (grid 12 cột): cột trái (7) chứa 1+3, cột phải (5) chứa ảnh — span 2 hàng
+          */}
+          <div className="flex flex-col gap-6 lg:grid lg:grid-cols-12 lg:gap-10">
+
+            {/* 1 — Badge + Tiêu đề */}
+            <div className="order-1 lg:col-start-1 lg:col-span-7 lg:row-start-1 lg:self-end">
               <span
                 className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full mb-5 uppercase tracking-widest"
                 style={{ background: "rgba(245,158,11,0.15)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.35)" }}
@@ -141,11 +148,9 @@ export default async function KhoaHocPage({
                 <Zap size={11} strokeWidth={2.5} />
                 Digital Learning
               </span>
-
-              <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight mb-4">
+              <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight">
                 Khóa học{" "}
                 <span
-                  className="relative"
                   style={{
                     background: "linear-gradient(135deg, #f59e0b, #fbbf24)",
                     WebkitBackgroundClip: "text",
@@ -157,13 +162,51 @@ export default async function KhoaHocPage({
                 <br />
                 <span className="text-[#374151]">MMO 2025</span>
               </h1>
+            </div>
 
+            {/* 2 — Ảnh thumbnail (thứ 2 trên mobile, cột phải span 2 hàng trên desktop) */}
+            <div className="order-2 lg:col-start-8 lg:col-span-5 lg:row-start-1 lg:row-span-2">
+              {featuredCourse?.thumbnail ? (
+                <div className="relative aspect-video lg:aspect-auto lg:h-full rounded-2xl overflow-hidden shadow-2xl">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={r2Url(featuredCourse.thumbnail)}
+                    alt="Khóa học thực chiến"
+                    className="w-full h-full object-cover"
+                  />
+                  <div
+                    className="absolute bottom-4 right-4 flex items-center gap-3 px-6 py-3 rounded-2xl"
+                    style={{
+                      background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                      boxShadow: "0 6px 24px rgba(217,119,6,0.60)",
+                    }}
+                  >
+                    <Award size={28} strokeWidth={2.5} className="text-white" />
+                    <span className="text-xl font-extrabold text-white tracking-wide">TOP 1</span>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="aspect-video lg:aspect-auto lg:h-full rounded-2xl flex flex-col items-center justify-center gap-4 text-[#111827] text-center"
+                  style={{ background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.1)" }}
+                >
+                  <GraduationCap size={56} strokeWidth={1.5} className="text-[#9ca3af]" />
+                  <div>
+                    <p className="text-2xl font-extrabold">{courses.length}+</p>
+                    <p className="text-sm text-[#6b7280]">Khóa học đang mở</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 3 — Mô tả + Icon stats + Button */}
+            <div className="order-3 lg:col-start-1 lg:col-span-7 lg:row-start-2 lg:self-start">
               <p className="text-[#6b7280] text-sm leading-relaxed mb-8 max-w-lg">
                 Hệ thống khóa học Digital Marketing, Facebook Ads, TikTok Ads, Google Ads
                 và xây dựng thương hiệu giúp bạn kiếm tiền online bền vững.
               </p>
 
-              {/* Stats row */}
+              {/* Stats icons */}
               <div className="flex flex-wrap items-center gap-6 mb-8">
                 {HERO_STATS.map(({ Icon, value, label }) => (
                   <div key={label} className="flex items-center gap-2.5">
@@ -198,49 +241,6 @@ export default async function KhoaHocPage({
                   Dịch vụ MXH
                 </Link>
               </div>
-            </div>
-
-            {/* Right: hero banner image */}
-            <div className="lg:col-span-5">
-              {featuredCourse?.thumbnail ? (
-                <div
-                  className="relative rounded-2xl overflow-hidden shadow-2xl"
-                  style={{ aspectRatio: "16/9" }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={r2Url(featuredCourse.thumbnail)}
-                    alt="Khóa học thực chiến"
-                    className="w-full h-full object-cover"
-                  />
-                  {/* TOP 1 badge */}
-                  <div
-                    className="absolute bottom-4 right-4 flex items-center gap-3 px-6 py-3 rounded-2xl"
-                    style={{
-                      background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                      boxShadow: "0 6px 24px rgba(217,119,6,0.60)",
-                    }}
-                  >
-                    <Award size={28} strokeWidth={2.5} className="text-white" />
-                    <span className="text-xl font-extrabold text-white tracking-wide">TOP 1</span>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className="rounded-2xl flex flex-col items-center justify-center gap-4 text-[#111827] text-center"
-                  style={{
-                    aspectRatio: "16/9",
-                    background: "rgba(0,0,0,0.04)",
-                    border: "1px solid rgba(0,0,0,0.1)",
-                  }}
-                >
-                  <GraduationCap size={56} strokeWidth={1.5} className="text-[#9ca3af]" />
-                  <div>
-                    <p className="text-2xl font-extrabold">{courses.length}+</p>
-                    <p className="text-sm text-[#6b7280]">Khóa học đang mở</p>
-                  </div>
-                </div>
-              )}
             </div>
 
           </div>
