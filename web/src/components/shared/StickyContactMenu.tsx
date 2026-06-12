@@ -73,6 +73,7 @@ export default function StickyContactMenu() {
   return (
     <div
         ref={menuRef}
+        className="scm-wrapper"
         style={{
           position: "fixed",
           bottom: 24,

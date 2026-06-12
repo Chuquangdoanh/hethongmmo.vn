@@ -47,18 +47,19 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
 
-  // Body scroll lock
+  // Body scroll lock — dùng CSS class để tránh visual jump khi mở/đóng
   useEffect(() => {
     if (!open) return;
-    const y = window.scrollY;
-    document.body.style.cssText = `position:fixed;top:-${y}px;width:100%;overflow-y:scroll`;
+    const scrollY = window.scrollY;
+    document.documentElement.style.setProperty("--menu-scroll-y", `-${scrollY}px`);
+    document.body.classList.add("menu-open");
     return () => {
-      const scrollY = document.body.style.top;
-      document.body.style.cssText = "";
+      document.body.classList.remove("menu-open");
+      document.documentElement.style.removeProperty("--menu-scroll-y");
       // Nếu đang navigate sang trang mới, ScrollRestorer sẽ xử lý scroll-to-top
       // Chỉ khôi phục vị trí cũ khi đóng menu mà không chuyển trang (overlay/Escape/X)
       if (!navigatingRef.current) {
-        window.scrollTo(0, -parseInt(scrollY || "0", 10));
+        window.scrollTo(0, scrollY);
       }
       navigatingRef.current = false;
     };

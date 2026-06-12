@@ -59,6 +59,27 @@ a  { text-decoration: none; }
   will-change: transform, opacity;
 }
 
+/* ── Prevent iOS auto-zoom on input focus (font-size < 16px triggers zoom) ── */
+input, select, textarea {
+  font-size: max(16px, 1em);
+}
+
+/* ── Mobile menu scroll lock — giữ trang đứng im khi mở menu ── */
+body.menu-open {
+  overflow: hidden;
+  position: fixed;
+  top: var(--menu-scroll-y, 0px);
+  left: 0;
+  right: 0;
+}
+
+/* ── Ẩn nút liên hệ hỗ trợ khi mobile menu đang mở ── */
+@media (max-width: 768px) {
+  body.menu-open .scm-wrapper {
+    display: none;
+  }
+}
+
 /* ── taste-skill §4.4 — Shape Consistency Lock: cards = 16px, no mixed radii ── */
 .tut-card,
 .product-card,
