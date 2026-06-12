@@ -164,7 +164,7 @@ export default async function HomePage() {
             {/* ── 1: Title ── */}
             <div className="dj-media-title anim-fade-up" data-d="1">
               <h2 style={{
-                fontSize: "clamp(1.4rem,3vw,2.4rem)", fontWeight: "900",
+                fontSize: "clamp(1.67rem,3.57vw,2.86rem)", fontWeight: "900",
                 color: "#0f172a", lineHeight: "1.2", marginBottom: "0",
               }}>
                 <span style={{ display: "block", whiteSpace: "nowrap" }}>CÔNG TY TNHH DJ MEDIA &amp;</span>
@@ -1449,6 +1449,7 @@ export default async function HomePage() {
           grid-template-columns: 1fr 480px;
           grid-template-rows: auto auto auto;
           column-gap: 64px;
+          row-gap: 24px;
           align-items: start;
         }
         .dj-media-title { grid-column: 1; grid-row: 1; }

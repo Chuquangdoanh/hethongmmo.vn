@@ -46,13 +46,19 @@ export default function CaptchaWidget({
   useEffect(() => {
     if (!siteKey) return;
 
+    function cleanup() {
+      if (widgetIdRef.current !== null && window.turnstile) {
+        window.turnstile.remove(widgetIdRef.current);
+        widgetIdRef.current = null;
+      }
+    }
+
     function renderWidget() {
       if (!containerRef.current || !window.turnstile) return;
-      // Guard: do not call render() again if already rendered
       if (widgetIdRef.current !== null) return;
       widgetIdRef.current = window.turnstile.render(containerRef.current, {
         sitekey: siteKey,
-        theme: "dark",
+        theme: "light",
         callback: (token: string) => onVerifyRef.current(token),
         "expired-callback": () => onExpireRef.current?.(),
       });
@@ -60,7 +66,7 @@ export default function CaptchaWidget({
 
     if (window.turnstile) {
       renderWidget();
-      return;
+      return cleanup;
     }
 
     if (!document.getElementById(TURNSTILE_SCRIPT_ID)) {
@@ -78,16 +84,11 @@ export default function CaptchaWidget({
           renderWidget();
         }
       }, 100);
-      return () => clearInterval(t);
+      return () => { clearInterval(t); cleanup(); };
     }
 
-    return () => {
-      if (widgetIdRef.current && window.turnstile) {
-        window.turnstile.remove(widgetIdRef.current);
-        widgetIdRef.current = null;
-      }
-    };
-  }, [siteKey]); // chỉ re-render widget khi siteKey thay đổi
+    return cleanup;
+  }, [siteKey]);
 
   if (!siteKey) return null;
 

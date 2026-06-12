@@ -13,7 +13,7 @@ import type { CategoryItem } from "./_components/FilterSidebar";
 import Pagination from "@/components/shared/Pagination";
 import {
   Package, ShieldCheck, ShoppingBag, ShoppingCart, Store,
-  Pencil, CheckCircle, Zap, Headphones, RotateCcw,
+  Pencil, CheckCircle,
 } from "lucide-react";
 import { CommunityBanner } from "./_components/CommunityBanner";
 import { SortSelect } from "./_components/SortSelect";
@@ -375,30 +375,6 @@ export default async function TaiNguyenMmoPage({
 
       {/* ── CỘNG ĐỒNG MMO (client component with popup modals) ── */}
       <CommunityBanner />
-
-      {/* ── TRUST BANNER ── */}
-      <div className="bg-[#f1f5f9]">
-        <div className="mx-auto max-w-3xl px-4 md:px-6 lg:px-8 py-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-start">
-            {([
-              { Icon: Zap,         color: "#f59e0b", text: "Giao hàng tự động" },
-              { Icon: ShieldCheck, color: "#10b981", text: "Bảo mật 100%"      },
-              { Icon: RotateCcw,   color: "#0066ff", text: "Đổi trả trong 24h" },
-              { Icon: Headphones,  color: "#7c3aed", text: "Hỗ trợ 24/7"       },
-            ] as const).map(({ Icon, color, text }) => (
-              <div key={text} className="flex flex-col items-center gap-1.5 text-center py-2 px-1">
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: `${color}1a` }}
-                >
-                  <Icon size={16} strokeWidth={2} style={{ color }} />
-                </div>
-                <span className="text-xs font-semibold text-text-dark leading-snug">{text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
 {/* ── MAIN LAYOUT ── */}
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-6">

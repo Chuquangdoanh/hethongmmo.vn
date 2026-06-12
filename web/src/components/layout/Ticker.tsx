@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Megaphone } from "lucide-react";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -229,11 +230,7 @@ export default function Ticker() {
           whiteSpace:    "nowrap",
         }}
       >
-        <span style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: "10px", height: "10px" }}>
-          <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "rgba(74,222,128,0.4)", animation: "ticker-ring 2s ease-out infinite" }} />
-          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#4ade80", display: "block", boxShadow: "0 0 6px rgba(74,222,128,0.8)" }} />
-        </span>
-        LIVE
+        <Megaphone size={14} strokeWidth={2} style={{ color: "#4ade80", flexShrink: 0 }} />
       </div>
 
       {/* ── Scrolling area ── */}

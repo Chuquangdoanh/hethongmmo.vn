@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, FileText, ShieldCheck, AlertTriangle, CheckCircle, ExternalLink } from "lucide-react";
+import { X, FileText, ShieldCheck, AlertTriangle, CheckCircle, ExternalLink, Zap, Headphones } from "lucide-react";
 
 type ModalId = "rules" | "commitments" | "warnings";
 
@@ -191,6 +191,22 @@ export function CommunityBanner() {
                 https://www.facebook.com/hethongmmo.vn/ <ExternalLink size={10} strokeWidth={2} />
               </a>
             </div>
+          </div>
+
+          {/* Trust icons */}
+          <div className="flex items-center justify-center gap-6 mb-6">
+            {([
+              { Icon: Zap,         color: "#f59e0b", text: "Giao hàng tự động" },
+              { Icon: ShieldCheck, color: "#10b981", text: "Bảo mật 100%"      },
+              { Icon: Headphones,  color: "#7c3aed", text: "Hỗ trợ 24/7"       },
+            ] as const).map(({ Icon, color, text }) => (
+              <div key={text} className="flex flex-col items-center gap-1.5">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}1a` }}>
+                  <Icon size={16} strokeWidth={2} style={{ color }} />
+                </div>
+                <span className="text-xs font-semibold text-[#374151] leading-snug text-center">{text}</span>
+              </div>
+            ))}
           </div>
 
           {/* Divider */}
