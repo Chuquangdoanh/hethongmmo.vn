@@ -278,6 +278,15 @@
   background: linear-gradient(135deg, #f0f4ff, #e8f0fe);
   border: 1px solid rgba(0, 102, 255, 0.1);
 }
+.hdr-drawer-user-card--link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.hdr-drawer-user-card--link:hover {
+  border-color: rgba(0, 102, 255, 0.3);
+  box-shadow: 0 2px 10px rgba(0, 102, 255, 0.1);
+}
 .hdr-drawer-avatar {
   width: 44px;
   height: 44px;
@@ -438,6 +447,9 @@
 .hdr-foot-register:hover { background: linear-gradient(135deg, #0052cc, #0033aa); }
 .hdr-foot-logout { background: #fef2f2; color: #dc2626; }
 .hdr-foot-logout:hover { background: #fee2e2; }
+
+/* ── Ẩn nút Liên hệ hỗ trợ khi mobile menu đang mở ─────────── */
+body.menu-open .scm-wrapper { display: none !important; }
 
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 768px) {

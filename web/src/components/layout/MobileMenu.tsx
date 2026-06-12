@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react";
 import { formatVnd } from "@/lib/utils/format";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import {
-  X, User, CreditCard, Package, Store, LayoutDashboard,
+  X, Store, LayoutDashboard,
   Home, Wrench, GraduationCap, Lightbulb, FolderOpen, Megaphone, Globe,
   Banknote, LogOut,
 } from "lucide-react";
@@ -83,9 +83,6 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
   const isAdmin    = user?.role === "ADMIN" || user?.role === "STAFF";
 
   const quickLinks: { href: string; Icon: React.ElementType; bg: string; color: string; label: string }[] = [
-    { href: "/thong-tin-ca-nhan", Icon: User,            bg: "#f1f5f9", color: "#475569", label: "Hồ sơ" },
-    { href: "/nap-tien",          Icon: CreditCard,      bg: "#dbeafe", color: "#2563eb", label: "Nạp tiền" },
-    { href: "/don-hang",          Icon: Package,         bg: "#fef3c7", color: "#b45309", label: "Đơn hàng" },
     ...(isSeller ? [{ href: "/ban-hang",        Icon: Store,           bg: "#f0fdf4", color: "#16a34a", label: "Bán hàng" }]    : []),
     ...(isAdmin  ? [{ href: "/admin/dashboard", Icon: LayoutDashboard, bg: "#ede9fe", color: "#7c3aed", label: "Admin" }]        : []),
   ];
@@ -129,10 +126,10 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
           </button>
         </div>
 
-        {/* User info */}
+        {/* User info — clickable → thông tin cá nhân */}
         {isLoggedIn && user && (
           <div className="hdr-drawer-user">
-            <div className="hdr-drawer-user-card">
+            <Link href="/thong-tin-ca-nhan" prefetch={false} className="hdr-drawer-user-card hdr-drawer-user-card--link" onClick={closeWithNav}>
               <div className="hdr-drawer-avatar">
                 {avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -152,7 +149,7 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
                   </div>
                 )}
               </div>
-            </div>
+            </Link>
           </div>
         )}
 
