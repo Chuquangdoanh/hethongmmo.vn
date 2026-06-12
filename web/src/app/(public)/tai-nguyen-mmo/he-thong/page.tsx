@@ -9,10 +9,12 @@ import {
   LayoutGrid, SortAsc, ShieldCheck, Clock,
 } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Hệ Thống MMO — Tài nguyên MMO",
-  description: "Nhà cung cấp tài nguyên MMO chính thức",
-};
+import { buildMeta } from "@/lib/utils/seo";
+export const metadata: Metadata = buildMeta({
+  title: "Tài Nguyên Hệ Thống MMO | Hệ Thống MMO",
+  description: "Nhà cung cấp tài nguyên MMO chính thức — tài khoản, tool, khóa học chất lượng cao, giao hàng tự động.",
+  url: "/tai-nguyen-mmo/he-thong",
+});
 
 const SORT_OPTIONS = [
   { id: "newest",     label: "Mới nhất" },

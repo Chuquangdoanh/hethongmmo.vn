@@ -1,11 +1,13 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
+import { buildMeta } from "@/lib/utils/seo";
 
-export const metadata: Metadata = {
-  title: "Giới thiệu",
-  description: "Tìm hiểu về hethongmmo.vn — nền tảng MMO dịch vụ số #1 Việt Nam.",
-};
+export const metadata: Metadata = buildMeta({
+  title: "Giới Thiệu | Hệ Thống MMO",
+  description: "Tìm hiểu về hethongmmo.vn — nền tảng dịch vụ mạng xã hội, khóa học MMO và tài nguyên số #1 Việt Nam, uy tín từ 2019.",
+  url: "/gioi-thieu",
+});
 
 const VALUES = [
   {

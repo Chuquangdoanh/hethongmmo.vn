@@ -7,10 +7,12 @@ import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import AdServiceTabs from "./_components/AdServiceTabs";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 
-export const metadata: Metadata = {
-  title: "Hệ Thống MMO",
+import { buildMeta } from "@/lib/utils/seo";
+export const metadata: Metadata = buildMeta({
+  title: "Dịch Vụ Quảng Cáo Facebook & TikTok Ads | Hệ Thống MMO",
   description: "Dịch vụ chạy quảng cáo Facebook, TikTok Ads chuyên nghiệp. Tối ưu ngân sách, tăng ROI. Kinh nghiệm 5 năm, quản lý 50B+ ngân sách.",
-};
+  url: "/quang-cao",
+});
 
 const WHY_CHOOSE = [
   "Kinh nghiệm thực chiến 5 năm",

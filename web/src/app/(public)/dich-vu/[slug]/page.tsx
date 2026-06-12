@@ -31,12 +31,30 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const service = await prisma.service.findFirst({
     where: { slug, isActive: true, deletedAt: null },
-    select: { seoTitle: true, seoDescription: true, name: true },
+    select: { seoTitle: true, seoDescription: true, name: true, thumbnail: true, description: true },
   });
   if (!service) return { title: "Không tìm thấy" };
+  const title = service.seoTitle ?? service.name;
+  const description = service.seoDescription ?? service.description ?? "Dịch vụ mạng xã hội uy tín tại hethongmmo.vn — hỗ trợ 24/7, bảo hành đầy đủ.";
+  const image = service.thumbnail ? r2Url(service.thumbnail) : undefined;
   return {
-    title: service.seoTitle ?? service.name,
-    description: service.seoDescription ?? undefined,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `/dich-vu/${slug}`,
+      siteName: "hethongmmo.vn",
+      locale: "vi_VN",
+      type: "website",
+      images: [{ url: image ?? "/images/facebook_cover_professional.png", width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image ?? "/images/facebook_cover_professional.png"],
+    },
   };
 }
 

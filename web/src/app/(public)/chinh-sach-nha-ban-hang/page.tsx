@@ -3,10 +3,12 @@ import Link from "next/link";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { Store, Zap, ShieldCheck, CheckCircle2, XCircle, Info } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Chính sách nhà bán hàng — hethongmmo.vn",
-  description: "Chính sách dành cho nhà bán hàng trên nền tảng MMO Marketplace.",
-};
+import { buildMeta } from "@/lib/utils/seo";
+export const metadata: Metadata = buildMeta({
+  title: "Chính Sách Nhà Bán Hàng | hethongmmo.vn",
+  description: "Chính sách dành cho nhà bán hàng trên nền tảng MMO Marketplace hethongmmo.vn — quy định, quyền lợi và trách nhiệm.",
+  url: "/chinh-sach-nha-ban-hang",
+});
 
 type SectionType =
   | { type: "list"; intro?: string; items: string[]; accent?: "red" }

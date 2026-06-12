@@ -8,11 +8,13 @@ import Pagination from "@/components/shared/Pagination";
 import { Users, TrendingUp, Star, CheckCircle, Headphones } from "lucide-react";
 import { getDiscountInfo } from "@/lib/utils/discount";
 import { r2Url } from "@/lib/utils/image-url";
+import { buildMeta } from "@/lib/utils/seo";
 
-export const metadata: Metadata = {
-  title: "Hệ Thống MMO",
-  description: "Tăng follow, like, view, sub trên TikTok, Facebook, Instagram, YouTube giá rẻ, uy tín.",
-};
+export const metadata: Metadata = buildMeta({
+  title: "Dịch Vụ Mạng Xã Hội | Hệ Thống MMO",
+  description: "Tăng follow, like, view, sub trên TikTok, Facebook, Instagram, YouTube giá rẻ, uy tín. Hỗ trợ 24/7, bảo hành đầy đủ.",
+  url: "/dich-vu",
+});
 
 interface WarrantyOption { name: string; price: number; }
 interface DeviceVariant { name: string; price: number; }

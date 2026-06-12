@@ -1,7 +1,15 @@
 // ISR: homepage không có auth() → cache 60s, rebuild khi có traffic sau khi stale
 export const revalidate = 60;
 
+import type { Metadata } from "next";
 import Link from "next/link";
+import { buildMeta } from "@/lib/utils/seo";
+
+export const metadata: Metadata = buildMeta({
+  title: "Hệ Thống MMO | DJ MEDIA — Dịch Vụ Mạng Xã Hội #1 Việt Nam",
+  description: "Nền tảng MMO hàng đầu Việt Nam — mở khóa Facebook, TikTok Ads, khóa học Digital Marketing, tài nguyên số. Hỗ trợ 24/7, uy tín từ 2019.",
+  url: "/",
+});
 import { prisma } from "@/lib/db/prisma";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { formatVnd } from "@/lib/utils/format";

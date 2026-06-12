@@ -22,10 +22,31 @@ export async function generateMetadata({
   const { slug } = await params;
   const product = await prisma.mmoProduct.findFirst({
     where: { slug, isActive: true, deletedAt: null },
-    select: { name: true },
+    select: { name: true, thumbnail: true, description: true },
   });
   if (!product) return { title: "Không tìm thấy" };
-  return { title: product.name };
+  const title = product.name;
+  const description = product.description ?? "Tài nguyên MMO chất lượng cao — giao hàng tự động ngay sau thanh toán tại hethongmmo.vn.";
+  const image = product.thumbnail ? r2Url(product.thumbnail) : undefined;
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `/tai-nguyen-mmo/${slug}`,
+      siteName: "hethongmmo.vn",
+      locale: "vi_VN",
+      type: "website",
+      images: [{ url: image ?? "/images/facebook_cover_professional.png", width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image ?? "/images/facebook_cover_professional.png"],
+    },
+  };
 }
 
 const TRUST_ICONS = [

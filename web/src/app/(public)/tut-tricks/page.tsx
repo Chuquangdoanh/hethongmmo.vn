@@ -7,11 +7,13 @@ import TutCategoryFilterClient from "./_components/TutCategoryFilterClient";
 import TutTierFilterClient from "./_components/TutTierFilterClient";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { getDiscountInfo } from "@/lib/utils/discount";
+import { buildMeta } from "@/lib/utils/seo";
 
-export const metadata: Metadata = {
-  title: "Hệ Thống MMO",
-  description: "Bí quyết tăng trưởng, kiếm tiền online — tổng hợp độc quyền, cập nhật liên tục từ các chuyên gia.",
-};
+export const metadata: Metadata = buildMeta({
+  title: "TUT & Tricks MMO | Hệ Thống MMO",
+  description: "Bí quyết tăng trưởng, kiếm tiền online — tổng hợp độc quyền, cập nhật liên tục từ các chuyên gia MMO hàng đầu Việt Nam.",
+  url: "/tut-tricks",
+});
 
 export default async function TutTricksPage({
   searchParams,

@@ -22,10 +22,30 @@ export async function generateMetadata({
   const { id } = await params;
   const product = await prisma.sellerProduct.findUnique({
     where: { id, isActive: true, isHidden: false, isRestricted: false, deletedAt: null },
-    select: { name: true },
+    select: { name: true, description: true },
   });
   if (!product) return { title: "Không tìm thấy" };
-  return { title: product.name };
+  const title = product.name;
+  const description = product.description ?? "Sản phẩm số từ nhà bán hàng uy tín — giao tự động, bảo hành 24h tại hethongmmo.vn.";
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `/tai-nguyen-mmo/san-pham/${id}`,
+      siteName: "hethongmmo.vn",
+      locale: "vi_VN",
+      type: "website",
+      images: [{ url: "/images/facebook_cover_professional.png", width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/images/facebook_cover_professional.png"],
+    },
+  };
 }
 
 const SUPPORT_URL = process.env.NEXT_PUBLIC_SUPPORT_URL ?? "https://m.me/chuquangdoanh";

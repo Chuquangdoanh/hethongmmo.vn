@@ -49,10 +49,31 @@ export async function generateMetadata({
   const { sellerId } = await params;
   const seller = await prisma.user.findUnique({
     where: { id: sellerId, sellerStatus: "APPROVED" },
-    select: { fullName: true },
+    select: { fullName: true, avatarUrl: true },
   });
   if (!seller) return { title: "Không tìm thấy" };
-  return { title: `${seller.fullName} — Tài nguyên MMO` };
+  const title = `${seller.fullName} — Gian hàng MMO`;
+  const description = `Khám phá sản phẩm số từ nhà bán hàng ${seller.fullName} trên hethongmmo.vn — uy tín, giao tự động, bảo hành đầy đủ.`;
+  const image = seller.avatarUrl ? r2Url(seller.avatarUrl) : undefined;
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `/tai-nguyen-mmo/nguoi-ban/${sellerId}`,
+      siteName: "hethongmmo.vn",
+      locale: "vi_VN",
+      type: "website",
+      images: [{ url: image ?? "/images/facebook_cover_professional.png", width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image ?? "/images/facebook_cover_professional.png"],
+    },
+  };
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────

@@ -5,10 +5,12 @@ import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import ServiceSectionClient, { type Illustration, type UserInfo } from "./_components/ServiceSectionClient";
 
-export const metadata: Metadata = {
-  title: "NETWORKS (ADB) — DNET Media Network",
-  description: "Hệ sinh thái NETWORK hỗ trợ kiếm tiền từ nội dung trên Facebook. Cung cấp Fanpage, Setup Payout, Hợp tác KOC.",
-};
+import { buildMeta } from "@/lib/utils/seo";
+export const metadata: Metadata = buildMeta({
+  title: "NETWORKS (ADB) — DNET Media Network | Hệ Thống MMO",
+  description: "Hệ sinh thái NETWORK hỗ trợ kiếm tiền từ nội dung trên Facebook. Cung cấp Fanpage, Setup Payout, Hợp tác KOC — uy tín, chuyên nghiệp.",
+  url: "/NetWorks",
+});
 
 const SERVICES = [
   {

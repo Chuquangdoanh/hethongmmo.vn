@@ -10,11 +10,13 @@ import {
   Zap, BookOpen, TrendingUp, Award, GraduationCap, ChevronRight,
 } from "lucide-react";
 import { r2Url } from "@/lib/utils/image-url";
+import { buildMeta } from "@/lib/utils/seo";
 
-export const metadata: Metadata = {
-  title: "Hệ Thống MMO",
-  description: "Hệ thống khóa học Digital Marketing, Facebook Ads, TikTok Ads, Google Ads và xây dựng thương hiệu.",
-};
+export const metadata: Metadata = buildMeta({
+  title: "Khóa Học MMO Thực Chiến | Hệ Thống MMO",
+  description: "Hệ thống khóa học Digital Marketing, Facebook Ads, TikTok Ads, Google Ads và xây dựng thương hiệu giúp bạn kiếm tiền online bền vững.",
+  url: "/khoa-hoc",
+});
 
 const BADGE_STYLES: Record<string, { bg: string; color: string; label: string }> = {
   HOT:     { bg: "#fef2f2", color: "#e11d48", label: "HOT" },

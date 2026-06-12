@@ -6,10 +6,12 @@ import {
   UserRound, CreditCard, Monitor,
 } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Chính sách bảo mật — hethongmmo.vn",
-  description: "Chính sách bảo mật và quyền riêng tư của nền tảng MMO Marketplace. Cập nhật lần cuối: 02/06/2026.",
-};
+import { buildMeta } from "@/lib/utils/seo";
+export const metadata: Metadata = buildMeta({
+  title: "Chính Sách Bảo Mật | hethongmmo.vn",
+  description: "Chính sách bảo mật và quyền riêng tư của nền tảng MMO Marketplace hethongmmo.vn. Cập nhật lần cuối: 02/06/2026.",
+  url: "/chinh-sach",
+});
 
 type SectionType =
   | { type: "list"; intro?: string; items: string[] }

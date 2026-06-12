@@ -13,10 +13,12 @@ import { SellerFilterSidebar } from "./_components/SellerFilterSidebar";
 import type { SellerCategoryItem } from "./_components/SellerFilterSidebar";
 import { SellerSortSelect } from "./_components/SellerSortSelect";
 
-export const metadata: Metadata = {
-  title: "Gian hàng MMO — Hệ Thống MMO",
-  description: "Khám phá các nhà bán hàng uy tín trên hệ thống MMO",
-};
+import { buildMeta } from "@/lib/utils/seo";
+export const metadata: Metadata = buildMeta({
+  title: "Gian Hàng MMO | Hệ Thống MMO",
+  description: "Khám phá các nhà bán hàng uy tín trên hệ thống MMO — mua bán tài khoản, tool, sản phẩm số an toàn, giao tự động.",
+  url: "/tai-nguyen-mmo/gian-hang",
+});
 
 const BADGE_STYLE_MAP: Record<string, string> = {
   gray:   "bg-gray-100 text-gray-600",

@@ -22,12 +22,30 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const course = await prisma.course.findFirst({
     where: { slug, isActive: true, deletedAt: null },
-    select: { seoTitle: true, seoDescription: true, name: true },
+    select: { seoTitle: true, seoDescription: true, name: true, thumbnail: true, description: true },
   });
   if (!course) return { title: "Không tìm thấy" };
+  const title = course.seoTitle ?? course.name;
+  const description = course.seoDescription ?? course.description ?? "Khóa học thực chiến MMO tại hethongmmo.vn — Digital Marketing, Facebook Ads, TikTok Ads.";
+  const image = course.thumbnail ? r2Url(course.thumbnail) : undefined;
   return {
-    title: course.seoTitle ?? course.name,
-    description: course.seoDescription ?? undefined,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `/khoa-hoc/${slug}`,
+      siteName: "hethongmmo.vn",
+      locale: "vi_VN",
+      type: "website",
+      images: [{ url: image ?? "/images/facebook_cover_professional.png", width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image ?? "/images/facebook_cover_professional.png"],
+    },
   };
 }
 

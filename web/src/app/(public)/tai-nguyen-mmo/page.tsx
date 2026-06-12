@@ -20,10 +20,12 @@ import { SortSelect } from "./_components/SortSelect";
 
 const PAGE_SIZE = 20;
 
-export const metadata: Metadata = {
-  title: "Hệ Thống MMO",
-  description: "Mua tài khoản, tool MMO, niche site an toàn — giao hàng tự động sau thanh toán.",
-};
+import { buildMeta } from "@/lib/utils/seo";
+export const metadata: Metadata = buildMeta({
+  title: "Tài Nguyên MMO | Hệ Thống MMO",
+  description: "Mua tài khoản, tool MMO, niche site an toàn — giao hàng tự động sau thanh toán. Hàng nghìn sản phẩm số chất lượng cao.",
+  url: "/tai-nguyen-mmo",
+});
 
 const SORT_LABELS: Record<string, string> = {
   "noi-bat":  "Nổi Bật",

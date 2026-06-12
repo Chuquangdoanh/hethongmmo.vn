@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 
-export const metadata: Metadata = {
-  title: "Điều khoản dịch vụ — hethongmmo.vn",
-  description: "Điều khoản sử dụng nền tảng MMO Marketplace. Cập nhật lần cuối: 06/06/2026.",
-};
+import { buildMeta } from "@/lib/utils/seo";
+export const metadata: Metadata = buildMeta({
+  title: "Điều Khoản Dịch Vụ | hethongmmo.vn",
+  description: "Điều khoản sử dụng nền tảng MMO Marketplace hethongmmo.vn. Cập nhật lần cuối: 06/06/2026.",
+  url: "/dieu-khoan",
+});
 
 const SECTIONS = [
   {

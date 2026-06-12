@@ -33,12 +33,30 @@ export async function generateMetadata({
   const { slug } = await params;
   const item = await prisma.tutTrick.findUnique({
     where: { slug, isActive: true, deletedAt: null },
-    select: { name: true, seoTitle: true, seoDescription: true },
+    select: { name: true, seoTitle: true, seoDescription: true, thumbnail: true },
   });
   if (!item) return { title: "Không tìm thấy" };
+  const title = item.seoTitle ?? item.name;
+  const description = item.seoDescription ?? "Bí quyết, thủ thuật MMO thực chiến từ các chuyên gia hàng đầu tại hethongmmo.vn.";
+  const image = item.thumbnail ? r2Url(item.thumbnail) : undefined;
   return {
-    title: item.seoTitle ?? item.name,
-    description: item.seoDescription ?? undefined,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `/tut-tricks/${slug}`,
+      siteName: "hethongmmo.vn",
+      locale: "vi_VN",
+      type: "article",
+      images: [{ url: image ?? "/images/facebook_cover_professional.png", width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image ?? "/images/facebook_cover_professional.png"],
+    },
   };
 }
 

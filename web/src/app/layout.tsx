@@ -21,6 +21,11 @@ export const metadata: Metadata = {
     siteName: "hethongmmo.vn",
     locale: "vi_VN",
     type: "website",
+    images: [{ url: "/images/facebook_cover_professional.png", width: 1200, height: 630, alt: "Hệ Thống MMO - DJ MEDIA" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/images/facebook_cover_professional.png"],
   },
   robots: { index: true, follow: true },
 };
