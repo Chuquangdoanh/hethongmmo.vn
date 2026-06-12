@@ -134,13 +134,14 @@ export default async function TaiNguyenMmoPage({
         deletedAt: null,
         items: { some: { status: "AVAILABLE" } },
         ...(category ? { categoryGroup: category } : {}),
+        ...(subcategoryParam ? { category: subcategoryParam } : {}),
         ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
         ...priceFilter,
       },
       orderBy: [{ isFeatured: "desc" }, { displayOrder: "asc" }],
       select: {
         id: true, slug: true, name: true, thumbnail: true, description: true,
-        categoryGroup: true, price: true,
+        categoryGroup: true, category: true, price: true,
         isFeatured: true, rating: true, totalOrders: true, createdAt: true,
         _count: { select: { items: { where: { status: "AVAILABLE" } } } },
       },
@@ -170,7 +171,7 @@ export default async function TaiNguyenMmoPage({
       orderBy: [{ salesCount: "desc" }, { createdAt: "desc" }],
       select: {
         id: true, name: true, imageUrl: true, sellerCategory: true, description: true,
-        price: true, salesCount: true, createdAt: true,
+        price: true, salesCount: true, createdAt: true, subCategoryId: true,
         seller: { select: { id: true, uidPrefix: true } },
         _count: { select: { stockItems: { where: { status: "AVAILABLE" } } } },
       },
@@ -254,13 +255,35 @@ export default async function TaiNguyenMmoPage({
     return acc;
   }, {});
 
+  // Compute per-sub-category counts
+  // MMO: category field = sub-category name
+  const mmoSubGrouped = mmoProducts.reduce<Record<string, number>>((acc, p) => {
+    if (p.category) acc[p.category] = (acc[p.category] ?? 0) + 1;
+    return acc;
+  }, {});
+  // Seller: subCategoryId → look up name from resourceCategories
+  const allSubCatById = new Map<string, string>(
+    resourceCategories.flatMap((c) => c.subCategories.map((s) => [s.id, s.name] as [string, string]))
+  );
+  const sellerSubGrouped = sellerProducts.reduce<Record<string, number>>((acc, sp) => {
+    if (sp.subCategoryId) {
+      const subName = allSubCatById.get(sp.subCategoryId);
+      if (subName) acc[subName] = (acc[subName] ?? 0) + 1;
+    }
+    return acc;
+  }, {});
+
   const resourceCatMap = new Map(resourceCategories.map((c) => [c.name, c]));
 
   const categoryItems: CategoryItem[] = allCategories.map((name) => ({
     name,
     count: (mmoGrouped[name] ?? 0) + (sellerGrouped[name] ?? 0),
     iconUrl: categoryIconMap.get(name) ?? null,
-    subCategories: resourceCatMap.get(name)?.subCategories ?? [],
+    subCategories: (resourceCatMap.get(name)?.subCategories ?? []).map((sub) => ({
+      id: sub.id,
+      name: sub.name,
+      count: (mmoSubGrouped[sub.name] ?? 0) + (sellerSubGrouped[sub.name] ?? 0),
+    })),
   }));
 
   // eslint-disable-next-line react-hooks/purity
@@ -341,10 +364,11 @@ export default async function TaiNguyenMmoPage({
 
   // Preserve current filters when navigating pages
   const paginationParams: Record<string, string> = {};
-  if (category) paginationParams["category"] = category;
-  if (sortParam) paginationParams["sort"] = sortParam;
-  if (rawQ)      paginationParams["q"] = rawQ;
-  if (priceParam) paginationParams["price"] = priceParam;
+  if (category)         paginationParams["category"]    = category;
+  if (sortParam)        paginationParams["sort"]        = sortParam;
+  if (rawQ)             paginationParams["q"]           = rawQ;
+  if (priceParam)       paginationParams["price"]       = priceParam;
+  if (subcategoryParam) paginationParams["subcategory"] = subcategoryParam;
 
   return (
     <div className="min-h-screen bg-[#f1f5f9]">
@@ -411,6 +435,11 @@ export default async function TaiNguyenMmoPage({
                 {category && (
                   <span className="ml-1">
                     trong <span className="font-semibold text-text-dark">&quot;{category}&quot;</span>
+                  </span>
+                )}
+                {subcategoryParam && (
+                  <span className="ml-1">
+                    › <span className="font-semibold text-text-dark">&quot;{subcategoryParam}&quot;</span>
                   </span>
                 )}
                 {q && (

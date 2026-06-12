@@ -15,6 +15,7 @@ const PRICE_RANGES = [
 export interface SubCategoryItem {
   id: string;
   name: string;
+  count?: number;
 }
 
 export interface CategoryItem {
@@ -187,9 +188,14 @@ export function FilterSidebar({ categories, totalCount }: FilterSidebarProps) {
                         onChange={() => setParam("subcategory", activeSubcategory === sub.name ? "" : sub.name)}
                         className="w-4.5 h-4.5 border-[#d1d5db] accent-[#3b82f6] cursor-pointer"
                       />
-                      <span className={`text-sm transition-colors ${activeSubcategory === sub.name ? "font-semibold text-[#2563eb]" : "text-[#374151] group-hover:text-[#2563eb]"}`}>
+                      <span className={`text-sm flex-1 transition-colors ${activeSubcategory === sub.name ? "font-semibold text-[#2563eb]" : "text-[#374151] group-hover:text-[#2563eb]"}`}>
                         {sub.name}
                       </span>
+                      {sub.count !== undefined && (
+                        <span className="text-xs text-[#94a3b8] shrink-0" suppressHydrationWarning>
+                          {sub.count.toLocaleString("vi-VN")}
+                        </span>
+                      )}
                     </label>
                   ))}
                 </div>
