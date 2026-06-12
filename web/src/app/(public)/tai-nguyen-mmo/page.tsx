@@ -12,7 +12,7 @@ import { FilterSidebar } from "./_components/FilterSidebar";
 import type { CategoryItem } from "./_components/FilterSidebar";
 import Pagination from "@/components/shared/Pagination";
 import {
-  Package, ShieldCheck, ShoppingBag, ShoppingCart, Store,
+  Package, ShoppingBag, ShoppingCart,
   Pencil, CheckCircle,
 } from "lucide-react";
 import { CommunityBanner } from "./_components/CommunityBanner";
@@ -488,7 +488,7 @@ export default async function TaiNguyenMmoPage({
                           </div>
 
                           {/* Star rating overlay — bottom of image */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/65 to-transparent px-2.5 pt-5 pb-2 flex items-center justify-between">
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/65 to-transparent px-2.5 pt-5 pb-2">
                             {p.reviewCount > 0 ? (
                               <div className="flex items-center gap-1">
                                 <StarBar rating={p.rating} size="xs" />
@@ -499,16 +499,6 @@ export default async function TaiNguyenMmoPage({
                               </div>
                             ) : (
                               <span className="text-[10px] text-white/50 italic">Chưa có đánh giá</span>
-                            )}
-                            {/* Shop chip */}
-                            {p.kind === "mmo" ? (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-bold bg-blue-600/80 text-white backdrop-blur-sm">
-                                <ShieldCheck size={8} strokeWidth={2.5} /> MMO
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-600/80 text-white backdrop-blur-sm">
-                                <Store size={8} strokeWidth={2.5} /> {p.sellerName}
-                              </span>
                             )}
                           </div>
                         </div>
