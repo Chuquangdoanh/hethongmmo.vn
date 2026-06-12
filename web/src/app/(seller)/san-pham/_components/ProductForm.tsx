@@ -3,9 +3,15 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+interface SubCategoryItem {
+  id: string;
+  name: string;
+}
+
 interface ProductFormProps {
   mode: "create" | "edit";
   sellerCategory: string;
+  subCategories?: SubCategoryItem[];
   initialData?: {
     id: string;
     name: string;
@@ -14,10 +20,11 @@ interface ProductFormProps {
     imageUrl: string;
     isActive: boolean;
     isHidden: boolean;
+    subCategoryId?: string | null;
   };
 }
 
-export default function ProductForm({ mode, sellerCategory, initialData }: ProductFormProps) {
+export default function ProductForm({ mode, sellerCategory, subCategories = [], initialData }: ProductFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -29,6 +36,7 @@ export default function ProductForm({ mode, sellerCategory, initialData }: Produ
     isActive: initialData?.isActive ?? true,
     isHidden: initialData?.isHidden ?? false,
   });
+  const [subCategoryId, setSubCategoryId] = useState<string | null>(initialData?.subCategoryId ?? null);
   const [stockText, setStockText] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -119,6 +127,7 @@ export default function ProductForm({ mode, sellerCategory, initialData }: Produ
         isActive: form.isActive,
         isHidden: form.isHidden,
         sellerCategory,
+        subCategoryId: subCategoryId ?? null,
       };
 
       if (mode === "create") {
@@ -175,6 +184,40 @@ export default function ProductForm({ mode, sellerCategory, initialData }: Produ
       />
     </div>
   );
+
+  const subCategoryField = subCategories.length > 0 ? (
+    <div>
+      <label className="block text-xs font-medium text-gray-500 mb-2">Danh mục con</label>
+      <div className="flex flex-wrap gap-2">
+        {subCategories.map((sub) => {
+          const active = subCategoryId === sub.id;
+          return (
+            <button
+              key={sub.id}
+              type="button"
+              onClick={() => setSubCategoryId(active ? null : sub.id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                active
+                  ? "bg-violet-600 border-violet-600 text-white"
+                  : "bg-white border-gray-200 text-gray-600 hover:border-violet-400 hover:text-violet-600"
+              }`}
+            >
+              {active ? "✓ " : ""}{sub.name}
+            </button>
+          );
+        })}
+      </div>
+      {subCategoryId && (
+        <button
+          type="button"
+          onClick={() => setSubCategoryId(null)}
+          className="mt-1.5 text-[10px] text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          Bỏ chọn
+        </button>
+      )}
+    </div>
+  ) : null;
 
   const checkboxes = (
     <div className="pt-2 border-t border-gray-100 flex items-center gap-6">
@@ -294,6 +337,7 @@ export default function ProductForm({ mode, sellerCategory, initialData }: Produ
                 <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Thông tin sản phẩm</p>
                 {nameField}
                 {priceField}
+                {subCategoryField}
                 {imageUpload}
                 {descField}
                 {checkboxes}
@@ -326,6 +370,7 @@ export default function ProductForm({ mode, sellerCategory, initialData }: Produ
                 <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Thông tin cơ bản</p>
                 {nameField}
                 {priceField}
+                {subCategoryField}
                 {checkboxes}
               </div>
 

@@ -11,12 +11,13 @@ import { toApiError } from "@/lib/errors";
 export const runtime = "nodejs";
 
 const patchSchema = z.object({
-  name:        z.string().min(2).max(255).optional(),
-  price:       z.number().positive().max(100_000_000).optional(),
-  description: z.string().max(5000).optional(),
-  imageUrl:    z.string().url().optional(),
-  isHidden:    z.boolean().optional(),
-  isActive:    z.boolean().optional(),
+  name:          z.string().min(2).max(255).optional(),
+  price:         z.number().positive().max(100_000_000).optional(),
+  description:   z.string().max(5000).optional(),
+  imageUrl:      z.string().url().optional(),
+  isHidden:      z.boolean().optional(),
+  isActive:      z.boolean().optional(),
+  subCategoryId: z.string().uuid().nullable().optional(),
 });
 
 // ── GET — Chi tiết sản phẩm kèm stock count ──────────────────────────────────

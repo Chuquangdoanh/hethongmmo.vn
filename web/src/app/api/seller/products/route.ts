@@ -15,6 +15,7 @@ const addProductSchema = z.object({
   description: z.string().max(2000).optional(),
   imageUrl: z.string().url().optional(),
   sellerCategory: z.string().min(1).max(100).trim(),
+  subCategoryId: z.string().uuid().nullable().optional(),
   stockItems: z.array(z.string().min(1).max(10000)).min(1, "Cần ít nhất 1 item").max(100, "Tối đa 100 items mỗi lần. Dùng trang Kho hàng để thêm tiếp."),
 });
 

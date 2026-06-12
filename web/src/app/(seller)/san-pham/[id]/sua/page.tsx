@@ -26,17 +26,24 @@ export default async function SuaSanPhamPage({
       select: {
         id: true, name: true, price: true, description: true,
         imageUrl: true, isActive: true, isHidden: true,
-        isRestricted: true, sellerCategory: true,
+        isRestricted: true, sellerCategory: true, subCategoryId: true,
       },
     }),
     prisma.user.findUnique({
       where: { id: me.id },
-      select: { sellerCategory: true },
+      select: {
+        sellerCategory: true,
+        subCategories: {
+          select: { subCategory: { select: { id: true, name: true } } },
+        },
+      },
     }),
   ]);
 
   if (!product) notFound();
   if (!user?.sellerCategory) redirect("/ban-hang");
+
+  const subCategories = user.subCategories.map((r) => r.subCategory);
 
   return (
     <>
@@ -87,6 +94,7 @@ export default async function SuaSanPhamPage({
           <ProductForm
             mode="edit"
             sellerCategory={user.sellerCategory}
+            subCategories={subCategories}
             initialData={{
               id: product.id,
               name: product.name,
@@ -95,6 +103,7 @@ export default async function SuaSanPhamPage({
               imageUrl: product.imageUrl ?? "",
               isActive: product.isActive,
               isHidden: product.isHidden,
+              subCategoryId: product.subCategoryId ?? null,
             }}
           />
         </div>

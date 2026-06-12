@@ -16,12 +16,20 @@ export default async function TaoMoiSanPhamPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: me.id },
-    select: { sellerCategory: true, maxSellerProducts: true, _count: { select: { sellerProducts: { where: { deletedAt: null } } } } },
+    select: {
+      sellerCategory: true,
+      maxSellerProducts: true,
+      _count: { select: { sellerProducts: { where: { deletedAt: null } } } },
+      subCategories: {
+        select: { subCategory: { select: { id: true, name: true } } },
+      },
+    },
   });
 
   if (!user?.sellerCategory) redirect("/ban-hang");
 
   const canAdd = (user._count.sellerProducts ?? 0) < (user.maxSellerProducts ?? 3);
+  const subCategories = user.subCategories.map((r) => r.subCategory);
 
   return (
     <>
@@ -58,7 +66,7 @@ export default async function TaoMoiSanPhamPage() {
               </div>
             </div>
           ) : (
-            <ProductForm mode="create" sellerCategory={user.sellerCategory} />
+            <ProductForm mode="create" sellerCategory={user.sellerCategory} subCategories={subCategories} />
           )}
         </div>
       </div>

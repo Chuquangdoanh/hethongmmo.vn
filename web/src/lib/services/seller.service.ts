@@ -99,12 +99,13 @@ interface AddProductParams {
   description?: string;
   imageUrl?: string;
   sellerCategory: string;
+  subCategoryId?: string | null;
   stockItems: string[];
 }
 
 /** Adds a new product with encrypted stock items. Enforces product limit. */
 export async function addSellerProduct(params: AddProductParams): Promise<string> {
-  const { sellerId, name, price, description, imageUrl, sellerCategory, stockItems } = params;
+  const { sellerId, name, price, description, imageUrl, sellerCategory, subCategoryId, stockItems } = params;
 
   const productCount = await checkProductLimit(sellerId);
   const seller = await prisma.user.findUnique({
@@ -133,6 +134,7 @@ export async function addSellerProduct(params: AddProductParams): Promise<string
     data: {
       sellerId,
       sellerCategory,
+      subCategoryId: subCategoryId ?? null,
       name,
       price: new Decimal(price).toFixed(2),
       description,

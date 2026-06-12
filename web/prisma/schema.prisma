@@ -495,8 +495,9 @@ model SellerSubCategory {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  category     ResourceCategory  @relation(fields: [categoryName], references: [name], onDelete: Cascade)
-  users        UserSubCategory[]
+  category  ResourceCategory  @relation(fields: [categoryName], references: [name], onDelete: Cascade)
+  users     UserSubCategory[]
+  products  SellerProduct[]
 
   @@unique([categoryName, name])
   @@index([categoryName, isActive])
@@ -646,30 +647,33 @@ model SellerRequest {
 // 10. SELLER_PRODUCTS + STOCK
 // ====================================================================
 model SellerProduct {
-  id             String    @id @default(uuid()) @db.Uuid
-  sellerId       String    @map("seller_id") @db.Uuid
-  seller         User      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  sellerCategory String    @map("seller_category")
-  name           String
-  price          Decimal   @db.Decimal(18, 2)
-  description    String?
-  imageUrl       String?   @map("image_url")
+  id              String    @id @default(uuid()) @db.Uuid
+  sellerId        String    @map("seller_id") @db.Uuid
+  seller          User      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  sellerCategory  String    @map("seller_category")
+  subCategoryId   String?   @map("sub_category_id") @db.Uuid
+  subCategory     SellerSubCategory? @relation(fields: [subCategoryId], references: [id], onDelete: SetNull)
+  name            String
+  price           Decimal   @db.Decimal(18, 2)
+  description     String?
+  imageUrl        String?   @map("image_url")
   // quantity tính qua VIEW
-  publishDate    DateTime? @map("publish_date")
-  isActive       Boolean   @default(true) @map("is_active")
-  isHidden       Boolean   @default(false) @map("is_hidden")
-  isRestricted   Boolean   @default(false) @map("is_restricted")
-  salesCount     Int       @default(0) @map("sales_count")
-  revenue        Decimal   @default(0) @db.Decimal(18, 2)
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-  deletedAt      DateTime? @map("deleted_at")
+  publishDate     DateTime? @map("publish_date")
+  isActive        Boolean   @default(true) @map("is_active")
+  isHidden        Boolean   @default(false) @map("is_hidden")
+  isRestricted    Boolean   @default(false) @map("is_restricted")
+  salesCount      Int       @default(0) @map("sales_count")
+  revenue         Decimal   @default(0) @db.Decimal(18, 2)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
 
-  stockItems     SellerProductStock[]
-  orders         Order[]
+  stockItems      SellerProductStock[]
+  orders          Order[]
 
   @@index([sellerId])
   @@index([isActive, isHidden, isRestricted])
+  @@index([subCategoryId])
   @@map("seller_products")
 }
 
