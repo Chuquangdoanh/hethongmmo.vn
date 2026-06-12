@@ -22,8 +22,8 @@ COPY web/ .
 RUN node_modules/.bin/prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy"
-ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
-ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-0x4AAAAAADdtPd4eBWk-jqZ6}
+ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4AAAAAADdtPd4eBWk-jqZ6
+ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
 # --mount=type=cache: Turbopack incremental cache persists between builds.
 # With cache-to=type=gha,mode=max this is exported to GHA and restored next run,
 # cutting next build from ~8 min → ~1-2 min for code-only changes.

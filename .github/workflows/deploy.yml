@@ -91,7 +91,7 @@ jobs:
           push: true
           tags: ghcr.io/chuquangdoanh/hethongmmo:latest
           build-args: |
-            NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+            NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '0x4AAAAAADdtPd4eBWk-jqZ6' }}
           # mode=max: export tất cả layers kể cả cache mounts (pnpm store + .next/cache)
           # → lần build sau dùng lại, next build chỉ compile phần thay đổi (~1-2 min)
           cache-from: type=gha,scope=web
