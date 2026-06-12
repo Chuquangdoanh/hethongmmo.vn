@@ -377,21 +377,21 @@ export default async function TaiNguyenMmoPage({
       <CommunityBanner />
 
       {/* ── TRUST BANNER ── */}
-      <div className="bg-white border-b border-border">
-        <div className="mx-auto max-w-3xl px-4 md:px-6 lg:px-8 py-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="bg-[#f1f5f9]">
+        <div className="mx-auto max-w-3xl px-4 md:px-6 lg:px-8 py-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-start">
             {([
               { Icon: Zap,         color: "#f59e0b", text: "Giao hàng tự động" },
               { Icon: ShieldCheck, color: "#10b981", text: "Bảo mật 100%"      },
               { Icon: RotateCcw,   color: "#0066ff", text: "Đổi trả trong 24h" },
               { Icon: Headphones,  color: "#7c3aed", text: "Hỗ trợ 24/7"       },
             ] as const).map(({ Icon, color, text }) => (
-              <div key={text} className="flex flex-col items-center gap-2.5 text-center py-3 px-2">
+              <div key={text} className="flex flex-col items-center gap-1.5 text-center py-2 px-1">
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                   style={{ backgroundColor: `${color}1a` }}
                 >
-                  <Icon size={22} strokeWidth={2} style={{ color }} />
+                  <Icon size={16} strokeWidth={2} style={{ color }} />
                 </div>
                 <span className="text-xs font-semibold text-text-dark leading-snug">{text}</span>
               </div>
