@@ -101,7 +101,7 @@ const PLATFORM_LABEL: Record<string, string> = {
 /* ═══════════════════════════════════════════════════════ */
 export default async function HomePage() {
   await guardPublicPage("");
-  const [hotTuts, featuredProducts, featuredServices, rawCourses] = await Promise.all([
+  const [hotTuts, featuredProducts, featuredServices, rawCourses, navCategories] = await Promise.all([
     prisma.tutTrick.findMany({
       where: { isActive: true, deletedAt: null },
       orderBy: [{ isFeatured: "desc" }, { totalOrders: "desc" }],
@@ -142,6 +142,10 @@ export default async function HomePage() {
         salePrice: true, originalPrice: true,
         studentCount: true, rating: true, badge: true,
       },
+    }),
+    prisma.resourceCategory.findMany({
+      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+      select: { name: true },
     }),
   ]);
 
@@ -243,7 +247,7 @@ export default async function HomePage() {
         style={{
           position: "relative",
           zIndex: 0,
-          background: "linear-gradient(180deg,#eef5ff 0%,#f7fbff 40%,#ffffff 100%)",
+          background: "#fff",
           overflow: "hidden",
           padding: "100px 0 80px",
           display: "flex",
@@ -545,7 +549,7 @@ export default async function HomePage() {
       <CourseSlider courses={featuredCourses} />
 
       {/* ── BÁO CHÍ / TRUYỀN THÔNG ────────────────────── */}
-      <section style={{ padding: "72px 0 64px", background: "#f8fafc" }}>
+      <section style={{ padding: "72px 0 64px", background: "#fff" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
 
           {/* Header */}
@@ -788,7 +792,7 @@ export default async function HomePage() {
       {/* ── STATS — taste-skill §4.9: bold display numbers, no border dividers ── */}
       <div style={{
         background: "#0f172a",
-        padding: "72px 0",
+        padding: "50px 0",
         position: "relative",
         overflow: "hidden",
       }}>
@@ -806,7 +810,7 @@ export default async function HomePage() {
                 className="anim-card-in"
                 data-d={String(i + 1)}
                 style={{
-                  textAlign: "center", padding: "40px 24px",
+                  textAlign: "center", padding: "28px 17px",
                   cursor: "default",
                   borderLeft: i > 0 ? "1px solid rgba(255,255,255,.06)" : "none",
                 }}
@@ -815,14 +819,14 @@ export default async function HomePage() {
                   data-count={count !== null ? String(count) : undefined}
                   data-suffix={count !== null ? suffix : undefined}
                   style={{
-                    fontSize: "clamp(2rem,3.5vw,3.2rem)", fontWeight: "900",
-                    lineHeight: 1, marginBottom: "10px", color: "#fff",
+                    fontSize: "clamp(1.4rem,2.45vw,2.24rem)", fontWeight: "900",
+                    lineHeight: 1, marginBottom: "7px", color: "#fff",
                     letterSpacing: "-0.04em",
                   }}
                 >
                   {value}
                 </h3>
-                <p style={{ fontSize: ".8rem", color: "rgba(255,255,255,.5)", fontWeight: "600", letterSpacing: ".8px", textTransform: "uppercase", margin: 0 }}>
+                <p style={{ fontSize: ".6rem", color: "rgba(255,255,255,.5)", fontWeight: "600", letterSpacing: ".8px", textTransform: "uppercase", margin: 0 }}>
                   {label}
                 </p>
               </div>
@@ -833,7 +837,7 @@ export default async function HomePage() {
 
 
       {/* ── TUT HOT NHẤT HÔM NAY ──────────────────────── */}
-      {hotTuts.length > 0 && <section style={{ padding: "60px 0", background: "#f8fafc" }}>
+      {hotTuts.length > 0 && <section style={{ padding: "60px 0", background: "#fff" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
           {/* Section header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
@@ -1022,43 +1026,49 @@ export default async function HomePage() {
 
       {/* ── CATEGORY NAV BAR ──────────────────────────── */}
       <div style={{
-        background: "linear-gradient(135deg,#0f172a 0%,#1e293b 100%)",
-        borderBottom: "2px solid rgba(255,255,255,.06)",
+        background: "#fff",
+        borderTop: "1px solid #e2e8f0",
+        borderBottom: "1px solid #e2e8f0",
         padding: "0 24px",
       }}>
         <div style={{
           maxWidth: "1200px", margin: "0 auto",
           display: "flex", alignItems: "center", gap: "0",
-          overflowX: "auto",
+          overflowX: "auto", whiteSpace: "nowrap",
         }} className="no-scrollbar cat-nav-row">
           <span style={{
-            color: "#93c5fd", fontWeight: "700", fontSize: ".8rem",
+            color: "#64748b", fontWeight: "700", fontSize: ".75rem",
             letterSpacing: "1px", textTransform: "uppercase",
-            whiteSpace: "nowrap", padding: "14px 20px 14px 0",
-            borderRight: "1px solid rgba(255,255,255,.15)", marginRight: "4px", flexShrink: 0,
+            whiteSpace: "nowrap", padding: "12px 16px 12px 0",
+            borderRight: "1px solid #e2e8f0", marginRight: "4px", flexShrink: 0,
             display: "inline-flex", alignItems: "center", gap: "6px",
           }}>
-            <FolderOpen size={14} strokeWidth={1.75} />
+            <FolderOpen size={13} strokeWidth={1.75} />
             DANH MỤC TÀI NGUYÊN
           </span>
-          {[
-            { label: "Tất cả sản phẩm", href: "/tai-nguyen-mmo" },
-            { label: "Facebook",        href: "/tai-nguyen-mmo?category=Facebook" },
-            { label: "Game",            href: "/tai-nguyen-mmo?category=Game" },
-            { label: "TikTok",          href: "/tai-nguyen-mmo?category=TikTok" },
-          ].map(({ label, href }) => (
+          <Link
+            href="/tai-nguyen-mmo"
+            className="cat-nav-link"
+            style={{
+              color: "#0f172a", fontSize: ".85rem", fontWeight: "600",
+              padding: "12px 16px", whiteSpace: "nowrap", textDecoration: "none",
+              transition: "color .2s ease, background .2s ease",
+            }}
+          >
+            Tất cả
+          </Link>
+          {navCategories.map(({ name }) => (
             <Link
-              key={label}
-              href={href}
+              key={name}
+              href={`/tai-nguyen-mmo?category=${encodeURIComponent(name)}`}
               className="cat-nav-link"
               style={{
-                color: "rgba(255,255,255,.85)", fontSize: ".875rem", fontWeight: "600",
-                padding: "14px 18px", whiteSpace: "nowrap", textDecoration: "none",
+                color: "#0f172a", fontSize: ".85rem", fontWeight: "600",
+                padding: "12px 16px", whiteSpace: "nowrap", textDecoration: "none",
                 transition: "color .2s ease, background .2s ease",
-                borderRadius: "0",
               }}
             >
-              {label}
+              {name}
             </Link>
           ))}
         </div>
@@ -1223,7 +1233,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── FAQ ───────────────────────────────────────── */}
-      <section style={{ padding: "100px 0", background: "#f8fafc" }}>
+      <section style={{ padding: "100px 0", background: "#fff" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
           <div style={{ display: "flex", gap: "60px", alignItems: "flex-start" }} className="faq-cta-flex">
 
@@ -1354,7 +1364,7 @@ export default async function HomePage() {
           transform: translateY(-2px);
         }
         /* Category nav links */
-        .cat-nav-link:hover { color: #fff !important; background: rgba(255,255,255,.1); }
+        .cat-nav-link:hover { color: #0066ff !important; background: rgba(0,102,255,.06); }
         /* Category icon cards */
         .cat-icon-card:hover {
           transform: translateY(-4px);
