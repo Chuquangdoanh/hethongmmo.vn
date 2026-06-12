@@ -25,7 +25,14 @@
 }
 
 *,*::before,*::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  /* Double-tap zoom prevention — áp dụng toàn bộ site */
+  touch-action: manipulation;
+  /* Ngăn iOS tự điều chỉnh font-size khi xoay màn hình */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 
 body {
   font-family: var(--font-inter, 'Inter', sans-serif);
@@ -59,9 +66,14 @@ a  { text-decoration: none; }
   will-change: transform, opacity;
 }
 
-/* ── Prevent iOS auto-zoom on input focus (font-size < 16px triggers zoom) ── */
-input, select, textarea {
-  font-size: max(16px, 1em);
+/* ── Prevent iOS/Android auto-zoom on input focus ───────────────────────────
+   Root cause: iOS zooms khi font-size < 16px. Tailwind text-sm (14px) / text-xs
+   override element selector nên phải dùng !important để thắng specificity.
+   Exclude: hidden / radio / checkbox / range / color vì chúng không nhận focus text. */
+input:not([type="hidden"]):not([type="radio"]):not([type="checkbox"]):not([type="range"]):not([type="color"]),
+select,
+textarea {
+  font-size: max(16px, 1em) !important;
 }
 
 /* ── Mobile menu scroll lock — giữ trang đứng im khi mở menu ── */
