@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import CategoryCombobox from "./CategoryCombobox";
 import { r2Url } from "@/lib/utils/image-url";
+
+interface SubCategoryItem { id: string; name: string; }
 
 interface MmoProductData {
   id?: string;
@@ -17,8 +19,6 @@ interface MmoProductData {
   isActive?: boolean;
   isFeatured?: boolean;
   displayOrder?: number;
-  requiresAccountType?: boolean;
-  requiresCccd?: boolean;
 }
 
 export default function MmoProductForm({ initial }: { initial?: MmoProductData }) {
@@ -37,9 +37,25 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
     isActive: initial?.isActive ?? true,
     isFeatured: initial?.isFeatured ?? false,
     displayOrder: initial?.displayOrder?.toString() ?? "0",
-    requiresAccountType: initial?.requiresAccountType ?? false,
-    requiresCccd: initial?.requiresCccd ?? false,
   });
+
+  const [availableSubs, setAvailableSubs] = useState<SubCategoryItem[]>([]);
+
+  // Load sub-categories when categoryGroup changes
+  useEffect(() => {
+    const group = form.categoryGroup.trim();
+    if (!group) { setAvailableSubs([]); return; }
+    void (async () => {
+      try {
+        const res = await fetch(`/api/admin/sub-categories?category=${encodeURIComponent(group)}`, { credentials: "include" });
+        const json = await res.json() as { data?: SubCategoryItem[] };
+        setAvailableSubs(json.data ?? []);
+      } catch {
+        setAvailableSubs([]);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.categoryGroup]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -136,8 +152,6 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
       isActive: form.isActive,
       isFeatured: form.isFeatured,
       displayOrder: parseInt(form.displayOrder, 10) || 0,
-      requiresAccountType: form.requiresAccountType,
-      requiresCccd: form.requiresCccd,
     };
 
     setLoading(true);
@@ -229,9 +243,41 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
 
               <div>
                 <label className="block text-xs text-gray-500 mb-1.5">Danh mục con *</label>
-                <input required type="text" value={form.category} onChange={(e) => set("category", e.target.value)}
-                  placeholder="vd: Face đã chạy ads"
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none" />
+                {availableSubs.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      {availableSubs.map((sub) => {
+                        const active = form.category === sub.name;
+                        return (
+                          <button
+                            key={sub.id}
+                            type="button"
+                            onClick={() => set("category", active ? "" : sub.name)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                              active
+                                ? "bg-[#7C3AED] border-[#7C3AED] text-white"
+                                : "bg-white border-gray-200 text-gray-600 hover:border-[#7C3AED] hover:text-[#7C3AED]"
+                            }`}
+                          >
+                            {active ? "✓ " : ""}{sub.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* Fallback: vẫn cho nhập tay nếu cần danh mục chưa có trong list */}
+                    <input
+                      type="text"
+                      value={form.category}
+                      onChange={(e) => set("category", e.target.value)}
+                      placeholder="Hoặc nhập tay..."
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 focus:border-[#7C3AED] focus:outline-none"
+                    />
+                  </div>
+                ) : (
+                  <input required type="text" value={form.category} onChange={(e) => set("category", e.target.value)}
+                    placeholder="vd: Face đã chạy ads"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none" />
+                )}
               </div>
 
               <div>
@@ -267,36 +313,6 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
               ))}
             </div>
 
-            {/* ── Yêu cầu khi đặt hàng ── */}
-            <div className="rounded-lg border border-[#7C3AED]/20 bg-[#7C3AED]/5 p-4 space-y-3">
-              <p className="text-xs font-semibold text-[#7C3AED] uppercase tracking-wide">Yêu cầu khi đặt hàng</p>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Loại tài khoản</p>
-                  <p className="text-xs text-gray-500">Khách chọn: chính chủ / không chính chủ</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => set("requiresAccountType", !form.requiresAccountType)}
-                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${form.requiresAccountType ? "bg-[#7C3AED]" : "bg-gray-200"}`}
-                >
-                  <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form.requiresAccountType ? "translate-x-6" : "translate-x-1"}`} />
-                </button>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">CCCD mặt trước</p>
-                  <p className="text-xs text-gray-500">Khách upload ảnh CCCD mặt trước</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => set("requiresCccd", !form.requiresCccd)}
-                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${form.requiresCccd ? "bg-[#7C3AED]" : "bg-gray-200"}`}
-                >
-                  <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form.requiresCccd ? "translate-x-6" : "translate-x-1"}`} />
-                </button>
-              </div>
-            </div>
           </div>
 
         </div>

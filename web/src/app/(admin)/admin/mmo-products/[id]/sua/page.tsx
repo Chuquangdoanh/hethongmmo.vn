@@ -19,7 +19,6 @@ export default async function AdminMmoProductEditPage({
       id: true, name: true, slug: true, category: true, categoryGroup: true,
       price: true, description: true, thumbnail: true,
       isActive: true, isFeatured: true, displayOrder: true,
-      requiresAccountType: true, requiresCccd: true,
     },
   });
 
@@ -46,8 +45,6 @@ export default async function AdminMmoProductEditPage({
           isActive: product.isActive,
           isFeatured: product.isFeatured,
           displayOrder: product.displayOrder,
-          requiresAccountType: product.requiresAccountType,
-          requiresCccd: product.requiresCccd,
         }}
       />
     </div>
