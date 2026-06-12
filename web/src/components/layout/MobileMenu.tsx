@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -42,6 +42,7 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
   const [open, setOpen]       = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname              = usePathname();
+  const navigatingRef         = useRef(false);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
@@ -54,7 +55,12 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
     return () => {
       const scrollY = document.body.style.top;
       document.body.style.cssText = "";
-      window.scrollTo(0, -parseInt(scrollY || "0", 10));
+      // Nếu đang navigate sang trang mới, ScrollRestorer sẽ xử lý scroll-to-top
+      // Chỉ khôi phục vị trí cũ khi đóng menu mà không chuyển trang (overlay/Escape/X)
+      if (!navigatingRef.current) {
+        window.scrollTo(0, -parseInt(scrollY || "0", 10));
+      }
+      navigatingRef.current = false;
     };
   }, [open]);
 
@@ -67,6 +73,8 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
   }, [open]);
 
   const close = () => setOpen(false);
+  // Đóng menu khi click link điều hướng — đánh dấu để không khôi phục scroll cũ
+  const closeWithNav = () => { navigatingRef.current = true; setOpen(false); };
 
   const initials   = user ? (user.fullName || user.email).slice(0, 2).toUpperCase() : "";
   const balanceStr = mounted && balance != null ? formatVnd(balance) : null;
@@ -151,7 +159,7 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
         {isLoggedIn && quickLinks.length > 0 && (
           <div className="hdr-drawer-quick">
             {quickLinks.map(({ href, Icon, bg, color, label }) => (
-              <Link key={href} href={href} prefetch={false} className="hdr-drawer-quick-btn" onClick={close}>
+              <Link key={href} href={href} prefetch={false} className="hdr-drawer-quick-btn" onClick={closeWithNav}>
                 <span style={{ width: 28, height: 28, borderRadius: 8, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <Icon size={14} strokeWidth={1.75} style={{ color }} />
                 </span>
@@ -173,7 +181,7 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
                 href={href}
                 prefetch={false}
                 className={`hdr-drawer-nav-link${isActive ? " hdr-active" : ""}`}
-                onClick={close}
+                onClick={closeWithNav}
               >
                 {meta && (
                   <span className="hdr-drawer-nav-icon" style={{ background: meta.bg }}>
@@ -201,10 +209,10 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
             </button>
           ) : (
             <>
-              <Link href="/dang-nhap" prefetch={false} className="hdr-drawer-foot-btn hdr-foot-login" onClick={close}>
+              <Link href="/dang-nhap" prefetch={false} className="hdr-drawer-foot-btn hdr-foot-login" onClick={closeWithNav}>
                 Đăng nhập
               </Link>
-              <Link href="/dang-ky" prefetch={false} className="hdr-drawer-foot-btn hdr-foot-register" onClick={close}>
+              <Link href="/dang-ky" prefetch={false} className="hdr-drawer-foot-btn hdr-foot-register" onClick={closeWithNav}>
                 Đăng ký miễn phí
               </Link>
             </>
