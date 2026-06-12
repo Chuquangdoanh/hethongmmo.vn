@@ -15,7 +15,8 @@ import { buildMeta } from "@/lib/utils/seo";
 export const metadata: Metadata = buildMeta({
   title: "Khóa Học MMO Thực Chiến | Hệ Thống MMO",
   description: "Hệ thống khóa học Digital Marketing, Facebook Ads, TikTok Ads, Google Ads và xây dựng thương hiệu giúp bạn kiếm tiền online bền vững.",
-  url: "/images/dj-media-classroom.jpg",
+  url: "/khoa-hoc",
+  image: "/images/dj-media-classroom.jpg",
 });
 
 const BADGE_STYLES: Record<string, { bg: string; color: string; label: string }> = {
