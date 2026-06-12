@@ -246,7 +246,7 @@ export default async function KhoaHocPage({
       </div>
 
       {/* ══ COURSES SECTION ══ */}
-      <div id="khoa-hoc-grid" className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-12">
+      <div id="khoa-hoc-grid" className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-12 scroll-mt-24">
 
         {/* Category filter — centered, scrollable on mobile */}
         {categoriesWithIcons.length > 0 && (

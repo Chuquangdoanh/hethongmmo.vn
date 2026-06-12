@@ -162,6 +162,7 @@ export default async function DichVuPage({
           <div className="flex items-center justify-center gap-2 flex-wrap mb-6">
             <Link
               href="/dich-vu"
+              scroll={false}
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
                 !category
                   ? "bg-[#EF4444] text-white shadow-sm"
@@ -176,6 +177,7 @@ export default async function DichVuPage({
                 <Link
                   key={cat}
                   href={`/dich-vu?category=${encodeURIComponent(cat)}`}
+                  scroll={false}
                   className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
                     category === cat
                       ? "bg-[#EF4444] text-white shadow-sm"

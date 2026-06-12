@@ -287,28 +287,17 @@ function ServiceOrderPanel({
     const el = panelRef.current;
     if (!el) return;
 
-    const timer = setTimeout(() => {
-      const headerEl = document.querySelector<HTMLElement>(".main-header-shell") ?? document.querySelector("header");
-      const headerH  = headerEl ? headerEl.getBoundingClientRect().height : 80;
-      const target   = el.getBoundingClientRect().top + window.scrollY - headerH - 20;
-
-      // Custom slow scroll — 900ms ease-out cubic (browser smooth không kiểm soát tốc độ)
-      const start    = window.scrollY;
-      const distance = target - start;
-      const duration = 900;
-      const startTime = performance.now();
-
-      function step(now: number) {
-        const elapsed  = now - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const ease     = 1 - Math.pow(1 - progress, 3); // cubic ease-out
-        window.scrollTo(0, start + distance * ease);
-        if (progress < 1) requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    }, 120);
-
-    return () => clearTimeout(timer);
+    // Double-rAF: đảm bảo layout đã settle sau khi panel render xong
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
   }, [autoScroll]);
 
   const selectedVariant = service.deviceVariants.find(v => v.name === deviceVariant);

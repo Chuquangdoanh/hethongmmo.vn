@@ -4,10 +4,12 @@ import Ticker from "@/components/layout/Ticker";
 import StickyContactMenuLoader from "@/components/shared/StickyContactMenuLoader";
 import PageTransitionWrapper from "@/components/layout/PageTransitionWrapper";
 import StickyHeaderWrapper from "@/components/layout/StickyHeaderWrapper";
+import ScrollRestorer from "@/components/layout/ScrollRestorer";
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
+      <ScrollRestorer />
       <StickyHeaderWrapper>
         <Header />
         <Ticker />
