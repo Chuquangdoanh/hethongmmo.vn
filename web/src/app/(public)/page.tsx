@@ -469,9 +469,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── COURSE SLIDER ─────────────────────────────── */}
-      <CourseSlider courses={featuredCourses} />
-
       {/* ── CEO / NHÀ SÁNG LẬP ───────────────────────── */}
       <section style={{ padding: "80px 0", background: "#f4f7fb", overflow: "hidden" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
@@ -535,11 +532,14 @@ export default async function HomePage() {
             </div>
 
             {/* ── 4: Button ── */}
-            
+
 
           </div>
         </div>
       </section>
+
+      {/* ── COURSE SLIDER ─────────────────────────────── */}
+      <CourseSlider courses={featuredCourses} />
 
       {/* ── BÁO CHÍ / TRUYỀN THÔNG ────────────────────── */}
       <section style={{ padding: "72px 0 64px", background: "#f0f5ff" }}>
