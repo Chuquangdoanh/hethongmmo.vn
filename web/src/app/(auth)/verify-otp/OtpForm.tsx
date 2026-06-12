@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
 
 const OTP_LENGTH = 6;
 
@@ -93,10 +92,8 @@ export default function OtpForm() {
       }
 
       if (purpose === "REGISTER") {
-        await signIn("credentials", { email, password, redirect: false });
         sessionStorage.removeItem("__reg_pwd");
-        router.push("/");
-        router.refresh();
+        router.push("/dang-nhap");
       } else if (purpose === "RESET_PASSWORD") {
         router.push(`/dat-lai-mat-khau?email=${encodeURIComponent(email)}&code=${encodeURIComponent(otpCode)}`);
       } else {
