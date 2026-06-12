@@ -421,7 +421,7 @@ export default async function HomePage() {
               fontSize: "clamp(1.6rem,3.5vw,2.4rem)", fontWeight: "800",
               color: "#0f172a", margin: 0, lineHeight: "1.2",
             }}>
-              Đội ngũ sáng lập &amp; điều hành
+              Giám Đốc  &amp; Điều hành Hệ Thống MMO
             </h2>
           </div>
 
@@ -465,7 +465,10 @@ export default async function HomePage() {
                   CEO &amp; Chuyên gia Digital Marketing
                 </p>
                 <p style={{ fontSize: ".95rem", color: "#64748b", lineHeight: "1.8", marginBottom: "16px" }}>
-                  Hơn 7 năm kinh nghiệm thực chiến triển khai chiến dịch quảng cáo triệu đô trên TikTok, Facebook và Google Ads. Đơn vị tiên phong tại Việt Nam với 2 chi nhánh tại Hà Nội và Hà Tĩnh.
+                  Sở hữu hơn 7 năm kinh nghiệm triển khai các chiến dịch quảng cáo triệu đô trên TikTok, Facebook và Google Ads, Phạm Hữu Dũng là người định hình chiến lược tăng trưởng sau thành công của DJ Media. Tính đến nay, anh cùng các cộng sự đã xây dựng hệ sinh thái MMO toàn diện, phục vụ hơn 59.000 khách hàng, xử lý trên 363.000 giao dịch thành công và đồng hành dẫn dắt 7.900+ học viên bứt phá thu nhập trong không gian số.
+                </p>
+                <p style={{ fontSize: ".95rem", color: "#64748b", lineHeight: "1.8", marginBottom: "16px" }}>
+                  Với mô hình 2 chi nhánh tiên phong tại Hà Nội và Hà Tĩnh, anh cam kết mang lại những giải pháp marketing thực chiến và tối ưu chi phí tốt nhất cho doanh nghiệp.
                 </p>
                 <blockquote style={{
                   borderLeft: "3px solid #0066ff", padding: "12px 16px",
@@ -511,7 +514,7 @@ export default async function HomePage() {
               <div>
                 <h3 style={{ fontSize: "1.2rem", fontWeight: "800", color: "#0f172a", margin: "0 0 4px" }}>Chu Quang Doanh</h3>
                 <p style={{ fontSize: ".8rem", fontWeight: "600", color: "#f59e0b", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: ".8px" }}>
-                  Nhà sáng lập &amp; Giám đốc điều hành
+                  Đồng sáng lập &amp; Điều hành Hệ Thống MMO
                 </p>
                 <p style={{ fontSize: ".95rem", color: "#64748b", lineHeight: "1.8", marginBottom: "16px" }}>
                   Xây dựng và vận hành Hệ Thống MMO phục vụ hơn <strong style={{ color: "#0f172a" }}>59.000 khách hàng</strong>, xử lý hơn <strong style={{ color: "#0f172a" }}>363.000 giao dịch</strong> — từ tài khoản số, TUT MMO đến khóa học và quảng cáo ADS.
@@ -521,7 +524,7 @@ export default async function HomePage() {
                   background: "rgba(245,158,11,.04)", borderRadius: "0 10px 10px 0",
                   fontStyle: "italic", fontSize: ".9rem", lineHeight: "1.7", margin: 0, color: "#334155",
                 }}>
-                  &ldquo;Tôi xây dựng hệ thống này không chỉ để kinh doanh — mà để tạo ra một hệ sinh thái nơi mọi người có thể học, làm và phát triển cùng nhau.&rdquo;
+                  &ldquo; chúng tôi xây dựng hệ thống này không chỉ để kinh doanh — mà để tạo ra một hệ sinh thái nơi mọi người có thể học, làm và phát triển cùng nhau.&rdquo;
                 </blockquote>
               </div>
             </div>
