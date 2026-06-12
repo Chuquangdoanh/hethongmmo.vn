@@ -28,6 +28,8 @@ export async function generateMetadata({
   return { title: product.name };
 }
 
+const SUPPORT_URL = process.env.NEXT_PUBLIC_SUPPORT_URL ?? "https://m.me/chuquangdoanh";
+
 const TRUST_ICONS = [
   { Icon: Zap,         color: "#f59e0b", label: "Giao tự động",  sub: "Nhận ngay sau khi thanh toán" },
   { Icon: ShieldCheck, color: "#10b981", label: "Bảo mật",        sub: "Thông tin 100% an toàn" },
@@ -105,7 +107,7 @@ export default async function SellerProductDetailPage({
   const isOutOfStock = available === 0;
   const sellerName = product.seller.fullName;
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, tierDef] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, tierDef, relatedProducts] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "SELLER_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -118,12 +120,12 @@ export default async function SellerProductDetailPage({
           select: { rating: true, comment: true },
         })
       : Promise.resolve(null),
-    // Paginated: 1 review per page
+    // Paginated: 5 reviews per page
     prisma.review.findMany({
       where: { productType: "SELLER_PRODUCT", productId: product.id },
       orderBy: { createdAt: "desc" },
-      take: 1,
-      skip: reviewPage - 1,
+      take: 5,
+      skip: (reviewPage - 1) * 5,
       select: {
         rating: true, comment: true, createdAt: true,
         user: { select: { fullName: true, email: true } },
@@ -144,6 +146,21 @@ export default async function SellerProductDetailPage({
       where: { key: product.seller.sellerTier },
       select: { label: true, badgeColor: true },
     }),
+    prisma.sellerProduct.findMany({
+      where: {
+        sellerCategory: product.sellerCategory,
+        id: { not: product.id },
+        isActive: true, isHidden: false, isRestricted: false, deletedAt: null,
+        stockItems: { some: { status: "AVAILABLE" } },
+      },
+      take: 4,
+      orderBy: { salesCount: "desc" },
+      select: {
+        id: true, name: true, imageUrl: true, price: true, salesCount: true,
+        seller: { select: { fullName: true } },
+        _count: { select: { stockItems: { where: { status: "AVAILABLE" } } } },
+      },
+    }),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
@@ -158,28 +175,21 @@ export default async function SellerProductDetailPage({
     .reduce((acc, s) => acc + s._count.id, 0);
   const positiveRate = reviewCount > 0 ? Math.round((positiveCount / reviewCount) * 100) : 99;
 
+  const totalReviewPages = Math.ceil(reviewCount / 5);
   const hasPrev = reviewPage > 1;
-  const hasNext = reviewPage < reviewCount;
+  const hasNext = reviewPage < totalReviewPages;
 
   // ── JSX SECTIONS ──────────────────────────────────────────────
 
   const sectionImage = (
     <div className="rounded-2xl bg-[#f1f5f9] overflow-hidden relative" style={{ aspectRatio: "4/3" }}>
       {product.imageUrl ? (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={r2Url(product.imageUrl)} alt="" aria-hidden
-            className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-55 pointer-events-none"
-            loading="lazy" decoding="async"
-          />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={r2Url(product.imageUrl)} alt={product.name}
-            className="relative z-10 w-full h-full object-contain"
-            loading="eager" decoding="async"
-          />
-        </>
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={r2Url(product.imageUrl)} alt={product.name}
+          className="w-full h-full object-contain"
+          loading="eager" decoding="async"
+        />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center">
           <ShoppingCart size={80} strokeWidth={1} className="text-[#cbd5e1]" />
@@ -439,12 +449,11 @@ export default async function SellerProductDetailPage({
         </div>
       )}
 
-      {/* Paginated single review */}
-      {recentReviews.length > 0 && (() => {
-        const review = recentReviews[0]!;
-        return (
-          <div className="mb-4">
-            <div className="rounded-xl border border-border bg-[#fafafa] p-4">
+      {/* Paginated reviews (5 per page) */}
+      {recentReviews.length > 0 && (
+        <div className="mb-4 space-y-3">
+          {recentReviews.map((review, idx) => (
+            <div key={idx} className="rounded-xl border border-border bg-[#fafafa] p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-0.5">
                   {[1, 2, 3, 4, 5].map((s) => <StarSvg key={s} filled={s <= review.rating} />)}
@@ -458,38 +467,38 @@ export default async function SellerProductDetailPage({
                 {review.user.fullName ?? review.user.email}
               </p>
             </div>
+          ))}
 
-            {/* Pagination controls */}
-            {reviewCount > 1 && (
-              <div className="flex items-center justify-between mt-3 px-1">
-                {hasPrev ? (
-                  <Link
-                    href={`/tai-nguyen-mmo/san-pham/${product.id}?reviewPage=${reviewPage - 1}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border text-[#374151] hover:border-primary hover:text-primary transition-colors"
-                  >
-                    <ChevronLeft size={13} strokeWidth={2} /> Trước
-                  </Link>
-                ) : (
-                  <div />
-                )}
-                <span className="text-xs text-text-muted">
-                  {reviewPage} / {reviewCount}
-                </span>
-                {hasNext ? (
-                  <Link
-                    href={`/tai-nguyen-mmo/san-pham/${product.id}?reviewPage=${reviewPage + 1}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border text-[#374151] hover:border-primary hover:text-primary transition-colors"
-                  >
-                    Sau <ChevronRight size={13} strokeWidth={2} />
-                  </Link>
-                ) : (
-                  <div />
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })()}
+          {/* Pagination controls */}
+          {totalReviewPages > 1 && (
+            <div className="flex items-center justify-between mt-3 px-1">
+              {hasPrev ? (
+                <Link
+                  href={`/tai-nguyen-mmo/san-pham/${product.id}?reviewPage=${reviewPage - 1}`}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border text-[#374151] hover:border-primary hover:text-primary transition-colors"
+                >
+                  <ChevronLeft size={13} strokeWidth={2} /> Trước
+                </Link>
+              ) : (
+                <div />
+              )}
+              <span className="text-xs text-text-muted">
+                Trang {reviewPage} / {totalReviewPages}
+              </span>
+              {hasNext ? (
+                <Link
+                  href={`/tai-nguyen-mmo/san-pham/${product.id}?reviewPage=${reviewPage + 1}`}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border text-[#374151] hover:border-primary hover:text-primary transition-colors"
+                >
+                  Sau <ChevronRight size={13} strokeWidth={2} />
+                </Link>
+              ) : (
+                <div />
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Write review form */}
       <ReviewSection
@@ -516,7 +525,7 @@ export default async function SellerProductDetailPage({
         </div>
       </div>
       <a
-        href="https://m.me/chuquangdoanh"
+        href={SUPPORT_URL}
         target="_blank"
         rel="noopener noreferrer"
         className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-[#0052cc] transition-colors"
@@ -525,6 +534,42 @@ export default async function SellerProductDetailPage({
       </a>
     </div>
   );
+
+  const sectionRelated = relatedProducts.length > 0 ? (
+    <div className="rounded-2xl border border-border bg-white p-5">
+      <h2 className="text-sm font-bold text-text-dark mb-4 flex items-center gap-2">
+        <span className="w-1 h-4 rounded-full bg-primary inline-block shrink-0" />
+        Sản phẩm tương tự
+      </h2>
+      <div className="grid grid-cols-2 gap-3">
+        {relatedProducts.map((rp) => (
+          <Link
+            key={rp.id}
+            href={`/tai-nguyen-mmo/san-pham/${rp.id}`}
+            className="flex gap-2.5 p-2.5 rounded-xl border border-border hover:border-primary/40 hover:shadow-sm transition-all group"
+          >
+            <div className="w-14 h-14 rounded-lg bg-[#f1f5f9] overflow-hidden shrink-0">
+              {rp.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={r2Url(rp.imageUrl)} alt={rp.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <ShoppingCart size={22} strokeWidth={1.25} className="text-[#cbd5e1]" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col justify-between">
+              <p className="text-xs font-semibold text-text-dark group-hover:text-primary transition-colors line-clamp-2 leading-snug">{rp.name}</p>
+              <div>
+                <p className="text-xs font-extrabold text-[#e11d48]">{formatVnd(Number(rp.price))}</p>
+                <p className="text-[10px] text-text-muted">Đã bán {rp.salesCount}</p>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  ) : null;
 
   const linkBack = (
     <Link
@@ -562,6 +607,7 @@ export default async function SellerProductDetailPage({
         {cardCommitments}
         {sectionHowItWorks}
         {sectionReviews}
+        {sectionRelated}
         {cardSupport}
         {linkBack}
       </div>
@@ -574,6 +620,7 @@ export default async function SellerProductDetailPage({
           {sectionDescription}
           {sectionHowItWorks}
           {sectionReviews}
+          {sectionRelated}
         </div>
         {/* Right column — sticky */}
         <div className="col-span-5">

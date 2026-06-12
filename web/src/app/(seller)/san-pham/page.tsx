@@ -15,14 +15,19 @@ const PAGE_SIZE = 10;
 export default async function SellerSanPhamPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; q?: string }>;
 }) {
   const session = await auth();
   const me = session!.user as AuthenticatedUser;
-  const { page } = await searchParams;
+  const { page, q: rawQ } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
+  const q = rawQ?.trim() || undefined;
 
-  const where = { sellerId: me.id, deletedAt: null };
+  const where = {
+    sellerId: me.id,
+    deletedAt: null,
+    ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
+  };
 
   const [products, total] = await Promise.all([
     prisma.sellerProduct.findMany({
@@ -71,6 +76,27 @@ export default async function SellerSanPhamPage({
             </Link>
           </div>
 
+          {/* Search */}
+          <form method="GET" className="flex gap-2">
+            <input
+              name="q"
+              defaultValue={q ?? ""}
+              placeholder="Tìm theo tên sản phẩm..."
+              className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400 transition"
+            />
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
+            >
+              Tìm
+            </button>
+            {q && (
+              <a href="/san-pham" className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-500 hover:border-gray-300 transition-colors">
+                Xóa
+              </a>
+            )}
+          </form>
+
           {products.length === 0 ? (
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm text-center py-20">
               <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
@@ -115,7 +141,10 @@ export default async function SellerSanPhamPage({
                             <div className="min-w-0">
                               <p className="text-sm text-gray-800 font-medium truncate">{p.name}</p>
                               {p.isRestricted && (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] bg-red-50 text-red-600 border border-red-200">
+                                <span
+                                  title="Sản phẩm bị hạn chế bởi quản trị viên. Vui lòng liên hệ hỗ trợ để biết thêm chi tiết."
+                                  className="px-1.5 py-0.5 rounded text-[9px] bg-red-50 text-red-600 border border-red-200 cursor-help"
+                                >
                                   Bị khóa
                                 </span>
                               )}
@@ -160,7 +189,7 @@ export default async function SellerSanPhamPage({
                 </table>
               </div>
               {totalPages > 1 && (
-                <Pagination currentPage={currentPage} totalPages={totalPages} basePath="/san-pham" />
+                <Pagination currentPage={currentPage} totalPages={totalPages} basePath="/san-pham" searchParams={q ? { q } : {}} />
               )}
             </>
           )}

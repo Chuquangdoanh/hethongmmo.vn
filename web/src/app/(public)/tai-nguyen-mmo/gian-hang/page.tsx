@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import Pagination from "@/components/shared/Pagination";
 import { prisma } from "@/lib/db/prisma";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import {
@@ -27,7 +28,9 @@ const BADGE_STYLE_MAP: Record<string, string> = {
   red:    "bg-red-100 text-red-700",
 };
 
-// Avatar gradient per position index
+const SELLER_PAGE_SIZE = 12;
+
+// Avatar gradients — seeded by seller.id for consistency across filter/sort
 const AVATAR_GRADIENTS = [
   "from-[#0d9488] to-[#0284c7]",
   "from-[#7c3aed] to-[#2563eb]",
@@ -37,10 +40,19 @@ const AVATAR_GRADIENTS = [
   "from-[#d97706] to-[#dc2626]",
 ];
 
+function idToGradientIndex(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = ((hash << 5) - hash) + id.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash) % AVATAR_GRADIENTS.length;
+}
+
 export default async function NhaBanHangPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; category?: string; q?: string; rating?: string }>;
+  searchParams: Promise<{ sort?: string; category?: string; q?: string; rating?: string; page?: string }>;
 }) {
   await guardPublicPage("tai-nguyen-mmo");
   const sp = await searchParams;
@@ -49,6 +61,7 @@ export default async function NhaBanHangPage({
   const activeCategory = sp.category ?? "";
   const q              = sp.q?.trim() ?? "";
   const minRating      = sp.rating ? Number(sp.rating) : 0;
+  const currentPage    = Math.max(1, Number(sp.page ?? 1) || 1);
 
   // Fetch sellers + system shop stats in parallel
   const [allSellers, systemProductCount, systemOrderCount, systemReviewStats, systemCategoryGroups] = await Promise.all([
@@ -240,6 +253,24 @@ export default async function NhaBanHangPage({
     enriched = [...enriched].sort((a, b) => b.totalSales - a.totalSales);
   }
 
+  // Pagination (system card always on page 1)
+  const totalSellerCount = enriched.length + (shouldShowSystem ? 1 : 0);
+  const totalSellerPages = Math.ceil(totalSellerCount / SELLER_PAGE_SIZE);
+  const pagedEnriched = enriched.slice(
+    currentPage === 1 ? 0 : (currentPage - 1) * SELLER_PAGE_SIZE - (shouldShowSystem ? 1 : 0),
+    currentPage === 1
+      ? SELLER_PAGE_SIZE - (shouldShowSystem ? 1 : 0)
+      : currentPage * SELLER_PAGE_SIZE - (shouldShowSystem ? 1 : 0),
+  );
+  const showSystemOnThisPage = shouldShowSystem && currentPage === 1;
+
+  // Preserve current filters for pagination
+  const sellerPageParams: Record<string, string> = {};
+  if (sp.sort)     sellerPageParams["sort"]     = sp.sort;
+  if (sp.category) sellerPageParams["category"] = sp.category;
+  if (sp.q)        sellerPageParams["q"]        = sp.q;
+  if (sp.rating)   sellerPageParams["rating"]   = sp.rating;
+
   return (
     <div className="min-h-screen bg-[#f1f5f9]">
       <CommunityBanner />
@@ -274,7 +305,7 @@ export default async function NhaBanHangPage({
               <div className="bg-white rounded-xl border border-border h-80 animate-pulse" />
             </aside>
           }>
-            <SellerFilterSidebar categories={categories} totalCount={enriched.length + (shouldShowSystem ? 1 : 0)} />
+            <SellerFilterSidebar categories={categories} totalCount={totalSellerCount} />
           </Suspense>
 
           {/* Main */}
@@ -283,7 +314,7 @@ export default async function NhaBanHangPage({
             {/* Result count */}
             <div className="flex items-center justify-between mb-4 px-1">
               <p className="text-sm text-text-muted">
-                <span className="font-semibold text-text-dark">{enriched.length + (shouldShowSystem ? 1 : 0)}</span> gian hàng
+                <span className="font-semibold text-text-dark">{totalSellerCount}</span> gian hàng
                 {activeCategory && (
                   <span className="ml-1">
                     trong <span className="font-semibold text-text-dark">&quot;{activeCategory}&quot;</span>
@@ -299,8 +330,8 @@ export default async function NhaBanHangPage({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
 
-              {/* ── Hệ Thống MMO — pinned first, hidden when category filter doesn't match ── */}
-              {shouldShowSystem && <div className="bg-white rounded-xl border border-[#6d28d9]/30 overflow-hidden hover:shadow-md hover:border-[#6d28d9]/60 transition-all flex flex-col relative">
+              {/* ── Hệ Thống MMO — pinned first on page 1 when category filter matches ── */}
+              {showSystemOnThisPage && <div className="bg-white rounded-xl border border-[#6d28d9]/30 overflow-hidden hover:shadow-md hover:border-[#6d28d9]/60 transition-all flex flex-col relative">
                 <span className="absolute top-2 right-2 z-10 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#6d28d9] text-white">
                   Chính thức
                 </span>
@@ -358,13 +389,13 @@ export default async function NhaBanHangPage({
                 </div>
               </div>}
 
-              {enriched.map((seller, idx) => {
-                const gradient = AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length]!;
+              {pagedEnriched.map((seller) => {
+                const gradient = AVATAR_GRADIENTS[idToGradientIndex(seller.id)]!;
                 const displayRating = seller.avgRating > 0 ? seller.avgRating.toFixed(1) : null;
                 return (
                   <div
                     key={seller.id}
-                    className="bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-[#3b82f6]/40 transition-all flex flex-col"
+                    className="bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-primary/40 transition-all flex flex-col"
                   >
                     {/* Cover gradient strip */}
                     <div className={`h-14 bg-linear-to-br ${gradient}`} />
@@ -441,6 +472,15 @@ export default async function NhaBanHangPage({
                 );
               })}
             </div>
+
+            {totalSellerPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalSellerPages}
+                basePath="/tai-nguyen-mmo/gian-hang"
+                searchParams={sellerPageParams}
+              />
+            )}
           </div>
         </div>
       </div>

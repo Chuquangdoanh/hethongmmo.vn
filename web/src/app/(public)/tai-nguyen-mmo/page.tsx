@@ -13,7 +13,7 @@ import type { CategoryItem } from "./_components/FilterSidebar";
 import Pagination from "@/components/shared/Pagination";
 import {
   Package, ShieldCheck, ShoppingBag, ShoppingCart, Store,
-  Pencil, CheckCircle,
+  Pencil, CheckCircle, Zap, Headphones, RotateCcw,
 } from "lucide-react";
 import { CommunityBanner } from "./_components/CommunityBanner";
 import { SortSelect } from "./_components/SortSelect";
@@ -170,7 +170,7 @@ export default async function TaiNguyenMmoPage({
       select: {
         id: true, name: true, imageUrl: true, sellerCategory: true, description: true,
         price: true, salesCount: true, createdAt: true,
-        seller: { select: { id: true } },
+        seller: { select: { id: true, uidPrefix: true } },
         _count: { select: { stockItems: { where: { status: "AVAILABLE" } } } },
       },
     }),
@@ -301,7 +301,7 @@ export default async function TaiNguyenMmoPage({
         isHot: sp.salesCount >= 15,
         href: `/tai-nguyen-mmo/san-pham/${sp.id}`,
         createdAt: sp.createdAt,
-        sellerName: `#${sp.seller.id.slice(0, 8).toUpperCase()}`,
+        sellerName: `#${sp.seller.uidPrefix}`,
         purchasedByMe: purchasedSellerIds.has(sp.id),
         reviewedByMe: reviewedSellerIds.has(sp.id),
         category: sp.sellerCategory,
@@ -340,6 +340,23 @@ export default async function TaiNguyenMmoPage({
 
       {/* ── CỘNG ĐỒNG MMO (client component with popup modals) ── */}
       <CommunityBanner />
+
+      {/* ── TRUST STRIP ── */}
+      <div className="bg-white border-b border-border">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-2.5 flex items-center gap-6 overflow-x-auto">
+          {([
+            { Icon: Zap,         color: "#f59e0b", text: "Giao hàng tự động" },
+            { Icon: ShieldCheck, color: "#10b981", text: "Bảo mật 100%"      },
+            { Icon: RotateCcw,   color: "#0066ff", text: "Đổi trả trong 24h" },
+            { Icon: Headphones,  color: "#7c3aed", text: "Hỗ trợ 24/7"       },
+          ] as const).map(({ Icon, color, text }) => (
+            <div key={text} className="flex items-center gap-1.5 shrink-0">
+              <Icon size={13} strokeWidth={2} style={{ color }} />
+              <span className="text-xs font-semibold text-text-dark whitespace-nowrap">{text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
 {/* ── MAIN LAYOUT ── */}
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-6">
@@ -406,11 +423,10 @@ export default async function TaiNguyenMmoPage({
               /* 4-column product grid */
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                 {pagedProducts.map((p) => {
-                  const displayRating = p.rating > 0 ? p.rating : 5;
                   return (
                     <div
                       key={`${p.kind}-${p.id}`}
-                      className="bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-[#3b82f6]/40 transition-all flex flex-col"
+                      className="bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-primary/40 transition-all flex flex-col"
                     >
                       {/* ── IMAGE AREA 16:9 ── */}
                       <Link href={p.href} className="block relative shrink-0">
@@ -450,22 +466,24 @@ export default async function TaiNguyenMmoPage({
 
                           {/* Star rating overlay — bottom of image */}
                           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/65 to-transparent px-2.5 pt-5 pb-2 flex items-center justify-between">
-                            <div className="flex items-center gap-1">
-                              <StarBar rating={displayRating} size="xs" />
-                              <span className="text-[11px] font-bold text-white leading-none">
-                                {displayRating.toFixed(1)}
-                              </span>
-                              {p.reviewCount > 0 && (
-                                <span className="text-[10px] text-white/60">({p.reviewCount})</span>
-                              )}
-                            </div>
-                            {/* Shop chip with code */}
+                            {p.reviewCount > 0 ? (
+                              <div className="flex items-center gap-1">
+                                <StarBar rating={p.rating} size="xs" />
+                                <span className="text-[11px] font-bold text-white leading-none">
+                                  {p.rating.toFixed(1)}
+                                </span>
+                                <span className="text-[11px] text-white/60">({p.reviewCount})</span>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-white/50 italic">Chưa có đánh giá</span>
+                            )}
+                            {/* Shop chip */}
                             {p.kind === "mmo" ? (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-600/80 text-white backdrop-blur-sm">
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-bold bg-blue-600/80 text-white backdrop-blur-sm">
                                 <ShieldCheck size={8} strokeWidth={2.5} /> MMO
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-600/80 text-white backdrop-blur-sm">
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-bold bg-slate-600/80 text-white backdrop-blur-sm">
                                 <Store size={8} strokeWidth={2.5} /> {p.sellerName}
                               </span>
                             )}
@@ -529,7 +547,7 @@ export default async function TaiNguyenMmoPage({
                             itemName={p.name}
                             price={p.price}
                             isLoggedIn={isLoggedIn}
-                            avgRating={displayRating}
+                            avgRating={p.rating}
                             reviewCount={p.reviewCount}
                             available={p.available}
                             totalSold={p.salesCount}
