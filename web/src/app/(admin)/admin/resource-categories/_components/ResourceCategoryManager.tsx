@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { r2Url } from "@/lib/utils/image-url";
+import SubCategoryManager from "./SubCategoryManager";
 
 const SVGL_PRESETS = [
   { name: "Facebook",    icon: "https://svgl.app/library/facebook-icon.svg" },
@@ -373,6 +374,7 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900">{cat.name}</p>
                     <p className="text-[10px] text-gray-400 truncate">{cat.iconUrl ?? "Chưa có icon"}</p>
+                    <SubCategoryManager categoryName={cat.name} />
                   </div>
                   <div className="flex gap-3 shrink-0">
                     <button

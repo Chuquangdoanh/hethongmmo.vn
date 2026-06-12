@@ -32,6 +32,11 @@ export default async function AdminSellerDetailPage({
 
   if (!request) notFound();
 
+  const sellerSubCategories = await prisma.userSubCategory.findMany({
+    where: { userId: request.userId },
+    select: { subCategory: { select: { id: true, name: true, categoryName: true } } },
+  });
+
   type ShopRow = { shop_locked: boolean };
   const [shopRows, products, orderStats, withdrawalStats, allTiers] = await Promise.all([
     prisma.$queryRaw<ShopRow[]>`SELECT shop_locked FROM users WHERE id = ${request.userId}`,
@@ -132,7 +137,7 @@ export default async function AdminSellerDetailPage({
                 { label: "Họ tên", value: request.user.fullName },
                 { label: "Email", value: request.user.email },
                 { label: "Điện thoại", value: request.user.phone ?? "—" },
-                { label: "Danh mục đăng ký", value: request.category },
+                { label: "Danh mục chính", value: request.category },
                 { label: "Ngày tạo TK", value: formatDate(request.user.createdAt) },
                 { label: "Tổng nạp", value: `${Number(request.user.totalDeposited).toLocaleString("vi-VN")}đ` },
                 { label: "Ngày đăng ký", value: formatDate(request.createdAt) },
@@ -144,6 +149,23 @@ export default async function AdminSellerDetailPage({
                 </div>
               ))}
             </div>
+
+            {/* Sub-categories registered */}
+            {sellerSubCategories.length > 0 && (
+              <div className="mt-4">
+                <p className="text-[10px] text-gray-500 mb-2">Danh mục con đăng ký</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {sellerSubCategories.map((r) => (
+                    <span
+                      key={r.subCategory.id}
+                      className="inline-flex items-center rounded-full bg-violet-100 text-violet-700 text-[11px] font-medium px-2.5 py-0.5"
+                    >
+                      {r.subCategory.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* ID documents */}
             {(request.user.cccdImageUrl || request.user.portraitImageUrl) && (
@@ -166,7 +188,11 @@ export default async function AdminSellerDetailPage({
 
           {/* Action form */}
           {request.status === "PENDING" ? (
-            <SellerApproveForm requestId={id} category={request.category} />
+            <SellerApproveForm
+              requestId={id}
+              category={request.category}
+              subCategories={sellerSubCategories.map((r) => r.subCategory)}
+            />
           ) : (
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
               <p className="text-sm text-gray-500">

@@ -11,12 +11,13 @@ import { logger } from "@/lib/utils/logger";
 interface RegisterSellerParams {
   userId: string;
   category: string;
+  subCategoryIds?: string[];
   ip?: string;
 }
 
 /** Deducts registration fee (from system_config) and creates a pending seller request. */
 export async function registerSeller(params: RegisterSellerParams): Promise<void> {
-  const { userId, category, ip } = params;
+  const { userId, category, subCategoryIds = [], ip } = params;
   const SELLER_REGISTRATION_FEE = await getRegistrationFee();
 
   await prisma.$transaction(async (tx) => {
@@ -68,13 +69,22 @@ export async function registerSeller(params: RegisterSellerParams): Promise<void
       },
     });
 
+    // Store requested sub-categories (replace existing if re-registering)
+    if (subCategoryIds.length > 0) {
+      await tx.userSubCategory.deleteMany({ where: { userId } });
+      await tx.userSubCategory.createMany({
+        data: subCategoryIds.map((subCategoryId) => ({ userId, subCategoryId })),
+        skipDuplicates: true,
+      });
+    }
+
     await tx.auditLog.create({
       data: {
         actorId: userId,
         action: "SELLER_REGISTRATION_REQUESTED",
         targetType: "SellerRequest",
         targetId: userId,
-        metadata: { category, ip: ip ?? "unknown" },
+        metadata: { category, subCategoryCount: subCategoryIds.length, ip: ip ?? "unknown" },
       },
     });
   });

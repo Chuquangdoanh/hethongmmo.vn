@@ -206,6 +206,7 @@ model User {
   loginAttempts        LoginAttempt[]
   chatParticipations   ChatParticipant[]
   chatMessages         ChatMessage[]
+  subCategories        UserSubCategory[]
 
   @@index([email])
   @@index([uidPrefix])
@@ -469,15 +470,48 @@ model MmoProductItem {
 // 6. RESOURCE CATEGORIES
 // ====================================================================
 model ResourceCategory {
-  id           String   @id @default(uuid()) @db.Uuid
-  name         String   @unique
-  iconUrl      String?  @map("icon_url")
-  displayOrder Int      @default(0) @map("display_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id            String              @id @default(uuid()) @db.Uuid
+  name          String              @unique
+  iconUrl       String?             @map("icon_url")
+  displayOrder  Int                 @default(0) @map("display_order")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  subCategories SellerSubCategory[]
 
   @@index([name])
   @@map("resource_categories")
+}
+
+// ====================================================================
+// 6b. SELLER SUB-CATEGORIES
+// ====================================================================
+model SellerSubCategory {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  categoryName String   @map("category_name")
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  category     ResourceCategory  @relation(fields: [categoryName], references: [name], onDelete: Cascade)
+  users        UserSubCategory[]
+
+  @@unique([categoryName, name])
+  @@index([categoryName, isActive])
+  @@map("seller_sub_categories")
+}
+
+model UserSubCategory {
+  userId        String @map("user_id") @db.Uuid
+  subCategoryId String @map("sub_category_id") @db.Uuid
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subCategory   SellerSubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+
+  @@id([userId, subCategoryId])
+  @@map("user_sub_categories")
 }
 
 model TutTrickCategory {

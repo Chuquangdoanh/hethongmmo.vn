@@ -12,10 +12,16 @@ const PRICE_RANGES = [
   { label: "Trên 1.000.000đ",       value: "1000000-9999999999" },
 ] as const;
 
+export interface SubCategoryItem {
+  id: string;
+  name: string;
+}
+
 export interface CategoryItem {
   name: string;
   count: number;
   iconUrl: string | null;
+  subCategories: SubCategoryItem[];
 }
 
 interface FilterSidebarProps {
@@ -32,9 +38,10 @@ export function FilterSidebar({ categories, totalCount }: FilterSidebarProps) {
 
   const [isPending, startTransition] = useTransition();
 
-  const activeCategory = searchParams.get("category") ?? "";
-  const priceParam     = searchParams.get("price")    ?? "";
-  const qParam         = searchParams.get("q")        ?? "";
+  const activeCategory    = searchParams.get("category")    ?? "";
+  const activeSubcategory = searchParams.get("subcategory") ?? "";
+  const priceParam        = searchParams.get("price")       ?? "";
+  const qParam            = searchParams.get("q")           ?? "";
 
   const [searchValue, setSearchValue] = useState(qParam);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -148,6 +155,45 @@ export function FilterSidebar({ categories, totalCount }: FilterSidebarProps) {
               ))}
             </div>
           </div>
+
+          {/* Sub-categories — only shown when a category is active and has sub-categories */}
+          {(() => {
+            const activeCat = categories.find((c) => c.name === activeCategory);
+            if (!activeCat || activeCat.subCategories.length === 0) return null;
+            return (
+              <div className="px-4 py-4">
+                <p className="text-[13px] font-bold text-[#94a3b8] uppercase tracking-widest mb-3">Danh mục con</p>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2.5 cursor-pointer group">
+                    <input
+                      type="radio"
+                      name="subcategory"
+                      checked={!activeSubcategory}
+                      onChange={() => setParam("subcategory", "")}
+                      className="w-4.5 h-4.5 border-[#d1d5db] accent-[#3b82f6] cursor-pointer"
+                    />
+                    <span className={`text-sm transition-colors ${!activeSubcategory ? "font-semibold text-[#2563eb]" : "text-[#374151] group-hover:text-[#2563eb]"}`}>
+                      Tất cả
+                    </span>
+                  </label>
+                  {activeCat.subCategories.map((sub) => (
+                    <label key={sub.id} className="flex items-center gap-2.5 cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="subcategory"
+                        checked={activeSubcategory === sub.name}
+                        onChange={() => setParam("subcategory", activeSubcategory === sub.name ? "" : sub.name)}
+                        className="w-4.5 h-4.5 border-[#d1d5db] accent-[#3b82f6] cursor-pointer"
+                      />
+                      <span className={`text-sm transition-colors ${activeSubcategory === sub.name ? "font-semibold text-[#2563eb]" : "text-[#374151] group-hover:text-[#2563eb]"}`}>
+                        {sub.name}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Price range */}
           <div className="px-4 py-4">

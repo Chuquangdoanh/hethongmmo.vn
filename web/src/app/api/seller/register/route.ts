@@ -35,7 +35,8 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
 }
 
 const registerSchema = z.object({
-  category: z.string().min(1).max(250).trim(),
+  category:       z.string().min(1).max(250).trim(),
+  subCategoryIds: z.array(z.string().uuid()).max(20).optional().default([]),
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       req.headers.get("cf-connecting-ip") ??
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
 
-    await registerSeller({ userId: me.id, category: parsed.data.category, ip });
+    await registerSeller({ userId: me.id, category: parsed.data.category, subCategoryIds: parsed.data.subCategoryIds, ip });
 
     return apiSuccess("Yêu cầu đăng ký bán hàng đã được gửi. Chờ admin xét duyệt.");
   } catch (err) {

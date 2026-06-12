@@ -3,12 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+interface SubCategoryItem {
+  id: string;
+  name: string;
+  categoryName: string;
+}
+
 interface Props {
   requestId: string;
   category: string;
+  subCategories?: SubCategoryItem[];
 }
 
-export default function SellerApproveForm({ requestId, category }: Props) {
+export default function SellerApproveForm({ requestId, category, subCategories = [] }: Props) {
   const router = useRouter();
   const [action, setAction] = useState<"approve" | "reject" | null>(null);
   const [approvedCategory, setApprovedCategory] = useState(category);
@@ -50,6 +57,23 @@ export default function SellerApproveForm({ requestId, category }: Props) {
   return (
     <div className="rounded-xl border border-gray-200 bg-gray-50 p-6 space-y-4">
       <h2 className="text-sm font-semibold text-gray-900">Xử lý yêu cầu</h2>
+
+      {/* Sub-categories requested */}
+      {subCategories.length > 0 && (
+        <div>
+          <p className="text-xs text-gray-500 mb-1.5">Danh mục con đăng ký</p>
+          <div className="flex flex-wrap gap-1.5">
+            {subCategories.map((sub) => (
+              <span
+                key={sub.id}
+                className="inline-flex items-center rounded-full bg-violet-100 text-violet-700 text-[11px] font-medium px-2.5 py-0.5"
+              >
+                {sub.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Action toggle */}
       <div className="flex gap-3">

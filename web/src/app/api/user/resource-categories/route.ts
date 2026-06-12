@@ -13,7 +13,14 @@ export async function GET(): Promise<NextResponse> {
 
     const categories = await prisma.resourceCategory.findMany({
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
-      select: { id: true, name: true, iconUrl: true },
+      select: {
+        id: true, name: true, iconUrl: true,
+        subCategories: {
+          where: { isActive: true },
+          orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+          select: { id: true, name: true },
+        },
+      },
     });
 
     return apiOk(categories);

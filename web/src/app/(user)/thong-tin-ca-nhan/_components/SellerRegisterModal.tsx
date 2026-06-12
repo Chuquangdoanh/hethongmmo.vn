@@ -45,10 +45,16 @@ async function uploadFile(file: File, type: "cccd" | "portrait"): Promise<string
   return json.data.url;
 }
 
+interface SubCategory {
+  id: string;
+  name: string;
+}
+
 interface ResourceCategory {
   id: string;
   name: string;
   iconUrl: string | null;
+  subCategories: SubCategory[];
 }
 
 export default function SellerRegisterModal({ fullName, phone, email, balance, isReRegister }: Props) {
@@ -62,6 +68,8 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
   // Step 1 state
   const [category, setCategory] = useState("");
   const [categoryDetail, setCategoryDetail] = useState("");
+  const [selectedSubIds, setSelectedSubIds] = useState<string[]>([]);
+  const [availableSubs, setAvailableSubs] = useState<SubCategory[]>([]);
 
   // Step 2 state
   const [bankName, setBankName] = useState("");
@@ -94,6 +102,8 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
     setStep(1);
     setCategory("");
     setCategoryDetail("");
+    setSelectedSubIds([]);
+    setAvailableSubs([]);
     setBankName("");
     setBankAccountNumber("");
     setBankAccountHolder("");
@@ -158,7 +168,7 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
       const registerRes = await fetch("/api/seller/register", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category: finalCategory }),
+        body: JSON.stringify({ category: finalCategory, subCategoryIds: selectedSubIds }),
       });
       const registerJson = await registerRes.json() as { error?: string };
       if (!registerRes.ok) {
@@ -281,7 +291,14 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
                     </label>
                     <select
                       value={category}
-                      onChange={(e) => { setCategory(e.target.value); setCategoryDetail(""); setError(""); }}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCategory(val);
+                        setCategoryDetail("");
+                        setSelectedSubIds([]);
+                        setAvailableSubs(dbCategories.find((c) => c.name === val)?.subCategories ?? []);
+                        setError("");
+                      }}
                       className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none"
                     >
                       <option value="">-- Chọn danh mục --</option>
@@ -292,18 +309,55 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
                     </select>
 
                     {category && (
-                      <div className="mt-2">
-                        <input
-                          type="text"
-                          value={categoryDetail}
-                          onChange={(e) => { setCategoryDetail(e.target.value); setError(""); }}
-                          placeholder={category === "Khác" ? "Nhập sản phẩm bạn muốn đăng ký..." : "vd: Tài khoản quảng cáo, tài khoản game, tài khoản app..."}
-                          maxLength={200}
-                          className="w-full rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
-                        />
-                        <p className="mt-1 text-[10px] text-gray-400">
-                          {category === "Khác" ? "Mô tả cụ thể loại sản phẩm/dịch vụ bạn muốn bán" : "Mô tả cụ thể loại sản phẩm/dịch vụ bạn muốn bán"}
-                        </p>
+                      <div className="mt-2 space-y-3">
+                        <div>
+                          <input
+                            type="text"
+                            value={categoryDetail}
+                            onChange={(e) => { setCategoryDetail(e.target.value); setError(""); }}
+                            placeholder={category === "Khác" ? "Nhập sản phẩm bạn muốn đăng ký..." : "vd: Tài khoản quảng cáo, tài khoản game, tài khoản app..."}
+                            maxLength={200}
+                            className="w-full rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
+                          />
+                          <p className="mt-1 text-[10px] text-gray-400">
+                            Mô tả cụ thể loại sản phẩm/dịch vụ bạn muốn bán
+                          </p>
+                        </div>
+
+                        {availableSubs.length > 0 && (
+                          <div>
+                            <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide block mb-2">
+                              Danh mục con <span className="text-gray-400 font-normal normal-case">(chọn những gì bạn muốn bán)</span>
+                            </label>
+                            <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-1">
+                              {availableSubs.map((sub) => (
+                                <label
+                                  key={sub.id}
+                                  className="flex items-center gap-2 cursor-pointer px-2.5 py-1.5 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedSubIds.includes(sub.id)}
+                                    onChange={(e) => {
+                                      setSelectedSubIds((prev) =>
+                                        e.target.checked
+                                          ? [...prev, sub.id]
+                                          : prev.filter((id) => id !== sub.id),
+                                      );
+                                    }}
+                                    className="w-4 h-4 accent-blue-600 shrink-0"
+                                  />
+                                  <span className="text-xs text-gray-700 leading-tight">{sub.name}</span>
+                                </label>
+                              ))}
+                            </div>
+                            {selectedSubIds.length > 0 && (
+                              <p className="mt-1.5 text-[10px] text-blue-600 font-medium">
+                                Đã chọn {selectedSubIds.length} danh mục con
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

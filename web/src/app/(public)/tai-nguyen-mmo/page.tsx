@@ -77,10 +77,10 @@ function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }
 export default async function TaiNguyenMmoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; sort?: string; q?: string; price?: string; page?: string }>;
+  searchParams: Promise<{ category?: string; sort?: string; q?: string; price?: string; page?: string; subcategory?: string }>;
 }) {
   await guardPublicPage("tai-nguyen-mmo");
-  const [{ category, sort: sortParam, q: rawQ, price: priceParam, page: pageParam }, session] = await Promise.all([
+  const [{ category, sort: sortParam, q: rawQ, price: priceParam, page: pageParam, subcategory: subcategoryParam }, session] = await Promise.all([
     searchParams,
     auth(),
   ]);
@@ -163,6 +163,7 @@ export default async function TaiNguyenMmoPage({
         stockItems: { some: { status: "AVAILABLE" } },
         ...(lockedSellerIds.length > 0 ? { NOT: { sellerId: { in: lockedSellerIds } } } : {}),
         ...(category ? { sellerCategory: category } : {}),
+        ...(subcategoryParam ? { seller: { subCategories: { some: { subCategory: { name: subcategoryParam, isActive: true } } } } } : {}),
         ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
         ...priceFilter,
       },
@@ -192,7 +193,14 @@ export default async function TaiNguyenMmoPage({
     }),
     prisma.resourceCategory.findMany({
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
-      select: { name: true, iconUrl: true },
+      select: {
+        name: true, iconUrl: true,
+        subCategories: {
+          where: { isActive: true },
+          orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+          select: { id: true, name: true },
+        },
+      },
     }),
   ]);
 
@@ -246,10 +254,13 @@ export default async function TaiNguyenMmoPage({
     return acc;
   }, {});
 
+  const resourceCatMap = new Map(resourceCategories.map((c) => [c.name, c]));
+
   const categoryItems: CategoryItem[] = allCategories.map((name) => ({
     name,
     count: (mmoGrouped[name] ?? 0) + (sellerGrouped[name] ?? 0),
     iconUrl: categoryIconMap.get(name) ?? null,
+    subCategories: resourceCatMap.get(name)?.subCategories ?? [],
   }));
 
   // eslint-disable-next-line react-hooks/purity
