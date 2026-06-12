@@ -13,6 +13,7 @@ export const metadata: Metadata = buildMeta({
   title: "TUT & Tricks MMO | Hệ Thống MMO",
   description: "Bí quyết tăng trưởng, kiếm tiền online — tổng hợp độc quyền, cập nhật liên tục từ các chuyên gia MMO hàng đầu Việt Nam.",
   url: "/tut-tricks",
+  image: "/images/dj-media-classroom.jpg",
 });
 
 export default async function TutTricksPage({

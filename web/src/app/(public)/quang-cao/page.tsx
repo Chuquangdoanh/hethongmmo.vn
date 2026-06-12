@@ -12,6 +12,7 @@ export const metadata: Metadata = buildMeta({
   title: "Dịch Vụ Quảng Cáo Facebook & TikTok Ads | Hệ Thống MMO",
   description: "Dịch vụ chạy quảng cáo Facebook, TikTok Ads chuyên nghiệp. Tối ưu ngân sách, tăng ROI. Kinh nghiệm 5 năm, quản lý 50B+ ngân sách.",
   url: "/quang-cao",
+  image: "/images/dj-media-classroom.jpg",
 });
 
 const WHY_CHOOSE = [

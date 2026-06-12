@@ -10,6 +10,7 @@ export const metadata: Metadata = buildMeta({
   title: "NETWORKS (ADB) — DNET Media Network | Hệ Thống MMO",
   description: "Hệ sinh thái NETWORK hỗ trợ kiếm tiền từ nội dung trên Facebook. Cung cấp Fanpage, Setup Payout, Hợp tác KOC — uy tín, chuyên nghiệp.",
   url: "/NetWorks",
+  image: "/images/dj-media-classroom.jpg",
 });
 
 const SERVICES = [

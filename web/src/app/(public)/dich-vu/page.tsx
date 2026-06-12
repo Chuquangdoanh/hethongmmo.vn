@@ -14,6 +14,7 @@ export const metadata: Metadata = buildMeta({
   title: "Dịch Vụ Mạng Xã Hội | Hệ Thống MMO",
   description: "Tăng follow, like, view, sub trên TikTok, Facebook, Instagram, YouTube giá rẻ, uy tín. Hỗ trợ 24/7, bảo hành đầy đủ.",
   url: "/dich-vu",
+  image: "/images/dj-media-classroom.jpg",
 });
 
 interface WarrantyOption { name: string; price: number; }

@@ -9,6 +9,7 @@ export const metadata: Metadata = buildMeta({
   title: "Hệ Thống MMO | DJ MEDIA — Dịch Vụ Mạng Xã Hội #1 Việt Nam",
   description: "Nền tảng MMO hàng đầu Việt Nam — mở khóa Facebook, TikTok Ads, khóa học Digital Marketing, tài nguyên số. Hỗ trợ 24/7, uy tín từ 2019.",
   url: "/",
+  image: "/images/doinguctydjmedia.jpg",
 });
 import { prisma } from "@/lib/db/prisma";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
