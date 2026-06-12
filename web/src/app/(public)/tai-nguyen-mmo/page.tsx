@@ -12,7 +12,7 @@ import { FilterSidebar } from "./_components/FilterSidebar";
 import type { CategoryItem } from "./_components/FilterSidebar";
 import Pagination from "@/components/shared/Pagination";
 import {
-  Package, ShoppingBag, ShoppingCart,
+  Package, ShoppingBag, ShoppingCart, Store,
   Pencil, CheckCircle,
 } from "lucide-react";
 import { CommunityBanner } from "./_components/CommunityBanner";
