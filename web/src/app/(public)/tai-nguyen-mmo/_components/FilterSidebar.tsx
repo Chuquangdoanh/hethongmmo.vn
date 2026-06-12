@@ -68,6 +68,8 @@ export function FilterSidebar({ categories, totalCount }: FilterSidebarProps) {
     const params = new URLSearchParams(searchParamsRef.current.toString());
     if (value) params.set(key, value); else params.delete(key);
     params.delete("page");
+    // When changing main category, clear sub-category selection
+    if (key === "category") params.delete("subcategory");
     startTransition(() => {
       router.replace(`/tai-nguyen-mmo?${params.toString()}`, { scroll: false });
     });
