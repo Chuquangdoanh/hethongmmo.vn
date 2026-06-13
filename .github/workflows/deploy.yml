@@ -136,14 +136,15 @@ jobs:
           cache-to: type=gha,mode=max,scope=migrate
 
   # Deploy — chạy sau cả 2 build jobs (dù 1 trong 2 bị skip cũng không sao)
-  # Điều kiện tường minh: chỉ chạy khi app hoặc prisma thay đổi VÀ không có build nào fail
+  # Điều kiện tường minh: chạy khi app, prisma, HOẶC infra thay đổi VÀ không có build nào fail
+  # infra thay đổi (nginx.conf, docker-compose.yml): chỉ cần SCP + nginx reload, không rebuild image
   deploy:
     needs: [changes, build-web, build-migrator]
-    if: |
+    if: >-
       !cancelled() &&
       (needs.build-web.result == 'success' || needs.build-web.result == 'skipped') &&
       (needs.build-migrator.result == 'success' || needs.build-migrator.result == 'skipped') &&
-      (needs.changes.outputs.app == 'true' || needs.changes.outputs.prisma == 'true')
+      (needs.changes.outputs.app == 'true' || needs.changes.outputs.prisma == 'true' || needs.changes.outputs.infra == 'true')
     name: Deploy to VPS
     runs-on: ubuntu-latest
     environment: production
@@ -253,45 +254,10 @@ jobs:
             fi
 
             # Reload nginx để áp dụng config mới (infra/ đã được SCP ở bước trên)
-            docker exec hethongmmo-nginx nginx -s reload
-            echo "✅ Nginx reloaded"
-
-            echo "✅ Deploy xong: $(date)"
-
-  # Nginx reload — chạy khi CHỈ infra/** hoặc docker-compose.yml thay đổi
-  # Không cần build lại image, chỉ copy config và reload nginx
-  nginx-reload:
-    needs: changes
-    if: |
-      needs.changes.outputs.infra == 'true' &&
-      needs.changes.outputs.app != 'true'
-    name: Reload Nginx config
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Copy infra to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: deploy
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: 22
-          source: "docker-compose.yml,infra/"
-          target: "/opt/hethongmmo"
-
-      - name: Reload Nginx
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.PRODUCTION_HOST }}
-          username: deploy
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: 22
-          timeout: 30s
-          command_timeout: 2m
-          script: |
-            cd /opt/hethongmmo
+            echo "=== nginx.conf frame-src hiện tại trên server ==="
+            grep "frame-src" /opt/hethongmmo/infra/nginx/nginx.conf || echo "(không tìm thấy frame-src)"
             docker exec hethongmmo-nginx nginx -t
             docker exec hethongmmo-nginx nginx -s reload
             echo "✅ Nginx reloaded: $(date)"
+
+            echo "✅ Deploy xong: $(date)"
