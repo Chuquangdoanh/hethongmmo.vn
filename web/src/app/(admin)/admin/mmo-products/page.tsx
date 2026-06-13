@@ -146,6 +146,7 @@ export default async function AdminMmoProductsPage({
           <table className="w-full min-w-[820px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-10">STT</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Sản phẩm</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nhóm / Danh mục</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Giá</th>
@@ -159,15 +160,18 @@ export default async function AdminMmoProductsPage({
             <tbody className="divide-y divide-gray-100">
               {products.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-16 text-center">
+                  <td colSpan={9} className="px-4 py-16 text-center">
                     <p className="text-4xl mb-3">📦</p>
                     <p className="text-sm font-medium text-gray-600">Không tìm thấy sản phẩm</p>
                     <p className="text-xs text-gray-400 mt-1">Thử thay đổi bộ lọc hoặc thêm sản phẩm mới</p>
                   </td>
                 </tr>
               )}
-              {products.map((product) => (
+              {products.map((product, idx) => (
                 <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3.5 text-center text-sm text-gray-400 font-medium">
+                    {(currentPage - 1) * PAGE_SIZE + idx + 1}
+                  </td>
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       {product.thumbnail ? (

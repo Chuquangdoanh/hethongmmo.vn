@@ -137,6 +137,7 @@ export default async function AdminServicesPage({
         total={total}
         category={category}
         q={q}
+        currentPage={currentPage}
       />
 
       {totalPages > 1 && (

@@ -122,6 +122,7 @@ export default async function AdminCoursesPage({
         total={total}
         category={category}
         q={q}
+        currentPage={currentPage}
       />
 
       {totalPages > 1 && (

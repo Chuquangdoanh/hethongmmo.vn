@@ -173,6 +173,7 @@ export default async function AdminTutTricksPage({
         tier={tier}
         q={q}
         dbCategories={dbCategories}
+        currentPage={currentPage}
       />
 
       {totalPages > 1 && (

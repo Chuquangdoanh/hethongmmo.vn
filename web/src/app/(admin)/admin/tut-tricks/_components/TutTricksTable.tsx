@@ -46,9 +46,10 @@ interface Props {
   tier?: string;
   q?: string;
   dbCategories: DbCategory[];
+  currentPage: number;
 }
 
-export default function TutTricksTable({ items, total, platform, category, tier, q, dbCategories }: Props) {
+export default function TutTricksTable({ items, total, platform, category, tier, q, dbCategories, currentPage }: Props) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
@@ -174,6 +175,7 @@ export default function TutTricksTable({ items, total, platform, category, tier,
                   className="w-4 h-4 rounded border-gray-300 text-[#7C3AED] focus:ring-[#7C3AED] cursor-pointer"
                 />
               </th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-10">STT</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Tài liệu</th>
               {/* Danh mục = category field (từ TutTrickCategory) */}
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Danh mục</th>
@@ -188,14 +190,14 @@ export default function TutTricksTable({ items, total, platform, category, tier,
           <tbody className="divide-y divide-gray-100">
             {items.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-16 text-center">
+                <td colSpan={9} className="px-4 py-16 text-center">
                   <p className="text-4xl mb-3">📖</p>
                   <p className="text-sm font-medium text-gray-600">Không tìm thấy tài liệu</p>
                   <p className="text-xs text-gray-400 mt-1">Thử thay đổi bộ lọc hoặc thêm tài liệu mới</p>
                 </td>
               </tr>
             )}
-            {items.map((item) => (
+            {items.map((item, idx) => (
               <tr
                 key={item.id}
                 className={`hover:bg-gray-50 transition-colors ${selected.has(item.id) ? "bg-[#7C3AED]/4" : ""}`}
@@ -207,6 +209,9 @@ export default function TutTricksTable({ items, total, platform, category, tier,
                     onChange={() => toggleOne(item.id)}
                     className="w-4 h-4 rounded border-gray-300 text-[#7C3AED] focus:ring-[#7C3AED] cursor-pointer"
                   />
+                </td>
+                <td className="px-4 py-3.5 text-center text-sm text-gray-400 font-medium">
+                  {(currentPage - 1) * 20 + idx + 1}
                 </td>
                 {/* Tên tài liệu + platform enum */}
                 <td className="px-4 py-3.5">

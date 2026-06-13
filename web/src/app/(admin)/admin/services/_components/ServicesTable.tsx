@@ -23,9 +23,10 @@ interface Props {
   total: number;
   category?: string;
   q?: string;
+  currentPage: number;
 }
 
-export default function ServicesTable({ services, total, category, q }: Props) {
+export default function ServicesTable({ services, total, category, q, currentPage }: Props) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
@@ -151,6 +152,7 @@ export default function ServicesTable({ services, total, category, q }: Props) {
                   className="w-4 h-4 rounded border-gray-300 text-[#7C3AED] focus:ring-[#7C3AED] cursor-pointer"
                 />
               </th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide w-10">STT</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Dịch vụ</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Danh mục</th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Giá</th>
@@ -162,14 +164,14 @@ export default function ServicesTable({ services, total, category, q }: Props) {
           <tbody className="divide-y divide-gray-100">
             {services.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-16 text-center">
+                <td colSpan={8} className="px-4 py-16 text-center">
                   <p className="text-4xl mb-3">🔍</p>
                   <p className="text-sm font-medium text-gray-600">Không tìm thấy dịch vụ</p>
                   <p className="text-xs text-gray-400 mt-1">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
                 </td>
               </tr>
             )}
-            {services.map((svc) => (
+            {services.map((svc, idx) => (
               <tr
                 key={svc.id}
                 className={`hover:bg-gray-50 transition-colors ${selected.has(svc.id) ? "bg-[#7C3AED]/4" : ""}`}
@@ -181,6 +183,9 @@ export default function ServicesTable({ services, total, category, q }: Props) {
                     onChange={() => toggleOne(svc.id)}
                     className="w-4 h-4 rounded border-gray-300 text-[#7C3AED] focus:ring-[#7C3AED] cursor-pointer"
                   />
+                </td>
+                <td className="px-4 py-3.5 text-center text-sm text-gray-400 font-medium">
+                  {(currentPage - 1) * 20 + idx + 1}
                 </td>
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-3">
