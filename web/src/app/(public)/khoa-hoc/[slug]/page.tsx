@@ -58,8 +58,14 @@ const FORMAT_LABELS: Record<string, string> = {
 
 function getYoutubeEmbedId(url: string): string | null {
   try {
-    const u = new URL(url);
-    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1);
+    const u = new URL(url.trim());
+    if (!u.hostname.includes("youtube") && !u.hostname.includes("youtu.be")) return null;
+    // youtu.be/ID
+    if (u.hostname.includes("youtu.be")) return u.pathname.slice(1).split("?")[0] ?? null;
+    // /embed/ID, /shorts/ID, /live/ID
+    const pathMatch = u.pathname.match(/\/(?:embed|shorts|live)\/([^/?#]+)/);
+    if (pathMatch) return pathMatch[1] ?? null;
+    // /watch?v=ID
     return u.searchParams.get("v");
   } catch {
     return null;
