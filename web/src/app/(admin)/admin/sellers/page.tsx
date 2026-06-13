@@ -1,26 +1,12 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
-import { formatDate, formatVnd } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
-import ShopLockAdminButton from "./[id]/ShopLockAdminButton";
-import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import SellersTableClient, { type SellerRowData } from "./SellersTableClient";
 
 export const metadata: Metadata = { title: "Admin — Sellers" };
 
 const PAGE_SIZE = 20;
-
-const STATUS_STYLES: Record<string, string> = {
-  PENDING:  "bg-[#F59E0B]/10 text-[#F59E0B]",
-  APPROVED: "bg-[#10B981]/10 text-[#10B981]",
-  REJECTED: "bg-[#EF4444]/10 text-[#EF4444]",
-  REVOKED:  "bg-[#71717A]/10 text-gray-500",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Chờ duyệt", APPROVED: "Đã duyệt",
-  REJECTED: "Từ chối", REVOKED: "Thu hồi",
-};
 
 const BADGE_COLOR_CLASSES: Record<string, string> = {
   gray:   "bg-gray-100 text-gray-600",
@@ -45,19 +31,29 @@ function buildHref(params: Record<string, string | undefined>) {
   return s ? `/admin/sellers?${s}` : "/admin/sellers";
 }
 
+const MONTHS = ["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6","Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"];
+const YEARS = [2024, 2025, 2026, 2027];
+
 export default async function AdminSellersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; tier?: string; q?: string; sort?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; tier?: string; q?: string; sort?: string; month?: string; year?: string }>;
 }) {
-  const { page, status, tier, q, sort: sortParam } = await searchParams;
+  const { page, status, tier, q, sort: sortParam, month, year } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
   const search = q?.trim() || undefined;
-  const activeSort = VALID_SORTS.includes(sortParam as SortKey)
-    ? sortParam as SortKey
-    : undefined;
+  const activeSort = VALID_SORTS.includes(sortParam as SortKey) ? sortParam as SortKey : undefined;
 
-  // Fetch tiers dynamically from DB
+  // Revenue date filter
+  const monthNum = month ? parseInt(month, 10) : undefined;
+  const yearNum  = year  ? parseInt(year, 10)  : undefined;
+  const dateFilter =
+    monthNum && yearNum && monthNum >= 1 && monthNum <= 12
+      ? { createdAt: { gte: new Date(yearNum, monthNum - 1, 1), lt: new Date(yearNum, monthNum, 1) } }
+      : {};
+  const hasDateFilter = !!(monthNum && yearNum);
+
+  // Fetch tier definitions from DB
   const tierDefs = await prisma.sellerTierDefinition.findMany({
     where: { isActive: true },
     orderBy: { displayOrder: "asc" },
@@ -78,7 +74,7 @@ export default async function AdminSellersPage({
     ...(Object.keys(userFilter).length > 0 ? { user: userFilter } : {}),
   };
 
-  // Revenue sort: fetch ALL requests + revenues first, sort in-memory, then paginate
+  // Revenue sort: fetch ALL matching requests, sort in-memory, then paginate
   let requests: Awaited<ReturnType<typeof prisma.sellerRequest.findMany<{
     include: { user: { select: { id: true; email: true; fullName: true; sellerTier: true } } }
   }>>>;
@@ -97,7 +93,7 @@ export default async function AdminSellersPage({
       (activeSort === "revenue_desc" || activeSort === "revenue_asc") && allUserIds.length > 0
         ? prisma.order.groupBy({
             by: ["sellerId"],
-            where: { sellerId: { in: allUserIds }, status: "DONE" },
+            where: { sellerId: { in: allUserIds }, status: "DONE", ...dateFilter },
             _sum: { finalPrice: true },
           })
         : Promise.resolve([]),
@@ -141,7 +137,6 @@ export default async function AdminSellersPage({
 
   const userIds = requests.map((r) => r.userId);
 
-  // Fetch shop_locked, max_seller_products for all users in this page
   type ShopRow = { id: string; shop_locked: boolean; max_seller_products: number };
   const [shopRows, productCounts] = await Promise.all([
     userIds.length > 0
@@ -161,7 +156,7 @@ export default async function AdminSellersPage({
     userIds.length > 0
       ? prisma.order.groupBy({
           by: ["sellerId"],
-          where: { sellerId: { in: userIds }, status: "DONE" },
+          where: { sellerId: { in: userIds }, status: "DONE", ...dateFilter },
           _sum: { finalPrice: true },
         })
       : Promise.resolve([]),
@@ -179,31 +174,109 @@ export default async function AdminSellersPage({
       : Promise.resolve([] as RatingRow[]),
   ]);
 
-  const shopLockMap    = new Map(shopRows.map((r) => [r.id, r.shop_locked]));
-  const maxProductsMap = new Map(shopRows.map((r) => [r.id, r.max_seller_products ?? 3]));
+  const shopLockMap     = new Map(shopRows.map((r) => [r.id, r.shop_locked]));
+  const maxProductsMap  = new Map(shopRows.map((r) => [r.id, r.max_seller_products ?? 3]));
   const productCountMap = new Map(productCounts.map((r) => [r.sellerId, r._count.id]));
-  const revenueMap     = new Map(revenueRows.map((r) => [r.sellerId, Number(r._sum.finalPrice ?? 0)]));
+  const revenueMap      = new Map(revenueRows.map((r) => [r.sellerId, Number(r._sum.finalPrice ?? 0)]));
   const sellerRatingMap = new Map(sellerRatingRows.map((r) => [r.seller_id, { avg: r.avg_rating, count: Number(r.review_count) }]));
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  // Sort toggle links
   const nextRevenueSort = activeSort === "revenue_desc" ? "revenue_asc" : "revenue_desc";
-  const revenueSortHref = buildHref({ status, tier, q: search, sort: nextRevenueSort, page: undefined });
+  const revenueSortHref = buildHref({ status, tier, q: search, sort: nextRevenueSort, month, year, page: undefined });
 
   const nextRatingSort = activeSort === "rating_desc" ? "rating_asc" : "rating_desc";
-  const ratingSortHref = buildHref({ status, tier, q: search, sort: nextRatingSort, page: undefined });
+  const ratingSortHref = buildHref({ status, tier, q: search, sort: nextRatingSort, month, year, page: undefined });
+
+  // Serialize data for client component
+  const serializedRows: SellerRowData[] = requests.map((r) => {
+    const tierColor = tierColorMap.get(r.user.sellerTier) ?? "gray";
+    const tierColorClass = BADGE_COLOR_CLASSES[tierColor] ?? "bg-gray-100 text-gray-600";
+    const rt = sellerRatingMap.get(r.userId);
+    return {
+      requestId:    r.id,
+      userId:       r.userId,
+      fullName:     r.user.fullName,
+      email:        r.user.email,
+      category:     r.category,
+      status:       r.status,
+      tierLabel:    tierLabelMap.get(r.user.sellerTier) ?? r.user.sellerTier,
+      tierColorClass,
+      productUsed:  productCountMap.get(r.userId) ?? 0,
+      productMax:   maxProductsMap.get(r.userId) ?? 3,
+      revenue:      revenueMap.get(r.userId) ?? 0,
+      avgRating:    rt?.avg ?? 0,
+      reviewCount:  rt?.count ?? 0,
+      shopLocked:   shopLockMap.get(r.userId) ?? false,
+      createdAt:    r.createdAt.toISOString(),
+    };
+  });
+
+  const clearDateHref = buildHref({ status, tier, q: search, sort: activeSort, page: undefined });
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Danh sách người bán</h1>
-        <span className="text-sm text-gray-500">{total.toLocaleString("vi-VN")} tổng</span>
+      {/* ── Header row: title + date filter ── */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Danh sách người bán</h1>
+          <span className="text-sm text-gray-500">{total.toLocaleString("vi-VN")} tổng</span>
+        </div>
+
+        {/* Revenue date filter — right side */}
+        <form method="get" action="/admin/sellers" className="flex items-center gap-2 flex-wrap">
+          {status    && <input type="hidden" name="status" value={status} />}
+          {tier      && <input type="hidden" name="tier"   value={tier} />}
+          {search    && <input type="hidden" name="q"      value={search} />}
+          {activeSort && <input type="hidden" name="sort"  value={activeSort} />}
+
+          <span className="text-xs text-gray-500 whitespace-nowrap">Lọc doanh số:</span>
+
+          <select
+            name="month"
+            defaultValue={month ?? ""}
+            className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:border-violet-400 focus:outline-none transition-colors"
+          >
+            <option value="">Tháng</option>
+            {MONTHS.map((label, idx) => (
+              <option key={idx + 1} value={String(idx + 1)}>{label}</option>
+            ))}
+          </select>
+
+          <select
+            name="year"
+            defaultValue={year ?? ""}
+            className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:border-violet-400 focus:outline-none transition-colors"
+          >
+            <option value="">Năm</option>
+            {YEARS.map((y) => (
+              <option key={y} value={String(y)}>{y}</option>
+            ))}
+          </select>
+
+          <button
+            type="submit"
+            className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-medium hover:bg-violet-700 transition-colors"
+          >
+            Lọc
+          </button>
+
+          {hasDateFilter && (
+            <a
+              href={clearDateHref}
+              className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors"
+            >
+              Xóa lọc
+            </a>
+          )}
+        </form>
       </div>
 
       {/* ── Search + Tier filter ── */}
       <form method="get" action="/admin/sellers" className="flex items-center gap-2 flex-wrap">
         {status && <input type="hidden" name="status" value={status} />}
+        {month  && <input type="hidden" name="month"  value={month} />}
+        {year   && <input type="hidden" name="year"   value={year} />}
         <div className="relative">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
@@ -215,30 +288,22 @@ export default async function AdminSellersPage({
             className="w-72 rounded-lg border border-gray-200 bg-white pl-9 pr-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-violet-500 focus:outline-none transition-colors"
           />
         </div>
-        <button
-          type="submit"
-          className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
-        >
+        <button type="submit" className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors">
           Tìm kiếm
         </button>
         {search && (
-          <a
-            href={buildHref({ status, tier })}
-            className="px-3 py-2 rounded-lg border border-gray-200 text-xs text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors"
-          >
+          <a href={buildHref({ status, tier, month, year })} className="px-3 py-2 rounded-lg border border-gray-200 text-xs text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
             Xóa
           </a>
         )}
 
         <div className="h-5 w-px bg-gray-200 mx-1" />
 
-        {/* Tier chips — dynamic từ DB */}
+        {/* Tier chips */}
         <a
-          href={buildHref({ status, tier: undefined, q: search })}
+          href={buildHref({ status, tier: undefined, q: search, month, year })}
           className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-            !tier
-              ? "bg-[#7C3AED] text-white"
-              : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
+            !tier ? "bg-[#7C3AED] text-white" : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
           }`}
         >
           Tất cả hạng
@@ -246,11 +311,9 @@ export default async function AdminSellersPage({
         {tierDefs.map(({ key, label }) => (
           <a
             key={key}
-            href={buildHref({ status, tier: key, q: search })}
+            href={buildHref({ status, tier: key, q: search, month, year })}
             className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-              tier === key
-                ? "bg-[#7C3AED] text-white"
-                : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
+              tier === key ? "bg-[#7C3AED] text-white" : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
             }`}
           >
             {label}
@@ -269,7 +332,7 @@ export default async function AdminSellersPage({
         ].map(({ key, label }) => (
           <Link
             key={key}
-            href={buildHref({ status: key || undefined, tier, q: search })}
+            href={buildHref({ status: key || undefined, tier, q: search, month, year })}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               status === key || (!status && !key)
                 ? "bg-[#7C3AED] text-white"
@@ -281,135 +344,22 @@ export default async function AdminSellersPage({
         ))}
       </div>
 
-      <div className="rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Ngày đăng ký</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Người dùng</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Danh mục</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Trạng thái</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Hạng</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Slot gian hàng</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">
-                <Link
-                  href={revenueSortHref}
-                  className="inline-flex items-center gap-1 justify-end hover:text-violet-600 transition-colors"
-                >
-                  Tổng doanh số
-                  {activeSort === "revenue_desc" ? (
-                    <ChevronDown size={13} strokeWidth={2.5} className="text-violet-600" />
-                  ) : activeSort === "revenue_asc" ? (
-                    <ChevronUp size={13} strokeWidth={2.5} className="text-violet-600" />
-                  ) : (
-                    <ChevronsUpDown size={13} strokeWidth={2} className="text-gray-400" />
-                  )}
-                </Link>
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">
-                <Link
-                  href={ratingSortHref}
-                  className="inline-flex items-center gap-1 hover:text-violet-600 transition-colors"
-                >
-                  Đánh giá TB
-                  {activeSort === "rating_desc" ? (
-                    <ChevronDown size={13} strokeWidth={2.5} className="text-violet-600" />
-                  ) : activeSort === "rating_asc" ? (
-                    <ChevronUp size={13} strokeWidth={2.5} className="text-violet-600" />
-                  ) : (
-                    <ChevronsUpDown size={13} strokeWidth={2} className="text-gray-400" />
-                  )}
-                </Link>
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Shop</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {requests.map((r, i) => (
-              <tr key={r.id} className={`${i !== 0 ? "border-t border-gray-200" : ""} hover:bg-gray-100 transition-colors`}>
-                <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{formatDate(r.createdAt)}</td>
-                <td className="px-4 py-3">
-                  <p className="text-sm text-gray-900">{r.user.fullName}</p>
-                  <p className="text-[11px] text-gray-500">{r.user.email}</p>
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-500">{r.category}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_STYLES[r.status] ?? ""}`}>
-                    {STATUS_LABELS[r.status] ?? r.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  {r.status === "APPROVED" ? (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${BADGE_COLOR_CLASSES[tierColorMap.get(r.user.sellerTier) ?? "gray"] ?? "bg-gray-100 text-gray-600"}`}>
-                      {tierLabelMap.get(r.user.sellerTier) ?? r.user.sellerTier}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-gray-400">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  {r.status === "APPROVED" ? (() => {
-                    const used = productCountMap.get(r.userId) ?? 0;
-                    const max  = maxProductsMap.get(r.userId) ?? 3;
-                    const full = used >= max;
-                    return (
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${
-                        full
-                          ? "bg-red-50 text-red-600 border-red-200"
-                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      }`}>
-                        {used}/{max}
-                      </span>
-                    );
-                  })() : (
-                    <span className="text-xs text-gray-400">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {r.status === "APPROVED" ? (
-                    <span className="text-sm font-semibold text-emerald-700">
-                      {formatVnd(revenueMap.get(r.userId) ?? 0)}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-gray-400">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  {r.status === "APPROVED" ? (() => {
-                    const rt = sellerRatingMap.get(r.userId);
-                    if (!rt || rt.count === 0) return <span className="text-xs text-gray-300">—</span>;
-                    return (
-                      <div className="flex items-center gap-1">
-                        <span className="text-amber-400 text-sm leading-none">★</span>
-                        <span className="text-xs font-semibold text-amber-500">{rt.avg.toFixed(1)}</span>
-                        <span className="text-[10px] text-gray-400">({rt.count})</span>
-                      </div>
-                    );
-                  })() : (
-                    <span className="text-xs text-gray-400">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  {r.status === "APPROVED" ? (
-                    <ShopLockAdminButton
-                      requestId={r.id}
-                      locked={shopLockMap.get(r.userId) ?? false}
-                    />
-                  ) : (
-                    <span className="text-xs text-gray-400">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Link href={`/admin/sellers/${r.id}`} className="text-xs text-[#7C3AED] hover:text-[#A855F7]">
-                    {r.status === "PENDING" ? "Duyệt" : "Chi tiết"}
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* ── Date filter indicator ── */}
+      {hasDateFilter && (
+        <div className="flex items-center gap-2">
+          <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200">
+            Doanh số: {MONTHS[(monthNum ?? 1) - 1]} {yearNum}
+          </span>
+          <a href={clearDateHref} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">✕ Xóa</a>
+        </div>
+      )}
+
+      <SellersTableClient
+        rows={serializedRows}
+        revenueSortHref={revenueSortHref}
+        ratingSortHref={ratingSortHref}
+        activeSort={activeSort}
+      />
 
       {totalPages > 1 && (
         <Pagination
@@ -417,10 +367,12 @@ export default async function AdminSellersPage({
           totalPages={totalPages}
           basePath="/admin/sellers"
           searchParams={{
-            ...(status     ? { status }         : {}),
-            ...(tier       ? { tier }           : {}),
-            ...(search     ? { q: search }      : {}),
+            ...(status     ? { status }           : {}),
+            ...(tier       ? { tier }             : {}),
+            ...(search     ? { q: search }        : {}),
             ...(activeSort ? { sort: activeSort } : {}),
+            ...(month      ? { month }            : {}),
+            ...(year       ? { year }             : {}),
           }}
         />
       )}
