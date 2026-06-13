@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { GraduationCap, Users } from "lucide-react";
 import { formatVnd } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 
 export type CourseCardData = {
   id: string;
@@ -145,7 +146,7 @@ export default function CourseSlider({ courses }: { courses?: CourseCardData[] }
                 {course.thumbnail ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
-                    src={course.thumbnail}
+                    src={r2Url(course.thumbnail)}
                     alt={course.name}
                     style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }}
                   />
