@@ -68,6 +68,11 @@ export default async function AdminSellerProductDetailPage({
 
   if (!product) notFound();
 
+  const sellerRequest = await prisma.sellerRequest.findFirst({
+    where: { userId: product.seller.id, status: "APPROVED" },
+    select: { id: true },
+  });
+
   // Review stats (always all ratings — for summary + distribution bar)
   const reviewDistribution = await prisma.review.groupBy({
     by: ["rating"],
@@ -187,7 +192,7 @@ export default async function AdminSellerProductDetailPage({
           <h1 className="text-2xl font-bold text-gray-900">{product.name}</h1>
           <p className="text-sm text-gray-500 mt-1">
             Seller:{" "}
-            <Link href={`/admin/sellers/${product.seller.id}`} className="text-blue-600 hover:underline">
+            <Link href={sellerRequest ? `/admin/sellers/${sellerRequest.id}` : `/admin/sellers`} className="text-blue-600 hover:underline">
               {product.seller.fullName}
             </Link>
             {" "}·{" "}{product.seller.email}
