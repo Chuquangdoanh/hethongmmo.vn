@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PenLine, ExternalLink, Send, AlertTriangle, CheckCircle, Save, Camera, Loader2 } from "lucide-react";
+import { r2Url } from "@/lib/utils/image-url";
 
 interface Props {
   id: string;
@@ -107,7 +108,7 @@ export default function ProfileForm({
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={avatarUrl}
+              src={r2Url(avatarUrl)}
               alt="Avatar"
               className="w-16 h-16 rounded-full object-cover ring-2 ring-white shadow-md"
             />

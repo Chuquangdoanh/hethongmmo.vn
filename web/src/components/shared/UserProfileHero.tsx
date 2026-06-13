@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatVnd, formatDate } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import { Wallet, TrendingUp, TrendingDown, Calendar } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -70,7 +71,7 @@ export default function UserProfileHero({
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={avatarUrl}
+              src={r2Url(avatarUrl)}
               alt={fullName}
               className="w-16 h-16 rounded-full object-cover shrink-0 shadow-lg ring-2 ring-white/20"
             />

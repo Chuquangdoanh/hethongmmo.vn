@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import { getCachedPageVisibility } from "@/lib/services/public-page-config.service";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
+import { r2Url } from "@/lib/utils/image-url";
 import UserMenu from "./UserMenu";
 import MobileMenu from "./MobileMenu";
 import NavLinks from "./NavLinks";
@@ -40,7 +41,7 @@ export default async function Header() {
     });
     if (row) {
       balance   = Number(row.balance);
-      avatarUrl = row.avatarUrl ?? null;
+      avatarUrl = r2Url(row.avatarUrl);
     }
   }
 

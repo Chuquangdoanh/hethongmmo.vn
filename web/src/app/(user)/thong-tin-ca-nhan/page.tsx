@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatVnd } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import {
   Mail, Phone, User, ShieldCheck, Store, CheckCircle,
   Clock, XCircle, Plus, Wallet, ExternalLink, Send,
@@ -95,7 +96,7 @@ export default async function ThongTinCaNhanPage() {
                 {user.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={user.avatarUrl}
+                    src={r2Url(user.avatarUrl)}
                     alt={user.fullName}
                     className="w-20 h-20 rounded-full object-cover ring-2 ring-white shadow-md mb-3"
                   />

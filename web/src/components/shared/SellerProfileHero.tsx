@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import { TrendingUp, CheckCircle, Clock, Package } from "lucide-react";
 const COLOR_MAP: Record<string, string> = {
   gray:   "border-gray-400/50 text-gray-300",
@@ -66,7 +67,7 @@ export default async function SellerProfileHero({ userId, activeTab }: Props) {
           {user.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={user.avatarUrl}
+              src={r2Url(user.avatarUrl)}
               alt={user.fullName ?? ""}
               className="w-16 h-16 rounded-full object-cover shrink-0 shadow-lg ring-2 ring-white/20"
             />
