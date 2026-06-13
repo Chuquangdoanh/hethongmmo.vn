@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { authConfig } from "@/lib/auth/config";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { trackRateHit } from "@/lib/security/rate-alert";
 
 // ── Rate limiter factory (Edge-compatible) ────────────────────────────────────
 //
@@ -69,6 +70,18 @@ async function allow(limiter: Ratelimit | null, key: string): Promise<boolean> {
   } catch {
     return true; // Upstash unreachable → fail-open
   }
+}
+
+// Wrapper: check rate limit + fire-and-forget alert khi bị block
+async function checkAndAllow(
+  limiter: Ratelimit | null,
+  key: string,
+  tier: string,
+  pathname: string,
+): Promise<boolean> {
+  const ok = await allow(limiter, key);
+  if (!ok) trackRateHit(tier, key, pathname);
+  return ok;
 }
 
 function r429(): NextResponse {
@@ -193,31 +206,31 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
       pathname === "/api/auth/error";
 
     if (pathname.startsWith("/api/auth/") && !isAuthReadOnly) {
-      if (!(await allow(L.auth, `auth:${ip}`))) return r429();
+      if (!(await checkAndAllow(L.auth, `auth:${ip}`, "auth", pathname))) return r429();
     } else if (
       pathname === "/api/seller/withdrawal" ||
       pathname === "/api/seller/buy-slots" ||
       pathname.startsWith("/api/user/change-password") ||
       pathname.startsWith("/api/user/2fa/")
     ) {
-      if (!(await allow(L.sensitive, `sensitive:${key}`))) return r429();
+      if (!(await checkAndAllow(L.sensitive, `sensitive:${key}`, "sensitive", pathname))) return r429();
     } else if (pathname.startsWith("/api/chats/")) {
-      if (!(await allow(L.chat, `chat:${key}`))) return r429();
+      if (!(await checkAndAllow(L.chat, `chat:${key}`, "chat", pathname))) return r429();
     } else if (
       pathname.startsWith("/api/storage/") ||
       pathname.includes("/upload") ||
       pathname.includes("/secure-image") ||
       pathname.includes("/from-url")
     ) {
-      if (!(await allow(L.storage, `storage:${key}`))) return r429();
+      if (!(await checkAndAllow(L.storage, `storage:${key}`, "storage", pathname))) return r429();
     } else if (pathname.startsWith("/api/admin/")) {
-      if (!(await allow(L.admin, `admin:${key}`))) return r429();
+      if (!(await checkAndAllow(L.admin, `admin:${key}`, "admin", pathname))) return r429();
     } else if (
       pathname.startsWith("/api/user/") ||
       pathname.startsWith("/api/seller/") ||
       pathname.startsWith("/api/orders")
     ) {
-      if (!(await allow(L.user, `user:${key}`))) return r429();
+      if (!(await checkAndAllow(L.user, `user:${key}`, "user", pathname))) return r429();
     } else if (
       pathname.startsWith("/api/products/") ||
       pathname.startsWith("/api/ticker") ||
@@ -225,9 +238,9 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
       pathname.startsWith("/api/dich-vu") ||
       pathname.startsWith("/api/courses")
     ) {
-      if (!(await allow(L.public, `pub:${ip}`))) return r429();
+      if (!(await checkAndAllow(L.public, `pub:${ip}`, "public", pathname))) return r429();
     } else if (!isAuthReadOnly) {
-      if (!(await allow(L.fallback, `gen:${ip}`))) return r429();
+      if (!(await checkAndAllow(L.fallback, `gen:${ip}`, "fallback", pathname))) return r429();
     }
   }
 

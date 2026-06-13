@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { purchaseProduct } from "@/lib/services/purchase.service";
 import { orderRatelimit, checkRateLimit } from "@/lib/security/rate-limit";
+import { trackRateHit } from "@/lib/security/rate-alert";
 import { AppError } from "@/lib/errors";
 import { apiOk, apiList, apiCatch, apiValidationError, apiError } from "@/lib/api-response";
 import { getDiscountInfo, applyDiscount } from "@/lib/utils/discount";
@@ -77,10 +78,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const session = await auth();
     const me = requireUser(session);
 
-    // Rate limit: 5 purchases per minute per user
+    // Rate limit: 20 lần/phút per userId — alert Telegram khi bị spam
     const rl = await checkRateLimit(orderRatelimit, `orders:${me.id}`);
     if (!rl.success) {
-      return apiError("Quá nhiều yêu cầu. Vui lòng thử lại sau.", "RATE_LIMITED", 429);
+      trackRateHit("order", `orders:${me.id}`, "/api/orders");
+      return apiError("Quá nhiều yêu cầu. Vui lòng thử lại sau.", "RATE_LIMITED", 429, { "Retry-After": "60" });
     }
 
     const body: unknown = await req.json();

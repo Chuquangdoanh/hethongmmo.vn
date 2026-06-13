@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatVnd } from "@/lib/utils/format";
+import { toast } from "@/components/shared/Toaster";
 
 interface WarrantyOption { name: string; price: number; }
 interface DeviceVariant { name: string; price: number; }
@@ -60,6 +61,17 @@ export default function ServiceOrderForm({
   const [errorCode, setErrorCode] = useState("");
   const [isBalanceError, setIsBalanceError] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [cooldown, setCooldown] = useState(0);
+
+  const startCooldown = useCallback((seconds: number) => {
+    setCooldown(seconds);
+    const iv = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) { clearInterval(iv); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
   const [phoneTouched, setPhoneTouched]     = useState(false);
   const [warrantyTouched, setWarrantyTouched] = useState(false);
   const [reportSent, setReportSent] = useState(false);
@@ -149,7 +161,11 @@ export default function ServiceOrderForm({
       if (!res.ok || !json.data?.orderId) {
         const code = json.code ?? "";
         setErrorCode(code);
-        if (code === "INSUFFICIENT_BALANCE") {
+        if (code === "RATE_LIMITED") {
+          const retryAfter = parseInt(res.headers.get("Retry-After") ?? "60", 10);
+          toast.warn("Quá nhiều yêu cầu", "Vui lòng chờ trước khi đặt hàng tiếp.", retryAfter);
+          startCooldown(retryAfter);
+        } else if (code === "INSUFFICIENT_BALANCE") {
           setIsBalanceError(true);
           setError(json.error ?? "Số dư không đủ để đặt hàng.");
         } else if (code === "DEVICE_REQUIRED" || code === "INVALID_DEVICE") {
@@ -455,10 +471,16 @@ export default function ServiceOrderForm({
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || cooldown > 0}
         className="w-full py-3 rounded-lg bg-[#FF4500] text-white text-sm font-semibold hover:bg-[#D03A00] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
       >
-        {loading ? "Đang xử lý..." : isLoggedIn ? "Đặt hàng ngay" : "Đăng nhập để mua"}
+        {loading
+          ? "Đang xử lý..."
+          : cooldown > 0
+            ? `Vui lòng chờ ${cooldown}s...`
+            : isLoggedIn
+              ? "Đặt hàng ngay"
+              : "Đăng nhập để mua"}
       </button>
 
       {!isLoggedIn && (

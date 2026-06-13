@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { formatVnd } from "@/lib/utils/format";
+import { toast } from "@/components/shared/Toaster";
 
 interface Props {
   orderType: "COURSE" | "TUTTRICK" | "MMO_PRODUCT" | "SELLER_PRODUCT";
@@ -144,6 +145,17 @@ export default function SimpleOrderButton({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<OrderResult | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+
+  const startCooldown = useCallback((seconds: number) => {
+    setCooldown(seconds);
+    const iv = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) { clearInterval(iv); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
 
   async function handleOrder() {
     if (!isLoggedIn) {
@@ -162,9 +174,15 @@ export default function SimpleOrderButton({
           idempotencyKey: crypto.randomUUID(),
         }),
       });
-      const json = await res.json() as { data?: OrderResult; error?: string };
+      const json = await res.json() as { data?: OrderResult; error?: string; code?: string };
       if (!res.ok || !json.data?.orderId) {
-        setError(json.error ?? "Đặt hàng thất bại, thử lại sau.");
+        if (json.code === "RATE_LIMITED") {
+          const retryAfter = parseInt(res.headers.get("Retry-After") ?? "60", 10);
+          toast.warn("Quá nhiều yêu cầu", `Vui lòng chờ trước khi thử lại.`, retryAfter);
+          startCooldown(retryAfter);
+        } else {
+          setError(json.error ?? "Đặt hàng thất bại, thử lại sau.");
+        }
         return;
       }
       if (json.data.deliveredContent) {
@@ -190,7 +208,7 @@ export default function SimpleOrderButton({
       <div className="space-y-1.5">
         <button
           onClick={handleOrder}
-          disabled={loading}
+          disabled={loading || cooldown > 0}
           className={`w-full py-2.5 rounded-xl text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-150 ${
             isDark
               ? "bg-[#0f172a] text-white hover:bg-[#1e293b] active:scale-[0.98]"
@@ -199,13 +217,15 @@ export default function SimpleOrderButton({
         >
           {loading
             ? "Đang xử lý..."
-            : isLoggedIn
-              ? isDark
-                ? "MUA NGAY"
-                : `Mua ngay · ${formatVnd(price)}`
-              : isDark
-                ? "🔑 Đăng nhập để mua"
-                : "Đăng nhập để mua"}
+            : cooldown > 0
+              ? `Vui lòng chờ ${cooldown}s...`
+              : isLoggedIn
+                ? isDark
+                  ? "MUA NGAY"
+                  : `Mua ngay · ${formatVnd(price)}`
+                : isDark
+                  ? "🔑 Đăng nhập để mua"
+                  : "Đăng nhập để mua"}
         </button>
         {error && <p className="text-xs text-[#EF4444]">{error}</p>}
       </div>

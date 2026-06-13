@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
 import Providers from "@/components/providers/Providers";
+import { Toaster } from "@/components/shared/Toaster";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -58,6 +59,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             is never included in the blur/fade animation. */}
         <Providers>
           {children}
+          <Toaster />
         </Providers>
       </body>
     </html>

@@ -24,8 +24,13 @@ export function apiSuccess(message = "Thành công"): NextResponse {
 }
 
 /** Standard error response */
-export function apiError(message: string, code: string, status: number): NextResponse {
-  return NextResponse.json({ error: message, code }, { status });
+export function apiError(
+  message: string,
+  code: string,
+  status: number,
+  headers?: Record<string, string>,
+): NextResponse {
+  return NextResponse.json({ error: message, code }, { status, headers });
 }
 
 /** Catch-block helper — converts any thrown error to a response */
