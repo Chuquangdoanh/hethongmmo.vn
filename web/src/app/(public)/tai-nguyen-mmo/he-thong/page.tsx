@@ -14,6 +14,7 @@ export const metadata: Metadata = buildMeta({
   title: "Tài Nguyên Hệ Thống MMO | Hệ Thống MMO",
   description: "Nhà cung cấp tài nguyên MMO chính thức — tài khoản, tool, khóa học chất lượng cao, giao hàng tự động.",
   url: "/tai-nguyen-mmo/he-thong",
+  image: "/images/hethong.png",
 });
 
 const SORT_OPTIONS = [
