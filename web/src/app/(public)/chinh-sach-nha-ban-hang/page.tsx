@@ -8,6 +8,7 @@ export const metadata: Metadata = buildMeta({
   title: "Chính Sách Nhà Bán Hàng | hethongmmo.vn",
   description: "Chính sách dành cho nhà bán hàng trên nền tảng MMO Marketplace hethongmmo.vn — quy định, quyền lợi và trách nhiệm.",
   url: "/chinh-sach-nha-ban-hang",
+  image: "/images/hethong.png",
 });
 
 type SectionType =

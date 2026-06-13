@@ -11,6 +11,7 @@ export const metadata: Metadata = buildMeta({
   title: "Chính Sách Bảo Mật | hethongmmo.vn",
   description: "Chính sách bảo mật và quyền riêng tư của nền tảng MMO Marketplace hethongmmo.vn. Cập nhật lần cuối: 02/06/2026.",
   url: "/chinh-sach",
+  image: "/images/hethong.png",
 });
 
 type SectionType =

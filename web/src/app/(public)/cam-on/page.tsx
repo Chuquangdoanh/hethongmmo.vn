@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import {
   Home, ShoppingBag, GraduationCap, Megaphone, Monitor,
   Shield, Lock, RotateCcw, Settings, RefreshCw,
@@ -7,8 +8,14 @@ import {
   Search, Gem, Phone, Gift, Heart,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { buildMeta } from "@/lib/utils/seo";
 
-export const metadata = { title: "Cảm ơn — Hệ Thống MMO" };
+export const metadata: Metadata = buildMeta({
+  title: "Cảm Ơn Quý Khách | Hệ Thống MMO",
+  description: "Cảm ơn bạn đã tin tưởng và sử dụng dịch vụ tại hethongmmo.vn — nền tảng MMO hàng đầu Việt Nam.",
+  url: "/cam-on",
+  image: "/images/hethong.png",
+});
 
 type PType = "dich-vu" | "khoa-hoc" | "quang-cao" | "networks";
 

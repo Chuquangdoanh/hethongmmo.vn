@@ -7,6 +7,7 @@ export const metadata: Metadata = buildMeta({
   title: "Điều Khoản Dịch Vụ | hethongmmo.vn",
   description: "Điều khoản sử dụng nền tảng MMO Marketplace hethongmmo.vn. Cập nhật lần cuối: 06/06/2026.",
   url: "/dieu-khoan",
+  image: "/images/hethong.png",
 });
 
 const SECTIONS = [

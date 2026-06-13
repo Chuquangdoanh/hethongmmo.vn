@@ -7,6 +7,7 @@ export const metadata: Metadata = buildMeta({
   title: "Giới Thiệu | Hệ Thống MMO",
   description: "Tìm hiểu về hethongmmo.vn — nền tảng dịch vụ mạng xã hội, khóa học MMO và tài nguyên số #1 Việt Nam, uy tín từ 2019.",
   url: "/gioi-thieu",
+  image: "/images/hethong.png",
 });
 
 const VALUES = [
