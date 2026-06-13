@@ -13,6 +13,7 @@ import {
   BadgeCheck, Package,
 } from "lucide-react";
 import TestimonialsSection, { type TestimonialItem } from "@/components/shared/TestimonialsSection";
+import SafeHtml from "@/components/shared/SafeHtml";
 
 const PLATFORM_LABELS: Record<string, string> = {
   FACEBOOK: "Facebook", TIKTOK: "TikTok", INSTAGRAM: "Instagram",
@@ -115,7 +116,7 @@ function ServiceCard({
             <h3 className="text-sm font-bold text-[#0f172a] line-clamp-2 leading-snug flex-1 group-hover:text-[#0066ff] transition-colors">
               {service.name}
             </h3>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#000000] text-white shrink-0">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-white text-warning border border-warning/40 shrink-0">
               <Star size={10} strokeWidth={0} fill="#f59e0b" /> {service.rating.toFixed(1)}
             </span>
           </div>
@@ -410,18 +411,23 @@ function ServiceOrderPanel({
     <div ref={panelRef} className="col-span-full mt-2 scroll-mt-24 panel-fade-in">
       <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-md overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#1e40af] to-[#7C3AED] px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-              <Zap size={20} strokeWidth={1.75} className="text-white" />
+        <div className="bg-[#F5F3F7] px-6 py-4 flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#7C3AED]/10 flex items-center justify-center shrink-0 mt-0.5">
+              <Zap size={20} strokeWidth={1.75} className="text-[#7C3AED]" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">{service.name}</h2>
-              <p className="text-[11px] text-white/70">{PLATFORM_LABELS[service.platform] ?? service.platform} · {service.category}</p>
+              <h2 className="text-base font-bold text-[#0f172a]">{service.name}</h2>
+              <p className="text-[11px] text-[#64748b]">{PLATFORM_LABELS[service.platform] ?? service.platform} · {service.category}</p>
+              {service.description && (
+                <div className="mt-1.5 text-[12px] text-[#475569] leading-relaxed line-clamp-4 [&_*]:!text-[12px] [&_p]:!mb-1">
+                  <SafeHtml html={service.description} />
+                </div>
+              )}
             </div>
           </div>
-          <button type="button" onClick={onClose} className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors">
-            <X size={14} strokeWidth={2.5} className="text-white" />
+          <button type="button" onClick={onClose} className="w-7 h-7 rounded-full bg-[#0f172a]/8 hover:bg-[#0f172a]/15 flex items-center justify-center transition-colors shrink-0 mt-0.5">
+            <X size={14} strokeWidth={2.5} className="text-[#475569]" />
           </button>
         </div>
 
