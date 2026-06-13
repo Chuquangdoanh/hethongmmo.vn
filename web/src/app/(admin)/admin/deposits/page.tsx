@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import ResolveUnmatchedButton from "./_components/ResolveUnmatchedButton";
+import ManualDepositButton from "./_components/ManualDepositButton";
 
 export const metadata: Metadata = { title: "Admin — Nạp tiền" };
 
@@ -84,7 +85,10 @@ export default async function AdminDepositsPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Nạp tiền</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-gray-900">Nạp tiền</h1>
+        <ManualDepositButton />
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4">
