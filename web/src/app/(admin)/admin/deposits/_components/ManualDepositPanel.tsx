@@ -19,6 +19,8 @@ interface Meta {
   totalPages: number;
 }
 
+type ActionMode = "add" | "deduct";
+
 const PAGE_SIZE = 15;
 
 export default function ManualDepositPanel() {
@@ -32,13 +34,14 @@ export default function ManualDepositPanel() {
 
   // inline action
   const [activeId, setActiveId]       = useState<string | null>(null);
+  const [activeMode, setActiveMode]   = useState<ActionMode>("add");
   const [amount, setAmount]           = useState("");
   const [note, setNote]               = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
-  const [successMap, setSuccessMap]   = useState<Record<string, number>>({});
+  const [resultMap, setResultMap]     = useState<Record<string, { mode: ActionMode; amount: number }>>({});
   const [isPending, startTransition]  = useTransition();
 
-  // debounce search 350ms
+  // debounce
   useEffect(() => {
     const t = setTimeout(() => { setDebouncedQ(query); setPage(1); }, 350);
     return () => clearTimeout(t);
@@ -59,51 +62,54 @@ export default function ManualDepositPanel() {
       .finally(() => setLoading(false));
   }, [debouncedQ, page]);
 
-  function openAction(id: string) {
-    setActiveId(id); setAmount(""); setNote(""); setActionError(null);
+  function openAction(id: string, mode: ActionMode) {
+    setActiveId(id); setActiveMode(mode);
+    setAmount(""); setNote(""); setActionError(null);
   }
   function closeAction() { setActiveId(null); setActionError(null); }
 
-  function handleDeposit(user: UserRow) {
+  function handleSubmit(user: UserRow) {
     const amt = parseInt(amount.replace(/\D/g, ""), 10);
     if (!amt || amt < 1_000) { setActionError("Tối thiểu 1.000đ"); return; }
     if (!note.trim() || note.trim().length < 3) { setActionError("Ghi chú tối thiểu 3 ký tự"); return; }
     setActionError(null);
 
+    const url = activeMode === "add"
+      ? "/api/admin/deposits/manual"
+      : "/api/admin/balance/deduct";
+
     startTransition(async () => {
-      const res  = await fetch("/api/admin/deposits/manual", {
+      const res  = await fetch(url, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userEmail: user.email, amount: amt, note: note.trim() }),
       });
-      const json = (await res.json()) as { error?: string };
+      const json = (await res.json()) as { error?: string; data?: { newBalance?: number } };
       if (!res.ok) { setActionError(json.error ?? "Lỗi không xác định"); return; }
 
-      // Update balance locally
+      const delta = activeMode === "add" ? amt : -amt;
       setUsers((prev) =>
         prev.map((u) =>
-          u.id === user.id ? { ...u, balance: String(Number(u.balance) + amt) } : u
+          u.id === user.id ? { ...u, balance: String(Number(u.balance) + delta) } : u
         )
       );
-      setSuccessMap((prev) => ({ ...prev, [user.id]: amt }));
+      setResultMap((prev) => ({ ...prev, [user.id]: { mode: activeMode, amount: amt } }));
       setActiveId(null);
       router.refresh();
     });
   }
 
   const displayAmt = amount.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const isDeduct   = activeMode === "deduct";
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-3 border-b border-amber-100 bg-amber-50 flex items-center gap-3">
-        <div className="flex-1">
-          <p className="text-sm font-bold text-amber-900">Nạp tiền thủ công</p>
-          <p className="text-[11px] text-amber-700 mt-0.5">Tìm user → +Nạp tiền → nhập số tiền & ghi chú → Xác nhận</p>
-        </div>
+      <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3">
+        <p className="text-sm font-bold text-gray-900 flex-1">Nạp / Trừ tiền thủ công</p>
         {meta && (
-          <span className="text-[11px] text-amber-600 shrink-0">
+          <span className="text-[11px] text-gray-400 shrink-0">
             {meta.total.toLocaleString("vi-VN")} user
           </span>
         )}
@@ -119,7 +125,7 @@ export default function ManualDepositPanel() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Tìm email hoặc tên user..."
             suppressHydrationWarning
-            className="w-full pl-8 pr-8 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-amber-400 bg-white"
+            className="w-full pl-8 pr-8 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-violet-400 bg-white"
           />
           {query && (
             <button
@@ -142,7 +148,10 @@ export default function ManualDepositPanel() {
               <div className="h-3 bg-gray-100 rounded animate-pulse w-28" />
               <div className="h-2.5 bg-gray-100 rounded animate-pulse w-44" />
             </div>
-            <div className="w-14 h-7 bg-gray-100 rounded-lg animate-pulse shrink-0" />
+            <div className="flex gap-1.5">
+              <div className="w-16 h-7 bg-gray-100 rounded-lg animate-pulse" />
+              <div className="w-16 h-7 bg-gray-100 rounded-lg animate-pulse" />
+            </div>
           </div>
         ))}
 
@@ -156,15 +165,19 @@ export default function ManualDepositPanel() {
         {/* Rows */}
         {!loading && users.map((user) => {
           const isActive  = activeId === user.id;
-          const lastAmt   = successMap[user.id];
+          const lastResult = resultMap[user.id];
 
           return (
             <div key={user.id}>
               {/* User row */}
-              <div className={`px-4 py-3 flex items-center gap-3 transition-colors ${isActive ? "bg-amber-50" : "hover:bg-gray-50"}`}>
+              <div className={`px-4 py-3 flex items-center gap-3 transition-colors ${
+                isActive
+                  ? isDeduct ? "bg-red-50" : "bg-emerald-50"
+                  : "hover:bg-gray-50"
+              }`}>
                 {/* Avatar */}
-                <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                  <span className="text-[11px] font-bold text-amber-800">
+                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                  <span className="text-[11px] font-bold text-gray-600">
                     {(user.fullName || user.email)[0]?.toUpperCase() ?? "?"}
                   </span>
                 </div>
@@ -178,30 +191,55 @@ export default function ManualDepositPanel() {
                 {/* Balance */}
                 <div className="text-right shrink-0 mr-1 hidden sm:block">
                   <p className="text-[10px] text-gray-400">Số dư</p>
-                  <p className="text-sm font-semibold text-emerald-600 whitespace-nowrap">
+                  <p className="text-sm font-semibold text-gray-700 whitespace-nowrap">
                     {formatVnd(Number(user.balance))}
                   </p>
                 </div>
 
-                {/* Action button */}
-                <button
-                  onClick={() => isActive ? closeAction() : openAction(user.id)}
-                  className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                    isActive
-                      ? "border border-gray-200 text-gray-500 hover:bg-gray-100"
-                      : lastAmt
-                      ? "bg-emerald-100 text-emerald-700 cursor-default"
-                      : "bg-amber-500 text-white hover:bg-amber-600"
-                  }`}
-                  disabled={!!lastAmt && !isActive}
-                >
-                  {isActive ? "Hủy" : lastAmt ? `✓ +${formatVnd(lastAmt)}` : "+ Nạp tiền"}
-                </button>
+                {/* Action buttons */}
+                {isActive ? (
+                  <button
+                    onClick={closeAction}
+                    className="shrink-0 px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-500 hover:bg-gray-100 transition-colors"
+                  >
+                    Hủy
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {lastResult ? (
+                      <span className={`text-xs font-semibold ${lastResult.mode === "add" ? "text-emerald-600" : "text-red-500"}`}>
+                        {lastResult.mode === "add" ? "+" : "-"}{formatVnd(lastResult.amount)} ✓
+                      </span>
+                    ) : null}
+                    <button
+                      onClick={() => openAction(user.id, "add")}
+                      className="px-2.5 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600 transition-colors"
+                    >
+                      +Nạp
+                    </button>
+                    <button
+                      onClick={() => openAction(user.id, "deduct")}
+                      className="px-2.5 py-1.5 rounded-lg bg-red-500 text-white text-xs font-semibold hover:bg-red-600 transition-colors"
+                    >
+                      −Trừ
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Inline form */}
               {isActive && (
-                <div className="px-4 pb-4 pt-2 bg-amber-50 border-t border-amber-100 space-y-2">
+                <div className={`px-4 pb-4 pt-2 border-t space-y-2 ${
+                  isDeduct
+                    ? "bg-red-50 border-red-100"
+                    : "bg-emerald-50 border-emerald-100"
+                }`}>
+                  <p className={`text-[11px] font-semibold ${isDeduct ? "text-red-600" : "text-emerald-700"}`}>
+                    {isDeduct
+                      ? `Trừ tiền từ số dư của ${user.fullName || user.email}`
+                      : `Nạp tiền vào số dư của ${user.fullName || user.email}`}
+                  </p>
+
                   <div className="flex items-start gap-2 flex-wrap sm:flex-nowrap">
                     {/* Amount */}
                     <div className="relative flex-1 min-w-32">
@@ -213,7 +251,7 @@ export default function ManualDepositPanel() {
                         placeholder="Số tiền (VNĐ)"
                         suppressHydrationWarning
                         autoFocus
-                        className="w-full px-3 py-2 pr-5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-amber-400 bg-white"
+                        className="w-full px-3 py-2 pr-5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 bg-white"
                       />
                       <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-gray-400 pointer-events-none">đ</span>
                     </div>
@@ -225,23 +263,31 @@ export default function ManualDepositPanel() {
                       onChange={(e) => setNote(e.target.value)}
                       placeholder="Ghi chú lý do (bắt buộc)"
                       suppressHydrationWarning
-                      className="flex-[2] min-w-40 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-amber-400 bg-white"
+                      className="flex-2 min-w-40 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 bg-white"
                     />
 
                     {/* Confirm */}
                     <button
-                      onClick={() => handleDeposit(user)}
+                      onClick={() => handleSubmit(user)}
                       disabled={isPending || !amount || !note.trim()}
-                      className="shrink-0 px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                      className={`shrink-0 px-4 py-2 rounded-lg text-white text-sm font-semibold disabled:opacity-50 transition-colors ${
+                        isDeduct
+                          ? "bg-red-500 hover:bg-red-600"
+                          : "bg-emerald-500 hover:bg-emerald-600"
+                      }`}
                     >
                       {isPending ? "..." : "Xác nhận"}
                     </button>
                   </div>
 
-                  {/* Amount preview */}
+                  {/* Preview */}
                   {amount && parseInt(amount, 10) >= 1000 && (
-                    <p className="text-[11px] text-amber-700">
-                      Cộng <span className="font-bold">{formatVnd(parseInt(amount, 10))}</span> cho {user.fullName || user.email}
+                    <p className={`text-[11px] ${isDeduct ? "text-red-600" : "text-emerald-700"}`}>
+                      {isDeduct ? "Trừ" : "Cộng"}{" "}
+                      <span className="font-bold">{formatVnd(parseInt(amount, 10))}</span>
+                      {isDeduct && Number(user.balance) < parseInt(amount, 10) && (
+                        <span className="text-red-500 ml-1">— Số dư không đủ ({formatVnd(Number(user.balance))})</span>
+                      )}
                     </p>
                   )}
 
@@ -266,14 +312,14 @@ export default function ManualDepositPanel() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="px-2.5 py-1 rounded-lg border border-gray-200 text-xs text-gray-600 hover:border-amber-400 disabled:opacity-40 transition-colors"
+              className="px-2.5 py-1 rounded-lg border border-gray-200 text-xs text-gray-600 hover:border-gray-400 disabled:opacity-40 transition-colors"
             >
               ‹ Trước
             </button>
             <button
               onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
               disabled={page >= meta.totalPages}
-              className="px-2.5 py-1 rounded-lg border border-gray-200 text-xs text-gray-600 hover:border-amber-400 disabled:opacity-40 transition-colors"
+              className="px-2.5 py-1 rounded-lg border border-gray-200 text-xs text-gray-600 hover:border-gray-400 disabled:opacity-40 transition-colors"
             >
               Sau ›
             </button>
