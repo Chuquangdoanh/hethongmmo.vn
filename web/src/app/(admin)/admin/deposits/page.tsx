@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Search, X } from "lucide-react";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import ResolveUnmatchedButton from "./_components/ResolveUnmatchedButton";
 import ManualDepositPanel from "./_components/ManualDepositPanel";
+import DepositsSearchBar from "./_components/DepositsSearchBar";
 
 export const metadata: Metadata = { title: "Admin — Nạp tiền" };
 
@@ -110,34 +110,7 @@ export default async function AdminDepositsPage({
 
       {/* Search + Type filter row */}
       <div className="flex flex-col sm:flex-row gap-3">
-        {/* Search form — native GET, no client component needed */}
-        <form method="get" action="/admin/deposits" className="flex-1 flex gap-2">
-          {type && <input type="hidden" name="type" value={type} />}
-          <div className="relative flex-1">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              name="q"
-              defaultValue={search}
-              placeholder="Tìm email, họ tên, mã tham chiếu..."
-              className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#7C3AED] bg-white"
-            />
-          </div>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-[#7C3AED] text-white text-xs font-medium rounded-lg hover:bg-[#6D28D9] transition-colors"
-          >
-            Tìm
-          </button>
-          {search && (
-            <Link
-              href={type ? `/admin/deposits?type=${type}` : "/admin/deposits"}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-gray-500 hover:text-gray-700 flex items-center"
-            >
-              <X size={14} />
-            </Link>
-          )}
-        </form>
+        <DepositsSearchBar currentType={type ?? ""} currentQ={search} />
 
         {/* Type filter */}
         <div className="flex items-center gap-2 shrink-0">
@@ -170,8 +143,8 @@ export default async function AdminDepositsPage({
         </p>
       )}
 
-      {/* Manual deposit panel — user list with real-time search + inline action */}
-      {type === "MANUAL" && <ManualDepositPanel />}
+      {/* Manual deposit panel — user list filtered by top search bar */}
+      {type === "MANUAL" && <ManualDepositPanel search={search} />}
 
       {/* Table */}
       <div className="rounded-xl border border-gray-200 overflow-x-auto">

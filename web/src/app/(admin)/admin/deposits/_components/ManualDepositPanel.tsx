@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X } from "lucide-react";
 import { formatVnd } from "@/lib/utils/format";
 
 interface UserRow {
@@ -21,12 +20,14 @@ interface Meta {
 
 type ActionMode = "add" | "deduct";
 
+interface Props {
+  search: string;
+}
+
 const PAGE_SIZE = 15;
 
-export default function ManualDepositPanel() {
+export default function ManualDepositPanel({ search }: Props) {
   const router = useRouter();
-  const [query, setQuery]             = useState("");
-  const [debouncedQ, setDebouncedQ]   = useState("");
   const [page, setPage]               = useState(1);
   const [users, setUsers]             = useState<UserRow[]>([]);
   const [meta, setMeta]               = useState<Meta | null>(null);
@@ -41,17 +42,14 @@ export default function ManualDepositPanel() {
   const [resultMap, setResultMap]     = useState<Record<string, { mode: ActionMode; amount: number }>>({});
   const [isPending, startTransition]  = useTransition();
 
-  // debounce
-  useEffect(() => {
-    const t = setTimeout(() => { setDebouncedQ(query); setPage(1); }, 350);
-    return () => clearTimeout(t);
-  }, [query]);
+  // Reset page when search changes
+  useEffect(() => { setPage(1); }, [search]);
 
-  // fetch users
+  // Fetch users whenever search or page changes
   useEffect(() => {
     setLoading(true);
     const p = new URLSearchParams();
-    if (debouncedQ) p.set("search", debouncedQ);
+    if (search) p.set("search", search);
     p.set("page", String(page));
     p.set("limit", String(PAGE_SIZE));
 
@@ -60,7 +58,7 @@ export default function ManualDepositPanel() {
       .then((json) => { setUsers(json.data ?? []); setMeta(json.meta ?? null); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [debouncedQ, page]);
+  }, [search, page]);
 
   function openAction(id: string, mode: ActionMode) {
     setActiveId(id); setActiveMode(mode);
@@ -85,7 +83,7 @@ export default function ManualDepositPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userEmail: user.email, amount: amt, note: note.trim() }),
       });
-      const json = (await res.json()) as { error?: string; data?: { newBalance?: number } };
+      const json = (await res.json()) as { error?: string };
       if (!res.ok) { setActionError(json.error ?? "Lỗi không xác định"); return; }
 
       const delta = activeMode === "add" ? amt : -amt;
@@ -115,29 +113,6 @@ export default function ManualDepositPanel() {
         )}
       </div>
 
-      {/* Search */}
-      <div className="px-4 py-3 border-b border-gray-100">
-        <div className="relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Tìm email hoặc tên user..."
-            suppressHydrationWarning
-            className="w-full pl-8 pr-8 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-violet-400 bg-white"
-          />
-          {query && (
-            <button
-              onClick={() => setQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <X size={13} />
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* List */}
       <div className="divide-y divide-gray-100">
         {/* Skeleton */}
@@ -149,8 +124,8 @@ export default function ManualDepositPanel() {
               <div className="h-2.5 bg-gray-100 rounded animate-pulse w-44" />
             </div>
             <div className="flex gap-1.5">
-              <div className="w-16 h-7 bg-gray-100 rounded-lg animate-pulse" />
-              <div className="w-16 h-7 bg-gray-100 rounded-lg animate-pulse" />
+              <div className="w-14 h-7 bg-gray-100 rounded-lg animate-pulse" />
+              <div className="w-14 h-7 bg-gray-100 rounded-lg animate-pulse" />
             </div>
           </div>
         ))}
@@ -158,13 +133,13 @@ export default function ManualDepositPanel() {
         {/* Empty */}
         {!loading && users.length === 0 && (
           <div className="px-4 py-10 text-center text-sm text-gray-400">
-            {debouncedQ ? `Không tìm thấy user khớp với "${debouncedQ}"` : "Chưa có user nào"}
+            {search ? `Không tìm thấy user khớp với "${search}"` : "Chưa có user nào"}
           </div>
         )}
 
         {/* Rows */}
         {!loading && users.map((user) => {
-          const isActive  = activeId === user.id;
+          const isActive   = activeId === user.id;
           const lastResult = resultMap[user.id];
 
           return (
@@ -206,11 +181,11 @@ export default function ManualDepositPanel() {
                   </button>
                 ) : (
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {lastResult ? (
+                    {lastResult && (
                       <span className={`text-xs font-semibold ${lastResult.mode === "add" ? "text-emerald-600" : "text-red-500"}`}>
-                        {lastResult.mode === "add" ? "+" : "-"}{formatVnd(lastResult.amount)} ✓
+                        {lastResult.mode === "add" ? "+" : "−"}{formatVnd(lastResult.amount)} ✓
                       </span>
-                    ) : null}
+                    )}
                     <button
                       onClick={() => openAction(user.id, "add")}
                       className="px-2.5 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-semibold hover:bg-emerald-600 transition-colors"
@@ -286,7 +261,9 @@ export default function ManualDepositPanel() {
                       {isDeduct ? "Trừ" : "Cộng"}{" "}
                       <span className="font-bold">{formatVnd(parseInt(amount, 10))}</span>
                       {isDeduct && Number(user.balance) < parseInt(amount, 10) && (
-                        <span className="text-red-500 ml-1">— Số dư không đủ ({formatVnd(Number(user.balance))})</span>
+                        <span className="text-red-500 ml-1">
+                          — Số dư không đủ ({formatVnd(Number(user.balance))})
+                        </span>
                       )}
                     </p>
                   )}
