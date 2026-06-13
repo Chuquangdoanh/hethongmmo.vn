@@ -91,8 +91,8 @@ export default function TutTrickCard({ item, isLoggedIn, discountPct = 0 }: Prop
             <h3 className="text-sm font-bold text-[#0f172a] line-clamp-2 leading-snug flex-1">
               {item.name}
             </h3>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-[#0f172a] text-white shrink-0">
-              <Star size={10} fill="currentColor" className="text-[#fbbf24]" /> {item.rating.toFixed(1)}
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-white text-warning border border-warning/40 shrink-0">
+              <Star size={10} fill="currentColor" className="text-warning" /> {item.rating.toFixed(1)}
             </span>
           </div>
 
