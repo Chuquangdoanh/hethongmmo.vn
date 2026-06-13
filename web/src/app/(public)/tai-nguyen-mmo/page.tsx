@@ -25,7 +25,7 @@ export const metadata: Metadata = buildMeta({
   title: "Tài Nguyên MMO | Hệ Thống MMO",
   description: "Mua tài khoản, tool MMO, niche site an toàn — giao hàng tự động sau thanh toán. Hàng nghìn sản phẩm số chất lượng cao.",
   url: "/tai-nguyen-mmo",
-  image: "/images/dj-media-classroom.jpg",
+  image: "/images/hethongmmo.png",
 });
 
 const SORT_LABELS: Record<string, string> = {
