@@ -14,6 +14,7 @@ import {
 import ProductActions from "./_components/ProductActions";
 import RegisterSlotsModal from "./_components/RegisterSlotsModal";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
+import { r2Url } from "@/lib/utils/image-url";
 
 export const metadata: Metadata = { title: "Quản lý bán hàng" };
 
@@ -252,7 +253,7 @@ export default async function BanHangPage() {
                           <div className="shrink-0 w-11 h-11 rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
                             {p.imageUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                              <img src={r2Url(p.imageUrl)} alt={p.name} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
                                 <Package size={18} className="text-gray-400" />

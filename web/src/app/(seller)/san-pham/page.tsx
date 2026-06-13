@@ -7,6 +7,7 @@ import { formatVnd } from "@/lib/utils/format";
 import { Package, Plus } from "lucide-react";
 import Pagination from "@/components/shared/Pagination";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
+import { r2Url } from "@/lib/utils/image-url";
 
 export const metadata: Metadata = { title: "Quản lý sản phẩm" };
 
@@ -129,7 +130,7 @@ export default async function SellerSanPhamPage({
                             {p.imageUrl ? (
                               /* eslint-disable-next-line @next/next/no-img-element */
                               <img
-                                src={p.imageUrl}
+                                src={r2Url(p.imageUrl)}
                                 alt={p.name}
                                 className="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0"
                               />
