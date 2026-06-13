@@ -409,39 +409,7 @@ export default async function CamOnPage({
           </div>
         </div>
 
-        {/* ── DỊCH VỤ ĐỀ XUẤT ── */}
-        <div className="co-card" style={{ padding: "28px 24px 32px", marginBottom: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 24 }}>
-            <div style={{ flex: 1, height: 1, background: "linear-gradient(to right, transparent, #bfdbfe)" }} />
-            <h2 style={{ fontSize: 16, fontWeight: 800, color: "#1e40af", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
-              DỊCH VỤ ĐỀ XUẤT CHO BẠN
-            </h2>
-            <div style={{ flex: 1, height: 1, background: "linear-gradient(to left, transparent, #bfdbfe)" }} />
-          </div>
-          <div className="co-services-grid">
-            {RECOMMENDED.map((svc) => (
-              <div key={svc.title} style={{ borderRadius: 16, border: "1px solid #e2e8f0", overflow: "hidden", background: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,.04)" }}>
-                <div style={{ height: 110, background: svc.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {svc.icon}
-                </div>
-                <div style={{ padding: "14px 14px 16px" }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "#1e293b", marginBottom: 8 }}>{svc.title}</p>
-                  {svc.bullets.map((b) => (
-                    <p key={b} style={{ fontSize: 12, color: "#64748b", lineHeight: 1.6 }}>{b}</p>
-                  ))}
-                  <Link href={svc.href} style={{
-                    display: "block", textAlign: "center", marginTop: 12,
-                    padding: "8px 0", borderRadius: 8,
-                    background: "#2563eb", color: "#fff",
-                    fontSize: 13, fontWeight: 700, textDecoration: "none",
-                  }}>
-                    Xem ngay
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+       
 
         {/* ── STATS ── */}
         <div className="co-stats-grid">
