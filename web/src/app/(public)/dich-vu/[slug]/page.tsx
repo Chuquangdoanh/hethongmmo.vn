@@ -115,7 +115,7 @@ export default async function DichVuDetailPage({ params }: Props) {
     }),
     auth(),
     prisma.testimonial.findMany({
-      where: { type: "SERVICE", isActive: true },
+      where: { type: "SERVICE", isActive: true, service: { slug } },
       select: {
         id: true, category: true,
         reviewerName: true, reviewerRole: true,
@@ -123,11 +123,15 @@ export default async function DichVuDetailPage({ params }: Props) {
         content: true, rating: true, createdAt: true,
       },
       orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
-      take: 10,
     }),
   ]);
 
   if (!service) notFound();
+
+  // Tính sao trung bình từ testimonials CMS của dịch vụ này
+  const cmsAvgRating = testimonials.length > 0
+    ? testimonials.reduce((sum, t) => sum + t.rating, 0) / testimonials.length
+    : null;
 
   const warrantyOptions = parseJsonArray<WarrantyOption>(service.warrantyOptions);
   const platformVariants = parsePlatformVariants(service.platformVariants);
@@ -150,7 +154,12 @@ export default async function DichVuDetailPage({ params }: Props) {
             </div>
             <h1 className="text-2xl font-bold text-text-dark mb-3">{service.name}</h1>
             <div className="flex flex-wrap items-center gap-4 text-xs text-text-muted">
-              <span>⭐ {service.rating.toFixed(1)}</span>
+              <span className="font-semibold text-warning">
+                ⭐ {cmsAvgRating !== null ? cmsAvgRating.toFixed(1) : service.rating.toFixed(1)}
+                {cmsAvgRating !== null && (
+                  <span className="text-text-muted font-normal ml-1">({testimonials.length} đánh giá)</span>
+                )}
+              </span>
               <span>📦 {service.totalOrders.toLocaleString("vi-VN")} đơn</span>
               <span>✅ {service.successRate}% thành công</span>
               {service.processingTime && <span>⏱ {service.processingTime}</span>}

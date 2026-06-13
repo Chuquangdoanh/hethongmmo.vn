@@ -130,7 +130,12 @@ export default async function KhoaHocDetailPage({ params }: Props) {
     { label: "Cập nhật",   value: updatedLabel,                                                    Icon: RefreshCw },
   ] as const;
 
-  const fullStars = Math.floor(course.rating);
+  // Tính sao trung bình từ testimonials CMS (ưu tiên hơn rating tĩnh trong DB)
+  const cmsAvgRating = testimonials.length > 0
+    ? testimonials.reduce((sum, t) => sum + t.rating, 0) / testimonials.length
+    : null;
+  const displayRating = cmsAvgRating ?? course.rating;
+  const fullStars = Math.floor(displayRating);
 
   return (
     <div className="bg-[#f4f6f9] min-h-screen">
@@ -198,13 +203,17 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                   </span>
                 )}
                 <span className="inline-flex items-center gap-1 text-xs font-bold text-[#f59e0b]">
-                  ★ {course.rating.toFixed(1)}
+                  ★ {displayRating.toFixed(1)}
                 </span>
-                {course.studentCount > 0 && (
+                {testimonials.length > 0 ? (
+                  <span className="text-xs text-[#64748b]">
+                    ({testimonials.length} đánh giá)
+                  </span>
+                ) : course.studentCount > 0 ? (
                   <span className="text-xs text-[#64748b]">
                     ({course.studentCount.toLocaleString("vi-VN")} học viên)
                   </span>
-                )}
+                ) : null}
               </div>
             </div>
 
