@@ -452,64 +452,6 @@ export default function ServiceForm({ initial }: { initial?: ServiceData }) {
           </div>
         </section>
 
-        {/* ── 7. Biến thể Platform ── */}
-        <section className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-900">Biến thể Platform</h2>
-          <div className="flex flex-wrap gap-2">
-            {SOCIAL_PLATFORMS.map((p) => (
-              <button
-                key={p.name}
-                type="button"
-                onClick={() => addPresetPlatform(p)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-gray-200 bg-white text-xs text-gray-700 hover:border-[#7C3AED] hover:text-[#7C3AED] transition-colors"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.icon} alt={p.name} className="w-4 h-4" />
-                {p.name}
-              </button>
-            ))}
-          </div>
-          {platformVariants.length > 0 && (
-            <ul className="flex flex-wrap gap-2">
-              {platformVariants.map((v, i) => (
-                <li key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#7C3AED]/30 bg-[#7C3AED]/5 text-xs text-[#7C3AED]">
-                  {v.icon && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={v.icon} alt={v.name} className="w-4 h-4" />
-                  )}
-                  {v.name}
-                  <button
-                    type="button"
-                    onClick={() => removePlatformVariant(i)}
-                    className="ml-1 hover:text-red-500"
-                  >×</button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Tên platform tùy chỉnh"
-              value={newVariantName}
-              onChange={(e) => setNewVariantName(e.target.value)}
-              className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none"
-            />
-            <input
-              type="url"
-              placeholder="URL icon (tùy chọn)"
-              value={newVariantIconUrl}
-              onChange={(e) => setNewVariantIconUrl(e.target.value)}
-              className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={addCustomPlatform}
-              className="px-3 py-2 rounded-lg bg-[#7C3AED]/10 text-[#7C3AED] text-xs font-medium hover:bg-[#7C3AED]/20"
-            >+ Thêm</button>
-          </div>
-        </section>
-
       </div>
 
       {/* ── RIGHT sidebar ── */}

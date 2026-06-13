@@ -7,6 +7,7 @@ import SellerApproveForm from "./SellerApproveForm";
 import ShopLockAdminButton from "./ShopLockAdminButton";
 import SellerTierForm from "./SellerTierForm";
 import ImageZoom from "./ImageZoom";
+import SellerCategoryManager from "./SellerCategoryManager";
 
 export const metadata: Metadata = { title: "Duyệt Seller" };
 
@@ -37,8 +38,10 @@ export default async function AdminSellerDetailPage({
     select: { subCategory: { select: { id: true, name: true, categoryName: true } } },
   });
 
+  const sellerCategory = request.approvedCategory ?? request.category;
+
   type ShopRow = { shop_locked: boolean };
-  const [shopRows, products, orderStats, withdrawalStats, allTiers] = await Promise.all([
+  const [shopRows, products, orderStats, withdrawalStats, allTiers, allSubCategories] = await Promise.all([
     prisma.$queryRaw<ShopRow[]>`SELECT shop_locked FROM users WHERE id = ${request.userId}`,
     prisma.sellerProduct.findMany({
       where: { sellerId: request.userId, deletedAt: null },
@@ -70,6 +73,11 @@ export default async function AdminSellerDetailPage({
       where: { isActive: true },
       orderBy: { displayOrder: "asc" },
       select: { id: true, key: true, label: true, description: true, badgeColor: true },
+    }),
+    prisma.sellerSubCategory.findMany({
+      where: { categoryName: sellerCategory, isActive: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
     }),
   ]);
   const shopLocked = shopRows[0]?.shop_locked ?? false;
@@ -150,22 +158,12 @@ export default async function AdminSellerDetailPage({
               ))}
             </div>
 
-            {/* Sub-categories registered */}
-            {sellerSubCategories.length > 0 && (
-              <div className="mt-4">
-                <p className="text-[10px] text-gray-500 mb-2">Danh mục con đăng ký</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {sellerSubCategories.map((r) => (
-                    <span
-                      key={r.subCategory.id}
-                      className="inline-flex items-center rounded-full bg-violet-100 text-violet-700 text-[11px] font-medium px-2.5 py-0.5"
-                    >
-                      {r.subCategory.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Sub-categories registered — editable by admin */}
+            <SellerCategoryManager
+              requestId={id}
+              current={sellerSubCategories.map((r) => r.subCategory)}
+              available={allSubCategories}
+            />
 
             {/* ID documents */}
             {(request.user.cccdImageUrl || request.user.portraitImageUrl) && (

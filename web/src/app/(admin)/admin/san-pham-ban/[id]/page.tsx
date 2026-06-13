@@ -6,6 +6,7 @@ import { requireStaff } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import { decrypt } from "@/lib/security/encryption";
+import { r2Url } from "@/lib/utils/image-url";
 import Pagination from "@/components/shared/Pagination";
 import RestrictButton from "../_components/RestrictButton";
 import ImageZoom from "../_components/ImageZoom";
@@ -205,7 +206,7 @@ export default async function AdminSellerProductDetailPage({
 
         {product.imageUrl && (
           <div className="mb-4">
-            <ImageZoom src={product.imageUrl} alt={product.name} />
+            <ImageZoom src={r2Url(product.imageUrl)} alt={product.name} />
           </div>
         )}
 
