@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { r2Url } from "@/lib/utils/image-url";
 
 interface Category {
   id: string;
@@ -75,7 +76,7 @@ export default function ServiceCategoryCombobox({ value, onChange, required }: P
         {selected?.iconUrl ? (
           <span className="flex items-center justify-center w-4 h-4 bg-white rounded-sm p-0.5 shrink-0 border border-gray-100">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={selected.iconUrl} alt={selected.name} className="w-full h-full object-contain" />
+            <img src={r2Url(selected.iconUrl)} alt={selected.name} className="w-full h-full object-contain" />
           </span>
         ) : null}
         <span className={value ? "text-gray-900" : "text-gray-400"}>
@@ -116,7 +117,7 @@ export default function ServiceCategoryCombobox({ value, onChange, required }: P
                 >
                   {cat.iconUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={cat.iconUrl} alt={cat.name} className="w-7 h-7 object-contain" />
+                    <img src={r2Url(cat.iconUrl)} alt={cat.name} className="w-7 h-7 object-contain" />
                   ) : (
                     <span className="w-7 h-7 flex items-center justify-center rounded-lg bg-gray-100 text-gray-400 text-xs">
                       📁

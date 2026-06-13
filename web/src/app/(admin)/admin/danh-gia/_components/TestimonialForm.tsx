@@ -413,7 +413,7 @@ export default function TestimonialForm({
             style={{ background: form.reviewerAvatar ? undefined : form.reviewerColor }}
           >
             {form.reviewerAvatar ? (
-              <Image src={form.reviewerAvatar} alt="avatar" fill className="object-cover" />
+              <Image src={r2Url(form.reviewerAvatar)} alt="avatar" fill className="object-cover" />
             ) : (
               form.reviewerInitials || form.reviewerName.split(" ").map((w) => w[0]?.toUpperCase()).slice(0, 2).join("")
             )}

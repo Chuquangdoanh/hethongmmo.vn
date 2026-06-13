@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import Pagination from "@/components/shared/Pagination";
 import TutTricksTable from "./_components/TutTricksTable";
+import { r2Url } from "@/lib/utils/image-url";
 
 export const metadata: Metadata = { title: "Admin — Tut & Tricks" };
 
@@ -150,7 +151,7 @@ export default async function AdminTutTricksPage({
             {cat.iconUrl && (
               <span className={`flex items-center justify-center w-4 h-4 rounded p-0.5 shrink-0 ${category === cat.name ? "bg-white/20" : "bg-white border border-gray-200"}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={cat.iconUrl} alt={cat.name} className="w-full h-full object-contain" />
+                <img src={r2Url(cat.iconUrl)} alt={cat.name} className="w-full h-full object-contain" />
               </span>
             )}
             {cat.name}

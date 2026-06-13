@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Star } from "lucide-react";
 import { formatVnd } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 
 type ProductType = "service" | "course" | "tuttrick" | "mmo" | "seller";
 
@@ -76,7 +77,7 @@ export default function ProductCard({ product, type }: ProductCardProps) {
         <div className="relative aspect-video bg-[#1F1F2E] overflow-hidden">
           {product.thumbnail ? (
             <Image
-              src={product.thumbnail}
+              src={r2Url(product.thumbnail)}
               alt={product.name}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
