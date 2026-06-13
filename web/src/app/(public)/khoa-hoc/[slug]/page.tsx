@@ -323,12 +323,16 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                     <span key={s} className={`text-sm ${s <= fullStars ? "text-[#f59e0b]" : "text-[#d1d5db]"}`}>★</span>
                   ))}
                 </div>
-                <span className="text-xs font-bold text-[#f59e0b]">{course.rating.toFixed(1)}</span>
-                {course.studentCount > 0 && (
+                <span className="text-xs font-bold text-[#f59e0b]">{displayRating.toFixed(1)}</span>
+                {testimonials.length > 0 ? (
+                  <span className="text-xs text-[#94a3b8]">
+                    ({testimonials.length} đánh giá)
+                  </span>
+                ) : course.studentCount > 0 ? (
                   <span className="text-xs text-[#94a3b8]">
                     ({course.studentCount.toLocaleString("vi-VN")} học viên)
                   </span>
-                )}
+                ) : null}
               </div>
 
               <div className="mb-5">
@@ -460,12 +464,16 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                       <span key={s} className={`text-sm ${s <= fullStars ? "text-[#f59e0b]" : "text-[#d1d5db]"}`}>★</span>
                     ))}
                   </div>
-                  <span className="text-xs font-bold text-[#f59e0b]">{course.rating.toFixed(1)}</span>
-                  {course.studentCount > 0 && (
+                  <span className="text-xs font-bold text-[#f59e0b]">{displayRating.toFixed(1)}</span>
+                  {testimonials.length > 0 ? (
+                    <span className="text-xs text-[#94a3b8]">
+                      ({testimonials.length} đánh giá)
+                    </span>
+                  ) : course.studentCount > 0 ? (
                     <span className="text-xs text-[#94a3b8]">
                       ({course.studentCount.toLocaleString("vi-VN")} học viên)
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
                 {/* CTA buttons */}
