@@ -7,7 +7,7 @@ import type { ServiceStat } from "./_components/ServiceFilterPanel";
 export const metadata: Metadata = { title: "Admin — Đánh giá" };
 
 export default async function AdminTestimonialsPage() {
-  const [items, allServices, serviceRatingGroups, allCourses, courseRatingGroups] = await Promise.all([
+  const [items, allServices, serviceRatingGroups, allCourses, courseRatingGroups, courseOverall, serviceOverall] = await Promise.all([
     prisma.testimonial.findMany({
       include: { course: { select: { id: true, name: true, slug: true } } },
       orderBy: [{ type: "asc" }, { displayOrder: "asc" }, { createdAt: "desc" }],
@@ -31,6 +31,17 @@ export default async function AdminTestimonialsPage() {
     prisma.testimonial.groupBy({
       by: ["courseId"],
       where: { type: "COURSE", courseId: { not: null } },
+      _avg: { rating: true },
+      _count: { id: true },
+    }),
+    // Overall averages across all CMS testimonials
+    prisma.testimonial.aggregate({
+      where: { type: "COURSE" },
+      _avg: { rating: true },
+      _count: { id: true },
+    }),
+    prisma.testimonial.aggregate({
+      where: { type: "SERVICE" },
       _avg: { rating: true },
       _count: { id: true },
     }),

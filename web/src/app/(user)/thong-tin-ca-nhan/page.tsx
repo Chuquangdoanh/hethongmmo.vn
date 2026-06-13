@@ -161,7 +161,7 @@ export default async function ThongTinCaNhanPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Mã nạp tiền</p>
+                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">id </p>
                   <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-700 font-mono flex items-center justify-between gap-2">
                     <span className="font-semibold tracking-wider">{depositId.toUpperCase()}</span>
                     <CopyButton text={depositId.toUpperCase()} className="shrink-0 px-1.5! py-0.5! text-[10px]!" />

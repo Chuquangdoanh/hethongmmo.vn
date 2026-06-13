@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { r2Url } from "@/lib/utils/image-url";
 
 interface SubCategoryItem {
   id: string;
@@ -265,7 +266,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
         {form.imageUrl ? (
           <div className="flex items-center gap-4 p-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={form.imageUrl} alt="preview" className="w-20 h-20 object-cover rounded-lg border border-gray-200 shrink-0" />
+            <img src={r2Url(form.imageUrl)} alt="preview" className="w-20 h-20 object-cover rounded-lg border border-gray-200 shrink-0" />
             <div className="flex gap-3">
               <button type="button" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                 className="text-xs font-medium text-violet-600 hover:text-violet-700 transition-colors">Đổi ảnh</button>
