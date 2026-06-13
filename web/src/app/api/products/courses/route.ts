@@ -98,7 +98,7 @@ const courseCreateSchema = z.object({
   requiresAccountType: z.boolean().default(false),
   requiresCccd: z.boolean().default(false),
   commitments: z.array(z.string().max(500)).max(20).default([]),
-  registrationProcedure: z.string().max(5000).optional(),
+  registrationProcedure: z.string().max(5000).nullable().optional(),
 }).refine((d) => d.salePrice <= d.originalPrice, {
   message: "Giá bán phải nhỏ hơn hoặc bằng giá gốc",
   path: ["salePrice"],
