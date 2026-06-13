@@ -18,48 +18,63 @@ const ORDER_TYPE_META = [
   { key: "SELLER_PRODUCT", label: "Nhà bán",    icon: "🏪",  color: "text-[#A855F7]",  bg: "bg-[#A855F7]/10" },
 ] as const;
 
+function parseDateLocal(s: string): Date {
+  const parts = s.split("-").map(Number);
+  const y = parts[0] ?? new Date().getFullYear();
+  const m = parts[1] ?? 1;
+  const d = parts[2] ?? 1;
+  return new Date(y, m - 1, d);
+}
+
+function isoToday(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function isoFirstOfMonth(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
 export default async function AdminDashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string; month?: string; date?: string }>;
+  searchParams: Promise<{ dateFrom?: string; dateTo?: string }>;
 }) {
   const sp = await searchParams;
-  const now = new Date();
 
-  const filterDate    = sp.date ?? null;
-  const selectedYear  = Math.max(2020, Math.min(2099, parseInt(sp.year  ?? String(now.getFullYear()),  10)));
-  const selectedMonth = Math.max(1,    Math.min(12,   parseInt(sp.month ?? String(now.getMonth() + 1), 10)));
+  const today = isoToday();
+  const rawFrom = sp.dateFrom ?? isoFirstOfMonth();
+  const rawTo   = sp.dateTo   ?? today;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Ensure from <= to
+  const [orderedFrom, orderedTo] = rawFrom <= rawTo ? [rawFrom, rawTo] : [rawTo, rawFrom];
 
-  // ── Period boundaries ──────────────────────────────────────────────
-  const monthStart = new Date(selectedYear, selectedMonth - 1, 1);
-  const monthEnd   = new Date(selectedYear, selectedMonth, 1);
+  const periodStart = parseDateLocal(orderedFrom);
+  const periodEnd   = parseDateLocal(orderedTo);
+  periodEnd.setDate(periodEnd.getDate() + 1); // exclusive upper bound
 
-  // Matches chart period (day or month mode)
-  const periodStart = filterDate ? new Date(filterDate) : monthStart;
-  const periodEnd   = filterDate
-    ? (() => { const d = new Date(filterDate); d.setDate(d.getDate() + 1); return d; })()
-    : monthEnd;
+  const isSingleDay = orderedFrom === orderedTo;
 
-  // ── Queries ────────────────────────────────────────────────────────
+  const todayDate = parseDateLocal(today);
+
+  // ── Queries ─────────────────────────────────────────────────────────
   const [
     totalUsers, newUsersToday, totalOrders, ordersToday,
     pendingWithdrawals, openComplaints,
-    totalDeposits, depositsToday,
+    totalDeposits, depositsPeriod,
     recentOrders, recentUsers,
-    monthWithdrawal,
-    sellerRevenueMonth,
+    withdrawalPeriod,
+    sellerRevenuePeriod,
     approvedSellerCount,
     pendingWithdrawalAmount,
     revenueByType,
     refundPeriod,
   ] = await Promise.all([
     prisma.user.count({ where: { deletedAt: null } }),
-    prisma.user.count({ where: { createdAt: { gte: today }, deletedAt: null } }),
+    prisma.user.count({ where: { createdAt: { gte: todayDate }, deletedAt: null } }),
     prisma.order.count(),
-    prisma.order.count({ where: { createdAt: { gte: today } } }),
+    prisma.order.count({ where: { createdAt: { gte: todayDate } } }),
     prisma.sellerWithdrawal.count({ where: { status: "PENDING", createdAt: { gte: periodStart, lt: periodEnd } } }),
     prisma.complaint.count({ where: { status: "OPEN" } }),
     prisma.transaction.aggregate({
@@ -99,19 +114,16 @@ export default async function AdminDashboardPage({
       _count: { id: true },
     }),
     prisma.user.count({ where: { sellerStatus: "APPROVED", deletedAt: null } }),
-    // Tổng tiền chờ rút (amount, không chỉ count)
     prisma.sellerWithdrawal.aggregate({
       where: { status: "PENDING", createdAt: { gte: periodStart, lt: periodEnd } },
       _sum: { amount: true },
     }),
-    // Doanh thu theo loại đơn cho kỳ đang lọc
     prisma.order.groupBy({
       by: ["orderType"],
       where: { status: "DONE", createdAt: { gte: periodStart, lt: periodEnd } },
       _sum: { finalPrice: true },
       _count: { id: true },
     }),
-    // Tổng hoàn tiền cho kỳ đang lọc
     prisma.transaction.aggregate({
       where: { type: "REFUND", createdAt: { gte: periodStart, lt: periodEnd } },
       _sum: { amount: true },
@@ -119,22 +131,18 @@ export default async function AdminDashboardPage({
     }),
   ]);
 
-  // ── Chart data ─────────────────────────────────────────────────────
+  // ── Chart data ───────────────────────────────────────────────────────
   let chartData: ChartPoint[];
 
-  if (filterDate) {
-    // DAY MODE: hourly aggregation
-    const dayStart = new Date(filterDate);
-    const dayEnd   = new Date(filterDate);
-    dayEnd.setDate(dayEnd.getDate() + 1);
-
+  if (isSingleDay) {
+    // Hourly aggregation (0–23h)
     const [hDeposits, hOrders, hOrderRevenue, hUsers] = await Promise.all([
       prisma.$queryRaw<DailyAmountRow[]>`
         SELECT TO_CHAR(DATE_TRUNC('hour', created_at), 'HH24') AS label,
                COALESCE(SUM(amount), 0)::text AS total
         FROM transactions
         WHERE type IN ('DEPOSIT_AUTO', 'DEPOSIT_MANUAL')
-          AND created_at >= ${dayStart} AND created_at < ${dayEnd}
+          AND created_at >= ${periodStart} AND created_at < ${periodEnd}
         GROUP BY DATE_TRUNC('hour', created_at)
         ORDER BY DATE_TRUNC('hour', created_at)
       `,
@@ -142,7 +150,7 @@ export default async function AdminDashboardPage({
         SELECT TO_CHAR(DATE_TRUNC('hour', created_at), 'HH24') AS label,
                COUNT(*)::text AS cnt
         FROM orders
-        WHERE created_at >= ${dayStart} AND created_at < ${dayEnd}
+        WHERE created_at >= ${periodStart} AND created_at < ${periodEnd}
         GROUP BY DATE_TRUNC('hour', created_at)
         ORDER BY DATE_TRUNC('hour', created_at)
       `,
@@ -151,7 +159,7 @@ export default async function AdminDashboardPage({
                COALESCE(SUM(final_price), 0)::text AS total
         FROM orders
         WHERE status = 'DONE'
-          AND created_at >= ${dayStart} AND created_at < ${dayEnd}
+          AND created_at >= ${periodStart} AND created_at < ${periodEnd}
         GROUP BY DATE_TRUNC('hour', created_at)
         ORDER BY DATE_TRUNC('hour', created_at)
       `,
@@ -160,7 +168,7 @@ export default async function AdminDashboardPage({
                COUNT(*)::text AS cnt
         FROM users
         WHERE deleted_at IS NULL
-          AND created_at >= ${dayStart} AND created_at < ${dayEnd}
+          AND created_at >= ${periodStart} AND created_at < ${periodEnd}
         GROUP BY DATE_TRUNC('hour', created_at)
         ORDER BY DATE_TRUNC('hour', created_at)
       `,
@@ -183,43 +191,40 @@ export default async function AdminDashboardPage({
     });
 
   } else {
-    // MONTH MODE: daily aggregation
-    const startDate = new Date(selectedYear, selectedMonth - 1, 1);
-    const endDate   = new Date(selectedYear, selectedMonth,     1);
-
+    // Daily aggregation — each day in [orderedFrom, orderedTo]
     const [dailyDeposits, dailyOrderRevenue, dailyOrders, dailyUsers] = await Promise.all([
       prisma.$queryRaw<DailyAmountRow[]>`
-        SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'DD') AS label,
+        SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'YYYY-MM-DD') AS label,
                COALESCE(SUM(amount), 0)::text AS total
         FROM transactions
         WHERE type IN ('DEPOSIT_AUTO', 'DEPOSIT_MANUAL')
-          AND created_at >= ${startDate} AND created_at < ${endDate}
+          AND created_at >= ${periodStart} AND created_at < ${periodEnd}
         GROUP BY DATE_TRUNC('day', created_at)
         ORDER BY DATE_TRUNC('day', created_at)
       `,
       prisma.$queryRaw<DailyAmountRow[]>`
-        SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'DD') AS label,
+        SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'YYYY-MM-DD') AS label,
                COALESCE(SUM(final_price), 0)::text AS total
         FROM orders
         WHERE status = 'DONE'
-          AND created_at >= ${startDate} AND created_at < ${endDate}
+          AND created_at >= ${periodStart} AND created_at < ${periodEnd}
         GROUP BY DATE_TRUNC('day', created_at)
         ORDER BY DATE_TRUNC('day', created_at)
       `,
       prisma.$queryRaw<DailyCountRow[]>`
-        SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'DD') AS label,
+        SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'YYYY-MM-DD') AS label,
                COUNT(*)::text AS cnt
         FROM orders
-        WHERE created_at >= ${startDate} AND created_at < ${endDate}
+        WHERE created_at >= ${periodStart} AND created_at < ${periodEnd}
         GROUP BY DATE_TRUNC('day', created_at)
         ORDER BY DATE_TRUNC('day', created_at)
       `,
       prisma.$queryRaw<DailyCountRow[]>`
-        SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'DD') AS label,
+        SELECT TO_CHAR(DATE_TRUNC('day', created_at), 'YYYY-MM-DD') AS label,
                COUNT(*)::text AS cnt
         FROM users
         WHERE deleted_at IS NULL
-          AND created_at >= ${startDate} AND created_at < ${endDate}
+          AND created_at >= ${periodStart} AND created_at < ${periodEnd}
         GROUP BY DATE_TRUNC('day', created_at)
         ORDER BY DATE_TRUNC('day', created_at)
       `,
@@ -230,36 +235,41 @@ export default async function AdminDashboardPage({
     const ordMap = new Map(dailyOrders.map((r)       => [r.label, Number(r.cnt)]));
     const usrMap = new Map(dailyUsers.map((r)        => [r.label, Number(r.cnt)]));
 
-    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-    chartData = Array.from({ length: daysInMonth }, (_, i) => {
-      const lbl = String(i + 1).padStart(2, "0");
-      return {
-        label:        lbl,
-        deposits:     depMap.get(lbl) ?? 0,
-        orderRevenue: revMap.get(lbl) ?? 0,
-        orders:       ordMap.get(lbl) ?? 0,
-        newUsers:     usrMap.get(lbl) ?? 0,
-      };
-    });
+    // Build date array from orderedFrom to orderedTo inclusive
+    const cursor = parseDateLocal(orderedFrom);
+    const end    = parseDateLocal(orderedTo);
+    chartData    = [];
+    while (cursor <= end) {
+      const isoKey = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
+      const displayLbl = `${String(cursor.getDate()).padStart(2, "0")}/${String(cursor.getMonth() + 1).padStart(2, "0")}`;
+      chartData.push({
+        label:        displayLbl,
+        deposits:     depMap.get(isoKey) ?? 0,
+        orderRevenue: revMap.get(isoKey) ?? 0,
+        orders:       ordMap.get(isoKey) ?? 0,
+        newUsers:     usrMap.get(isoKey) ?? 0,
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
   }
 
   const periodDepositTotal = chartData.reduce((s, d) => s + d.deposits, 0);
 
-  // ── Revenue breakdown ──────────────────────────────────────────────
-  const periodLabel = filterDate
-    ? `Ngày ${filterDate.split("-").reverse().join("/")}`
-    : `Tháng ${selectedMonth}/${selectedYear}`;
+  // ── Revenue breakdown ────────────────────────────────────────────────
+  const periodLabel = orderedFrom === orderedTo
+    ? `Ngày ${orderedFrom.split("-").reverse().join("/")}`
+    : `${orderedFrom.split("-").reverse().slice(0, 2).join("/")} — ${orderedTo.split("-").reverse().slice(0, 2).join("/")}`;
 
   const typeRevMap = new Map(
     revenueByType.map((r) => [r.orderType, { amount: Number(r._sum.finalPrice ?? 0), count: r._count.id }])
   );
-  const grossRevenue  = revenueByType.reduce((s, r) => s + Number(r._sum.finalPrice ?? 0), 0);
-  const refundAmount  = Number(refundPeriod._sum.amount ?? 0);
-  const refundCount   = refundPeriod._count.id;
-  const netRevenue    = grossRevenue - refundAmount;
+  const grossRevenue   = revenueByType.reduce((s, r) => s + Number(r._sum.finalPrice ?? 0), 0);
+  const refundAmount   = Number(refundPeriod._sum.amount ?? 0);
+  const refundCount    = refundPeriod._count.id;
+  const netRevenue     = grossRevenue - refundAmount;
   const totalDoneCount = revenueByType.reduce((s, r) => s + r._count.id, 0);
 
-  // ── Stats cards ────────────────────────────────────────────────────
+  // ── Stats cards ──────────────────────────────────────────────────────
   const STATS = [
     {
       label: "Tổng người dùng",
@@ -275,26 +285,26 @@ export default async function AdminDashboardPage({
     },
     {
       label: `Nạp tiền — ${periodLabel}`,
-      value: formatVnd(Number(depositsToday._sum.amount ?? 0)),
-      sub:   `Tổng all-time: ${formatVnd(Number(totalDeposits._sum.amount ?? 0))}`,
+      value: formatVnd(Number(depositsPeriod._sum.amount ?? 0)),
+      sub:   `All-time: ${formatVnd(Number(totalDeposits._sum.amount ?? 0))}`,
       color: "text-[#10B981]",
     },
     {
-      label: `Rút tiền chờ duyệt — ${periodLabel}`,
+      label: `Rút chờ duyệt — ${periodLabel}`,
       value: pendingWithdrawals.toString(),
       sub:   `${formatVnd(Number(pendingWithdrawalAmount._sum.amount ?? 0))} · ${openComplaints} KN`,
       color: pendingWithdrawals > 0 ? "text-[#F59E0B]" : "text-gray-500",
     },
     {
       label: `Rút tiền — ${periodLabel}`,
-      value: formatVnd(Number(monthWithdrawal._sum.amount ?? 0)),
-      sub:   `Sau phí: ${formatVnd(Number(monthWithdrawal._sum.netAmount ?? 0))}`,
+      value: formatVnd(Number(withdrawalPeriod._sum.amount ?? 0)),
+      sub:   `Sau phí: ${formatVnd(Number(withdrawalPeriod._sum.netAmount ?? 0))}`,
       color: "text-blue-600",
     },
     {
       label: `Doanh số seller — ${periodLabel}`,
-      value: formatVnd(Number(sellerRevenueMonth._sum.finalPrice ?? 0)),
-      sub:   `${sellerRevenueMonth._count.id} đơn · ${approvedSellerCount} seller`,
+      value: formatVnd(Number(sellerRevenuePeriod._sum.finalPrice ?? 0)),
+      sub:   `${sellerRevenuePeriod._count.id} đơn · ${approvedSellerCount} seller`,
       color: "text-emerald-600",
     },
   ];
@@ -360,12 +370,12 @@ export default async function AdminDashboardPage({
         </div>
       </div>
 
-      {/* Charts + filter */}
+      {/* Charts + date range filter */}
       <DashboardCharts
         data={chartData}
-        selectedYear={selectedYear}
-        selectedMonth={selectedMonth}
-        filterDate={filterDate}
+        rawFrom={orderedFrom}
+        rawTo={orderedTo}
+        isSingleDay={isSingleDay}
         periodDepositTotal={periodDepositTotal}
       />
 

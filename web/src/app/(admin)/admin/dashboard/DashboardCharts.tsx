@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -17,9 +17,9 @@ export interface ChartPoint {
 
 interface Props {
   data: ChartPoint[];
-  selectedYear: number;
-  selectedMonth: number;
-  filterDate: string | null;
+  rawFrom: string;
+  rawTo: string;
+  isSingleDay: boolean;
   periodDepositTotal: number;
 }
 
@@ -30,111 +30,152 @@ function shortVnd(v: number): string {
   return String(v);
 }
 
-const MONTHS = Array.from({ length: 12 }, (_, i) => ({ v: i + 1, l: `Tháng ${i + 1}` }));
-const YEARS  = Array.from({ length: 4  }, (_, i) => new Date().getFullYear() - i);
+function fmtDate(s: string): string {
+  const [y, m, d] = s.split("-");
+  return `${d}/${m}/${y}`;
+}
 
-function todayStr() {
+function todayISO(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export default function DashboardCharts({
-  data, selectedYear, selectedMonth, filterDate, periodDepositTotal,
-}: Props) {
+function shiftDays(iso: string, delta: number): string {
+  const d = new Date(iso);
+  d.setDate(d.getDate() + delta);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export default function DashboardCharts({ data, rawFrom, rawTo, isSingleDay, periodDepositTotal }: Props) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [dateInput, setDateInput] = useState(filterDate ?? todayStr());
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  const [fromInput, setFromInput] = useState(rawFrom);
+  const [toInput, setToInput] = useState(rawTo);
+
   useEffect(() => setMounted(true), []);
+  useEffect(() => { setFromInput(rawFrom); setToInput(rawTo); }, [rawFrom, rawTo]);
 
-  const mode: "day" | "month" = filterDate ? "day" : "month";
+  function go(from: string, to: string) {
+    const f = from <= to ? from : to;
+    const t = from <= to ? to   : from;
+    router.push(`/admin/dashboard?dateFrom=${f}&dateTo=${t}`);
+  }
 
-  function goDay(d: string)       { router.push(`/admin/dashboard?date=${d}`); }
-  function goMonth(y: number, m: number) { router.push(`/admin/dashboard?year=${y}&month=${m}`); }
+  function goPreset(preset: "today" | "7d" | "30d" | "month" | "prev-month") {
+    const today = todayISO();
+    if (preset === "today")  return go(today, today);
+    if (preset === "7d")     return go(shiftDays(today, -6), today);
+    if (preset === "30d")    return go(shiftDays(today, -29), today);
+    if (preset === "month") {
+      const d = new Date();
+      const first = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+      return go(first, today);
+    }
+    if (preset === "prev-month") {
+      const d = new Date();
+      const firstPrev = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+      const lastPrev  = new Date(d.getFullYear(), d.getMonth(), 0);
+      const fmt = (x: Date) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+      return go(fmt(firstPrev), fmt(lastPrev));
+    }
+  }
+
+  // Active preset detection
+  const today = todayISO();
+  const d = new Date();
+  const firstOfMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  const presetActive = (() => {
+    if (rawFrom === today && rawTo === today)             return "today";
+    if (rawFrom === shiftDays(today, -6) && rawTo === today)  return "7d";
+    if (rawFrom === shiftDays(today, -29) && rawTo === today) return "30d";
+    if (rawFrom === firstOfMonth && rawTo === today)      return "month";
+    return null;
+  })();
+
+  const periodLabel = rawFrom === rawTo
+    ? `Ngày ${fmtDate(rawFrom)}`
+    : `${fmtDate(rawFrom)} — ${fmtDate(rawTo)}`;
 
   const placeholder = <div className="h-64 rounded-xl bg-gray-100 animate-pulse" />;
-  const periodLabel = filterDate
-    ? `Ngày ${filterDate.split("-").reverse().join("/")}`
-    : `Tháng ${selectedMonth}/${selectedYear}`;
+
+  const PRESETS: { key: "today" | "7d" | "30d" | "month" | "prev-month"; label: string }[] = [
+    { key: "today",      label: "Hôm nay" },
+    { key: "7d",         label: "7 ngày" },
+    { key: "30d",        label: "30 ngày" },
+    { key: "month",      label: "Tháng này" },
+    { key: "prev-month", label: "Tháng trước" },
+  ];
 
   return (
     <div className="space-y-5">
 
       {/* ── Filter bar ── */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 flex flex-wrap items-end gap-4">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
 
-        {/* Tổng nạp tiền kỳ đã lọc */}
-        <div className="flex-1 min-w-[180px]">
-          <p className="text-[10px] text-gray-400 mb-0.5">Tổng nạp tiền — {periodLabel}</p>
-          <p className="text-2xl font-bold text-emerald-600">
-            <span suppressHydrationWarning>{periodDepositTotal.toLocaleString("vi-VN")}đ</span>
-          </p>
+        {/* Row 1: tổng nạp + preset buttons */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex-1 min-w-40">
+            <p className="text-[10px] text-gray-400 mb-0.5">Tổng nạp tiền — {periodLabel}</p>
+            <p className="text-xl font-bold text-emerald-600">
+              <span suppressHydrationWarning>{periodDepositTotal.toLocaleString("vi-VN")}đ</span>
+            </p>
+          </div>
+
+          <div className="h-8 w-px bg-gray-100 hidden md:block" />
+
+          {/* Preset buttons */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {PRESETS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => goPreset(key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  presetActive === key
+                    ? "bg-violet-600 text-white"
+                    : "border border-gray-200 text-gray-500 hover:border-violet-400 hover:text-violet-700"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="h-10 w-px bg-gray-100 hidden md:block" />
-
-        {/* Mode tabs */}
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
+        {/* Row 2: custom date range */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-gray-500 font-medium">Từ ngày</span>
+          <input
+            type="date"
+            value={fromInput}
+            max={toInput}
+            onChange={(e) => setFromInput(e.target.value)}
+            className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-violet-500 focus:outline-none"
+          />
+          <span className="text-xs text-gray-400">—</span>
+          <span className="text-xs text-gray-500 font-medium">đến ngày</span>
+          <input
+            type="date"
+            value={toInput}
+            min={fromInput}
+            max={todayISO()}
+            onChange={(e) => setToInput(e.target.value)}
+            className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-violet-500 focus:outline-none"
+          />
           <button
             type="button"
-            onClick={() => goMonth(selectedYear, selectedMonth)}
-            className={`px-3 py-2 transition-colors ${mode === "month" ? "bg-violet-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
+            disabled={!fromInput || !toInput}
+            onClick={() => go(fromInput, toInput)}
+            className="px-4 py-1.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 disabled:opacity-40 transition-colors"
           >
-            Theo tháng
-          </button>
-          <button
-            type="button"
-            onClick={() => goDay(dateInput)}
-            className={`px-3 py-2 transition-colors border-l border-gray-200 ${mode === "day" ? "bg-violet-600 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}
-          >
-            Theo ngày
+            Lọc
           </button>
         </div>
-
-        {/* Month filter */}
-        {mode === "month" && (
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedMonth}
-              onChange={(e) => goMonth(selectedYear, Number(e.target.value))}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-violet-500 focus:outline-none cursor-pointer"
-            >
-              {MONTHS.map(({ v, l }) => <option key={v} value={v}>{l}</option>)}
-            </select>
-            <select
-              value={selectedYear}
-              onChange={(e) => goMonth(Number(e.target.value), selectedMonth)}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-violet-500 focus:outline-none cursor-pointer"
-            >
-              {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </div>
-        )}
-
-        {/* Day filter */}
-        {mode === "day" && (
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={dateInput}
-              onChange={(e) => setDateInput(e.target.value)}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-violet-500 focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => dateInput && goDay(dateInput)}
-              className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
-            >
-              Lọc
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* ── Charts 2 cột 5:5 ── */}
+      {/* ── Charts 2 cột ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-        {/* Bar chart */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h3 className="text-sm font-semibold text-gray-800 mb-4">
             Nạp tiền & Doanh thu — {periodLabel}
@@ -143,10 +184,10 @@ export default function DashboardCharts({
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} interval={mode === "day" ? 1 : 1} />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} interval={isSingleDay ? 1 : "preserveStartEnd"} />
                 <YAxis tickFormatter={shortVnd} tick={{ fontSize: 10, fill: "#9ca3af" }} width={44} />
                 <Tooltip
-                  labelFormatter={(l) => mode === "day" ? `${l} — ${filterDate}` : `Ngày ${l}/${selectedMonth}`}
+                  labelFormatter={(l) => isSingleDay ? `${String(l)} — ${fmtDate(rawFrom)}` : String(l)}
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -157,7 +198,6 @@ export default function DashboardCharts({
           )}
         </div>
 
-        {/* Line chart */}
         <div className="rounded-xl border border-gray-200 bg-white p-5">
           <h3 className="text-sm font-semibold text-gray-800 mb-4">
             Người dùng mới & Đơn hàng — {periodLabel}
@@ -166,10 +206,10 @@ export default function DashboardCharts({
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} interval={mode === "day" ? 1 : 1} />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} interval={isSingleDay ? 1 : "preserveStartEnd"} />
                 <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} width={32} allowDecimals={false} />
                 <Tooltip
-                  labelFormatter={(l) => mode === "day" ? `${l} — ${filterDate}` : `Ngày ${l}/${selectedMonth}`}
+                  labelFormatter={(l) => isSingleDay ? `${String(l)} — ${fmtDate(rawFrom)}` : String(l)}
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }}
                 />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -181,7 +221,6 @@ export default function DashboardCharts({
         </div>
 
       </div>
-
     </div>
   );
 }
