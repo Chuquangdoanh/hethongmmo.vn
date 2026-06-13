@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { r2Url } from "@/lib/utils/image-url";
 import { formatVnd } from "@/lib/utils/format";
 
 const BADGE_STYLES: Record<string, string> = {
@@ -194,7 +195,7 @@ export default function CoursesTable({ courses, total, category, q }: Props) {
                   <div className="flex items-center gap-3">
                     {course.thumbnail ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={course.thumbnail} alt={course.name} className="w-10 h-10 rounded-lg object-cover border border-gray-100 flex-shrink-0" />
+                      <img src={r2Url(course.thumbnail)} alt={course.name} className="w-10 h-10 rounded-lg object-cover border border-gray-100 flex-shrink-0" />
                     ) : (
                       <div className="w-10 h-10 rounded-lg bg-[#7C3AED]/10 flex items-center justify-center text-[#A855F7] text-lg flex-shrink-0">
                         🎓

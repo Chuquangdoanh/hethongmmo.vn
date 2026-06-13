@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { r2Url } from "@/lib/utils/image-url";
 import { formatVnd } from "@/lib/utils/format";
 
 interface ServiceRow {
@@ -185,7 +186,7 @@ export default function ServicesTable({ services, total, category, q }: Props) {
                   <div className="flex items-center gap-3">
                     {svc.thumbnail ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={svc.thumbnail} alt={svc.name} className="w-10 h-10 rounded-lg object-cover border border-gray-100 shrink-0" />
+                      <img src={r2Url(svc.thumbnail)} alt={svc.name} className="w-10 h-10 rounded-lg object-cover border border-gray-100 shrink-0" />
                     ) : (
                       <div className="w-10 h-10 rounded-lg bg-[#7C3AED]/10 flex items-center justify-center text-[#A855F7] text-sm font-bold shrink-0">
                         {svc.name.slice(0, 2).toUpperCase()}

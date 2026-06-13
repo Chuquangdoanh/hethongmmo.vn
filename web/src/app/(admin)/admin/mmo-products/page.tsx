@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
+import { r2Url } from "@/lib/utils/image-url";
 import Pagination from "@/components/shared/Pagination";
 
 export const metadata: Metadata = { title: "Admin — Tài nguyên MMO" };
@@ -171,7 +172,7 @@ export default async function AdminMmoProductsPage({
                     <div className="flex items-center gap-3">
                       {product.thumbnail ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={product.thumbnail} alt={product.name} className="w-10 h-10 rounded-lg object-cover border border-gray-100 flex-shrink-0" />
+                        <img src={r2Url(product.thumbnail)} alt={product.name} className="w-10 h-10 rounded-lg object-cover border border-gray-100 flex-shrink-0" />
                       ) : (
                         <div className="w-10 h-10 rounded-lg bg-[#7C3AED]/10 flex items-center justify-center text-[#A855F7] text-sm font-bold flex-shrink-0">
                           {product.name.slice(0, 2).toUpperCase()}
