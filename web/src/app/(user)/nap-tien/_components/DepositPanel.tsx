@@ -1,15 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { QrCode, AlertTriangle } from "lucide-react";
 import CopyButton from "@/components/shared/CopyButton";
-
-function formatRaw(raw: string): string {
-  if (!raw) return "";
-  const n = parseInt(raw, 10);
-  if (isNaN(n)) return "";
-  return new Intl.NumberFormat("vi-VN").format(n);
-}
 
 interface Props {
   bankName: string;
@@ -34,7 +27,6 @@ function formatAmount(n: number) {
 export default function DepositPanel({ bankName, accountNumber, accountHolder, bankBin, transferContent }: Props) {
   const [selected, setSelected] = useState(100_000);
   const [custom, setCustom] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const customNum = custom ? parseInt(custom, 10) || 0 : 0;
   const isBelowMin = custom !== "" && customNum > 0 && customNum < MIN_AMOUNT;
@@ -45,30 +37,8 @@ export default function DepositPanel({ bankName, accountNumber, accountHolder, b
     `?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountHolder)}`;
 
   function handleCustomChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const el = e.target;
-    // Đếm số digit trước cursor trong chuỗi đang hiển thị (có chứa dấu chấm)
-    const cursorEnd = el.selectionEnd ?? el.value.length;
-    const digitsBeforeCursor = el.value.slice(0, cursorEnd).replace(/\D/g, "").length;
-
-    const raw = el.value.replace(/\D/g, "");
+    const raw = e.target.value.replace(/\D/g, "");
     setCustom(raw);
-
-    // Sau khi React re-render và cập nhật DOM (value mới có thể thêm/bớt dấu chấm),
-    // khôi phục vị trí cursor dựa trên số digit đã đếm
-    requestAnimationFrame(() => {
-      const inp = inputRef.current;
-      if (!inp) return;
-      const formatted = inp.value;
-      let seen = 0;
-      let pos = formatted.length;
-      for (let i = 0; i < formatted.length; i++) {
-        if (/\d/.test(formatted[i] ?? "")) {
-          seen++;
-          if (seen === digitsBeforeCursor) { pos = i + 1; break; }
-        }
-      }
-      inp.setSelectionRange(pos, pos);
-    });
   }
 
   return (
@@ -103,10 +73,9 @@ export default function DepositPanel({ bankName, accountNumber, accountHolder, b
         <div className="space-y-1.5">
           <div className="relative">
             <input
-              ref={inputRef}
               type="text"
               inputMode="numeric"
-              value={formatRaw(custom)}
+              value={custom}
               onChange={handleCustomChange}
               placeholder={formatAmount(selected)}
               className={`w-full rounded-lg border bg-gray-50 px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none pr-12 ${
