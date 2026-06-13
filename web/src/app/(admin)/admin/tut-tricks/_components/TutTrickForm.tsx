@@ -268,37 +268,6 @@ export default function TutTrickForm({ initial, categoryOptions = [] }: { initia
               <span className="text-xs text-gray-500">Nổi bật</span>
             </label>
           </div>
-
-          {/* ── Yêu cầu khi đặt hàng ── */}
-          <div className="rounded-lg border border-[#7C3AED]/20 bg-[#7C3AED]/5 p-4 space-y-3">
-            <p className="text-xs font-semibold text-[#7C3AED] uppercase tracking-wide">Yêu cầu khi đặt hàng</p>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">Loại tài khoản</p>
-                <p className="text-xs text-gray-500">Khách chọn: chính chủ / không chính chủ</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => set("requiresAccountType", !form.requiresAccountType)}
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${form.requiresAccountType ? "bg-[#7C3AED]" : "bg-gray-200"}`}
-              >
-                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form.requiresAccountType ? "translate-x-6" : "translate-x-1"}`} />
-              </button>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">CCCD mặt trước</p>
-                <p className="text-xs text-gray-500">Khách upload ảnh CCCD mặt trước</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => set("requiresCccd", !form.requiresCccd)}
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${form.requiresCccd ? "bg-[#7C3AED]" : "bg-gray-200"}`}
-              >
-                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form.requiresCccd ? "translate-x-6" : "translate-x-1"}`} />
-              </button>
-            </div>
-          </div>
         </section>
 
         {/* ── 4. Mô tả ── */}
