@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { r2Url } from "@/lib/utils/image-url";
 import { useRouter } from "next/navigation";
 import ServiceFilterPanel from "./ServiceFilterPanel";
 import type { ServiceStat } from "./ServiceFilterPanel";
@@ -125,7 +126,7 @@ export default function TestimonialList({
                 style={{ background: t.reviewerAvatar ? undefined : (t.reviewerColor ?? "#7c3aed") }}
               >
                 {t.reviewerAvatar ? (
-                  <Image src={t.reviewerAvatar} alt={t.reviewerName} fill className="object-cover" />
+                  <Image src={r2Url(t.reviewerAvatar)} alt={t.reviewerName} fill className="object-cover" />
                 ) : (
                   t.reviewerInitials ?? t.reviewerName.slice(0, 2).toUpperCase()
                 )}

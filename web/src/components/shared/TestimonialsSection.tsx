@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { r2Url } from "@/lib/utils/image-url";
 
 type FilterId = "newest" | "oldest" | "all" | 1 | 2 | 3 | 4 | 5;
 
@@ -100,7 +101,7 @@ export default function TestimonialsSection({ items, title = "Đánh giá trải
                   {t.reviewerAvatar ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
-                      src={t.reviewerAvatar}
+                      src={r2Url(t.reviewerAvatar)}
                       alt={t.reviewerName}
                       className="w-10 h-10 rounded-full object-cover shrink-0"
                     />
