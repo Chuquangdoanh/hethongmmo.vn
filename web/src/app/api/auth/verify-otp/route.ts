@@ -8,11 +8,13 @@ import {
 } from "@/lib/auth/password";
 import { verifyOtp } from "@/lib/services/otp.service";
 import { logger } from "@/lib/utils/logger";
+import bcrypt from "bcryptjs";
 
 const verifyOtpSchema = z
   .object({
     email: z.string().email().toLowerCase().trim(),
     otpCode: z.string().length(6).regex(/^\d+$/, "OTP phải là 6 chữ số"),
+    purpose: z.enum(["REGISTER", "RESET_PASSWORD"]).default("REGISTER"),
     password: z.string(),
     confirmPassword: z.string(),
   })
@@ -47,8 +49,42 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { email, otpCode, password } = parsed.data;
+  const { email, otpCode, purpose, password } = parsed.data;
 
+  // ── RESET_PASSWORD: chỉ xác minh OTP, không mark used — reset-password route sẽ mark ──
+  if (purpose === "RESET_PASSWORD") {
+    const otpRecord = await prisma.otpCode.findFirst({
+      where: { email, purpose: "RESET_PASSWORD", usedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!otpRecord) {
+      return NextResponse.json(
+        { error: "Mã OTP đã hết hạn hoặc không tồn tại.", code: "OTP_EXPIRED" },
+        { status: 400 },
+      );
+    }
+    if (otpRecord.attempts >= otpRecord.maxAttempts) {
+      return NextResponse.json(
+        { error: "OTP đã bị vô hiệu hóa do quá nhiều lần thử.", code: "OTP_EXPIRED" },
+        { status: 400 },
+      );
+    }
+    const valid = await bcrypt.compare(otpCode, otpRecord.codeHash);
+    if (!valid) {
+      await prisma.otpCode.update({
+        where: { id: otpRecord.id },
+        data: { attempts: { increment: 1 } },
+      });
+      const remaining = otpRecord.maxAttempts - otpRecord.attempts - 1;
+      return NextResponse.json(
+        { error: `Mã OTP không đúng. Còn ${remaining} lần thử.`, code: "INVALID_OTP", attemptsRemaining: remaining },
+        { status: 400 },
+      );
+    }
+    return NextResponse.json({ success: true });
+  }
+
+  // ── REGISTER: validate password + tạo user ──
   // Validate password strength before any DB work
   const { valid, errors } = validatePasswordStrength(password);
   if (!valid) {

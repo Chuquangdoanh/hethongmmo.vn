@@ -77,8 +77,8 @@ export default function OtpForm() {
     try {
       const body =
         purpose === "REGISTER"
-          ? { email, otpCode, password, confirmPassword: password }
-          : { email, otpCode, password: "", confirmPassword: "" };
+          ? { email, otpCode, purpose, password, confirmPassword: password }
+          : { email, otpCode, purpose, password: "", confirmPassword: "" };
 
       const res = await fetch("/api/auth/verify-otp", { credentials: "include",
         method: "POST",

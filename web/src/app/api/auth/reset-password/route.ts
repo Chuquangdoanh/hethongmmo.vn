@@ -7,18 +7,13 @@ import {
   checkPwnedPassword,
 } from "@/lib/auth/password";
 import { logger } from "@/lib/utils/logger";
-import bcrypt from "bcryptjs";
+import { verifyOtp } from "@/lib/services/otp.service";
 
 const resetPasswordApiSchema = z
   .object({
     email: z.string().email().toLowerCase().trim(),
-    token: z.string().min(64).max(64),
+    code: z.string().length(6).regex(/^\d+$/),
     newPassword: z.string(),
-    confirmPassword: z.string(),
-  })
-  .refine((d) => d.newPassword === d.confirmPassword, {
-    message: "Mật khẩu xác nhận không khớp",
-    path: ["confirmPassword"],
   });
 
 export async function POST(req: NextRequest) {
@@ -44,7 +39,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { email, token, newPassword } = parsed.data;
+  const { email, code, newPassword } = parsed.data;
 
   const { valid, errors } = validatePasswordStrength(newPassword);
   if (!valid) {
@@ -54,39 +49,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const otpRecord = await prisma.otpCode.findFirst({
-    where: {
-      email,
-      purpose: "RESET_PASSWORD",
-      usedAt: null,
-      expiresAt: { gt: new Date() },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-
-  if (!otpRecord) {
+  // Verify OTP và mark as used
+  const otpResult = await verifyOtp(email, "RESET_PASSWORD", code);
+  if (!otpResult.success) {
     return NextResponse.json(
-      { error: "Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.", code: "INVALID_TOKEN" },
-      { status: 400 },
-    );
-  }
-
-  if (otpRecord.attempts >= otpRecord.maxAttempts) {
-    return NextResponse.json(
-      { error: "Link đặt lại mật khẩu đã bị vô hiệu hóa do quá nhiều lần thử.", code: "MAX_ATTEMPTS" },
-      { status: 400 },
-    );
-  }
-
-  const tokenValid = await bcrypt.compare(token, otpRecord.codeHash);
-
-  if (!tokenValid) {
-    await prisma.otpCode.update({
-      where: { id: otpRecord.id },
-      data: { attempts: { increment: 1 } },
-    });
-    return NextResponse.json(
-      { error: "Link đặt lại mật khẩu không hợp lệ.", code: "INVALID_TOKEN" },
+      {
+        error: otpResult.error ?? "Mã OTP không đúng hoặc đã hết hạn.",
+        code: otpResult.attemptsRemaining !== undefined ? "INVALID_OTP" : "OTP_EXPIRED",
+        ...(otpResult.attemptsRemaining !== undefined && { attemptsRemaining: otpResult.attemptsRemaining }),
+      },
       { status: 400 },
     );
   }
@@ -124,17 +95,6 @@ export async function POST(req: NextRequest) {
     await tx.user.update({
       where: { id: user.id },
       data: { passwordHash, failedLoginCount: 0, lockedUntil: null },
-    });
-
-    await tx.otpCode.update({
-      where: { id: otpRecord.id },
-      data: { usedAt: new Date() },
-    });
-
-    // Invalidate all remaining reset tokens for this email
-    await tx.otpCode.updateMany({
-      where: { email, purpose: "RESET_PASSWORD", usedAt: null },
-      data: { usedAt: new Date() },
     });
 
     await tx.auditLog.create({
