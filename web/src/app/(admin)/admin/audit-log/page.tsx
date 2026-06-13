@@ -13,17 +13,25 @@ const ACTION_VI: Record<string, string> = {
   ADMIN_UNBAN_USER:         "Mở khóa tài khoản người dùng",
   ADMIN_CHANGE_ROLE:        "Thay đổi vai trò người dùng",
   ADMIN_ADJUST_BALANCE:     "Điều chỉnh số dư tài khoản",
+  ADMIN_DEDUCT_BALANCE:     "Khấu trừ số dư tài khoản",
   ADMIN_REVOKE_SELLER:      "Thu hồi quyền bán hàng",
   ADMIN_SET_DISCOUNT:       "Cài đặt chiết khấu người dùng",
   ADMIN_CREATE_USER:        "Tạo tài khoản mới",
   ADMIN_UPDATE_ORDER_STATUS:"Cập nhật trạng thái đơn hàng (admin)",
   ADMIN_HARD_DELETE_USER:   "Xóa vĩnh viễn tài khoản",
+  // Nạp tiền
+  DEPOSIT_AUTO:             "Nạp tiền tự động",
+  DEPOSIT_MANUAL:           "Nạp tiền thủ công",
+  // Rút tiền (đầy đủ)
+  WITHDRAWAL_REQUESTED:     "Yêu cầu rút tiền",
   // Xác thực & bảo mật
   USER_REGISTERED:          "Đăng ký tài khoản",
   PASSWORD_RESET:           "Đặt lại mật khẩu",
   "2FA_ENABLED":            "Bật xác thực 2 lớp",
   "2FA_DISABLED":           "Tắt xác thực 2 lớp",
   // Nhà bán hàng
+  SELLER_REGISTRATION_REQUESTED: "Yêu cầu đăng ký nhà bán hàng",
+  SELLER_SLOT_PURCHASE:     "Mua gói slot nhà bán hàng",
   SELLER_REQUEST_APPROVED:  "Duyệt đăng ký nhà bán hàng",
   SELLER_REQUEST_REJECTED:  "Từ chối đăng ký nhà bán hàng",
   SELLER_SHOP_LOCKED:       "Khóa cửa hàng nhà bán hàng",
