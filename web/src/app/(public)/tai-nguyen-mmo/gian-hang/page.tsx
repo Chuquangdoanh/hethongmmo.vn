@@ -18,6 +18,7 @@ export const metadata: Metadata = buildMeta({
   title: "Gian Hàng MMO | Hệ Thống MMO",
   description: "Khám phá các nhà bán hàng uy tín trên hệ thống MMO — mua bán tài khoản, tool, sản phẩm số an toàn, giao tự động.",
   url: "/tai-nguyen-mmo/gian-hang",
+  image: "/images/hethongmmo.png",
 });
 
 const BADGE_STYLE_MAP: Record<string, string> = {

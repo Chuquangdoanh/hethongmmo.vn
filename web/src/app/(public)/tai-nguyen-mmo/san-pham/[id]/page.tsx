@@ -22,11 +22,12 @@ export async function generateMetadata({
   const { id } = await params;
   const product = await prisma.sellerProduct.findUnique({
     where: { id, isActive: true, isHidden: false, isRestricted: false, deletedAt: null },
-    select: { name: true, description: true },
+    select: { name: true, description: true, imageUrl: true },
   });
   if (!product) return { title: "Không tìm thấy" };
   const title = product.name;
   const description = product.description ?? "Sản phẩm số từ nhà bán hàng uy tín — giao tự động, bảo hành 24h tại hethongmmo.vn.";
+  const image = product.imageUrl ? r2Url(product.imageUrl) : "/images/hethongmmo.png";
   return {
     title,
     description,
@@ -37,13 +38,13 @@ export async function generateMetadata({
       siteName: "hethongmmo.vn",
       locale: "vi_VN",
       type: "website",
-      images: [{ url: "/images/facebook_cover_professional.png", width: 1200, height: 630, alt: title }],
+      images: [{ url: image, width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: ["/images/facebook_cover_professional.png"],
+      images: [image],
     },
   };
 }
