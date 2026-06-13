@@ -173,17 +173,27 @@ jobs:
               docker image prune -f
               echo "🐳 App image updated"
 
-              # Chờ container healthy (start_period=60s, interval=30s → tối đa ~120s)
+              # Chờ container healthy
+              # start_period=60s + interval=30s × retries=3 = cần ~150s tối thiểu
               echo "⏳ Chờ container healthy..."
               ELAPSED=0
               until docker inspect --format='{{.State.Health.Status}}' hethongmmo-web 2>/dev/null | grep -q '^healthy$'; do
-                if [ "$ELAPSED" -ge 120 ]; then
-                  echo "❌ Timeout: container không healthy sau 120s"
-                  docker logs hethongmmo-web --tail 50
+                if [ "$ELAPSED" -ge 240 ]; then
+                  echo "❌ Timeout: container không healthy sau 240s"
+                  echo "--- Trạng thái tất cả containers ---"
+                  docker ps -a --filter "name=hethongmmo" --format "table {{.Names}}\t{{.Status}}\t{{.State}}"
+                  if docker inspect hethongmmo-web > /dev/null 2>&1; then
+                    echo "--- Web logs (50 dòng cuối) ---"
+                    docker logs hethongmmo-web --tail 50
+                  else
+                    echo "⚠️  hethongmmo-web không tồn tại — có thể migrate thất bại"
+                    echo "--- Migrate logs ---"
+                    docker logs hethongmmo-migrate --tail 30 2>/dev/null || echo "(không có migrate logs)"
+                  fi
                   exit 1
                 fi
-                sleep 5
-                ELAPSED=$((ELAPSED + 5))
+                sleep 10
+                ELAPSED=$((ELAPSED + 10))
               done
               echo "✅ Container healthy sau ${ELAPSED}s"
 
