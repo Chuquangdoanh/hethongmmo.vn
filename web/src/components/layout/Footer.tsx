@@ -187,9 +187,9 @@ export default function Footer() {
             <ul className="space-y-3 mb-5">
               {([
                 { Icon: Phone,  text: "0393.118.789",              href: "tel:0393118789" },
-                { Icon: Mail,   text: "chudoanhofficial@gmail.com", href: "mailto:chudoanhofficial@gmail.com" },
-                { Icon: MapPin, text: "Hà Nội, Việt Nam",           href: null },
-                { Icon: Clock,  text: "Thứ 2 - Chủ nhật: 8:00 - 22:00", href: null },
+                { Icon: Mail,   text: "chudoanhofficial@gmail.com", href: "chudoanhofficial@gmail.com" },
+                { Icon: MapPin, text: "Hà Nội, Việt Nam",           href: "https://maps.app.goo.gl/r8LGBR7K41xUwLmo6" },
+                { Icon: Clock,  text: "Thứ 2 - Chủ nhật: 8:00 - 23:00", href: null },
               ] as const).map(({ Icon, text, href }) => {
                 const inner = (
                   <div className="flex items-start gap-3">

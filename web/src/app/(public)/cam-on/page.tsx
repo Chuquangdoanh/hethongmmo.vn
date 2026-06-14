@@ -344,15 +344,15 @@ export default async function CamOnPage({
               <div style={{ width: 32, height: 32, borderRadius: 8, background: "#fff7ed", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Gift size={16} color="#ea580c" strokeWidth={2} />
               </div>
-              <h2 style={{ fontSize: 15, fontWeight: 800, color: "#1e40af" }}>QUÀ TẶNG DÀNH CHO BẠN</h2>
+              <h2 style={{ fontSize: 15, fontWeight: 800, color: "#1e40af" }}>ĐẶC QUYỀN VIP & QUÀ TẶNG</h2>
             </div>
-            <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>Cảm ơn bạn! Hãy nhận những phần quà giá trị từ chúng tôi.</p>
+            <p style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>Nâng cấp tài khoản lên VIP ngay hôm nay để nhận trọn bộ công cụ đỉnh cao và tối ưu 10% chi phí.</p>
             <div className="co-gifts-grid">
               {[
-                { Icon: <BookOpen size={18} color="#2563eb" strokeWidth={2} />, bg: "#eff6ff", title: "Tặng Ebook MMO",       desc: "Bí quyết kiếm tiền online"   },
-                { Icon: <Wrench   size={18} color="#7c3aed" strokeWidth={2} />, bg: "#f5f3ff", title: "Tặng Bộ Tool Hỗ Trợ", desc: "Tool tăng tương tác, SEO..."  },
-                { Icon: <Users    size={18} color="#16a34a" strokeWidth={2} />, bg: "#f0fdf4", title: "Tặng Danh Sách Group", desc: "Danh sách group chất lượng"   },
-                { Icon: <Tag      size={18} color="#ea580c" strokeWidth={2} />, bg: "#fff7ed", title: "Voucher Giảm Giá 10%", desc: "Áp dụng cho đơn hàng tiếp"   },
+                { Icon: <BookOpen size={18} color="#2563eb" strokeWidth={2} />, bg: "#eff6ff", title: "Tặng Thẻ Khóa Học MMO",       desc: "Bí quyết kiếm tiền online"   },
+                { Icon: <Wrench   size={18} color="#7c3aed" strokeWidth={2} />, bg: "#f5f3ff", title: "Tặng Bộ TUT Hỗ Trợ", desc: "Tool tăng tương tác, SEO..."  },
+                { Icon: <Users    size={18} color="#16a34a" strokeWidth={2} />, bg: "#f0fdf4", title: "Tặng Danh Sách Group", desc: "Group cộng đồng chất lượng cao hỗ trợ quá trình học"   },
+                { Icon: <Tag      size={18} color="#ea580c" strokeWidth={2} />, bg: "#fff7ed", title: "Voucher Giảm Giá 10%", desc: "Áp dụng cho Khóa học, TUT & Dịch vụ MXH"   },
               ].map(({ Icon, bg, title, desc }) => (
                 <div key={title} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: 12, background: "#f8fafc", borderRadius: 10, border: "1px solid #e2e8f0" }}>
                   <div style={{ width: 32, height: 32, borderRadius: 8, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -400,7 +400,7 @@ export default async function CamOnPage({
                 </div>
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#1d4ed8" }}>Fanpage</span>
               </div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#1877f2" }}>Chu Quang Doanh</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#1877f2" }}>Hệ Thống MMO</p>
             </a>
 
             <a href="tel:0393118789"
@@ -421,7 +421,7 @@ export default async function CamOnPage({
         {/* ── STATS ── */}
         <div className="co-stats-grid">
           {[
-            { n: "10.000+", label: "Khách Hàng", sub: "Tin Tưởng",      color: "#2563eb", bg: "#eff6ff", Icon: <Users2      size={20} color="#2563eb" strokeWidth={2} /> },
+            { n: "100.000+", label: "Khách Hàng", sub: "Tin Tưởng",      color: "#2563eb", bg: "#eff6ff", Icon: <Users2      size={20} color="#2563eb" strokeWidth={2} /> },
             { n: "50.000+", label: "Đơn Hàng",   sub: "Đã Hoàn Thành", color: "#16a34a", bg: "#f0fdf4", Icon: <ShoppingCart size={20} color="#16a34a" strokeWidth={2} /> },
             { n: "98%",     label: "Khách Hàng", sub: "Hài Lòng",       color: "#f59e0b", bg: "#fffbeb", Icon: <Star         size={20} color="#f59e0b" strokeWidth={2} /> },
             { n: "24/7",    label: "Hỗ Trợ",     sub: "Tận Tâm",        color: "#7c3aed", bg: "#f5f3ff", Icon: <Headphones   size={20} color="#7c3aed" strokeWidth={2} /> },
