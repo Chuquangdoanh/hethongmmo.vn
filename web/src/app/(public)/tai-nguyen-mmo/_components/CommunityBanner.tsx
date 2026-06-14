@@ -153,27 +153,36 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
         <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-8">
 
           {/* Title */}
-          <div className="flex items-center gap-3 mb-8">
-            <span className="hidden md:block h-px flex-1 bg-[#e5e7eb]" />
-            <h2 className="text-2xl md:text-3xl font-extrabold text-[#111827] tracking-wider text-center flex-1 md:flex-none">
-              {communityTitle}
-            </h2>
-            <span className="hidden md:block h-px flex-1 bg-[#e5e7eb]" />
-          </div>
+          {(() => {
+            const [titleMain, titleHighlight] = communityTitle.split(" — ");
+            return (
+              <div className="flex items-center gap-3 mb-8">
+                <span className="hidden md:block h-px flex-1 bg-[#e5e7eb]" />
+                <h2 className="text-2xl md:text-3xl font-extrabold tracking-wider text-center flex-1 md:flex-none" style={{ color: "#111827" }}>
+                  {titleMain}
+                  {titleHighlight && (
+                    <> — <span style={{ color: "#f97316" }}>{titleHighlight}</span></>
+                  )}
+                </h2>
+                <span className="hidden md:block h-px flex-1 bg-[#e5e7eb]" />
+              </div>
+            );
+          })()}
 
           {/* Community channels — centered text layout */}
           <div className="max-w-xl mx-auto text-center space-y-4 mb-8">
 
             {/* Telegram group */}
             <div>
-              <p className="text-sm font-semibold text-[#111827] mb-0.5">
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "#0066ff" }}>
                 🔹 {telegramLabel}
               </p>
               <a
                 href={telegramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-primary hover:underline underline-offset-2"
+                className="inline-flex items-center gap-1 text-xs hover:underline underline-offset-2"
+                style={{ color: "#0066ff" }}
               >
                 {telegramUrl} <ExternalLink size={10} strokeWidth={2} />
               </a>
@@ -181,24 +190,28 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
 
             {/* Support */}
             <div>
-              <p className="text-sm font-semibold text-[#111827] mb-0.5">🔹 {supportLabel}</p>
-              <p className="text-sm text-[#374151]">{supportText}</p>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "#0066ff" }}>🔹 {supportLabel}</p>
+              <p className="text-sm" style={{ color: "#374151" }}>
+                <span style={{ color: "#f97316", fontWeight: 700 }}>HỆ THỐNG MMO</span>
+                {supportText.replace("HỆ THỐNG MMO", "")}
+              </p>
             </div>
 
             {/* Community */}
             <div>
-              <p className="text-sm font-semibold text-[#111827] mb-0.5">🔹 {groupLabel}</p>
-              <p className="text-xs text-[#374151] leading-relaxed">{groupDesc}</p>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "#0066ff" }}>🔹 {groupLabel}</p>
+              <p className="text-xs leading-relaxed" style={{ color: "#374151" }}>{groupDesc}</p>
             </div>
 
             {/* Fanpage */}
             <div>
-              <p className="text-sm font-semibold text-[#111827] mb-0.5">🔹 {fanpageLabel}</p>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "#0066ff" }}>🔹 {fanpageLabel}</p>
               <a
                 href={fanpageUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-primary hover:underline underline-offset-2"
+                className="inline-flex items-center gap-1 text-xs hover:underline underline-offset-2"
+                style={{ color: "#1877F2" }}
               >
                 {fanpageUrl} <ExternalLink size={10} strokeWidth={2} />
               </a>
