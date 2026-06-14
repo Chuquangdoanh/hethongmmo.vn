@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import AdServiceTabs from "./_components/AdServiceTabs";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
+import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import ImageLightbox from "@/components/shared/ImageLightbox";
 
 import { buildMeta } from "@/lib/utils/seo";
@@ -59,6 +60,7 @@ const STEPS = [
 
 export default async function QuangCaoAdsPage() {
   await guardPublicPage("quang-cao");
+  const pageHero = await getSiteContent<{ badge: string; title: string; subtitle: string; description: string }>(SITE_CONTENT_KEYS.PAGE_QUANG_CAO);
 
   const session = await auth();
   const sessionUser = session?.user as AuthenticatedUser | undefined;
@@ -108,9 +110,7 @@ export default async function QuangCaoAdsPage() {
                   textTransform: "uppercase",
                 }}
               >
-                Tăng Trưởng Doanh Thu Với{" "}
-                <span style={{ color: "#0066ff" }}>Quảng Cáo Facebook</span>{" "}
-                Chuyên Nghiệp
+                {pageHero.title}
               </h1>
 
               {/* Thumbnail — chỉ hiện trên mobile, giữa title và mô tả */}
@@ -133,8 +133,7 @@ export default async function QuangCaoAdsPage() {
               </div>
 
               <p style={{ color: "#475569", fontSize: "1rem", lineHeight: 1.7, marginBottom: 32, maxWidth: 480 }}>
-                Chúng tôi giúp bạn tối ưu hóa ngân sách, tiếp cận đúng khách hàng mục tiêu
-                và tối đa hóa tỷ lệ chuyển đổi.
+                {pageHero.description}
               </p>
               <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
                 <a href="https://www.facebook.com/hethongmmo.vn/" target="_blank" rel="noopener noreferrer" className="qc-btn-orange">

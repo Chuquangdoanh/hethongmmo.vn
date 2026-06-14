@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import ServiceListWithForm from "./_components/ServiceListWithForm";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
+import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import Pagination from "@/components/shared/Pagination";
 import { Users, TrendingUp, Star, CheckCircle, Headphones } from "lucide-react";
 import { getDiscountInfo } from "@/lib/utils/discount";
@@ -39,6 +40,7 @@ export default async function DichVuPage({
   searchParams: Promise<{ category?: string; page?: string }>;
 }) {
   await guardPublicPage("dich-vu");
+  const pageHero = await getSiteContent<{ badge: string; title: string; description: string }>(SITE_CONTENT_KEYS.PAGE_DICH_VU);
   const [{ category, page: pageParam }, session] = await Promise.all([searchParams, auth()]);
   const isLoggedIn = !!session?.user;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10));
@@ -138,10 +140,10 @@ export default async function DichVuPage({
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-3xl font-extrabold text-text-dark uppercase tracking-wide mb-2">
-            Đăng ký dịch vụ ngay
+            {pageHero.title}
           </h1>
           <p className="text-sm text-text-muted">
-            Chọn dịch vụ bạn cần và điền thông tin để được hỗ trợ nhanh chóng
+            {pageHero.description}
           </p>
         </div>
 

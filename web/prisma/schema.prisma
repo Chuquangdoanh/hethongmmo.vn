@@ -209,6 +209,7 @@ model User {
   chatMessages         ChatMessage[]
   subCategories        UserSubCategory[]
   staffPermissions     StaffPermission[]
+  siteContentUpdates   SiteContent[]
 
   @@index([email])
   @@index([uidPrefix])
@@ -1077,4 +1078,20 @@ model StaffPermission {
   @@unique([userId, permission])
   @@index([userId])
   @@map("staff_permissions")
+}
+
+// ====================================================================
+// 28. SITE_CONTENT (CMS nội dung trang public)
+// ====================================================================
+
+model SiteContent {
+  id            String   @id @default(uuid()) @db.Uuid
+  key           String   @unique @db.VarChar(64)
+  content       Json
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  updatedById   String?  @map("updated_by_id") @db.Uuid
+
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("site_content")
 }

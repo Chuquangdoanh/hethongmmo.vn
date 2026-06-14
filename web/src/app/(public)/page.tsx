@@ -15,6 +15,7 @@ import { prisma } from "@/lib/db/prisma";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { formatVnd } from "@/lib/utils/format";
 import { r2Url } from "@/lib/utils/image-url";
+import { getAllSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import HeroScrollObserver from "@/components/home/HeroScrollObserver";
 import HomeDriftObserver from "@/components/home/HomeDriftObserver";
 import CourseSlider from "@/components/home/CourseSlider";
@@ -102,7 +103,7 @@ const PLATFORM_LABEL: Record<string, string> = {
 /* ═══════════════════════════════════════════════════════ */
 export default async function HomePage() {
   await guardPublicPage("");
-  const [hotTuts, featuredProducts, featuredServices, rawCourses, navCategories] = await Promise.all([
+  const [hotTuts, featuredProducts, featuredServices, rawCourses, navCategories, cmsData] = await Promise.all([
     prisma.tutTrick.findMany({
       where: { isActive: true, deletedAt: null },
       orderBy: [{ isFeatured: "desc" }, { totalOrders: "desc" }],
@@ -148,7 +149,29 @@ export default async function HomePage() {
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       select: { name: true },
     }),
+    getAllSiteContent(),
   ]);
+
+  // ── CMS content ──────────────────────────────────────────────────
+  type HeroContent   = { badge: string; title: string; description: string; imageUrl: string; chip1Value: string; chip1Label: string; chip2Value: string; chip2Label: string; btn1Text: string; btn1Href: string; btn2Text: string; btn2Href: string; };
+  type DJContent     = { companyTitle: string; imageUrl: string; yearsExpValue: string; yearsExpLabel: string; description: string; hotlineLabel: string; hotlineNumber: string; socialFacebook: string; socialTiktok: string; socialInstagram: string; socialZalo: string; socialYoutube: string; };
+  type TeamMember    = { name: string; title: string; imageUrl: string; badgeValue: string; badgeLabel: string; badgeColor: string; bio1: string; bio2: string; quote: string; };
+  type TeamContent   = { sectionLabel: string; sectionTitle: string; members: TeamMember[]; };
+  type StatItem      = { value: string; count: number | null; suffix: string; label: string; };
+  type PressCard     = { logoType: string; tag: string; tagColor: string; headline: string; desc: string; date: string; href: string; };
+  type PressContent  = { badge: string; title: string; subtitle: string; cards: PressCard[]; };
+  type FaqContent    = { title: string; items: { q: string; a: string; }[]; };
+
+  const heroContent  = cmsData[SITE_CONTENT_KEYS.HOME_HERO]    as HeroContent;
+  const djContent    = cmsData[SITE_CONTENT_KEYS.HOME_DJMEDIA]  as DJContent;
+  const teamContent  = cmsData[SITE_CONTENT_KEYS.HOME_TEAM]    as TeamContent;
+  const cmsStats     = (cmsData[SITE_CONTENT_KEYS.HOME_STATS] as { stats: StatItem[] }).stats;
+  const pressContent = cmsData[SITE_CONTENT_KEYS.HOME_PRESS]   as PressContent;
+  const faqContent   = cmsData[SITE_CONTENT_KEYS.HOME_FAQ]     as FaqContent;
+
+  const teamMembers  = teamContent.members ?? [];
+  const member0      = teamMembers[0];
+  const member1      = teamMembers[1];
 
   const featuredCourses = rawCourses.map((c) => ({
     id: c.id,
@@ -180,8 +203,9 @@ export default async function HomePage() {
                 fontSize: "clamp(1.67rem,3.57vw,2.86rem)", fontWeight: "900",
                 color: "#0f172a", lineHeight: "1.2", marginBottom: "0",
               }}>
-                <span style={{ display: "block", whiteSpace: "nowrap" }}>CÔNG TY TNHH DJ MEDIA &amp;</span>
-                <span style={{ display: "block", whiteSpace: "nowrap" }}>SUPPORT MẠNG XÃ HỘI</span>
+                {djContent.companyTitle.split("\n").map((line, i) => (
+                  <span key={i} style={{ display: "block", whiteSpace: "nowrap" }}>{line.replace("&", "& ")}</span>
+                ))}
               </h2>
             </div>
 
@@ -189,12 +213,11 @@ export default async function HomePage() {
             <div style={{ position: "relative" }} className="dj-media-img anim-scale-in" data-d="2">
               <div style={{ borderRadius: "24px", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,.16)", aspectRatio: "4/3", background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/dj-media-classroom.jpg" alt="DJ Media Agency – Lớp học thực chiến" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                <img src={djContent.imageUrl || "/images/dj-media-classroom.jpg"} alt="DJ Media Agency – Lớp học thực chiến" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
               </div>
               <div style={{ position: "absolute", bottom: "24px", left: "24px", background: "#fff", borderRadius: "16px", padding: "14px 20px", boxShadow: "0 12px 32px rgba(0,0,0,.14)", zIndex: 2, animation: "float 5s ease-in-out infinite" }}>
-                <div style={{ fontSize: "1.8rem", fontWeight: "900", color: "#f59e0b", lineHeight: 1 }}>7+</div>
-                <div style={{ fontSize: ".73rem", color: "#334155", fontWeight: "600", marginTop: "4px" }}>Năm Kinh Nghiệm</div>
-                <div style={{ fontSize: ".73rem", color: "#334155", fontWeight: "600" }}>Thực Chiến</div>
+                <div style={{ fontSize: "1.8rem", fontWeight: "900", color: "#f59e0b", lineHeight: 1 }}>{djContent.yearsExpValue}</div>
+                <div style={{ fontSize: ".73rem", color: "#334155", fontWeight: "600", marginTop: "4px" }}>{djContent.yearsExpLabel}</div>
               </div>
             </div>
 
@@ -204,22 +227,22 @@ export default async function HomePage() {
                 fontSize: ".975rem", color: "#64748b", lineHeight: "1.85",
                 marginBottom: "24px", maxWidth: "520px",
               }}>
-                Đội ngũ chuyên nghiệp với 7 năm kinh nghiệm thực chiến trong lĩnh vực dịch vụ mạng xã hội: hỗ trợ Facebook, TikTok, Google, chạy quảng cáo ADS, khai thác Adbreak và đào tạo học viên. Đơn vị tiên phong tại Việt Nam với 2 chi nhánh tại Hà Nội và Hà Tĩnh.
+                {djContent.description}
               </p>
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#1877F2", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
+                <a href={djContent.socialFacebook} target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#1877F2", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
                   <svg width="22" height="22" fill="#fff" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
                 </a>
-                <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#010101", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
+                <a href={djContent.socialTiktok} target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#010101", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
                   <svg width="20" height="20" fill="#fff" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.28 6.28 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.89a8.18 8.18 0 0 0 4.78 1.52V7a4.85 4.85 0 0 1-1.01-.31z"/></svg>
                 </a>
-                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
+                <a href={djContent.socialInstagram} target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
                   <svg width="20" height="20" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
                 </a>
-                <a href="https://zalo.me" target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#0068FF", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
+                <a href={djContent.socialZalo} target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#0068FF", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
                   <span style={{ color: "#fff", fontWeight: "900", fontSize: ".85rem", letterSpacing: "-.5px" }}>Zalo</span>
                 </a>
-                <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#FF0000", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
+                <a href={djContent.socialYoutube} target="_blank" rel="noopener noreferrer" className="social-icon-btn" style={{ width: "48px", height: "48px", borderRadius: "50%", background: "#FF0000", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "transform .25s ease, box-shadow .25s ease" }}>
                   <svg width="22" height="22" fill="#fff" viewBox="0 0 24 24"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon fill="#FF0000" points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/><polygon fill="#fff" points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>
                 </a>
               </div>
@@ -232,8 +255,8 @@ export default async function HomePage() {
                   <Phone size={22} strokeWidth={2} style={{ color: "#fff" }} />
                 </div>
                 <div>
-                  <p style={{ fontSize: ".78rem", color: "#64748b", margin: "0 0 3px", fontWeight: "500" }}>Hotline (CEO – Phạm Hữu Dũng)</p>
-                  <p style={{ fontSize: "1.25rem", fontWeight: "800", color: "#f97316", margin: 0, letterSpacing: ".5px" }}>0828.118.789</p>
+                  <p style={{ fontSize: ".78rem", color: "#64748b", margin: "0 0 3px", fontWeight: "500" }}>{djContent.hotlineLabel}</p>
+                  <p style={{ fontSize: "1.25rem", fontWeight: "800", color: "#f97316", margin: 0, letterSpacing: ".5px" }}>{djContent.hotlineNumber}</p>
                 </div>
               </div>
             </div>
@@ -313,20 +336,18 @@ export default async function HomePage() {
                     display: "block", animation: "breathe 2s ease-in-out infinite",
                   }} />
                 </span>
-                Hệ thống MMO &amp; Tài nguyên số 5.0 chính thức ra mắt
+                {heroContent.badge}
               </div>
               <h1 style={{
                 fontSize: "clamp(2.2rem,5vw,4.2rem)",
                 lineHeight: "1.15", fontWeight: "900", color: "#0f172a", marginBottom: "0",
                 letterSpacing: "-0.03em",
               }}>
-                HỆ THỐNG MMO &amp;<br />
-                <span style={{
-                  background: "linear-gradient(90deg,#0066ff 0%,#60a5fa 50%,#0066ff 100%)",
-                  backgroundSize: "200% auto",
-                  WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
-                  animation: "gradShift 4s ease infinite",
-                }}>TÀI NGUYÊN SỐ 5.0</span>
+                {heroContent.title.split("\n").map((line, i, arr) =>
+                  i < arr.length - 1
+                    ? <span key={i}>{line} &amp;<br /></span>
+                    : <span key={i} style={{ background: "linear-gradient(90deg,#0066ff 0%,#60a5fa 50%,#0066ff 100%)", backgroundSize: "200% auto", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", animation: "gradShift 4s ease infinite" }}>{line}</span>
+                )}
               </h1>
             </div>
 
@@ -355,7 +376,7 @@ export default async function HomePage() {
                 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/images/hethongmmo.png"
+                    src={heroContent.imageUrl || "/images/hethongmmo.png"}
                     alt="Hệ thống MMO & Tài nguyên số 5.0"
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                   />
@@ -369,8 +390,8 @@ export default async function HomePage() {
                   animation: "float 6s ease-in-out infinite",
                   left: "-40px", top: "30%",
                 }}>
-                  <div style={{ fontSize: "1.3rem", fontWeight: "800", color: "#0066ff", lineHeight: 1 }}>99.9%</div>
-                  <div style={{ fontSize: ".7rem", color: "#64748b", fontWeight: "600", marginTop: "2px" }}>Hài lòng</div>
+                  <div style={{ fontSize: "1.3rem", fontWeight: "800", color: "#0066ff", lineHeight: 1 }}>{heroContent.chip1Value}</div>
+                  <div style={{ fontSize: ".7rem", color: "#64748b", fontWeight: "600", marginTop: "2px" }}>{heroContent.chip1Label}</div>
                 </div>
                 <div style={{
                   position: "absolute", background: "rgba(255,255,255,.96)",
@@ -379,8 +400,8 @@ export default async function HomePage() {
                   animation: "float 6s ease-in-out -4s infinite",
                   right: "-40px", bottom: "25%",
                 }}>
-                  <div style={{ fontSize: "1.3rem", fontWeight: "800", color: "#0066ff", lineHeight: 1 }}>7+</div>
-                  <div style={{ fontSize: ".7rem", color: "#64748b", fontWeight: "600", marginTop: "2px" }}>Năm KN</div>
+                  <div style={{ fontSize: "1.3rem", fontWeight: "800", color: "#0066ff", lineHeight: 1 }}>{heroContent.chip2Value}</div>
+                  <div style={{ fontSize: ".7rem", color: "#64748b", fontWeight: "600", marginTop: "2px" }}>{heroContent.chip2Label}</div>
                 </div>
               </div>
             </div>
@@ -391,19 +412,19 @@ export default async function HomePage() {
                 fontSize: "1.05rem", color: "#64748b", marginBottom: "0",
                 maxWidth: "480px", lineHeight: "1.75",
               }}>
-                Nền tảng hàng đầu Việt Nam cho Facebook, TikTok, Google Ads. Hơn 59.000 khách hàng tin dùng dịch vụ, tài nguyên và khóa học thực chiến.
+                {heroContent.description}
               </p>
             </div>
 
             {/* ── 4: Buttons ── */}
             <div className="hero-btn-block anim-fade-in" data-d="4">
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                <Link href="/tai-nguyen-mmo" className="btn-canva-outline">
+                <Link href={heroContent.btn1Href} className="btn-canva-outline">
                   <Search size={16} strokeWidth={2} />
-                  Khám Phá Tài Nguyên
+                  {heroContent.btn1Text}
                 </Link>
-                <Link href="/khoa-hoc" className="btn-canva-primary">
-                  Đăng Ký Khóa Học
+                <Link href={heroContent.btn2Href} className="btn-canva-primary">
+                  {heroContent.btn2Text}
                   <ArrowRight size={16} strokeWidth={2} />
                 </Link>
               </div>
@@ -428,21 +449,21 @@ export default async function HomePage() {
               border: "1px solid rgba(0,102,255,.15)",
             }}>
               <Briefcase size={13} strokeWidth={2} />
-              Ban lãnh đạo
+              {teamContent.sectionLabel}
             </div>
             <h2 style={{
               fontSize: "clamp(1.6rem,3.5vw,2.4rem)", fontWeight: "800",
               color: "#0f172a", margin: 0, lineHeight: "1.2",
             }}>
-              Giám Đốc  &amp; Điều hành Hệ Thống MMO
+              {teamContent.sectionTitle}
             </h2>
           </div>
 
           {/* Two-person grid */}
           <div className="founders-grid">
 
-            {/* ── Phạm Hữu Dũng ── */}
-            <div className="founder-card anim-slide-right" data-d="2">
+            {/* ── Member 0 ── */}
+            {member0 && <div className="founder-card anim-slide-right" data-d="2">
               <div style={{ position: "relative", marginBottom: "28px" }}>
                 <div style={{
                   position: "absolute", inset: "-16px",
@@ -457,8 +478,8 @@ export default async function HomePage() {
                 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/images/phamhuudung.jpg"
-                    alt="Phạm Hữu Dũng — Chuyên gia Digital Marketing"
+                    src={member0.imageUrl}
+                    alt={member0.name}
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                   />
                 </div>
@@ -468,33 +489,29 @@ export default async function HomePage() {
                   boxShadow: "0 8px 24px rgba(0,0,0,.12)", zIndex: 2,
                   textAlign: "center", animation: "float 5s ease-in-out infinite",
                 }}>
-                  <div style={{ fontSize: "1.6rem", fontWeight: "900", color: "#0066ff", lineHeight: 1 }}>7+</div>
-                  <div style={{ fontSize: ".65rem", color: "#64748b", fontWeight: "600", marginTop: "3px" }}>Năm KN</div>
+                  <div style={{ fontSize: "1.6rem", fontWeight: "900", color: member0.badgeColor, lineHeight: 1 }}>{member0.badgeValue}</div>
+                  <div style={{ fontSize: ".65rem", color: "#64748b", fontWeight: "600", marginTop: "3px" }}>{member0.badgeLabel}</div>
                 </div>
               </div>
               <div>
-                <h3 style={{ fontSize: "1.2rem", fontWeight: "800", color: "#0f172a", margin: "0 0 4px" }}>Phạm Hữu Dũng</h3>
-                <p style={{ fontSize: ".8rem", fontWeight: "600", color: "#0066ff", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: ".8px" }}>
-                  CEO &amp; Chuyên gia Digital Marketing
+                <h3 style={{ fontSize: "1.2rem", fontWeight: "800", color: "#0f172a", margin: "0 0 4px" }}>{member0.name}</h3>
+                <p style={{ fontSize: ".8rem", fontWeight: "600", color: member0.badgeColor, margin: "0 0 16px", textTransform: "uppercase", letterSpacing: ".8px" }}>
+                  {member0.title}
                 </p>
-                <p style={{ fontSize: ".95rem", color: "#64748b", lineHeight: "1.8", marginBottom: "16px" }}>
-                  Sở hữu hơn 7 năm kinh nghiệm triển khai các chiến dịch quảng cáo triệu đô trên TikTok, Facebook và Google Ads, Phạm Hữu Dũng là người định hình chiến lược tăng trưởng sau thành công của DJ Media. Tính đến nay, anh cùng các cộng sự đã xây dựng hệ sinh thái MMO toàn diện, phục vụ hơn 59.000 khách hàng, xử lý trên 363.000 giao dịch thành công và đồng hành dẫn dắt 7.900+ học viên bứt phá thu nhập trong không gian số.
-                </p>
-                <p style={{ fontSize: ".95rem", color: "#64748b", lineHeight: "1.8", marginBottom: "16px" }}>
-                  Với mô hình 2 chi nhánh tiên phong tại Hà Nội và Hà Tĩnh, anh cam kết mang lại những giải pháp marketing thực chiến và tối ưu chi phí tốt nhất cho doanh nghiệp.
-                </p>
-                <blockquote style={{
-                  borderLeft: "3px solid #0066ff", padding: "12px 16px",
+                {member0.bio1 && <p style={{ fontSize: ".95rem", color: "#64748b", lineHeight: "1.8", marginBottom: "16px" }}>{member0.bio1}</p>}
+                {member0.bio2 && <p style={{ fontSize: ".95rem", color: "#64748b", lineHeight: "1.8", marginBottom: "16px" }}>{member0.bio2}</p>}
+                {member0.quote && <blockquote style={{
+                  borderLeft: `3px solid ${member0.badgeColor}`, padding: "12px 16px",
                   background: "rgba(0,102,255,.04)", borderRadius: "0 10px 10px 0",
                   fontStyle: "italic", fontSize: ".9rem", lineHeight: "1.7", margin: 0, color: "#334155",
                 }}>
-                  &ldquo;Kết quả thực tế của khách hàng chính là thước đo thành công của chúng tôi.&rdquo;
-                </blockquote>
+                  &ldquo;{member0.quote}&rdquo;
+                </blockquote>}
               </div>
-            </div>
+            </div>}
 
-            {/* ── Chu Quang Doanh ── */}
-            <div className="founder-card anim-slide-left" data-d="2">
+            {/* ── Member 1 ── */}
+            {member1 && <div className="founder-card anim-slide-left" data-d="2">
               <div style={{ position: "relative", marginBottom: "28px" }}>
                 <div style={{
                   position: "absolute", inset: "-16px",
@@ -509,8 +526,8 @@ export default async function HomePage() {
                 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/images/Chu Quang Doanh.png"
-                    alt="Chu Quang Doanh — Nhà sáng lập & Giám đốc điều hành Hệ Thống MMO"
+                    src={member1.imageUrl}
+                    alt={member1.name}
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                   />
                 </div>
@@ -520,27 +537,26 @@ export default async function HomePage() {
                   boxShadow: "0 8px 24px rgba(0,0,0,.12)", zIndex: 2,
                   textAlign: "center", animation: "float 5s ease-in-out infinite",
                 }}>
-                  <div style={{ fontSize: "1.6rem", fontWeight: "900", color: "#f59e0b", lineHeight: 1 }}>59K+</div>
-                  <div style={{ fontSize: ".65rem", color: "#64748b", fontWeight: "600", marginTop: "3px" }}>Khách hàng</div>
+                  <div style={{ fontSize: "1.6rem", fontWeight: "900", color: member1.badgeColor, lineHeight: 1 }}>{member1.badgeValue}</div>
+                  <div style={{ fontSize: ".65rem", color: "#64748b", fontWeight: "600", marginTop: "3px" }}>{member1.badgeLabel}</div>
                 </div>
               </div>
               <div>
-                <h3 style={{ fontSize: "1.2rem", fontWeight: "800", color: "#0f172a", margin: "0 0 4px" }}>Chu Quang Doanh</h3>
-                <p style={{ fontSize: ".8rem", fontWeight: "600", color: "#f59e0b", margin: "0 0 16px", textTransform: "uppercase", letterSpacing: ".8px" }}>
-                  Đồng sáng lập &amp; Điều hành Hệ Thống MMO
+                <h3 style={{ fontSize: "1.2rem", fontWeight: "800", color: "#0f172a", margin: "0 0 4px" }}>{member1.name}</h3>
+                <p style={{ fontSize: ".8rem", fontWeight: "600", color: member1.badgeColor, margin: "0 0 16px", textTransform: "uppercase", letterSpacing: ".8px" }}>
+                  {member1.title}
                 </p>
-                <p style={{ fontSize: ".95rem", color: "#64748b", lineHeight: "1.8", marginBottom: "16px" }}>
-                  Xây dựng và vận hành Hệ Thống MMO phục vụ hơn <strong style={{ color: "#0f172a" }}>59.000 khách hàng</strong>, xử lý hơn <strong style={{ color: "#0f172a" }}>363.000 giao dịch</strong> — từ tài khoản số, TUT MMO đến khóa học và quảng cáo ADS.
-                </p>
-                <blockquote style={{
-                  borderLeft: "3px solid #f59e0b", padding: "12px 16px",
+                {member1.bio1 && <p style={{ fontSize: ".95rem", color: "#64748b", lineHeight: "1.8", marginBottom: "16px" }}>{member1.bio1}</p>}
+                {member1.bio2 && <p style={{ fontSize: ".95rem", color: "#64748b", lineHeight: "1.8", marginBottom: "16px" }}>{member1.bio2}</p>}
+                {member1.quote && <blockquote style={{
+                  borderLeft: `3px solid ${member1.badgeColor}`, padding: "12px 16px",
                   background: "rgba(245,158,11,.04)", borderRadius: "0 10px 10px 0",
                   fontStyle: "italic", fontSize: ".9rem", lineHeight: "1.7", margin: 0, color: "#334155",
                 }}>
-                  &ldquo; chúng tôi xây dựng hệ thống này không chỉ để kinh doanh — mà để tạo ra một hệ sinh thái nơi mọi người có thể học, làm và phát triển cùng nhau.&rdquo;
-                </blockquote>
+                  &ldquo;{member1.quote}&rdquo;
+                </blockquote>}
               </div>
-            </div>
+            </div>}
 
           </div>
         </div>
@@ -565,7 +581,7 @@ export default async function HomePage() {
               border: "1px solid rgba(0,102,255,.15)",
             }}>
               <Newspaper size={13} strokeWidth={2} />
-              Truyền thông
+              {pressContent.badge}
             </div>
 
             {/* Title */}
@@ -574,13 +590,14 @@ export default async function HomePage() {
               color: "#0f172a", margin: "0 0 14px", letterSpacing: "-0.02em",
               lineHeight: "1.15",
             }}>
-              BÁO CHÍ NÓI GÌ VỀ CHÚNG TÔI
+              {pressContent.title}
             </h2>
 
             {/* Subtitle */}
             <p style={{ fontSize: ".95rem", color: "#64748b", margin: "0 auto", maxWidth: "460px", lineHeight: "1.7" }}>
-              Hơn 50+ bài báo truyền thông uy tín đã đưa tin<br />
-              về hệ sinh thái MMO và những giá trị chúng tôi mang lại
+              {pressContent.subtitle.split("\n").map((line, idx) => (
+                <span key={idx}>{line}{idx < pressContent.subtitle.split("\n").length - 1 && <br />}</span>
+              ))}
             </p>
 
             {/* Decorative divider */}
@@ -593,7 +610,7 @@ export default async function HomePage() {
 
           {/* 3 Press Cards */}
           <div className="press-grid">
-            {PRESS_CARDS.map((card, i) => (
+            {pressContent.cards.map((card, i) => (
               <a
                 key={i}
                 href={card.href}
@@ -805,7 +822,7 @@ export default async function HomePage() {
         }} />
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", position: "relative" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: "0" }} className="stats-grid-responsive">
-            {STATS.map(({ value, count, suffix, label }, i) => (
+            {cmsStats.map(({ value, count, suffix, label }, i) => (
               <div
                 key={label}
                 className="anim-card-in"
@@ -1242,10 +1259,10 @@ export default async function HomePage() {
             <div style={{ flex: 1 }}>
               <div style={{ marginBottom: "36px" }}>
                 <h2 style={{ fontSize: "clamp(1.5rem,3vw,2rem)", fontWeight: "800", color: "#0f172a", lineHeight: "1.2", margin: 0 }}>
-                  CÂU HỎI THƯỜNG GẶP
+                  {faqContent.title}
                 </h2>
               </div>
-              <FaqAccordion items={FAQ_ITEMS} />
+              <FaqAccordion items={faqContent.items} />
             </div>
 
             {/* CTA Card */}

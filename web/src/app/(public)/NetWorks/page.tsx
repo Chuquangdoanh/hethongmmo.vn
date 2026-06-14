@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
+import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import ServiceSectionClient, { type Illustration, type UserInfo } from "./_components/ServiceSectionClient";
 import ImageLightbox from "@/components/shared/ImageLightbox";
 import KocGalleryClient from "./_components/KocGalleryClient";
@@ -86,6 +87,7 @@ const TRUST_POINTS = [
 
 export default async function NetworksPage() {
   await guardPublicPage("NetWorks");
+  const pageHero = await getSiteContent<{ badge: string; title: string; subtitle: string; description: string }>(SITE_CONTENT_KEYS.PAGE_NETWORKS);
 
   const session = await auth();
   const sessionUser = session?.user as AuthenticatedUser | undefined;
@@ -118,21 +120,18 @@ export default async function NetworksPage() {
               border: "1px solid rgba(37,99,235,.18)",
             }}>
               <svg width="12" height="12" fill="#2563eb" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
-              DNET MEDIA NETWORK
+              {pageHero.badge}
             </span>
 
             <h1 style={{
               fontSize: "clamp(1.8rem,4.5vw,3rem)", fontWeight: 800,
               color: "#0f172a", lineHeight: 1.2, maxWidth: 760, margin: 0,
             }}>
-              Hệ Sinh Thái{" "}
-              <span style={{ color: "#2563eb" }}>NETWORK</span>{" "}
-              Hỗ Trợ Kiếm Tiền<br />Từ Nội Dung Trên Facebook
+              {pageHero.title}
             </h1>
 
             <p style={{ fontSize: 15, color: "#475569", maxWidth: 560, lineHeight: 1.7, margin: 0 }}>
-              Trang chính thức cung cấp dịch vụ và thông tin hỗ trợ kiếm tiền nội dung
-              cho Content Creator và KOC.
+              {pageHero.description}
             </p>
 
             <a

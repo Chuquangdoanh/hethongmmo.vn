@@ -85,6 +85,13 @@ export const STAFF_PAGE_GROUPS: PageGroup[] = [
       { key: "admin/audit-log", label: "Audit Log" },
     ],
   },
+  {
+    key: "cms",
+    label: "Giao diện",
+    pages: [
+      { key: "admin/cai-dat-giao-dien", label: "Cài đặt giao diện" },
+    ],
+  },
 ];
 
 // ── USER: user portal pages ───────────────────────────────────────────────────

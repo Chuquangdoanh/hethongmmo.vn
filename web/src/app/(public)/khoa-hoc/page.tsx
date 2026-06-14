@@ -5,6 +5,7 @@ import CategoryFilterClient from "./_components/CategoryFilterClient";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
+import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import {
   Star, Users, Clock, Eye, CheckCircle,
   Zap, BookOpen, TrendingUp, Award, GraduationCap, ChevronRight,
@@ -60,6 +61,7 @@ export default async function KhoaHocPage({
   searchParams: Promise<{ category?: string }>;
 }) {
   await guardPublicPage("khoa-hoc");
+  const pageHero = await getSiteContent<{ badge: string; title: string; description: string }>(SITE_CONTENT_KEYS.PAGE_KHOA_HOC);
   const { category } = await searchParams;
 
   const [courses, rawCategories, courseCategoryDefs] = await Promise.all([
@@ -147,21 +149,10 @@ export default async function KhoaHocPage({
                 style={{ background: "rgba(245,158,11,0.15)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.35)" }}
               >
                 <Zap size={11} strokeWidth={2.5} />
-                Digital Learning
+                {pageHero.badge}
               </span>
               <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight">
-                Khóa học{" "}
-                <span
-                  style={{
-                    background: "linear-gradient(135deg, #f59e0b, #fbbf24)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                  }}
-                >
-                  Thực chiến
-                </span>
-                <br />
-                <span className="text-[#374151]">MMO 2025</span>
+                {pageHero.title}
               </h1>
             </div>
 
