@@ -1,6 +1,7 @@
 "use client";
 import SectionSaveClient from "./SectionSaveClient";
 import { FieldText, FieldGrid, FieldSectionLabel } from "./FieldInput";
+import { ImageUpload } from "../../_components/ImageUpload";
 
 interface Props { initialData: Record<string, unknown>; }
 
@@ -31,11 +32,12 @@ export default function HomeHeroEditor({ initialData }: Props) {
             textarea
             rows={2}
           />
-          <FieldText
-            label="URL ảnh hero"
+          <ImageUpload
+            label="Ảnh hero"
             value={String(data["imageUrl"] ?? "")}
-            onChange={(v) => onChange("imageUrl", v)}
-            placeholder="/images/hethongmmo.png"
+            onChange={(url) => onChange("imageUrl", url)}
+            uploadType="cms-hero"
+            hint="Ảnh hiển thị bên phải hero section"
           />
           <FieldSectionLabel label="Floating chips" />
           <FieldGrid cols={2}>

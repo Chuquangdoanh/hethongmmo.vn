@@ -8,7 +8,7 @@ import {
   Gamepad2, Tags, BookMarked, Tag, FolderOpen, ShieldCheck, Star,
   AlertTriangle, Radio, Wallet, ArrowDownCircle, ArrowUpCircle,
   Store, Settings, Users, Search, ChevronDown, Home, X, Lock,
-  Inbox,
+  Inbox, Monitor, Megaphone,
   type LucideIcon,
 } from "lucide-react";
 
@@ -101,6 +101,18 @@ const SECTIONS: NavSection[] = [
       { href: "/admin/users",      label: "Người dùng", Icon: Users,  color: "#0066ff" },
       { href: "/admin/audit-log",  label: "Audit Log",  Icon: Search, color: "#64748b" },
       { href: "/admin/phan-quyen", label: "Phân quyền", Icon: Lock,   color: "#64748b", adminOnly: true },
+    ],
+  },
+  {
+    key: "cms", label: "Giao diện", Icon: Monitor, color: "#8b5cf6", bg: "#f5f3ff",
+    links: [
+      { href: "/admin/cai-dat-giao-dien/trang-chu",  label: "Trang chủ",    Icon: Home,      color: "#8b5cf6" },
+      { href: "/admin/cai-dat-giao-dien/dich-vu",    label: "Dịch vụ",      Icon: Zap,       color: "#8b5cf6" },
+      { href: "/admin/cai-dat-giao-dien/khoa-hoc",   label: "Khóa học",     Icon: BookOpen,  color: "#8b5cf6" },
+      { href: "/admin/cai-dat-giao-dien/quang-cao",  label: "Quảng cáo",    Icon: Megaphone, color: "#8b5cf6" },
+      { href: "/admin/cai-dat-giao-dien/tut-tricks", label: "Tut & Tricks",  Icon: FileText,  color: "#8b5cf6" },
+      { href: "/admin/cai-dat-giao-dien/tai-nguyen", label: "Tài nguyên",   Icon: Gamepad2,  color: "#8b5cf6" },
+      { href: "/admin/cai-dat-giao-dien/networks",   label: "Networks",     Icon: Radio,     color: "#8b5cf6" },
     ],
   },
 ];

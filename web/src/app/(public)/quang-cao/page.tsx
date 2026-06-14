@@ -60,7 +60,7 @@ const STEPS = [
 
 export default async function QuangCaoAdsPage() {
   await guardPublicPage("quang-cao");
-  const pageHero = await getSiteContent<{ badge: string; title: string; subtitle: string; description: string }>(SITE_CONTENT_KEYS.PAGE_QUANG_CAO);
+  const pageHero = await getSiteContent<{ badge: string; title: string; subtitle: string; description: string; thumbnail: string }>(SITE_CONTENT_KEYS.PAGE_QUANG_CAO);
 
   const session = await auth();
   const sessionUser = session?.user as AuthenticatedUser | undefined;
@@ -125,7 +125,7 @@ export default async function QuangCaoAdsPage() {
                   }}
                 >
                   <ImageLightbox
-                    src="/images/hethongmmo.png"
+                    src={pageHero.thumbnail || "/images/hethongmmo.png"}
                     alt="Đội ngũ hethongmmo.vn"
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />

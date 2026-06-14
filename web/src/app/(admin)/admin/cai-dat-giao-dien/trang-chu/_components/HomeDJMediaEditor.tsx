@@ -1,6 +1,7 @@
 "use client";
 import SectionSaveClient from "./SectionSaveClient";
 import { FieldText, FieldGrid, FieldSectionLabel } from "./FieldInput";
+import { ImageUpload } from "../../_components/ImageUpload";
 
 interface Props { initialData: Record<string, unknown>; }
 
@@ -16,11 +17,12 @@ export default function HomeDJMediaEditor({ initialData }: Props) {
             textarea
             rows={2}
           />
-          <FieldText
-            label="URL ảnh"
+          <ImageUpload
+            label="Ảnh DJ Media"
             value={String(data["imageUrl"] ?? "")}
-            onChange={(v) => onChange("imageUrl", v)}
-            placeholder="/images/dj-media-classroom.jpg"
+            onChange={(url) => onChange("imageUrl", url)}
+            uploadType="cms-djmedia"
+            hint="Ảnh lớp học / văn phòng DJ Media"
           />
           <FieldGrid cols={2}>
             <FieldText label="Badge kinh nghiệm — Giá trị" value={String(data["yearsExpValue"] ?? "")} onChange={(v) => onChange("yearsExpValue", v)} placeholder="7+" />

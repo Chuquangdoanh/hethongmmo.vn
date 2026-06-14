@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { FieldText } from "../trang-chu/_components/FieldInput";
+import { ImageUpload } from "./ImageUpload";
 
 interface Props {
   sectionKey: string;
@@ -61,6 +62,13 @@ export default function PageHeroEditor({ sectionKey, initialData, pageLabel, pag
       </div>
 
       <div className="space-y-4">
+        <ImageUpload
+          label="Thumbnail trang"
+          value={String(data["thumbnail"] ?? "")}
+          onChange={(url) => handleChange("thumbnail", url)}
+          uploadType="cms-page"
+          hint="Ảnh đại diện / hero image của trang"
+        />
         <FieldText
           label="Badge"
           value={String(data["badge"] ?? "")}

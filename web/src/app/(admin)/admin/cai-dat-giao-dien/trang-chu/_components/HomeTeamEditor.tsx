@@ -2,6 +2,7 @@
 import { useState } from "react";
 import SectionSaveClient from "./SectionSaveClient";
 import { FieldText, FieldGrid, FieldSectionLabel } from "./FieldInput";
+import { ImageUpload } from "../../_components/ImageUpload";
 
 interface TeamMember {
   name: string;
@@ -34,11 +35,17 @@ function MemberEditor({
       <FieldGrid cols={2}>
         <FieldText label="Tên" value={member.name} onChange={(v) => set("name", v)} />
         <FieldText label="Chức danh" value={member.title} onChange={(v) => set("title", v)} />
-        <FieldText label="URL ảnh" value={member.imageUrl} onChange={(v) => set("imageUrl", v)} />
         <FieldText label="Màu badge (hex)" value={member.badgeColor} onChange={(v) => set("badgeColor", v)} placeholder="#0066ff" />
         <FieldText label="Badge — Giá trị" value={member.badgeValue} onChange={(v) => set("badgeValue", v)} placeholder="7+" />
         <FieldText label="Badge — Nhãn" value={member.badgeLabel} onChange={(v) => set("badgeLabel", v)} placeholder="Năm KN" />
       </FieldGrid>
+      <ImageUpload
+        label="Ảnh đại diện"
+        value={member.imageUrl}
+        onChange={(url) => set("imageUrl", url)}
+        uploadType="cms-team"
+        hint="Ảnh chân dung thành viên"
+      />
       <FieldText label="Bio 1" value={member.bio1} onChange={(v) => set("bio1", v)} textarea rows={3} />
       <FieldText label="Bio 2 (tùy chọn)" value={member.bio2} onChange={(v) => set("bio2", v)} textarea rows={2} />
       <FieldText label="Quote" value={member.quote} onChange={(v) => set("quote", v)} textarea rows={2} />
