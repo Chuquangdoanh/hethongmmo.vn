@@ -8,6 +8,9 @@ import ShopLockAdminButton from "./ShopLockAdminButton";
 import SellerTierForm from "./SellerTierForm";
 import ImageZoom from "./ImageZoom";
 import SellerCategoryManager from "./SellerCategoryManager";
+import BankChangeRequestAdmin from "./BankChangeRequestAdmin";
+import { getSellerBankChangeRequests } from "@/lib/services/bank-change-request.service";
+import { decrypt } from "@/lib/security/encryption";
 
 export const metadata: Metadata = { title: "Duyệt Seller" };
 
@@ -81,6 +84,18 @@ export default async function AdminSellerDetailPage({
     }),
   ]);
   const shopLocked = shopRows[0]?.shop_locked ?? false;
+
+  const [bankChangeRequests, sellerUser] = await Promise.all([
+    getSellerBankChangeRequests(request.userId),
+    prisma.user.findUnique({
+      where: { id: request.userId },
+      select: { bankNameEnc: true, bankAccountNumberEnc: true, bankAccountHolderEnc: true },
+    }),
+  ]);
+  const currentBankName          = sellerUser?.bankNameEnc          ? decrypt(sellerUser.bankNameEnc          as unknown as Buffer) : null;
+  const currentBankAccountNumber = sellerUser?.bankAccountNumberEnc ? decrypt(sellerUser.bankAccountNumberEnc as unknown as Buffer) : null;
+  const currentBankAccountHolder = sellerUser?.bankAccountHolderEnc ? decrypt(sellerUser.bankAccountHolderEnc as unknown as Buffer) : null;
+
   const totalRevenue = Number(orderStats._sum.finalPrice ?? 0);
   const totalOrders  = orderStats._count;
   const totalWithdrawn    = Number(withdrawalStats._sum.amount    ?? 0);
@@ -219,6 +234,34 @@ export default async function AdminSellerDetailPage({
               currentTier={request.user.sellerTier}
               tiers={allTiers}
             />
+          )}
+
+          {/* Bank info & change requests */}
+          {request.status === "APPROVED" && (
+            <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-3">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900 mb-3">Thông tin ngân hàng hiện tại</h2>
+                {currentBankName ? (
+                  <div className="grid grid-cols-3 gap-3 text-sm rounded-lg bg-blue-50 border border-blue-100 p-3">
+                    <div>
+                      <p className="text-[10px] text-blue-400 mb-0.5">Ngân hàng</p>
+                      <p className="font-semibold text-blue-900">{currentBankName}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-blue-400 mb-0.5">Số tài khoản</p>
+                      <p className="font-mono font-bold text-blue-900 tracking-wider">{currentBankAccountNumber}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-blue-400 mb-0.5">Chủ tài khoản</p>
+                      <p className="font-semibold text-blue-900 uppercase">{currentBankAccountHolder}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400">Seller chưa có thông tin ngân hàng.</p>
+                )}
+              </div>
+              <BankChangeRequestAdmin requests={bankChangeRequests} />
+            </div>
           )}
 
         </div>

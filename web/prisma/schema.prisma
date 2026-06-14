@@ -107,6 +107,12 @@ enum WithdrawalStatus {
   COMPLETED
 }
 
+enum BankChangeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum OtpPurpose {
   REGISTER
   LOGIN_2FA
@@ -201,6 +207,7 @@ model User {
   sellerRequest        SellerRequest?
   sellerProducts       SellerProduct[]
   sellerWithdrawals    SellerWithdrawal[]
+  bankChangeRequests   BankChangeRequest[]
   reviews              Review[]
   complaints           Complaint[]
   auditLogsAsActor     AuditLog[]    @relation("AuditActor")
@@ -722,7 +729,32 @@ model SellerWithdrawal {
 }
 
 // ====================================================================
-// 12. SYSTEM_CONFIG
+// 12. BANK_CHANGE_REQUESTS
+// ====================================================================
+model BankChangeRequest {
+  id                   String           @id @default(uuid()) @db.Uuid
+  sellerId             String           @map("seller_id") @db.Uuid
+  seller               User             @relation(fields: [sellerId], references: [id])
+
+  // Thông tin ngân hàng mới (encrypted)
+  bankNameEnc          Bytes            @map("bank_name_enc")
+  bankAccountNumberEnc Bytes            @map("bank_account_number_enc")
+  bankAccountHolderEnc Bytes            @map("bank_account_holder_enc")
+
+  status               BankChangeStatus @default(PENDING)
+  rejectReason         String?          @map("reject_reason")
+  reviewedByUserId     String?          @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt           DateTime?        @map("reviewed_at")
+
+  createdAt            DateTime         @default(now()) @map("created_at")
+
+  @@index([sellerId, status])
+  @@index([status, createdAt])
+  @@map("bank_change_requests")
+}
+
+// ====================================================================
+// 13. SYSTEM_CONFIG
 // ====================================================================
 model SystemConfig {
   key             String   @id

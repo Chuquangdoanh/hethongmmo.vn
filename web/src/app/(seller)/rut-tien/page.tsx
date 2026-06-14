@@ -9,7 +9,10 @@ import {
   ReceiptText, AlertTriangle, PackageX,
 } from "lucide-react";
 import WithdrawalForm from "./WithdrawalForm";
+import BankChangeRequestForm from "./BankChangeRequestForm";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
+import { decrypt } from "@/lib/security/encryption";
+import { getSellerBankChangeRequests } from "@/lib/services/bank-change-request.service";
 
 export const metadata: Metadata = { title: "Rút tiền" };
 
@@ -19,7 +22,12 @@ export default async function RutTienPage() {
 
   const sellerRow = await prisma.user.findUnique({
     where: { id: me.id },
-    select: { sellerTier: true },
+    select: {
+      sellerTier:           true,
+      bankNameEnc:          true,
+      bankAccountNumberEnc: true,
+      bankAccountHolderEnc: true,
+    },
   });
 
   const tierCfg = await getSellerTierConfig(sellerRow?.sellerTier ?? "STANDARD");
@@ -114,7 +122,12 @@ export default async function RutTienPage() {
   });
   const totalWithdrawn = Number(totalWithdrawnAgg._sum.amount ?? 0);
 
-  const hasBankInfo = true;
+  const currentBankName          = sellerRow?.bankNameEnc          ? decrypt(sellerRow.bankNameEnc          as unknown as Buffer) : null;
+  const currentBankAccountNumber = sellerRow?.bankAccountNumberEnc ? decrypt(sellerRow.bankAccountNumberEnc as unknown as Buffer) : null;
+  const currentBankAccountHolder = sellerRow?.bankAccountHolderEnc ? decrypt(sellerRow.bankAccountHolderEnc as unknown as Buffer) : null;
+  const hasBankInfo = !!(currentBankName && currentBankAccountNumber && currentBankAccountHolder);
+
+  const bankChangeRequests = await getSellerBankChangeRequests(me.id);
 
   const STATS = [
     {
@@ -254,6 +267,14 @@ export default async function RutTienPage() {
               hasBankInfo={hasBankInfo}
             />
           )}
+
+          {/* Bank info & change request */}
+          <BankChangeRequestForm
+            currentBankName={currentBankName}
+            currentBankAccountNumber={currentBankAccountNumber}
+            currentBankAccountHolder={currentBankAccountHolder}
+            recentRequests={bankChangeRequests}
+          />
 
           {/* History */}
           {withdrawals.length > 0 && (
