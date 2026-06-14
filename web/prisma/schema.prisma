@@ -208,6 +208,7 @@ model User {
   chatParticipations   ChatParticipant[]
   chatMessages         ChatMessage[]
   subCategories        UserSubCategory[]
+  staffPermissions     StaffPermission[]
 
   @@index([email])
   @@index([uidPrefix])
@@ -1064,4 +1065,16 @@ model AdsRegistration {
   @@index([createdAt])
   @@index([status])
   @@map("ads_registrations")
+}
+
+model StaffPermission {
+  id         String @id @default(uuid()) @db.Uuid
+  userId     String @map("user_id") @db.Uuid
+  permission String @db.VarChar(64)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permission])
+  @@index([userId])
+  @@map("staff_permissions")
 }

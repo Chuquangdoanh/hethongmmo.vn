@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Users, Store, ShieldCheck, Save, Check, X, AlertCircle, Globe, Star, Eye, EyeOff } from "lucide-react";
+import { Users, Store, ShieldCheck, Save, Check, X, AlertCircle, Globe, Star, Eye, EyeOff, Lock } from "lucide-react";
 import type { PageGroup, RolePageGroup } from "@/lib/page-registry";
 import type { PublicPageConfigEntry } from "@/lib/services/public-page-config.service";
+import type { StaffMember } from "@/lib/services/staff-permission.service";
+import StaffActionPermissions from "./StaffActionPermissions";
 
 interface Props {
   registry:             Record<RolePageGroup, PageGroup[]>;
@@ -11,15 +13,17 @@ interface Props {
   initialUser:          Record<string, boolean>;
   initialSeller:        Record<string, boolean>;
   initialPublicConfigs: PublicPageConfigEntry[];
+  staffMembers:         StaffMember[];
 }
 
-type Tab = RolePageGroup | "PUBLIC";
+type Tab = RolePageGroup | "PUBLIC" | "STAFF_ACTIONS";
 
 const TAB_CONFIG: { key: Tab; label: string; Icon: typeof Users; color: string; bg: string }[] = [
-  { key: "PUBLIC", label: "Trang công khai", Icon: Globe,      color: "#0f9d58", bg: "#d4edda" },
-  { key: "STAFF",  label: "Nhân viên",       Icon: ShieldCheck, color: "#7c3aed", bg: "#ede9fe" },
-  { key: "USER",   label: "Người dùng",      Icon: Users,       color: "#0066ff", bg: "#dbeafe" },
-  { key: "SELLER", label: "Nhà bán hàng",    Icon: Store,       color: "#ec4899", bg: "#fce7f3" },
+  { key: "PUBLIC",        label: "Trang công khai",    Icon: Globe,      color: "#0f9d58", bg: "#d4edda" },
+  { key: "STAFF",         label: "Nhân viên (trang)",  Icon: ShieldCheck, color: "#7c3aed", bg: "#ede9fe" },
+  { key: "STAFF_ACTIONS", label: "Nhân viên (CRUD)",   Icon: Lock,        color: "#dc2626", bg: "#fee2e2" },
+  { key: "USER",          label: "Người dùng",         Icon: Users,       color: "#0066ff", bg: "#dbeafe" },
+  { key: "SELLER",        label: "Nhà bán hàng",       Icon: Store,       color: "#ec4899", bg: "#fce7f3" },
 ];
 
 const ROLE_LABELS: Record<RolePageGroup, string> = {
@@ -41,7 +45,7 @@ function initPublicState(configs: PublicPageConfigEntry[]): PublicState {
 }
 
 export default function PermissionManager({
-  registry, initialStaff, initialUser, initialSeller, initialPublicConfigs,
+  registry, initialStaff, initialUser, initialSeller, initialPublicConfigs, staffMembers,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("PUBLIC");
 
@@ -56,16 +60,16 @@ export default function PermissionManager({
   const [publicState, setPublicState] = useState<PublicState>(initPublicState(initialPublicConfigs));
 
   const [saveStatus, setSaveStatus] = useState<Record<Tab, "idle" | "success" | "error">>({
-    PUBLIC: "idle", STAFF: "idle", USER: "idle", SELLER: "idle",
+    PUBLIC: "idle", STAFF: "idle", STAFF_ACTIONS: "idle", USER: "idle", SELLER: "idle",
   });
   const [errorMsg, setErrorMsg] = useState<Record<Tab, string>>({
-    PUBLIC: "", STAFF: "", USER: "", SELLER: "",
+    PUBLIC: "", STAFF: "", STAFF_ACTIONS: "", USER: "", SELLER: "",
   });
   const [isPending, startTransition] = useTransition();
 
   // ── Role tab helpers ──────────────────────────────────────────────────────
   function toggle(pageKey: string) {
-    if (activeTab === "PUBLIC") return;
+    if (!isRoleTab(activeTab)) return;
     setPerms((prev) => ({
       ...prev,
       [activeTab]: { ...prev[activeTab], [pageKey]: !prev[activeTab][pageKey] },
@@ -74,7 +78,7 @@ export default function PermissionManager({
   }
 
   function toggleGroup(groupKey: string, value: boolean) {
-    if (activeTab === "PUBLIC") return;
+    if (!isRoleTab(activeTab)) return;
     const group = registry[activeTab].find((g) => g.key === groupKey);
     if (!group) return;
     const updates = Object.fromEntries(group.pages.map((p) => [p.key, value]));
@@ -117,7 +121,7 @@ export default function PermissionManager({
             setSaveStatus((s) => ({ ...s, PUBLIC: "error" }));
             return;
           }
-        } else {
+        } else if (isRoleTab(activeTab)) {
           const currentPerms = perms[activeTab];
           const res = await fetch("/api/admin/page-permissions", { credentials: "include",
             method: "PATCH",
@@ -149,14 +153,17 @@ export default function PermissionManager({
     return { enabled, total: vals.length, disabled: vals.length - enabled };
   };
 
+  const isRoleTab = (t: Tab): t is RolePageGroup =>
+    t === "STAFF" || t === "USER" || t === "SELLER";
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
       {/* ── Tabs ── */}
       <div className="flex border-b border-gray-200 overflow-x-auto">
         {TAB_CONFIG.map(({ key, label, Icon, color, bg }) => {
-          const active = activeTab === key;
-          const disabled = key !== "PUBLIC" ? roleCounts(key as RolePageGroup).disabled : 0;
+          const active   = activeTab === key;
+          const disabled = isRoleTab(key) ? roleCounts(key).disabled : 0;
           return (
             <button
               key={key}
@@ -174,7 +181,7 @@ export default function PermissionManager({
                 <Icon size={13} strokeWidth={2} style={{ color: active ? color : "#94a3b8" }} />
               </div>
               {label}
-              {active && key !== "PUBLIC" && disabled > 0 && (
+              {active && isRoleTab(key) && disabled > 0 && (
                 <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold">
                   {disabled} tắt
                 </span>
@@ -184,7 +191,8 @@ export default function PermissionManager({
         })}
       </div>
 
-      {/* ── Summary / action bar ── */}
+      {/* ── Summary / action bar — ẩn cho STAFF_ACTIONS (tự có bar riêng) ── */}
+      {activeTab !== "STAFF_ACTIONS" && (
       <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between gap-4">
         <p className="text-xs text-gray-500">
           {activeTab === "PUBLIC"
@@ -217,6 +225,12 @@ export default function PermissionManager({
           </button>
         </div>
       </div>
+      )}
+
+      {/* ── STAFF_ACTIONS tab content ── */}
+      {activeTab === "STAFF_ACTIONS" && (
+        <StaffActionPermissions initialMembers={staffMembers} />
+      )}
 
       {/* ── PUBLIC tab content ── */}
       {activeTab === "PUBLIC" && (
