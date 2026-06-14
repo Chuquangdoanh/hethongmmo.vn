@@ -258,6 +258,7 @@ export default async function AdminWithdrawalsPage({
                   <td className="px-4 py-3.5 text-xs text-gray-500">{formatDate(w.createdAt)}</td>
                   <td className="px-4 py-3.5 text-right">
                     <Link
+                      prefetch={false}
                       href={`/admin/withdrawals/${w.id}`}
                       className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                         w.status === "PENDING"

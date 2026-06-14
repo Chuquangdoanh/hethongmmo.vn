@@ -247,6 +247,7 @@ export default async function AdminSellerProductsPage({
                         </td>
                         <td className="px-4 py-3">
                           <Link
+                            prefetch={false}
                             href={`/admin/sellers/${p.seller.id}`}
                             className="text-xs font-medium text-blue-600 hover:underline block truncate max-w-30"
                           >
@@ -297,6 +298,7 @@ export default async function AdminSellerProductsPage({
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Link
+                              prefetch={false}
                               href={`/admin/san-pham-ban/${p.id}`}
                               className="px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-medium hover:bg-blue-100 transition-colors whitespace-nowrap"
                             >

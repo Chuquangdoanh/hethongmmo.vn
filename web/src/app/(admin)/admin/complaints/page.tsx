@@ -97,7 +97,7 @@ export default async function AdminComplaintsPage({
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-500">{formatDate(c.createdAt)}</td>
                 <td className="px-4 py-3 text-right whitespace-nowrap">
-                  <Link href={`/admin/complaints/${c.id}`} className="text-xs text-[#7C3AED] hover:text-[#A855F7]">
+                  <Link prefetch={false} href={`/admin/complaints/${c.id}`} className="text-xs text-[#7C3AED] hover:text-[#A855F7]">
                     Xem
                   </Link>
                   <CloseComplaintButton complaintId={c.id} complaintStatus={c.status} />

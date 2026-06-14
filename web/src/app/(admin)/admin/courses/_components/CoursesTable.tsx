@@ -238,6 +238,7 @@ export default function CoursesTable({ courses, total, category, q, currentPage 
                 </td>
                 <td className="px-4 py-3.5 text-right">
                   <Link
+                    prefetch={false}
                     href={`/admin/courses/${course.id}/sua`}
                     className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-[#7C3AED] bg-[#7C3AED]/8 hover:bg-[#7C3AED]/15 transition-colors"
                   >

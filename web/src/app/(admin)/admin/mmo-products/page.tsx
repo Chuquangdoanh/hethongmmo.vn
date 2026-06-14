@@ -223,12 +223,14 @@ export default async function AdminMmoProductsPage({
                   <td className="px-4 py-3.5 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Link
+                        prefetch={false}
                         href={`/admin/mmo-products/${product.id}/stock`}
                         className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-[#10B981] bg-[#10B981]/8 hover:bg-[#10B981]/15 transition-colors"
                       >
                         Kho
                       </Link>
                       <Link
+                        prefetch={false}
                         href={`/admin/mmo-products/${product.id}/sua`}
                         className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-[#7C3AED] bg-[#7C3AED]/8 hover:bg-[#7C3AED]/15 transition-colors"
                       >

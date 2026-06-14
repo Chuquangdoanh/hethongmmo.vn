@@ -211,6 +211,7 @@ export default function UsersTableClient({ users, currentUserId, total, role, q 
                   <td className="px-4 py-3.5 text-xs text-gray-500">{formatDate(u.createdAt)}</td>
                   <td className="px-4 py-3.5 text-right">
                     <Link
+                      prefetch={false}
                       href={`/admin/users/${u.id}`}
                       className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-[#7C3AED] bg-[#7C3AED]/8 hover:bg-[#7C3AED]/15 transition-colors"
                     >

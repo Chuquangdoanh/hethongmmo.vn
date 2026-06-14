@@ -157,6 +157,7 @@ export default function TestimonialList({
                   <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${t.isActive ? "translate-x-4" : "translate-x-0.5"}`} />
                 </button>
                 <Link
+                  prefetch={false}
                   href={`/admin/danh-gia/${t.id}/sua`}
                   className="text-xs text-gray-500 hover:text-[#7C3AED] px-2 py-1 rounded hover:bg-[#7C3AED]/5 transition-colors"
                 >
