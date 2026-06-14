@@ -36,33 +36,20 @@ function YoutubeModal({ videoId, title, onClose }: Props & { onClose: () => void
         </svg>
       </button>
 
-      {/* Vùng video — click mở YouTube ngay trong tab hiện tại */}
-      <a
-        href={`https://www.youtube.com/watch?v=${videoId}`}
-        onClick={(e) => e.stopPropagation()}
-        className="relative block w-full max-w-4xl cursor-pointer"
+      {/* iframe YouTube */}
+      <div
+        className="relative w-full max-w-4xl rounded-xl overflow-hidden shadow-2xl"
         style={{ aspectRatio: "16/9" }}
-        aria-label={`Xem video: ${title}`}
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
-          alt={title}
-          className="absolute inset-0 w-full h-full object-cover rounded-xl"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src =
-              `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-          }}
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`}
+          title={title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className="absolute inset-0 w-full h-full border-0"
         />
-        {/* Overlay play */}
-        <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/20 hover:bg-black/35 transition-colors">
-          <div className="w-20 h-20 flex items-center justify-center rounded-full bg-[#ff0000] shadow-2xl hover:scale-110 transition-transform duration-200">
-            <svg viewBox="0 0 24 24" fill="white" width="34" height="34" style={{ marginLeft: "5px" }}>
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </div>
-        </div>
-      </a>
+      </div>
     </div>,
     document.body,
   );

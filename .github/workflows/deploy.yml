@@ -254,11 +254,11 @@ jobs:
               echo "⏭️  App không đổi — skip pull"
             fi
 
-            # Reload nginx để áp dụng config mới (infra/ đã được SCP ở bước trên)
+            # Recreate nginx để bind mount lấy inode mới từ SCP (sed -i / scp tạo inode mới,
+            # nginx -s reload đọc inode cũ — phải force-recreate để fix)
             echo "=== nginx.conf frame-src hiện tại trên server ==="
             grep "frame-src" /opt/hethongmmo/infra/nginx/nginx.conf || echo "(không tìm thấy frame-src)"
-            docker exec hethongmmo-nginx nginx -t
-            docker exec hethongmmo-nginx nginx -s reload
-            echo "✅ Nginx reloaded: $(date)"
+            docker compose up -d --force-recreate nginx
+            echo "✅ Nginx recreated: $(date)"
 
             echo "✅ Deploy xong: $(date)"
