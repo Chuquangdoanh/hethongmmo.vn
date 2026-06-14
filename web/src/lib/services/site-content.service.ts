@@ -156,6 +156,7 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
   page_tut_tricks: {
     badge: "⚡ KHO TUT TRICK ĐỘC QUYỀN",
     title: "TUT / TRICK",
+    titleColor: "#ef4444",
     subtitle: "Cộng Đồng MMO Việt Nam",
     description: "Bí quyết tăng trưởng chiến, kiếm tiền online — tổng hợp độc quyền, cập nhật liên tục từ các chuyên gia.",
     thumbnail: "",
@@ -166,6 +167,15 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     subtitle: "",
     description: "Tool, tài khoản, dịch vụ số — marketplace an toàn, giao hàng tự động, bảo hành uy tín.",
     thumbnail: "",
+    communityTitle: "CỘNG ĐỒNG MMO — HỆ THỐNG MMO 5.0",
+    communityTelegramLabel: "Nhóm Telegram – Cộng đồng Update Biến Chuyển Meta",
+    communityTelegramUrl: "https://t.me/hethongmmovn",
+    communitySupportLabel: "Chăm sóc khách hàng",
+    communitySupportText: "HỆ THỐNG MMO - Telegram : @hethongmmo.vn (Hỗ trợ 24/7 mọi ngày)",
+    communityGroupLabel: "Cộng Đồng MMO",
+    communityGroupDesc: "Nơi giao lưu, chia sẻ kiến thức, tài nguyên và cập nhật các xu hướng mới nhất về MMO, Facebook Ads, Marketing và kiếm tiền online.",
+    communityFanpageLabel: "Kênh Fanpage Chính Thức",
+    communityFanpageUrl: "https://www.facebook.com/hethongmmo.vn/",
   },
   page_networks: {
     badge: "DNET MEDIA NETWORK",

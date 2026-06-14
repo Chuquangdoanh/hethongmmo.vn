@@ -82,6 +82,26 @@ export default function PageHeroEditor({ sectionKey, initialData, pageLabel, pag
           textarea
           rows={2}
         />
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <FieldText
+              label="Màu tiêu đề (hex)"
+              value={String(data["titleColor"] ?? "")}
+              onChange={(v) => handleChange("titleColor", v)}
+              placeholder="#111827"
+              hint="VD: #ef4444 đỏ · #0066ff xanh · #f59e0b vàng · để trống = màu mặc định"
+            />
+          </div>
+          <div className="shrink-0 pb-1">
+            <input
+              type="color"
+              value={String(data["titleColor"] ?? "#111827")}
+              onChange={(e) => handleChange("titleColor", e.target.value)}
+              className="w-10 h-9 rounded-lg border border-gray-200 cursor-pointer bg-white p-0.5"
+              title="Chọn màu"
+            />
+          </div>
+        </div>
         <FieldText
           label="Subtitle (tùy chọn)"
           value={String(data["subtitle"] ?? "")}

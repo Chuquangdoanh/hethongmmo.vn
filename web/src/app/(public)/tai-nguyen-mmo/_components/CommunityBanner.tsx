@@ -104,7 +104,29 @@ function ModalContent({ id }: { id: ModalId }) {
   );
 }
 
-export function CommunityBanner() {
+export interface CommunityBannerData {
+  communityTitle?: string;
+  communityTelegramLabel?: string;
+  communityTelegramUrl?: string;
+  communitySupportLabel?: string;
+  communitySupportText?: string;
+  communityGroupLabel?: string;
+  communityGroupDesc?: string;
+  communityFanpageLabel?: string;
+  communityFanpageUrl?: string;
+}
+
+export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
+  const communityTitle    = data.communityTitle       ?? "CỘNG ĐỒNG MMO — HỆ THỐNG MMO 5.0";
+  const telegramLabel     = data.communityTelegramLabel ?? "Nhóm Telegram – Cộng đồng Update Biến Chuyển Meta";
+  const telegramUrl       = data.communityTelegramUrl ?? "https://t.me/hethongmmovn";
+  const supportLabel      = data.communitySupportLabel ?? "Chăm sóc khách hàng";
+  const supportText       = data.communitySupportText ?? "HỆ THỐNG MMO - Telegram : @hethongmmo.vn (Hỗ trợ 24/7 mọi ngày)";
+  const groupLabel        = data.communityGroupLabel   ?? "Cộng Đồng MMO";
+  const groupDesc         = data.communityGroupDesc    ?? "Nơi giao lưu, chia sẻ kiến thức, tài nguyên và cập nhật các xu hướng mới nhất về MMO, Facebook Ads, Marketing và kiếm tiền online.";
+  const fanpageLabel      = data.communityFanpageLabel ?? "Kênh Fanpage Chính Thức";
+  const fanpageUrl        = data.communityFanpageUrl  ?? "https://www.facebook.com/hethongmmo.vn/";
+
   const [open, setOpen] = useState<ModalId | null>(null);
 
   useEffect(() => {
@@ -134,11 +156,7 @@ export function CommunityBanner() {
           <div className="flex items-center gap-3 mb-8">
             <span className="hidden md:block h-px flex-1 bg-[#e5e7eb]" />
             <h2 className="text-2xl md:text-3xl font-extrabold text-[#111827] tracking-wider text-center flex-1 md:flex-none">
-              <span className="block md:inline">CỘNG ĐỒNG MMO</span>
-              <span className="hidden md:inline"> — </span>
-              <span className="block md:inline">
-                <span className="text-[#d97706]">HỆ THỐNG MMO</span>{" "}5.0
-              </span>
+              {communityTitle}
             </h2>
             <span className="hidden md:block h-px flex-1 bg-[#e5e7eb]" />
           </div>
@@ -146,49 +164,43 @@ export function CommunityBanner() {
           {/* Community channels — centered text layout */}
           <div className="max-w-xl mx-auto text-center space-y-4 mb-8">
 
-            {/* Zalo */}
+            {/* Telegram group */}
             <div>
               <p className="text-sm font-semibold text-[#111827] mb-0.5">
-                🔹 Nhóm Telegram – Cộng đồng Update Biến Chuyển Meta
+                🔹 {telegramLabel}
               </p>
               <a
-                href="https://t.me/hethongmmovn"
+                href={telegramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-primary hover:underline underline-offset-2"
               >
-                https://t.me/hethongmmovn <ExternalLink size={10} strokeWidth={2} />
+                {telegramUrl} <ExternalLink size={10} strokeWidth={2} />
               </a>
             </div>
 
-            {/* Telegram */}
+            {/* Support */}
             <div>
-              <p className="text-sm font-semibold text-[#111827] mb-0.5">🔹 Chăm sóc khách hàng</p>
-              <p className="text-sm text-[#374151]">
-                <span className="text-warning font-extrabold">HỆ THỐNG MMO</span>
-                {" "}- Telegram : <span className="text-[#1d4ed8] font-extrabold">@hethongmmo.vn</span>
-                <span className="block sm:inline"> (Hỗ trợ 24/7 mọi ngày)</span>
-              </p>
+              <p className="text-sm font-semibold text-[#111827] mb-0.5">🔹 {supportLabel}</p>
+              <p className="text-sm text-[#374151]">{supportText}</p>
             </div>
 
             {/* Community */}
             <div>
-              <p className="text-sm font-semibold text-[#111827] mb-0.5">🔹 Cộng Đồng MMO</p>
-              <p className="text-xs text-[#374151] leading-relaxed">
-                Nơi giao lưu, chia sẻ kiến thức, tài nguyên và cập nhật các xu hướng mới nhất về MMO, Facebook Ads, Marketing và kiếm tiền online.
-              </p>
+              <p className="text-sm font-semibold text-[#111827] mb-0.5">🔹 {groupLabel}</p>
+              <p className="text-xs text-[#374151] leading-relaxed">{groupDesc}</p>
             </div>
 
-            {/* TikTok */}
+            {/* Fanpage */}
             <div>
-              <p className="text-sm font-semibold text-[#111827] mb-0.5">🔹 Kênh Fanpage Chính Thức</p>
+              <p className="text-sm font-semibold text-[#111827] mb-0.5">🔹 {fanpageLabel}</p>
               <a
-                href="https://www.facebook.com/hethongmmo.vn/"
+                href={fanpageUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs text-primary hover:underline underline-offset-2"
               >
-                https://www.facebook.com/hethongmmo.vn/ <ExternalLink size={10} strokeWidth={2} />
+                {fanpageUrl} <ExternalLink size={10} strokeWidth={2} />
               </a>
             </div>
           </div>

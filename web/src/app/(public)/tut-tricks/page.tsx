@@ -23,7 +23,7 @@ export default async function TutTricksPage({
   searchParams: Promise<{ category?: string; tier?: string }>;
 }) {
   await guardPublicPage("tut-tricks");
-  const pageHero = await getSiteContent<{ badge: string; title: string; subtitle: string; description: string }>(SITE_CONTENT_KEYS.PAGE_TUT_TRICKS);
+  const pageHero = await getSiteContent<{ badge: string; title: string; titleColor: string; subtitle: string; description: string }>(SITE_CONTENT_KEYS.PAGE_TUT_TRICKS);
   const [{ category, tier }, session] = await Promise.all([
     searchParams,
     auth(),
@@ -90,7 +90,10 @@ export default async function TutTricksPage({
           <span className="inline-flex items-center gap-1.5 mb-5 px-4 py-1.5 rounded-full text-[11px] font-extrabold tracking-widest bg-[#f59e0b] text-black uppercase shadow-lg">
             {pageHero.badge}
           </span>
-          <h1 className="text-5xl md:text-7xl font-extrabold text-[#111827] mb-1 tracking-tight leading-tight">
+          <h1
+            className="text-5xl md:text-7xl font-extrabold mb-1 tracking-tight leading-tight"
+            style={{ color: pageHero.titleColor || "#111827" }}
+          >
             {pageHero.title}
           </h1>
           <h2 className="text-2xl md:text-4xl font-bold text-[#111827] mb-4 tracking-wide">
