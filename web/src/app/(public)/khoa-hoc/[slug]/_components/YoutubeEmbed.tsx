@@ -1,31 +1,27 @@
 "use client";
 
-import { useState } from "react";
-
 interface Props {
   videoId: string;
   title: string;
 }
 
 export default function YoutubeEmbed({ videoId, title }: Props) {
-  const [playing, setPlaying] = useState(false);
-
-  if (playing) {
-    return (
-      <iframe
-        src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`}
-        title={title}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowFullScreen
-        className="absolute inset-0 w-full h-full"
-      />
+  const openPopup = () => {
+    const w = 854;
+    const h = 480;
+    const left = Math.round((window.screen.width - w) / 2);
+    const top = Math.round((window.screen.height - h) / 2);
+    window.open(
+      `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`,
+      "youtube_player",
+      `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=no,resizable=yes,scrollbars=no`,
     );
-  }
+  };
 
   return (
     <button
       type="button"
-      onClick={() => setPlaying(true)}
+      onClick={openPopup}
       className="absolute inset-0 w-full group cursor-pointer"
       aria-label={`Phát video: ${title}`}
     >
