@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "connect-src 'self' https://challenges.cloudflare.com https://*.r2.cloudflarestorage.com",
-      "frame-src https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com",
+      "frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
