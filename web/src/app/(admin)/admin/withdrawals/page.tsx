@@ -89,8 +89,10 @@ export default async function AdminWithdrawalsPage({
         return d ? { processedAt: { gte: d } } : {};
       })();
 
+  // APPROVED = balance đã trừ, đang chờ chuyển khoản; COMPLETED = đã chuyển khoản xong
+  // Cả hai đều tính vào "Tổng đã chi" vì tiền seller đã bị cam kết chi ra từ bước APPROVED
   const totalAmountWhere = {
-    status: "COMPLETED" as const,
+    status: { in: ["APPROVED", "COMPLETED"] as ("APPROVED" | "COMPLETED")[] },
     ...processedAtFilter,
   };
 
@@ -151,7 +153,7 @@ export default async function AdminWithdrawalsPage({
           <p className="text-xs font-medium text-[#A855F7] uppercase tracking-wide mb-2">Tổng đã chi</p>
           <p className="text-2xl font-bold text-[#A855F7]">{formatVnd(Number(totalAmountAgg._sum.netAmount ?? 0))}</p>
           <p className="text-xs text-gray-400 mt-1.5">
-            {getDateLabel(dateRange, from, to)} · Thực nhận
+            {getDateLabel(dateRange, from, to)} · Đã duyệt + Hoàn thành
           </p>
           <div className="flex items-center gap-1 mt-2.5 flex-wrap">
             {(["", "today", "week", "month"] as const).map((key) => (
