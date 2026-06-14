@@ -28,7 +28,7 @@ function YoutubeModal({ videoId, title, onClose }: Props & { onClose: () => void
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-3 right-3 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/25 active:bg-white/35 text-white transition-colors"
+        className="absolute top-3 right-3 z-10 w-11 h-11 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/30 active:bg-white/40 text-white transition-colors"
         aria-label="Đóng"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} width={20} height={20}>
@@ -36,20 +36,33 @@ function YoutubeModal({ videoId, title, onClose }: Props & { onClose: () => void
         </svg>
       </button>
 
-      {/* Video */}
-      <div
-        className="relative w-full max-w-4xl"
-        style={{ aspectRatio: "16/9" }}
+      {/* Vùng video — click mở YouTube ngay trong tab hiện tại */}
+      <a
+        href={`https://www.youtube.com/watch?v=${videoId}`}
         onClick={(e) => e.stopPropagation()}
+        className="relative block w-full max-w-4xl cursor-pointer"
+        style={{ aspectRatio: "16/9" }}
+        aria-label={`Xem video: ${title}`}
       >
-        <iframe
-          className="absolute inset-0 w-full h-full rounded-xl"
-          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`}
-          title={title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+          alt={title}
+          className="absolute inset-0 w-full h-full object-cover rounded-xl"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src =
+              `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+          }}
         />
-      </div>
+        {/* Overlay play */}
+        <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/20 hover:bg-black/35 transition-colors">
+          <div className="w-20 h-20 flex items-center justify-center rounded-full bg-[#ff0000] shadow-2xl hover:scale-110 transition-transform duration-200">
+            <svg viewBox="0 0 24 24" fill="white" width="34" height="34" style={{ marginLeft: "5px" }}>
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
+        </div>
+      </a>
     </div>,
     document.body,
   );
