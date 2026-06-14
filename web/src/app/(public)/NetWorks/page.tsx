@@ -10,7 +10,7 @@ export const metadata: Metadata = buildMeta({
   title: "NETWORKS (ADB) — DNET Media Network | Hệ Thống MMO",
   description: "Hệ sinh thái NETWORK hỗ trợ kiếm tiền từ nội dung trên Facebook. Cung cấp Fanpage, Setup Payout, Hợp tác KOC — uy tín, chuyên nghiệp.",
   url: "/NetWorks",
-  image: "/images/dj-media-classroom.jpg",
+  image: "/images/dnetthumnail.jpg",
 });
 
 const SERVICES = [
@@ -70,8 +70,8 @@ const SERVICES = [
 
 // Ảnh minh họa do hệ thống cung cấp — chỉ admin mới có thể thay đổi (sửa mảng này)
 const ILLUSTRATIONS: Illustration[] = [
-  { src: "/images/facebook_cover_professional.png", label: "Fanpage chuyên nghiệp" },
-  { src: "/images/dj-media-classroom.jpg",          label: "Đội ngũ DNET Media" },
+  { src: "/images/pagecm.jpg", label: "Fanpage chuyên nghiệp" },
+  { src: "/images/doinguctydjmedia.jpg",          label: "Đội ngũ DNET Media" },
 ];
 
 const TRUST_POINTS = [
@@ -82,9 +82,9 @@ const TRUST_POINTS = [
 ];
 
 const KOC_GALLERY = [
-  { label: "IDOLS SÁNG CON TV", sub: "1.000 Followers", src: "/images/Chu%20Quang%20Doanh.png" },
-  { label: "KOC Partner #2",    sub: "500K Followers",  src: "/images/Chu%20Quang%20Doanh.png" },
-  { label: "KOC Partner #3",    sub: "200K Followers",  src: "/images/Chu%20Quang%20Doanh.png" },
+  { label: "IDOLS SÁNG CON TV", sub: "100.000k Followers", src: "/images/sangcon.jpg" },
+  { label: "IDLOS VIỆT XĂM ",    sub: "100.000K Followers",  src: "/images/vietxam.jpg" },
+  { label: "Đối Tác Kiên Love",    sub:"54.000K Followers",  src: "/images/kienlove.jpg" },
 ];
 
 export default async function NetworksPage() {

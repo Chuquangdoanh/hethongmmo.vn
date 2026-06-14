@@ -363,14 +363,7 @@ export default function ServiceSectionClient({ services, illustrations, userInfo
                     <label style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>
                       Mô tả dịch vụ
                     </label>
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, letterSpacing: "0.05em",
-                      background: "#eff6ff", color: "#2563eb",
-                      padding: "2px 8px", borderRadius: 99,
-                      border: "1px solid #bfdbfe",
-                    }}>
-                      CHỈ XEM
-                    </span>
+                    
                   </div>
                   <div style={{
                     background: "#f8fafc", border: "1.5px solid #e2e8f0",
@@ -389,14 +382,7 @@ export default function ServiceSectionClient({ services, illustrations, userInfo
                       <label style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>
                         Ảnh minh hoạ
                       </label>
-                      <span style={{
-                        fontSize: 10, fontWeight: 700, letterSpacing: "0.05em",
-                        background: "#eff6ff", color: "#2563eb",
-                        padding: "2px 8px", borderRadius: 99,
-                        border: "1px solid #bfdbfe",
-                      }}>
-                        CHỈ XEM
-                      </span>
+                      
                     </div>
                     <div style={{
                       display: "grid",
