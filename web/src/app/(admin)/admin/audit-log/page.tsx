@@ -101,6 +101,7 @@ const ACTION_VI: Record<string, string> = {
   DELETE_REVIEW:            "Xóa đánh giá",
   // Cấu hình hệ thống
   UPDATE_PAGE_PERMISSIONS:     "Cập nhật phân quyền trang",
+  UPDATE_STAFF_PERMISSIONS:    "Cập nhật quyền CRUD nhân viên",
   UPDATE_PUBLIC_PAGE_CONFIGS:  "Cập nhật cấu hình trang công khai",
   // Rút tiền
   WITHDRAWAL_APPROVED:      "Duyệt yêu cầu rút tiền",
