@@ -19,73 +19,36 @@ function YoutubeModal({ videoId, title, onClose }: Props & { onClose: () => void
     };
   }, [onClose]);
 
-  const handleWatch = () => {
-    window.location.href = `https://www.youtube.com/watch?v=${videoId}`;
-  };
-
   return createPortal(
     <div
-      className="fixed inset-0 z-9999 flex items-center justify-center bg-black/85 px-4"
+      className="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 px-3 sm:px-6"
       onClick={onClose}
     >
       {/* Nút X */}
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 w-11 h-11 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/30 active:bg-white/40 text-white transition-colors"
+        className="absolute top-3 right-3 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/25 active:bg-white/35 text-white transition-colors"
         aria-label="Đóng"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} width={22} height={22}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} width={20} height={20}>
           <path d="M18 6 6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </button>
 
-      {/* Card nội dung */}
+      {/* Video */}
       <div
-        className="relative w-full max-w-lg bg-gray-900 rounded-2xl overflow-hidden shadow-2xl"
+        className="relative w-full max-w-4xl"
+        style={{ aspectRatio: "16/9" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Thumbnail */}
-        <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
-            alt={title}
-            className="w-full h-full object-cover"
-          />
-          {/* Overlay mờ */}
-          <div className="absolute inset-0 bg-black/40" />
-          {/* Icon YouTube ở giữa */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-16 h-16 flex items-center justify-center rounded-full bg-[#ff0000]/90 shadow-xl">
-              <svg viewBox="0 0 24 24" fill="white" width="28" height="28" style={{ marginLeft: "4px" }}>
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Tên video + nút xem */}
-        <div className="px-5 py-4 flex flex-col gap-3">
-          <p className="text-white font-semibold text-sm leading-snug line-clamp-2">{title}</p>
-          <button
-            type="button"
-            onClick={handleWatch}
-            className="w-full flex items-center justify-center gap-2 bg-[#ff0000] hover:bg-[#cc0000] active:bg-[#aa0000] text-white font-semibold text-sm py-3 rounded-xl transition-colors"
-          >
-            <svg viewBox="0 0 24 24" fill="white" width="18" height="18" style={{ marginLeft: "2px" }}>
-              <path d="M8 5v14l11-7z" />
-            </svg>
-            Xem lộ trình ngay
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full text-white/50 hover:text-white/80 text-xs py-1 transition-colors"
-          >
-            Đóng
-          </button>
-        </div>
+        <iframe
+          className="absolute inset-0 w-full h-full rounded-xl"
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`}
+          title={title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
       </div>
     </div>,
     document.body,
