@@ -266,6 +266,7 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("X-DNS-Prefetch-Control", "off");
+  // CSP được set bởi nginx (infra/nginx/nginx.conf) — không set ở đây để tránh duplicate
 
   // ── 4. Guard: unauthenticated users ──────────────────────────────────────
   const needsAuth =
