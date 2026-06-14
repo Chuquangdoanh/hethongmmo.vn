@@ -174,7 +174,7 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
 
             {/* Telegram group */}
             <div>
-              <p className="text-sm font-semibold mb-0.5" style={{ color: "#0066ff" }}>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>
                 🔹 {telegramLabel}
               </p>
               <a
@@ -190,7 +190,7 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
 
             {/* Support */}
             <div>
-              <p className="text-sm font-semibold mb-0.5" style={{ color: "#0066ff" }}>🔹 {supportLabel}</p>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 {supportLabel}</p>
               <p className="text-sm" style={{ color: "#374151" }}>
                 <span style={{ color: "#f97316", fontWeight: 700 }}>HỆ THỐNG MMO</span>
                 {supportText.replace("HỆ THỐNG MMO", "")}
@@ -199,13 +199,13 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
 
             {/* Community */}
             <div>
-              <p className="text-sm font-semibold mb-0.5" style={{ color: "#0066ff" }}>🔹 {groupLabel}</p>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 {groupLabel}</p>
               <p className="text-xs leading-relaxed" style={{ color: "#374151" }}>{groupDesc}</p>
             </div>
 
             {/* Fanpage */}
             <div>
-              <p className="text-sm font-semibold mb-0.5" style={{ color: "#0066ff" }}>🔹 {fanpageLabel}</p>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 {fanpageLabel}</p>
               <a
                 href={fanpageUrl}
                 target="_blank"
