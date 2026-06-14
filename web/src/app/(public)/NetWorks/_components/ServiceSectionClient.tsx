@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -40,6 +40,14 @@ export default function ServiceSectionClient({ services, illustrations, userInfo
   const [serviceType, setServiceType]     = useState<ServiceType>("MUA_PAGE");
   const [status, setStatus]               = useState<Status>("idle");
   const [errorMsg, setErrorMsg]           = useState("");
+  const [lightboxImg, setLightboxImg]     = useState<{ src: string; alt: string } | null>(null);
+
+  useEffect(() => {
+    if (!lightboxImg) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setLightboxImg(null); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [lightboxImg]);
 
   function openForm(svc: Service) {
     setActiveService(svc);
@@ -407,8 +415,9 @@ export default function ServiceSectionClient({ services, illustrations, userInfo
                             <p style={{ color: "#fff", fontSize: 11, fontWeight: 600, margin: 0 }}>{img.label}</p>
                           </div>
                           <div
-                            style={{ position: "absolute", inset: 0, cursor: "default" }}
+                            style={{ position: "absolute", inset: 0, cursor: "zoom-in" }}
                             onContextMenu={(e) => e.preventDefault()}
+                            onClick={() => setLightboxImg({ src: img.src, alt: img.label })}
                           />
                         </div>
                       ))}
@@ -447,6 +456,43 @@ export default function ServiceSectionClient({ services, illustrations, userInfo
               </form>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── ILLUSTRATION LIGHTBOX ── */}
+      {lightboxImg && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 1300,
+            background: "rgba(0,0,0,.88)", backdropFilter: "blur(6px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => setLightboxImg(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxImg(null)}
+            style={{
+              position: "absolute", top: 16, right: 16,
+              width: 44, height: 44, borderRadius: "50%",
+              background: "rgba(255,255,255,.15)",
+              border: "1.5px solid rgba(255,255,255,.35)",
+              cursor: "pointer", color: "#fff",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={lightboxImg.src}
+            alt={lightboxImg.alt}
+            style={{ maxWidth: "90vw", maxHeight: "90vh", objectFit: "contain", borderRadius: 12, boxShadow: "0 24px 60px rgba(0,0,0,.6)" }}
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
 

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import AdServiceTabs from "./_components/AdServiceTabs";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
+import ImageLightbox from "@/components/shared/ImageLightbox";
 
 import { buildMeta } from "@/lib/utils/seo";
 export const metadata: Metadata = buildMeta({
@@ -111,6 +112,26 @@ export default async function QuangCaoAdsPage() {
                 <span style={{ color: "#0066ff" }}>Quảng Cáo Facebook</span>{" "}
                 Chuyên Nghiệp
               </h1>
+
+              {/* Thumbnail — chỉ hiện trên mobile, giữa title và mô tả */}
+              <div className="block lg:hidden" style={{ marginBottom: 20 }}>
+                <div
+                  style={{
+                    borderRadius: 16,
+                    overflow: "hidden",
+                    boxShadow: "0 10px 32px rgba(0,102,255,0.15)",
+                    background: "#e2e8f0",
+                    aspectRatio: "16/9",
+                  }}
+                >
+                  <ImageLightbox
+                    src="/images/hethongmmo.png"
+                    alt="Đội ngũ hethongmmo.vn"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+              </div>
+
               <p style={{ color: "#475569", fontSize: "1rem", lineHeight: 1.7, marginBottom: 32, maxWidth: 480 }}>
                 Chúng tôi giúp bạn tối ưu hóa ngân sách, tiếp cận đúng khách hàng mục tiêu
                 và tối đa hóa tỷ lệ chuyển đổi.
@@ -126,7 +147,7 @@ export default async function QuangCaoAdsPage() {
               </div>
             </div>
 
-            {/* Right — hero image */}
+            {/* Right — hero image (desktop only) */}
             <div className="hidden lg:flex items-center justify-center">
               <div
                 style={{
@@ -139,8 +160,7 @@ export default async function QuangCaoAdsPage() {
                   background: "#e2e8f0",
                 }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <ImageLightbox
                   src="/images/hethongmmo.png"
                   alt="Đội ngũ hethongmmo.vn"
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}

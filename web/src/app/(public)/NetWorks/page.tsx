@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import ServiceSectionClient, { type Illustration, type UserInfo } from "./_components/ServiceSectionClient";
+import ImageLightbox from "@/components/shared/ImageLightbox";
+import KocGalleryClient from "./_components/KocGalleryClient";
 
 import { buildMeta } from "@/lib/utils/seo";
 export const metadata: Metadata = buildMeta({
@@ -81,11 +83,6 @@ const TRUST_POINTS = [
   "Mở rộng mạng lưới KOC và Brand uy tín",
 ];
 
-const KOC_GALLERY = [
-  { label: "IDOLS SÁNG CON TV", sub: "100.000k Followers", src: "/images/sangcon.jpg" },
-  { label: "IDLOS VIỆT XĂM ",    sub: "100.000K Followers",  src: "/images/vietxam.jpg" },
-  { label: "Đối Tác Kiên Love",    sub:"54.000K Followers",  src: "/images/kienlove.jpg" },
-];
 
 export default async function NetworksPage() {
   await guardPublicPage("NetWorks");
@@ -159,9 +156,8 @@ export default async function NetworksPage() {
 
             {/* Hero image */}
             <div style={{ width: "100%", maxWidth: 680, marginTop: 8 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/dj-media-classroom.jpg"
+              <ImageLightbox
+                src="/images/dnetthumnail.jpg"
                 alt="Đội ngũ DNET Media"
                 style={{
                   width: "100%", display: "block",
@@ -230,8 +226,7 @@ export default async function NetworksPage() {
             </div>
             {/* Image side */}
             <div style={{ overflow: "hidden" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <ImageLightbox
                 src="/images/dj-media-classroom.jpg"
                 alt="Đội ngũ DNET Media"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
@@ -252,36 +247,7 @@ export default async function NetworksPage() {
               Đối Tác KOC tiêu biểu
             </h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }} className="fa-koc-grid">
-            {KOC_GALLERY.map((koc) => (
-              <div key={koc.label} style={{
-                borderRadius: 16, aspectRatio: "4/3",
-                position: "relative", overflow: "hidden",
-                boxShadow: "0 8px 32px rgba(0,0,0,.18)",
-              }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={koc.src}
-                  alt={koc.label}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                />
-                <div style={{
-                  position: "absolute", inset: 0,
-                  background: "linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.7) 100%)",
-                }} />
-                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px 20px", textAlign: "center" }}>
-                  <p style={{ color: "#fff", fontWeight: 800, fontSize: 14, margin: "0 0 4px" }}>{koc.label}</p>
-                  <p style={{ color: "rgba(255,255,255,.8)", fontSize: 12, margin: 0 }}>{koc.sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          {/* Pagination dots */}
-          <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 20 }}>
-            <div style={{ width: 24, height: 6, borderRadius: 3, background: "#6366f1" }} />
-            <div style={{ width: 6, height: 6, borderRadius: 3, background: "#cbd5e1" }} />
-            <div style={{ width: 6, height: 6, borderRadius: 3, background: "#cbd5e1" }} />
-          </div>
+          <KocGalleryClient />
         </div>
       </section>
 
