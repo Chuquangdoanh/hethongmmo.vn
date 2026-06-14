@@ -309,7 +309,7 @@ export default function PermissionManager({
       )}
 
       {/* ── STAFF / USER / SELLER tab content ── */}
-      {activeTab !== "PUBLIC" && (
+      {isRoleTab(activeTab) && (
         <div className="divide-y divide-gray-100">
           {registry[activeTab as RolePageGroup].map((group) => {
             const currentPerms  = perms[activeTab as RolePageGroup];
