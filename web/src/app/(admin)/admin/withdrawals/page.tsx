@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
+import { DateRangeFilter } from "./_components/DateRangeFilter";
 
 export const metadata: Metadata = { title: "Admin — Rút tiền" };
 
@@ -39,28 +40,58 @@ function getDateFrom(range: string | undefined): Date | undefined {
   return undefined;
 }
 
-function buildUrl(base: { status?: string; dateRange?: string }, override: Partial<{ status: string; dateRange: string }> = {}): string {
-  const merged = { ...base, ...override };
+function buildUrl(params: { status?: string; dateRange?: string; from?: string; to?: string }): string {
   const qs = new URLSearchParams();
-  if (merged.status) qs.set("status", merged.status);
-  if (merged.dateRange) qs.set("dateRange", merged.dateRange);
+  if (params.status) qs.set("status", params.status);
+  // dateRange and custom from/to are mutually exclusive — dateRange wins if both present
+  if (params.dateRange) {
+    qs.set("dateRange", params.dateRange);
+  } else {
+    if (params.from) qs.set("from", params.from);
+    if (params.to) qs.set("to", params.to);
+  }
   const str = qs.toString();
   return `/admin/withdrawals${str ? `?${str}` : ""}`;
+}
+
+function getDateLabel(dateRange: string | undefined, from: string | undefined, to: string | undefined): string {
+  if (from || to) {
+    const fmt = (s: string) => new Date(s).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+    if (from && to) return `${fmt(from)} – ${fmt(to)}`;
+    if (from) return `Từ ${fmt(from)}`;
+    return `Đến ${fmt(to!)}`;
+  }
+  if (dateRange && DATE_RANGE_LABELS[dateRange]) return DATE_RANGE_LABELS[dateRange]!;
+  return "Tất cả thời gian";
 }
 
 export default async function AdminWithdrawalsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; dateRange?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; dateRange?: string; from?: string; to?: string }>;
 }) {
-  const { page, status, dateRange } = await searchParams;
+  const { page, status, dateRange, from, to } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
 
   const where = status ? { status: status as never } : {};
-  const dateFrom = getDateFrom(dateRange);
+
+  // Custom date range takes precedence over quick filter
+  const hasCustomRange = Boolean(from || to);
+  const processedAtFilter = hasCustomRange
+    ? {
+        processedAt: {
+          ...(from ? { gte: new Date(from) } : {}),
+          ...(to ? { lte: new Date(`${to}T23:59:59.999`) } : {}),
+        },
+      }
+    : (() => {
+        const d = getDateFrom(dateRange);
+        return d ? { processedAt: { gte: d } } : {};
+      })();
+
   const totalAmountWhere = {
     status: "COMPLETED" as const,
-    ...(dateFrom ? { processedAt: { gte: dateFrom } } : {}),
+    ...processedAtFilter,
   };
 
   const [withdrawals, total, pendingCount, completedCount, totalAmountAgg, pendingAmountAgg] = await Promise.all([
@@ -120,15 +151,15 @@ export default async function AdminWithdrawalsPage({
           <p className="text-xs font-medium text-[#A855F7] uppercase tracking-wide mb-2">Tổng đã chi</p>
           <p className="text-2xl font-bold text-[#A855F7]">{formatVnd(Number(totalAmountAgg._sum.netAmount ?? 0))}</p>
           <p className="text-xs text-gray-400 mt-1.5">
-            {dateRange && DATE_RANGE_LABELS[dateRange] ? DATE_RANGE_LABELS[dateRange] : "Tất cả thời gian"} · Thực nhận
+            {getDateLabel(dateRange, from, to)} · Thực nhận
           </p>
           <div className="flex items-center gap-1 mt-2.5 flex-wrap">
             {(["", "today", "week", "month"] as const).map((key) => (
               <Link
                 key={key}
-                href={buildUrl({ status, dateRange }, { dateRange: key || undefined })}
+                href={buildUrl({ status, dateRange: key || undefined })}
                 className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${
-                  (dateRange ?? "") === key
+                  !hasCustomRange && (dateRange ?? "") === key
                     ? "bg-[#A855F7] text-white"
                     : "bg-white border border-[#A855F7]/30 text-[#A855F7] hover:bg-[#A855F7]/10"
                 }`}
@@ -137,6 +168,7 @@ export default async function AdminWithdrawalsPage({
               </Link>
             ))}
           </div>
+          <DateRangeFilter initialFrom={from ?? ""} initialTo={to ?? ""} status={status} />
         </div>
       </div>
 
@@ -151,7 +183,7 @@ export default async function AdminWithdrawalsPage({
         ].map(({ key, label }) => (
           <Link
             key={key}
-            href={buildUrl({ status: key || undefined, dateRange })}
+            href={buildUrl({ status: key || undefined, dateRange, from, to })}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
               status === key || (!status && !key)
                 ? "bg-[#7C3AED] text-white"
