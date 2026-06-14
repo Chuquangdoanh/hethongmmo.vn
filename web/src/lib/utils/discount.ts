@@ -2,17 +2,17 @@ import Decimal from "decimal.js";
 
 /**
  * Tier tự động theo totalDeposited (VND):
- *   < 50.000.000   → 0%
- *   50M – 99M      → 5%   (Thẻ)
- *   100M – 199M    → 7%   (Silver)
- *   ≥ 200M         → 10%  (Gold)
+ *   < 15.000.000   → 0%
+ *   15M – 49M      → 5%   (Thẻ)
+ *   50M – 99M      → 10%  (Silver)
+ *   ≥ 100M         → 15%  (Gold)
  *
  * Admin override: nếu discountPercent > 0 thì dùng giá trị đó thay vì tier.
  */
 export const DISCOUNT_TIERS = [
-  { minDeposit: 200_000_000, pct: 10, label: "Gold" },
-  { minDeposit: 100_000_000, pct: 7,  label: "Silver" },
-  { minDeposit:  50_000_000, pct: 5,  label: "Thẻ" },
+  { minDeposit: 100_000_000, pct: 15, label: "Gold" },
+  { minDeposit:  50_000_000, pct: 10, label: "Silver" },
+  { minDeposit:  15_000_000, pct: 5,  label: "Thẻ" },
 ] as const;
 
 export interface DiscountInfo {

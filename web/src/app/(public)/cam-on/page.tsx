@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { buildMeta } from "@/lib/utils/seo";
+import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 
 export const metadata: Metadata = buildMeta({
   title: "Cảm Ơn Quý Khách | Hệ Thống MMO",
@@ -114,6 +115,11 @@ export default async function CamOnPage({
   const rawType = params.type ?? "dich-vu";
   const type: PType = rawType in TYPE_INFO ? (rawType as PType) : "dich-vu";
   const info = TYPE_INFO[type];
+  const cms = await getSiteContent<Record<string, unknown>>(SITE_CONTENT_KEYS.THANK_YOU);
+  const telegramHref  = String(cms["telegramHref"]  ?? "https://t.me/BossMeta789");
+  const zaloHref      = String(cms["zaloHref"]      ?? "https://zalo.me/0393118789");
+  const supportTitle  = String(cms["supportTitle"]  ?? "KÊNH HỖ TRỢ 24/7");
+  const supportDesc   = String(cms["supportDesc"]   ?? "Chúng tôi luôn sẵn sàng hỗ trợ mọi lúc, mọi nơi");
 
   return (
     <div className="co-page">
@@ -371,13 +377,13 @@ export default async function CamOnPage({
         {/* ── KÊNH HỖ TRỢ ── */}
         <div className="co-card co-card-p-lg" style={{ marginBottom: 24 }}>
           <h2 style={{ fontSize: 16, fontWeight: 800, color: "#1e40af", textAlign: "center", letterSpacing: "0.05em", marginBottom: 4 }}>
-            KÊNH HỖ TRỢ 24/7
+            {supportTitle}
           </h2>
           <p style={{ fontSize: 13, color: "#64748b", textAlign: "center", marginBottom: 22 }}>
-            Chúng tôi luôn sẵn sàng hỗ trợ mọi lúc, mọi nơi
+            {supportDesc}
           </p>
           <div className="co-support-grid">
-            <a href="https://t.me/BossMeta789" target="_blank" rel="noopener noreferrer"
+            <a href={telegramHref} target="_blank" rel="noopener noreferrer"
               style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 14, padding: "20px 18px", textDecoration: "none", display: "block" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: "#0088cc", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -401,6 +407,17 @@ export default async function CamOnPage({
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#1d4ed8" }}>Fanpage</span>
               </div>
               <p style={{ fontSize: 13, fontWeight: 600, color: "#1877f2" }}>Hệ Thống MMO</p>
+            </a>
+
+            <a href={zaloHref} target="_blank" rel="noopener noreferrer"
+              style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 14, padding: "20px 18px", textDecoration: "none", display: "block" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: "#0068ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ color: "white", fontSize: 18, fontWeight: 900, lineHeight: 1 }}>Z</span>
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#1d4ed8" }}>Zalo</span>
+              </div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#0068ff" }}>Chat Zalo ngay</p>
             </a>
 
             <a href="tel:0393118789"

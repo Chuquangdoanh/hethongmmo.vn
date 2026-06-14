@@ -16,6 +16,8 @@ export const SITE_CONTENT_KEYS = {
   PAGE_TUT_TRICKS: "page_tut_tricks",
   PAGE_TAI_NGUYEN: "page_tai_nguyen",
   PAGE_NETWORKS:   "page_networks",
+  FOOTER:       "footer",
+  THANK_YOU:    "thank_you",
 } as const;
 
 export type SiteContentKey = (typeof SITE_CONTENT_KEYS)[keyof typeof SITE_CONTENT_KEYS];
@@ -183,6 +185,69 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     subtitle: "Hệ sinh thái hỗ trợ kiếm tiền từ nội dung Facebook",
     description: "Trang chính thức cung cấp dịch vụ và thông tin hỗ trợ kiếm tiền nội dung cho Content Creator và KOC.",
     thumbnail: "",
+  },
+  footer: {
+    // CTA Banner
+    ctaTitle: "Sẵn sàng phát triển hệ thống MMO của bạn?",
+    ctaSubtitle: "Tham gia hệ sinh thái đào tạo, dịch vụ MXH và marketplace uy tín.",
+    ctaBtn1Text: "Khám phá dịch vụ",
+    ctaBtn1Href: "/dich-vu",
+    ctaBtn2Text: "Nhận tư vấn",
+    ctaBtn2Href: "https://facebook.com/hethongmmovn/",
+    // Brand
+    brandDesc: "Nền tảng MMO số 1 Việt Nam — dịch vụ MXH, khóa học, tài nguyên và marketplace an toàn, uy tín, chất lượng.",
+    // Social links
+    socialFacebook: "https://www.facebook.com/Chu.Quang.Doanh.Media88/",
+    socialTiktok: "https://www.tiktok.com/@chuquangdoanhmmo",
+    socialYoutube: "https://www.youtube.com/@ChuQuangDoanh",
+    socialTelegram: "https://t.me/BossMeta789",
+    socialZalo: "https://zalo.me/0393118789",
+    // Stats cards
+    stat1Value: "10.000+", stat1Label: "Học viên tin tưởng",
+    stat2Value: "100%",    stat2Label: "An toàn, bảo mật",
+    stat3Value: "24/7",    stat3Label: "Hỗ trợ tận tâm",
+    // Services links (JSON array)
+    serviceLinks: [
+      { href: "/dich-vu",        label: "Dịch vụ MXH" },
+      { href: "/khoa-hoc",       label: "Khóa học MMO" },
+      { href: "/tai-nguyen-mmo", label: "Tài nguyên MMO" },
+      { href: "/quang-cao",      label: "Quảng cáo" },
+      { href: "/tut-tricks",     label: "Tut/Tools MMO" },
+    ],
+    // Support links (JSON array)
+    supportLinks: [
+      { href: "/",                         label: "Trang chủ" },
+      { href: "/dieu-khoan",               label: "Điều khoản dịch vụ" },
+      { href: "/chinh-sach",               label: "Chính sách bảo mật" },
+      { href: "/chinh-sach-nha-ban-hang",  label: "Chính sách nhà bán hàng" },
+    ],
+    // Contact
+    contactPhone: "0393.118.789",
+    contactEmail: "chudoanhofficial@gmail.com",
+    contactAddress: "Hà Nội, Việt Nam",
+    contactHours: "Thứ 2 - Chủ nhật: 8:00 - 23:00",
+    contactTelegramHref: "https://t.me/BossMeta789",
+    contactTelegramLabel: "Hỗ trợ nhanh qua Telegram",
+    contactTelegramSub: "Phản hồi trong vài phút",
+    // Copyright
+    copyrightText: "© 2026 hethongmmo.vn. Tất cả quyền được bảo lưu.",
+  },
+  thank_you: {
+    title: "Cảm ơn bạn đã tin tưởng!",
+    subtitle: "Đơn hàng của bạn đã được ghi nhận thành công.",
+    message: "Chúng tôi đang xử lý đơn hàng của bạn. Bạn sẽ nhận được thông báo qua email hoặc Telegram trong thời gian sớm nhất.",
+    badge: "Thành công",
+    iconType: "check",
+    btn1Text: "Về trang chủ",
+    btn1Href: "/",
+    btn2Text: "Xem đơn hàng",
+    btn2Href: "/don-hang",
+    supportTitle: "Cần hỗ trợ?",
+    supportDesc: "Liên hệ với chúng tôi qua Telegram hoặc Zalo — phản hồi trong vài phút.",
+    telegramHref: "https://t.me/BossMeta789",
+    telegramLabel: "Chat Telegram ngay",
+    zaloHref: "https://zalo.me/0393118789",
+    zaloLabel: "Chat Zalo ngay",
   },
 };
 

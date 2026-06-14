@@ -46,6 +46,18 @@ const PAGES = [
     desc: "Tiêu đề, mô tả trang /NetWorks",
     icon: "🌐",
   },
+  {
+    href: "/admin/cai-dat-giao-dien/footer",
+    title: "Footer",
+    desc: "CTA banner, thương hiệu, liên kết, liên hệ, bản quyền",
+    icon: "🦶",
+  },
+  {
+    href: "/admin/cai-dat-giao-dien/trang-cam-on",
+    title: "Trang Cảm Ơn",
+    desc: "Tiêu đề, thông điệp, nút hành động, kênh hỗ trợ trang /cam-on",
+    icon: "🙏",
+  },
 ];
 
 export default function CaiDatGiaoDienPage() {

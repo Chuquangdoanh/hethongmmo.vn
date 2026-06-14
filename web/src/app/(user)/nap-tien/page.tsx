@@ -164,9 +164,9 @@ export default async function NapTienPage() {
               </h3>
               <div className="grid grid-cols-3 gap-2 mb-3">
                 {[
-                  { tier: "Thành Viên Đồng Hành",    desc: "Trên 50tr",  pct: "+5%",  cls: "bg-blue-50 text-blue-700 border-blue-100" },
-                  { tier: "Chuyên Gia Tăng Trưởng", desc: "Trên 100tr", pct: "+5%",  cls: "bg-slate-50 text-slate-700 border-slate-200" },
-                  { tier: "Chuyên Gia Bứt Phá",   desc: "Trên 100tr", pct: "+10%", cls: "bg-amber-50 text-amber-700 border-amber-100" },
+                  { tier: "Thành Viên Đồng Hành",    desc: "Trên 15tr",  pct: "+5%",  cls: "bg-blue-50 text-blue-700 border-blue-100" },
+                  { tier: "Chuyên Gia Tăng Trưởng", desc: "Trên 50tr", pct: "+10%",  cls: "bg-slate-50 text-slate-700 border-slate-200" },
+                  { tier: "Chuyên Gia Bứt Phá",   desc: "Trên 100tr", pct: "+15%", cls: "bg-amber-50 text-amber-700 border-amber-100" },
                 ].map(({ tier, desc, pct, cls }) => (
                   <div key={tier} className={`rounded-xl border p-2.5 text-center ${cls}`}>
                     <p className="text-[11px] font-semibold">{tier}</p>
@@ -177,7 +177,7 @@ export default async function NapTienPage() {
               </div>
               <div className="rounded-xl bg-violet-50 border border-violet-100 p-2.5 text-center">
                 <p className="text-[11px] font-semibold text-violet-700">Đối Tác Toàn Diện</p>
-                <p className="text-sm font-bold text-violet-600">Giảm 15%</p>
+                <p className="text-sm font-bold text-violet-600">Giảm 20%</p>
               </div>
             </div>
 
