@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import CourseDetailTabs from "./_components/CourseDetailTabs";
 import SidebarRegisterButton from "./_components/SidebarRegisterButton";
+import YoutubeEmbed from "./_components/YoutubeEmbed";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -273,28 +274,7 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                   className="rounded-2xl overflow-hidden border border-[#e2e8f0] shadow-md relative"
                   style={{ aspectRatio: "16/9" }}
                 >
-                  <a
-                    href={`https://www.youtube.com/watch?v=${embedId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute inset-0 group"
-                    aria-label={`Xem video: ${course.name}`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`https://img.youtube.com/vi/${embedId}/hqdefault.jpg`}
-                      alt={course.name}
-                      loading="lazy"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                      <div className="w-14 h-14 flex items-center justify-center rounded-full bg-[#ff0000] shadow-lg group-hover:scale-110 transition-transform duration-200">
-                        <svg viewBox="0 0 24 24" fill="white" width="26" height="26" style={{ marginLeft: "3px" }}>
-                          <path d="M8 5v14l11-7z"/>
-                        </svg>
-                      </div>
-                    </div>
-                  </a>
+                  <YoutubeEmbed videoId={embedId} title={course.name} />
                 </div>
               </div>
             )}
@@ -422,28 +402,7 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                     className="rounded-2xl overflow-hidden border border-[#e2e8f0] shadow-md relative"
                     style={{ aspectRatio: "16/9" }}
                   >
-                    <a
-                      href={`https://www.youtube.com/watch?v=${embedId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="absolute inset-0 group"
-                      aria-label={`Xem video: ${course.name}`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`https://img.youtube.com/vi/${embedId}/hqdefault.jpg`}
-                        alt={course.name}
-                        loading="lazy"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                        <div className="w-14 h-14 flex items-center justify-center rounded-full bg-[#ff0000] shadow-lg group-hover:scale-110 transition-transform duration-200">
-                          <svg viewBox="0 0 24 24" fill="white" width="26" height="26" style={{ marginLeft: "3px" }}>
-                            <path d="M8 5v14l11-7z"/>
-                          </svg>
-                        </div>
-                      </div>
-                    </a>
+                    <YoutubeEmbed videoId={embedId} title={course.name} />
                   </div>
                 </div>
               )}
