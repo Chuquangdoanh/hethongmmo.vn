@@ -10,6 +10,9 @@ import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.s
 import { getDiscountInfo } from "@/lib/utils/discount";
 import { r2Url } from "@/lib/utils/image-url";
 import { buildMeta } from "@/lib/utils/seo";
+import Pagination from "@/components/shared/Pagination";
+
+const PAGE_SIZE = 9;
 
 export const metadata: Metadata = buildMeta({
   title: "TUT & Tricks MMO | Hệ Thống MMO",
@@ -21,14 +24,15 @@ export const metadata: Metadata = buildMeta({
 export default async function TutTricksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; tier?: string }>;
+  searchParams: Promise<{ category?: string; tier?: string; page?: string }>;
 }) {
   await guardPublicPage("tut-tricks");
   const pageHero = await getSiteContent<{ badge: string; title: string; titleColor: string; subtitle: string; description: string; thumbnail: string }>(SITE_CONTENT_KEYS.PAGE_TUT_TRICKS);
-  const [{ category, tier }, session] = await Promise.all([
+  const [{ category, tier, page }, session] = await Promise.all([
     searchParams,
     auth(),
   ]);
+  const currentPage = Math.max(1, parseInt(page ?? "1", 10) || 1);
   const isLoggedIn = !!session?.user;
   const userId = (session?.user as { id: string } | null | undefined)?.id;
 
@@ -68,6 +72,11 @@ export default async function TutTricksPage({
   // Sort by category displayOrder (dbCategories already ordered by displayOrder)
   const catOrder = new Map(dbCategories.map((c, idx) => [c.name, idx]));
   items.sort((a, b) => (catOrder.get(a.category ?? "") ?? 999) - (catOrder.get(b.category ?? "") ?? 999));
+
+  const totalItems = items.length;
+  const totalPages = Math.ceil(totalItems / PAGE_SIZE);
+  const safeCurrentPage = Math.min(currentPage, Math.max(1, totalPages));
+  const pageItems = items.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
 
   // Build icon lookup map
   const categoryIconMap = Object.fromEntries(
@@ -160,17 +169,17 @@ export default async function TutTricksPage({
         {/* Result count */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-xs text-[#64748b]">
-            Hiển thị <span className="font-semibold text-[#0f172a]">{items.length}</span> sản phẩm
+            Hiển thị <span className="font-semibold text-[#0f172a]">{(safeCurrentPage - 1) * PAGE_SIZE + 1}–{Math.min(safeCurrentPage * PAGE_SIZE, totalItems)}</span> / <span className="font-semibold text-[#0f172a]">{totalItems}</span> sản phẩm
             {tier ? ` · ${tier}` : ""}
             {category ? ` · ${category}` : ""}
           </p>
           <span className="text-[11px] font-semibold text-[#374151] bg-[#e5e7eb] px-3 py-1 rounded-full">
-            {items.length} sản phẩm
+            {totalItems} sản phẩm
           </span>
         </div>
 
         {/* Grid */}
-        {items.length === 0 ? (
+        {totalItems === 0 ? (
           <div className="text-center py-24 text-[#64748b]">
             <div className="flex justify-center mb-5">
               <div className="w-20 h-20 rounded-2xl bg-[#eff6ff] border border-[#bfdbfe] flex items-center justify-center">
@@ -181,21 +190,34 @@ export default async function TutTricksPage({
             <p className="text-sm mt-1">Thử thay đổi bộ lọc để xem thêm nội dung.</p>
           </div>
         ) : (
-          <div id="tut-tricks-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {items.map((item) => (
-              <TutTrickCard
-                key={item.id}
-                item={{
-                  ...item,
-                  price: Number(item.price),
-                  publishedDate: item.publishedDate ? item.publishedDate.toISOString() : null,
-                  catIcon: item.category ? (categoryIconMap[item.category] ?? null) : null,
+          <>
+            <div id="tut-tricks-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {pageItems.map((item) => (
+                <TutTrickCard
+                  key={item.id}
+                  item={{
+                    ...item,
+                    price: Number(item.price),
+                    publishedDate: item.publishedDate ? item.publishedDate.toISOString() : null,
+                    catIcon: item.category ? (categoryIconMap[item.category] ?? null) : null,
+                  }}
+                  isLoggedIn={isLoggedIn}
+                  discountPct={discountPct}
+                />
+              ))}
+            </div>
+            <div className="mt-8">
+              <Pagination
+                currentPage={safeCurrentPage}
+                totalPages={totalPages}
+                basePath="/tut-tricks"
+                searchParams={{
+                  ...(category ? { category } : {}),
+                  ...(tier ? { tier } : {}),
                 }}
-                isLoggedIn={isLoggedIn}
-                discountPct={discountPct}
               />
-            ))}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </div>
