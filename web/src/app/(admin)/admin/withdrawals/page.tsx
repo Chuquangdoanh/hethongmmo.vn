@@ -60,7 +60,7 @@ export default async function AdminWithdrawalsPage({
   const dateFrom = getDateFrom(dateRange);
   const totalAmountWhere = {
     status: "COMPLETED" as const,
-    ...(dateFrom ? { createdAt: { gte: dateFrom } } : {}),
+    ...(dateFrom ? { processedAt: { gte: dateFrom } } : {}),
   };
 
   const [withdrawals, total, pendingCount, completedCount, totalAmountAgg, pendingAmountAgg] = await Promise.all([
