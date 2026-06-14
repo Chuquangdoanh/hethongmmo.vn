@@ -32,8 +32,8 @@ export default async function TrangChuEditorPage() {
         Sau khi lưu, nội dung sẽ cập nhật tự động trên trang public sau tối đa 60 giây (ISR cache).
       </div>
 
-      <HomeHeroEditor initialData={all["home_hero"] as Record<string, unknown>} />
       <HomeDJMediaEditor initialData={all["home_djmedia"] as Record<string, unknown>} />
+      <HomeHeroEditor initialData={all["home_hero"] as Record<string, unknown>} />
       <HomeTeamEditor initialData={all["home_team"] as Record<string, unknown>} />
       <HomeStatsEditor initialData={all["home_stats"] as Record<string, unknown>} />
       <HomePressEditor initialData={all["home_press"] as Record<string, unknown>} />
