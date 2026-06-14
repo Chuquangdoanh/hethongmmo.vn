@@ -9,7 +9,7 @@ export function formatVnd(amount: number | string): string {
   return formatted + " ₫";
 }
 
-/** Formats a Date as Vietnamese locale: "28/05/2026, 14:30" */
+/** Formats a Date as Vietnamese locale in UTC+7: "28/05/2026, 14:30" */
 export function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   return new Intl.DateTimeFormat("vi-VN", {
@@ -18,6 +18,7 @@ export function formatDate(date: Date | string): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Asia/Ho_Chi_Minh",
   }).format(d);
 }
 
