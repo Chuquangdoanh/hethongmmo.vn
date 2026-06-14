@@ -19,12 +19,16 @@ function YoutubeModal({ videoId, title, onClose }: Props & { onClose: () => void
     };
   }, [onClose]);
 
+  const handleWatch = () => {
+    window.location.href = `https://www.youtube.com/watch?v=${videoId}`;
+  };
+
   return createPortal(
     <div
       className="fixed inset-0 z-9999 flex items-center justify-center bg-black/85 px-4"
       onClick={onClose}
     >
-      {/* Nút X — góc phải, dễ bấm trên mobile */}
+      {/* Nút X */}
       <button
         type="button"
         onClick={onClose}
@@ -36,25 +40,53 @@ function YoutubeModal({ videoId, title, onClose }: Props & { onClose: () => void
         </svg>
       </button>
 
-      {/* Container video — stop propagation để click vào video không đóng modal */}
+      {/* Card nội dung */}
       <div
-        className="relative w-full max-w-4xl"
-        style={{ aspectRatio: "16/9" }}
+        className="relative w-full max-w-lg bg-gray-900 rounded-2xl overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <iframe
-          className="absolute inset-0 w-full h-full rounded-lg"
-          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`}
-          title={title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-        />
-      </div>
+        {/* Thumbnail */}
+        <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+            alt={title}
+            className="w-full h-full object-cover"
+          />
+          {/* Overlay mờ */}
+          <div className="absolute inset-0 bg-black/40" />
+          {/* Icon YouTube ở giữa */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-16 h-16 flex items-center justify-center rounded-full bg-[#ff0000]/90 shadow-xl">
+              <svg viewBox="0 0 24 24" fill="white" width="28" height="28" style={{ marginLeft: "4px" }}>
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        </div>
 
-      {/* Hint đóng — desktop only */}
-      <p className="absolute bottom-5 left-0 right-0 text-center text-white/40 text-xs hidden sm:block">
-        Nhấn ESC hoặc vùng tối để đóng
-      </p>
+        {/* Tên video + nút xem */}
+        <div className="px-5 py-4 flex flex-col gap-3">
+          <p className="text-white font-semibold text-sm leading-snug line-clamp-2">{title}</p>
+          <button
+            type="button"
+            onClick={handleWatch}
+            className="w-full flex items-center justify-center gap-2 bg-[#ff0000] hover:bg-[#cc0000] active:bg-[#aa0000] text-white font-semibold text-sm py-3 rounded-xl transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="white" width="18" height="18" style={{ marginLeft: "2px" }}>
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            Xem lộ trình ngay
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full text-white/50 hover:text-white/80 text-xs py-1 transition-colors"
+          >
+            Đóng
+          </button>
+        </div>
+      </div>
     </div>,
     document.body,
   );
