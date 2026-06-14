@@ -40,6 +40,7 @@ const L = {
   auth:      makeLimiter(10,  "1 m"),
   sensitive: makeLimiter(5,   "1 m"),
   chat:      makeLimiter(30,  "1 m"),
+  image:     makeLimiter(200, "1 m"), // public image proxy — browser-cached 1yr, needs burst headroom
   storage:   makeLimiter(10,  "1 m"),
   admin:     makeLimiter(300, "1 m"),
   user:      makeLimiter(60,  "1 m"),
@@ -216,6 +217,9 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
       if (!(await checkAndAllow(L.sensitive, `sensitive:${key}`, "sensitive", pathname))) return r429();
     } else if (pathname.startsWith("/api/chats/")) {
       if (!(await checkAndAllow(L.chat, `chat:${key}`, "chat", pathname))) return r429();
+    } else if (pathname === "/api/storage/image") {
+      // Public image proxy: browser caches with 1yr max-age; allow burst for first page load
+      if (!(await checkAndAllow(L.image, `img:${ip}`, "image", pathname))) return r429();
     } else if (
       pathname.startsWith("/api/storage/") ||
       pathname.includes("/upload") ||

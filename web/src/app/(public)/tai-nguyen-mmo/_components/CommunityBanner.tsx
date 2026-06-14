@@ -159,10 +159,22 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
               <div className="flex items-center gap-3 mb-8">
                 <span className="hidden md:block h-px flex-1 bg-[#e5e7eb]" />
                 <h2 className="text-2xl md:text-3xl font-extrabold tracking-wider text-center flex-1 md:flex-none" style={{ color: "#111827" }}>
-                  {titleMain}
+                  {/* Mobile: 2 dòng riêng */}
+                  <span className="block md:hidden">
+                    {titleMain}
+                  </span>
                   {titleHighlight && (
-                    <> — <span style={{ color: "#f97316" }}>{titleHighlight}</span></>
+                    <span className="block md:hidden" style={{ color: "#f97316" }}>
+                      {titleHighlight}
+                    </span>
                   )}
+                  {/* Desktop: 1 dòng inline */}
+                  <span className="hidden md:inline">
+                    {titleMain}
+                    {titleHighlight && (
+                      <> — <span style={{ color: "#f97316" }}>{titleHighlight}</span></>
+                    )}
+                  </span>
                 </h2>
                 <span className="hidden md:block h-px flex-1 bg-[#e5e7eb]" />
               </div>

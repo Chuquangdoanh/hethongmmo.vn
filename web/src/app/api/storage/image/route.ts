@@ -17,6 +17,10 @@ const ALLOWED_PREFIXES = [
   "service-icon/",
 ];
 
+// CMS uploads (admin-only, safe to serve publicly)
+// Matches: cms-thumbnail/, cms-page/, cms-hero/, cms-djmedia/, cms-team/, ...
+const CMS_KEY_RE = /^cms-[a-z][a-z0-9-]*\//;
+
 // Ngăn path traversal: chỉ chấp nhận ký tự an toàn
 const SAFE_KEY = /^[a-zA-Z0-9._/%-]+$/;
 
@@ -43,7 +47,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return new NextResponse("Not found", { status: 404 });
   }
 
-  const allowed = ALLOWED_PREFIXES.some((p) => key.startsWith(p));
+  const allowed = ALLOWED_PREFIXES.some((p) => key.startsWith(p)) || CMS_KEY_RE.test(key);
   if (!allowed) {
     return new NextResponse("Forbidden", { status: 403 });
   }

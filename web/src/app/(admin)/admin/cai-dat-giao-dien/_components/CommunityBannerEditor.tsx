@@ -65,6 +65,7 @@ export function CommunityBannerEditor({ sectionKey, initialData }: Props) {
           value={String(data["communityTitle"] ?? "")}
           onChange={(v) => handleChange("communityTitle", v)}
           placeholder="CỘNG ĐỒNG MMO — HỆ THỐNG MMO 5.0"
+          hint="Dùng ' — ' để tách 2 dòng trên mobile: phần trước màu đen, phần sau màu cam"
         />
 
         <FieldSectionLabel label="🔹 Nhóm Telegram" />
