@@ -18,15 +18,50 @@ const STATUS_LABELS: Record<string, string> = {
   PENDING: "Chờ duyệt", APPROVED: "Đã duyệt", COMPLETED: "Hoàn thành", REJECTED: "Từ chối",
 };
 
+const DATE_RANGE_LABELS: Record<string, string> = {
+  today: "Hôm nay", week: "Tuần này", month: "Tháng này",
+};
+
+function getDateFrom(range: string | undefined): Date | undefined {
+  const now = new Date();
+  if (range === "today") {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+  if (range === "week") {
+    const d = new Date(now);
+    d.setDate(d.getDate() - d.getDay());
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+  if (range === "month") {
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+  return undefined;
+}
+
+function buildUrl(base: { status?: string; dateRange?: string }, override: Partial<{ status: string; dateRange: string }> = {}): string {
+  const merged = { ...base, ...override };
+  const qs = new URLSearchParams();
+  if (merged.status) qs.set("status", merged.status);
+  if (merged.dateRange) qs.set("dateRange", merged.dateRange);
+  const str = qs.toString();
+  return `/admin/withdrawals${str ? `?${str}` : ""}`;
+}
+
 export default async function AdminWithdrawalsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; dateRange?: string }>;
 }) {
-  const { page, status } = await searchParams;
+  const { page, status, dateRange } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
 
   const where = status ? { status: status as never } : {};
+  const dateFrom = getDateFrom(dateRange);
+  const totalAmountWhere = {
+    status: "COMPLETED" as const,
+    ...(dateFrom ? { createdAt: { gte: dateFrom } } : {}),
+  };
 
   const [withdrawals, total, pendingCount, completedCount, totalAmountAgg, pendingAmountAgg] = await Promise.all([
     prisma.sellerWithdrawal.findMany({
@@ -43,7 +78,7 @@ export default async function AdminWithdrawalsPage({
     prisma.sellerWithdrawal.count({ where }),
     prisma.sellerWithdrawal.count({ where: { status: "PENDING" } }),
     prisma.sellerWithdrawal.count({ where: { status: "COMPLETED" } }),
-    prisma.sellerWithdrawal.aggregate({ where: { status: "COMPLETED" }, _sum: { netAmount: true } }),
+    prisma.sellerWithdrawal.aggregate({ where: totalAmountWhere, _sum: { netAmount: true } }),
     prisma.sellerWithdrawal.aggregate({ where: { status: "PENDING" }, _sum: { amount: true } }),
   ]);
 
@@ -84,7 +119,24 @@ export default async function AdminWithdrawalsPage({
         <div className="rounded-xl border border-[#A855F7]/30 bg-[#A855F7]/5 p-5">
           <p className="text-xs font-medium text-[#A855F7] uppercase tracking-wide mb-2">Tổng đã chi</p>
           <p className="text-2xl font-bold text-[#A855F7]">{formatVnd(Number(totalAmountAgg._sum.netAmount ?? 0))}</p>
-          <p className="text-xs text-gray-400 mt-1.5">Thực nhận đã thanh toán</p>
+          <p className="text-xs text-gray-400 mt-1.5">
+            {dateRange && DATE_RANGE_LABELS[dateRange] ? DATE_RANGE_LABELS[dateRange] : "Tất cả thời gian"} · Thực nhận
+          </p>
+          <div className="flex items-center gap-1 mt-2.5 flex-wrap">
+            {(["", "today", "week", "month"] as const).map((key) => (
+              <Link
+                key={key}
+                href={buildUrl({ status, dateRange }, { dateRange: key || undefined })}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${
+                  (dateRange ?? "") === key
+                    ? "bg-[#A855F7] text-white"
+                    : "bg-white border border-[#A855F7]/30 text-[#A855F7] hover:bg-[#A855F7]/10"
+                }`}
+              >
+                {key === "" ? "Tất cả" : DATE_RANGE_LABELS[key]}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -99,7 +151,7 @@ export default async function AdminWithdrawalsPage({
         ].map(({ key, label }) => (
           <Link
             key={key}
-            href={key ? `/admin/withdrawals?status=${key}` : "/admin/withdrawals"}
+            href={buildUrl({ status: key || undefined, dateRange })}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
               status === key || (!status && !key)
                 ? "bg-[#7C3AED] text-white"
