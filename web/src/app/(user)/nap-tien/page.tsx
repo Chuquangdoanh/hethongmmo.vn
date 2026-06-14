@@ -131,7 +131,7 @@ export default async function NapTienPage() {
               <p className="text-xs text-slate-400 leading-relaxed mb-4">
                 Nạp tối thiểu <strong className="text-white">50.000đ</strong> để bắt đầu sử dụng các dịch vụ tốt nhất trang mạng xã hội.
               </p>
-              <p className="text-[13px] text-slate-500 uppercase tracking-wide mb-1">Ưu đãi cho mỗi đơn dịch vụ:</p>
+              <p className="text-[13px] text-slate-500 uppercase tracking-wide mb-1">Dịch vụ độc quyền chỉ từ: </p>
               <p className="text-2xl font-bold text-amber-400">100.000đ</p>
               <Link
                 href="/dich-vu"
@@ -154,19 +154,19 @@ export default async function NapTienPage() {
               </p>
             </div>
 
-            {/* Chính sách ưu đãi */}
+            {/* ĐẶC QUYỀN HỘI VIÊN & ĐỐI TÁC */}
             <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
               <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center">
                   <Gift size={13} className="text-violet-600" />
                 </div>
-                Chính sách ưu đãi
+                ĐẶC QUYỀN HỘI VIÊN & ĐỐI TÁC
               </h3>
               <div className="grid grid-cols-3 gap-2 mb-3">
                 {[
-                  { tier: "Thẻ",    desc: "Trên 50tr",  pct: "+5%",  cls: "bg-blue-50 text-blue-700 border-blue-100" },
-                  { tier: "Silver", desc: "Trên 100tr", pct: "+5%",  cls: "bg-slate-50 text-slate-700 border-slate-200" },
-                  { tier: "Gold",   desc: "Trên 100tr", pct: "+10%", cls: "bg-amber-50 text-amber-700 border-amber-100" },
+                  { tier: "Thành Viên Đồng Hành",    desc: "Trên 50tr",  pct: "+5%",  cls: "bg-blue-50 text-blue-700 border-blue-100" },
+                  { tier: "Chuyên Gia Tăng Trưởng", desc: "Trên 100tr", pct: "+5%",  cls: "bg-slate-50 text-slate-700 border-slate-200" },
+                  { tier: "Chuyên Gia Bứt Phá",   desc: "Trên 100tr", pct: "+10%", cls: "bg-amber-50 text-amber-700 border-amber-100" },
                 ].map(({ tier, desc, pct, cls }) => (
                   <div key={tier} className={`rounded-xl border p-2.5 text-center ${cls}`}>
                     <p className="text-[11px] font-semibold">{tier}</p>
@@ -176,7 +176,7 @@ export default async function NapTienPage() {
                 ))}
               </div>
               <div className="rounded-xl bg-violet-50 border border-violet-100 p-2.5 text-center">
-                <p className="text-[11px] font-semibold text-violet-700">Đại lý</p>
+                <p className="text-[11px] font-semibold text-violet-700">Đối Tác Toàn Diện</p>
                 <p className="text-sm font-bold text-violet-600">Giảm 15%</p>
               </div>
             </div>
