@@ -10,6 +10,20 @@ const nextConfig: NextConfig = {
 
   // Security headers
   async headers() {
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https://challenges.cloudflare.com https://*.r2.cloudflarestorage.com",
+      "frame-src https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+    ].join("; ");
+
     return [
       {
         source: "/(.*)",
@@ -22,6 +36,7 @@ const nextConfig: NextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
           },
+          { key: "Content-Security-Policy", value: csp },
         ],
       },
     ];
