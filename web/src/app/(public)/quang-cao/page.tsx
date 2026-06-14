@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CheckCircle, Phone, Zap, ShieldCheck, Star } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
+import { r2Url } from "@/lib/utils/image-url";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import AdServiceTabs from "./_components/AdServiceTabs";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
@@ -125,7 +126,7 @@ export default async function QuangCaoAdsPage() {
                   }}
                 >
                   <ImageLightbox
-                    src={pageHero.thumbnail || "/images/hethongmmo.png"}
+                    src={r2Url(pageHero.thumbnail) || "/images/hethongmmo.png"}
                     alt="Đội ngũ hethongmmo.vn"
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
@@ -160,7 +161,7 @@ export default async function QuangCaoAdsPage() {
                 }}
               >
                 <ImageLightbox
-                  src="/images/hethongmmo.png"
+                  src={r2Url(pageHero.thumbnail) || "/images/hethongmmo.png"}
                   alt="Đội ngũ hethongmmo.vn"
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />

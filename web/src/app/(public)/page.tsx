@@ -213,7 +213,7 @@ export default async function HomePage() {
             <div style={{ position: "relative" }} className="dj-media-img anim-scale-in" data-d="2">
               <div style={{ borderRadius: "24px", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,.16)", aspectRatio: "4/3", background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={djContent.imageUrl || "/images/dj-media-classroom.jpg"} alt="DJ Media Agency – Lớp học thực chiến" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                <img src={r2Url(djContent.imageUrl) || "/images/dj-media-classroom.jpg"} alt="DJ Media Agency – Lớp học thực chiến" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
               </div>
               <div style={{ position: "absolute", bottom: "24px", left: "24px", background: "#fff", borderRadius: "16px", padding: "14px 20px", boxShadow: "0 12px 32px rgba(0,0,0,.14)", zIndex: 2, animation: "float 5s ease-in-out infinite" }}>
                 <div style={{ fontSize: "1.8rem", fontWeight: "900", color: "#f59e0b", lineHeight: 1 }}>{djContent.yearsExpValue}</div>
@@ -376,7 +376,7 @@ export default async function HomePage() {
                 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={heroContent.imageUrl || "/images/hethongmmo.png"}
+                    src={r2Url(heroContent.imageUrl) || "/images/hethongmmo.png"}
                     alt="Hệ thống MMO & Tài nguyên số 5.0"
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                   />
@@ -478,7 +478,7 @@ export default async function HomePage() {
                 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={member0.imageUrl}
+                    src={r2Url(member0.imageUrl)}
                     alt={member0.name}
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                   />
@@ -526,7 +526,7 @@ export default async function HomePage() {
                 }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={member1.imageUrl}
+                    src={r2Url(member1.imageUrl)}
                     alt={member1.name}
                     style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                   />
