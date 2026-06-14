@@ -141,6 +141,7 @@ jobs:
   deploy:
     needs: [changes, build-web, build-migrator]
     if: >-
+      always() &&
       !cancelled() &&
       (needs.build-web.result == 'success' || needs.build-web.result == 'skipped') &&
       (needs.build-migrator.result == 'success' || needs.build-migrator.result == 'skipped') &&
