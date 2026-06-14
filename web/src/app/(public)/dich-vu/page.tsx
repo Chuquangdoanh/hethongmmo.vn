@@ -40,7 +40,7 @@ export default async function DichVuPage({
   searchParams: Promise<{ category?: string; page?: string }>;
 }) {
   await guardPublicPage("dich-vu");
-  const pageHero = await getSiteContent<{ badge: string; title: string; description: string }>(SITE_CONTENT_KEYS.PAGE_DICH_VU);
+  const pageHero = await getSiteContent<{ badge: string; title: string; description: string; thumbnail: string }>(SITE_CONTENT_KEYS.PAGE_DICH_VU);
   const [{ category, page: pageParam }, session] = await Promise.all([searchParams, auth()]);
   const isLoggedIn = !!session?.user;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10));
@@ -146,6 +146,20 @@ export default async function DichVuPage({
             {pageHero.description}
           </p>
         </div>
+
+        {/* Hero thumbnail */}
+        {pageHero.thumbnail && (
+          <div className="flex justify-center mb-6">
+            <div className="w-full max-w-3xl rounded-2xl overflow-hidden shadow-lg" style={{ aspectRatio: "16/9" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={r2Url(pageHero.thumbnail)}
+                alt="Dịch vụ hethongmmo.vn"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Stats bar */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">

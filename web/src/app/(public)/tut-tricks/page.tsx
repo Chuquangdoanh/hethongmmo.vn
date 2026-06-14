@@ -8,6 +8,7 @@ import TutTierFilterClient from "./_components/TutTierFilterClient";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import { getDiscountInfo } from "@/lib/utils/discount";
+import { r2Url } from "@/lib/utils/image-url";
 import { buildMeta } from "@/lib/utils/seo";
 
 export const metadata: Metadata = buildMeta({
@@ -23,7 +24,7 @@ export default async function TutTricksPage({
   searchParams: Promise<{ category?: string; tier?: string }>;
 }) {
   await guardPublicPage("tut-tricks");
-  const pageHero = await getSiteContent<{ badge: string; title: string; titleColor: string; subtitle: string; description: string }>(SITE_CONTENT_KEYS.PAGE_TUT_TRICKS);
+  const pageHero = await getSiteContent<{ badge: string; title: string; titleColor: string; subtitle: string; description: string; thumbnail: string }>(SITE_CONTENT_KEYS.PAGE_TUT_TRICKS);
   const [{ category, tier }, session] = await Promise.all([
     searchParams,
     auth(),
@@ -117,6 +118,17 @@ export default async function TutTricksPage({
               <p className="text-[10px] text-[#6b7280] uppercase tracking-wide mt-0.5 leading-tight">Hỗ trợ trực tuyến</p>
             </div>
           </div>
+
+          {pageHero.thumbnail && (
+            <div className="mt-8 w-full max-w-2xl mx-auto rounded-2xl overflow-hidden shadow-xl" style={{ aspectRatio: "16/9" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={r2Url(pageHero.thumbnail)}
+                alt="TUT & Tricks MMO"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
         </div>
       </section>
 

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
+import { r2Url } from "@/lib/utils/image-url";
 import ServiceSectionClient, { type Illustration, type UserInfo } from "./_components/ServiceSectionClient";
 import ImageLightbox from "@/components/shared/ImageLightbox";
 import KocGalleryClient from "./_components/KocGalleryClient";
@@ -87,7 +88,7 @@ const TRUST_POINTS = [
 
 export default async function NetworksPage() {
   await guardPublicPage("NetWorks");
-  const pageHero = await getSiteContent<{ badge: string; title: string; subtitle: string; description: string }>(SITE_CONTENT_KEYS.PAGE_NETWORKS);
+  const pageHero = await getSiteContent<{ badge: string; title: string; subtitle: string; description: string; thumbnail: string }>(SITE_CONTENT_KEYS.PAGE_NETWORKS);
 
   const session = await auth();
   const sessionUser = session?.user as AuthenticatedUser | undefined;
@@ -156,7 +157,7 @@ export default async function NetworksPage() {
             {/* Hero image */}
             <div style={{ width: "100%", maxWidth: 680, marginTop: 8 }}>
               <ImageLightbox
-                src="/images/dnetthumnail.jpg"
+                src={r2Url(pageHero.thumbnail) || "/images/dnetthumnail.jpg"}
                 alt="Đội ngũ DNET Media"
                 style={{
                   width: "100%", display: "block",
