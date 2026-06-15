@@ -1,47 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 
 interface Props {
   videoId: string;
   title: string;
 }
 
-function YoutubeModal({ videoId, title, onClose }: Props & { onClose: () => void }) {
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [onClose]);
+export default function YoutubeEmbed({ videoId, title }: Props) {
+  const [open, setOpen] = useState(false);
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 px-3 sm:px-6"
-      onClick={onClose}
-    >
-      {/* Nút X */}
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute top-3 right-3 z-10 w-11 h-11 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/30 active:bg-white/40 text-white transition-colors"
-        aria-label="Đóng"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} width={20} height={20}>
-          <path d="M18 6 6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      </button>
-
-      {/* iframe YouTube */}
-      <div
-        className="relative w-full max-w-4xl rounded-xl overflow-hidden shadow-2xl"
-        style={{ aspectRatio: "16/9" }}
-        onClick={(e) => e.stopPropagation()}
-      >
+  if (open) {
+    return (
+      <div className="absolute inset-0 w-full h-full">
         <iframe
           src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`}
           title={title}
@@ -49,43 +20,48 @@ function YoutubeModal({ videoId, title, onClose }: Props & { onClose: () => void
           allowFullScreen
           className="absolute inset-0 w-full h-full border-0"
         />
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 hover:bg-black/80 text-white transition-colors"
+          aria-label="Đóng video"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} width={16} height={16}>
+            <path d="M18 6 6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
       </div>
-    </div>,
-    document.body,
-  );
-}
-
-export default function YoutubeEmbed({ videoId, title }: Props) {
-  const [open, setOpen] = useState(false);
+    );
+  }
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="absolute inset-0 w-full group cursor-pointer"
-        aria-label={`Phát video: ${title}`}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
-          alt={title}
-          className="w-full h-full object-cover rounded-xl"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/25 group-hover:bg-black/40 transition-colors gap-3 rounded-xl">
-          <div className="w-16 h-16 flex items-center justify-center rounded-full bg-[#ff0000] shadow-xl group-hover:scale-110 transition-transform duration-200">
-            <svg viewBox="0 0 24 24" fill="white" width="28" height="28" style={{ marginLeft: "4px" }}>
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </div>
-          <span className="text-white text-xs font-semibold bg-black/40 px-3 py-1 rounded-full">
-            Nhấn để xem lộ trình
-          </span>
+    <button
+      type="button"
+      onClick={() => setOpen(true)}
+      className="absolute inset-0 w-full group cursor-pointer"
+      aria-label={`Phát video: ${title}`}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+        alt={title}
+        className="w-full h-full object-cover rounded-xl"
+        loading="lazy"
+      />
+      <div className="absolute inset-0 rounded-xl flex items-center justify-center bg-black/25 group-hover:bg-black/35 transition-all duration-300">
+        <div
+          className="w-17 h-17 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-105 bg-white/20 group-hover:bg-white/30 border border-white/50 group-hover:border-white/80"
+          style={{
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.30)",
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="white" width="26" height="26" style={{ marginLeft: "3px" }}>
+            <path d="M8 5v14l11-7z" />
+          </svg>
         </div>
-      </button>
-
-      {open && <YoutubeModal videoId={videoId} title={title} onClose={() => setOpen(false)} />}
-    </>
+      </div>
+    </button>
   );
 }
