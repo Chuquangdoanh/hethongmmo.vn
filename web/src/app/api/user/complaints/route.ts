@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { requireUser } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
+import { sendComplaintCreatedToUserEmail, sendComplaintCreatedToSellerEmail } from "@/lib/services/email.service";
 
 export const runtime = "nodejs";
 
@@ -25,22 +26,33 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { subject, content, orderId } = parsed.data;
 
     // Block complaints for TUTTRICK orders + enforce 24h window
+    let sellerEmail: string | null = null;
     if (orderId) {
       const order = await prisma.order.findUnique({
         where: { id: orderId, userId: me.id },
-        select: { orderType: true, createdAt: true },
+        select: { orderType: true, createdAt: true, sellerId: true },
       });
-      if (order?.orderType === "TUTTRICK") {
+      if (!order) {
+        return NextResponse.json(
+          { error: "Đơn hàng không tồn tại hoặc không thuộc về bạn.", code: "ORDER_NOT_FOUND" },
+          { status: 400 },
+        );
+      }
+      if (order.orderType === "TUTTRICK") {
         return NextResponse.json(
           { error: "Đơn hàng Tut & Trick không hỗ trợ khiếu nại.", code: "COMPLAINT_NOT_ALLOWED" },
           { status: 400 },
         );
       }
-      if (order && Date.now() - order.createdAt.getTime() > 24 * 60 * 60 * 1000) {
+      if (Date.now() - order.createdAt.getTime() > 24 * 60 * 60 * 1000) {
         return NextResponse.json(
           { error: "Đã quá 24 giờ kể từ khi mua hàng, không thể khiếu nại.", code: "COMPLAINT_WINDOW_EXPIRED" },
           { status: 400 },
         );
+      }
+      if (order.sellerId) {
+        const seller = await prisma.user.findUnique({ where: { id: order.sellerId }, select: { email: true } });
+        sellerEmail = seller?.email ?? null;
       }
     }
 
@@ -59,6 +71,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       data: { userId: me.id, subject, content, orderId: orderId ?? null },
       select: { id: true, subject: true, status: true, createdAt: true },
     });
+
+    sendComplaintCreatedToUserEmail({ to: me.email, subject, complaintId: complaint.id }).catch(() => {});
+    if (sellerEmail) {
+      sendComplaintCreatedToSellerEmail({ to: sellerEmail, subject, complaintId: complaint.id }).catch(() => {});
+    }
 
     return apiOk(complaint, 201);
   } catch (err) {
