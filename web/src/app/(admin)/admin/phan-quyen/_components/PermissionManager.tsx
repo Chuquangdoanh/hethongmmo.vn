@@ -285,7 +285,7 @@ export default function PermissionManager({
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500">Trang</th>
-                
+                <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500">Tên Hiển Thi (X)</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 w-28">Hiển thị</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 w-28">Nổi bật</th>
                 
@@ -376,56 +376,7 @@ export default function PermissionManager({
             </tbody>
 
             {/* ── Add new page row ── */}
-            {/* <tfoot>
-              <tr className="bg-gray-50 border-t-2 border-dashed border-gray-200">
-                <td className="px-5 py-3" colSpan={5}>
-                  <p className="text-xs font-semibold text-gray-600 mb-2 flex items-center gap-1.5">
-                    <Plus size={12} strokeWidth={2.5} />
-                    Thêm trang công khai mới
-                  </p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className="flex flex-col gap-1">
-                      <input
-                        type="text"
-                        value={newKey}
-                        onChange={(e) => { setNewKey(e.target.value); setAddStatus("idle"); setAddError(""); }}
-                        placeholder="URL path (vd: gioi-thieu)"
-                        maxLength={100}
-                        className="w-52 px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none transition-all"
-                      />
-                      <p className="text-[10px] text-gray-400 pl-1">Chỉ dùng a-z, 0-9, - và /</p>
-                    </div>
-                    <input
-                      type="text"
-                      value={newLabel}
-                      onChange={(e) => { setNewLabel(e.target.value); setAddStatus("idle"); setAddError(""); }}
-                      placeholder="Tên trang (vd: Giới thiệu)"
-                      maxLength={200}
-                      className="w-52 px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleCreate}
-                      disabled={addStatus === "loading"}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
-                    >
-                      <Plus size={12} strokeWidth={2.5} />
-                      {addStatus === "loading" ? "Đang thêm…" : "Thêm trang"}
-                    </button>
-                    {addStatus === "success" && (
-                      <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
-                        <Check size={12} strokeWidth={2.5} /> Đã thêm
-                      </span>
-                    )}
-                    {addStatus === "error" && (
-                      <span className="flex items-center gap-1 text-xs text-red-500 font-medium">
-                        <AlertCircle size={12} strokeWidth={2.5} /> {addError || "Lỗi không xác định"}
-                      </span>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            </tfoot> */}
+            
           </table>
         </div>
       )}
