@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Package, Zap, BookOpen, FileText,
@@ -283,8 +284,13 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
 
         {/* Logo */}
         <div className="px-4 py-4 border-b border-gray-100 shrink-0">
-          <Link href="/" className="text-sm font-bold text-accent">hethongmmo.vn</Link>
-          <p className="text-[10px] text-gray-400 mt-0.5 font-medium tracking-wide">Admin Panel</p>
+          <Link href="/" className="flex items-center gap-2.5">
+            <Image src="/images/logo.png" alt="Logo" width={36} height={36} className="shrink-0 rounded-lg" />
+            <div>
+              <p className="text-sm font-bold text-[#7C3AED] leading-tight tracking-wide">HỆ THỐNG MMO</p>
+              <p className="text-[10px] text-gray-400 font-medium tracking-widest uppercase">Admin Panel</p>
+            </div>
+          </Link>
         </div>
 
         <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">

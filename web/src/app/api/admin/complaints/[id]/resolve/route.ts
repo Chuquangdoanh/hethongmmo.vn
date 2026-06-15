@@ -4,7 +4,6 @@ import { requireAdmin } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
 import { apiOk, apiCatch, apiError } from "@/lib/api-response";
-import { sendComplaintResolvedEmail } from "@/lib/services/email.service";
 
 export const runtime = "nodejs";
 
@@ -96,37 +95,6 @@ export async function POST(
       targetId: id,
       after: { frozenOrderId, sellerDeducted, deductedAmount },
     });
-
-    const capturedFrozenOrderId = frozenOrderId;
-    void (async () => {
-      try {
-        const userRow = await prisma.user.findUnique({ where: { id: complaint.userId }, select: { email: true } });
-        if (userRow?.email) {
-          await sendComplaintResolvedEmail({
-            to: userRow.email,
-            subject: complaint.subject,
-            title: "Khiếu nại được chấp nhận",
-            body: "Đơn hàng liên quan đã bị đóng băng để xem xét. Admin sẽ liên hệ với bạn về các bước tiếp theo.",
-            isPositive: true,
-          });
-        }
-        if (capturedFrozenOrderId) {
-          const frozenOrder = await prisma.order.findUnique({ where: { id: capturedFrozenOrderId }, select: { sellerId: true } });
-          if (frozenOrder?.sellerId) {
-            const seller = await prisma.user.findUnique({ where: { id: frozenOrder.sellerId }, select: { email: true } });
-            if (seller?.email) {
-              await sendComplaintResolvedEmail({
-                to: seller.email,
-                subject: complaint.subject,
-                title: "Đơn hàng bị đóng băng",
-                body: "Đơn hàng của bạn đã bị đóng băng do khiếu nại từ người mua được giải quyết. Vui lòng liên hệ hỗ trợ để biết thêm chi tiết.",
-                isPositive: false,
-              });
-            }
-          }
-        }
-      } catch { /* silent — không block response */ }
-    })();
 
     return apiOk({ resolved: true, frozenOrderId, sellerDeducted, deductedAmount });
   } catch (err) {
