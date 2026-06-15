@@ -103,29 +103,50 @@ const ACTION_VI: Record<string, string> = {
   UPDATE_PAGE_PERMISSIONS:     "Cập nhật phân quyền trang",
   UPDATE_STAFF_PERMISSIONS:    "Cập nhật quyền CRUD nhân viên",
   UPDATE_PUBLIC_PAGE_CONFIGS:  "Cập nhật cấu hình trang công khai",
+  UPDATE_SITE_CONTENT:         "Cập nhật nội dung trang",
   // Rút tiền
   WITHDRAWAL_APPROVED:      "Duyệt yêu cầu rút tiền",
   WITHDRAWAL_REJECTED:      "Từ chối yêu cầu rút tiền",
   WITHDRAWAL_COMPLETED:     "Hoàn tất rút tiền",
+  // Đổi tài khoản ngân hàng
+  BANK_CHANGE_REQUEST_APPROVED: "Duyệt đổi tài khoản ngân hàng",
+  BANK_CHANGE_REQUEST_REJECTED: "Từ chối đổi tài khoản ngân hàng",
 };
 
 const TARGET_TYPE_VI: Record<string, string> = {
-  User:            "Người dùng",
-  Course:          "Khóa học",
-  CourseCategory:  "Danh mục KH",
-  Service:         "Dịch vụ",
-  ServiceCategory: "Danh mục DV",
-  TutTrick:        "Tut-Trick",
-  TutTrickCategory:"Danh mục TT",
-  MmoProduct:      "Sản phẩm MMO",
-  SellerProduct:   "SP nhà bán",
-  ResourceCategory:"Danh mục TN",
-  Order:           "Đơn hàng",
-  Complaint:       "Khiếu nại",
-  Review:          "Đánh giá",
-  Withdrawal:      "Rút tiền",
-  SellerTier:      "Hạng bán hàng",
-  PagePermission:  "Phân quyền",
+  User:              "Người dùng",
+  Course:            "Khóa học",
+  CourseCategory:    "Danh mục KH",
+  Service:           "Dịch vụ",
+  ServiceCategory:   "Danh mục DV",
+  TutTrick:          "Tut-Trick",
+  TutTrickCategory:  "Danh mục TT",
+  MmoProduct:        "Sản phẩm MMO",
+  SellerProduct:     "SP nhà bán",
+  ResourceCategory:  "Danh mục TN",
+  Order:             "Đơn hàng",
+  Complaint:         "Khiếu nại",
+  Review:            "Đánh giá",
+  Withdrawal:        "Rút tiền",
+  SellerTier:        "Hạng bán hàng",
+  PagePermission:    "Phân quyền",
+  SiteContent:       "Nội dung trang",
+  BankChangeRequest: "Yêu cầu đổi ngân hàng",
+};
+
+const SITE_CONTENT_PAGE_VI: Record<string, string> = {
+  page_tut_tricks:          "Tut & Tricks",
+  page_tai_nguyen:          "Tài nguyên MMO",
+  page_networks:            "Networks",
+  page_quang_cao:           "Quảng cáo",
+  page_quang_cao_why_choose:"Quảng cáo — Tại sao chọn",
+  page_khoa_hoc:            "Khóa học",
+  page_dich_vu:             "Dịch vụ",
+  home_stats:               "Trang chủ — Thống kê",
+  home_press:               "Trang chủ — Báo chí",
+  home_faq:                 "Trang chủ — Câu hỏi",
+  footer:                   "Footer",
+  thank_you:                "Trang cảm ơn",
 };
 
 const ROLE_VI: Record<string, { label: string; className: string }> = {
@@ -140,7 +161,11 @@ function describeAction(action: string): string {
 function describeTarget(targetType: string | null, targetId: string | null): string {
   if (!targetType) return "—";
   const label = TARGET_TYPE_VI[targetType] ?? targetType;
-  return targetId ? `${label} #${targetId.slice(0, 8)}` : label;
+  if (!targetId) return label;
+  if (targetType === "SiteContent") {
+    return `${label} — ${SITE_CONTENT_PAGE_VI[targetId] ?? targetId}`;
+  }
+  return `${label} #${targetId.slice(0, 8)}`;
 }
 
 export default async function AdminAuditLogPage({
