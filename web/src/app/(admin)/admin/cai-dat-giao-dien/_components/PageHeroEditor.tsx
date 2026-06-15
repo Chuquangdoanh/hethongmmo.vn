@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { FieldText } from "../trang-chu/_components/FieldInput";
 import { ImageUpload } from "./ImageUpload";
+import { ColoredTitle } from "@/components/shared/ColoredTitle";
 
 interface Props {
   sectionKey: string;
@@ -75,13 +76,27 @@ export default function PageHeroEditor({ sectionKey, initialData, pageLabel, pag
           onChange={(v) => handleChange("badge", v)}
           hint="Nhãn nhỏ phía trên tiêu đề"
         />
-        <FieldText
-          label="Tiêu đề chính"
-          value={String(data["title"] ?? "")}
-          onChange={(v) => handleChange("title", v)}
-          textarea
-          rows={2}
-        />
+        <div className="space-y-2">
+          <FieldText
+            label="Tiêu đề chính"
+            value={String(data["title"] ?? "")}
+            onChange={(v) => handleChange("title", v)}
+            textarea
+            rows={2}
+            hint={'Dùng ["text"] để tô màu một phần. VD: Dịch vụ ["Facebook & TikTok"]'}
+          />
+          {String(data["title"] ?? "") && (
+            <div className="px-3 py-2.5 rounded-lg bg-gray-50 border border-dashed border-gray-200">
+              <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Xem trước</p>
+              <p className="text-sm font-bold text-gray-800 leading-snug break-words">
+                <ColoredTitle
+                  text={String(data["title"] ?? "")}
+                  accentColor={String(data["titleColor"] ?? "#0066ff")}
+                />
+              </p>
+            </div>
+          )}
+        </div>
         <div className="flex items-end gap-3">
           <div className="flex-1">
             <FieldText

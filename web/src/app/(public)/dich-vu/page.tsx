@@ -10,6 +10,7 @@ import { Users, TrendingUp, Star, CheckCircle, Headphones } from "lucide-react";
 import { getDiscountInfo } from "@/lib/utils/discount";
 import { r2Url } from "@/lib/utils/image-url";
 import { buildMeta } from "@/lib/utils/seo";
+import { ColoredTitle } from "@/components/shared/ColoredTitle";
 
 export const metadata: Metadata = buildMeta({
   title: "Dịch Vụ Mạng Xã Hội | Hệ Thống MMO",
@@ -140,7 +141,7 @@ export default async function DichVuPage({
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-3xl font-extrabold text-text-dark uppercase tracking-wide mb-2">
-            {pageHero.title}
+            <ColoredTitle text={pageHero.title} accentColor="#EF4444" />
           </h1>
           <p className="text-sm text-text-muted">
             {pageHero.description}

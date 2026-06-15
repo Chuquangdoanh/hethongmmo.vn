@@ -5,7 +5,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { formatVnd } from "@/lib/utils/format";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
-import { User, CreditCard, Package, Store, LayoutDashboard } from "lucide-react";
+import { User, CreditCard, Package, Store, LayoutDashboard, LogOut } from "lucide-react";
 
 interface UserMenuProps {
   user: AuthenticatedUser;
@@ -243,67 +243,35 @@ function LogoutBtn({ onLogout }: { onLogout: () => void }) {
   return (
     <button
       onClick={() => { void handleLogout(); }}
-      className="Btn"
       style={{
         display: "flex",
         alignItems: "center",
-        justifyContent: "flex-start",
-        width: "45px",
-        height: "45px",
+        gap: "10px",
+        width: "100%",
+        padding: "7px 10px",
+        background: "#fef2f2",
+        color: "#dc2626",
         border: "none",
-        borderRadius: "50%",
+        borderRadius: "8px",
+        fontSize: "13px",
+        fontWeight: "600",
         cursor: "pointer",
-        position: "relative",
-        overflow: "hidden",
-        transition: "all 0.3s",
-        boxShadow: "2px 2px 10px rgba(0,0,0,0.2)",
-        backgroundColor: "rgb(255,65,65)",
-        padding: "0",
-        margin: "4px 6px",
-      }}
-      onMouseEnter={(e) => {
-        const el = e.currentTarget as HTMLButtonElement;
-        el.style.width = "125px";
-        el.style.borderRadius = "40px";
-        const text = el.querySelector<HTMLSpanElement>(".btn-text");
-        const sign = el.querySelector<HTMLSpanElement>(".btn-sign");
-        if (text) { text.style.opacity = "1"; text.style.width = "70%"; text.style.paddingRight = "10px"; }
-        if (sign) { sign.style.width = "30%"; sign.style.paddingLeft = "20px"; }
-      }}
-      onMouseLeave={(e) => {
-        const el = e.currentTarget as HTMLButtonElement;
-        el.style.width = "45px";
-        el.style.borderRadius = "50%";
-        const text = el.querySelector<HTMLSpanElement>(".btn-text");
-        const sign = el.querySelector<HTMLSpanElement>(".btn-sign");
-        if (text) { text.style.opacity = "0"; text.style.width = "0%"; text.style.paddingRight = "0"; }
-        if (sign) { sign.style.width = "100%"; sign.style.paddingLeft = "0"; }
+        textAlign: "left",
       }}
     >
-      <span className="btn-sign" style={{
-        width: "100%",
+      <span style={{
+        width: "30px",
+        height: "30px",
+        borderRadius: "8px",
+        background: "#fee2e2",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        transition: "all 0.3s",
+        flexShrink: 0,
       }}>
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
-        </svg>
+        <LogOut size={15} strokeWidth={2} style={{ color: "#dc2626" }} />
       </span>
-      <span className="btn-text" style={{
-        position: "absolute",
-        right: "0%",
-        width: "0%",
-        opacity: 0,
-        color: "white",
-        fontSize: "1em",
-        fontWeight: "600",
-        transition: "all 0.3s",
-        whiteSpace: "nowrap",
-      }}>
-        Đăng xuất
-      </span>
+      Đăng xuất
     </button>
   );
 }

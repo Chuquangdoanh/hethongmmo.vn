@@ -9,6 +9,7 @@ import AdServiceTabs from "./_components/AdServiceTabs";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import ImageLightbox from "@/components/shared/ImageLightbox";
+import { ColoredTitle } from "@/components/shared/ColoredTitle";
 
 import { buildMeta } from "@/lib/utils/seo";
 export const metadata: Metadata = buildMeta({
@@ -108,7 +109,7 @@ export default async function QuangCaoAdsPage() {
                   textTransform: "uppercase",
                 }}
               >
-                {pageHero.title}
+                <ColoredTitle text={pageHero.title} accentColor="#f97316" />
               </h1>
 
               {/* Thumbnail — chỉ hiện trên mobile, giữa title và mô tả */}

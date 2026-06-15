@@ -9,6 +9,7 @@ import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import { getDiscountInfo } from "@/lib/utils/discount";
 import { buildMeta } from "@/lib/utils/seo";
+import { ColoredTitle } from "@/components/shared/ColoredTitle";
 import Pagination from "@/components/shared/Pagination";
 
 const PAGE_SIZE = 9;
@@ -103,10 +104,10 @@ export default async function TutTricksPage({
             className="text-5xl md:text-7xl font-extrabold mb-1 tracking-tight leading-tight"
             style={{ color: pageHero.titleColor || "#111827" }}
           >
-            {pageHero.title}
+            <ColoredTitle text={pageHero.title} accentColor="#f59e0b" />
           </h1>
           <h2 className="text-2xl md:text-4xl font-bold text-[#111827] mb-4 tracking-wide">
-            {pageHero.subtitle}
+            <ColoredTitle text={pageHero.subtitle} accentColor="#f59e0b" />
           </h2>
           <p className="text-base md:text-lg text-[#6b7280] leading-relaxed mb-10">
             {pageHero.description}
