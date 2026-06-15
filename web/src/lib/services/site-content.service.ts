@@ -12,7 +12,8 @@ export const SITE_CONTENT_KEYS = {
   HOME_FAQ:     "home_faq",
   PAGE_DICH_VU:    "page_dich_vu",
   PAGE_KHOA_HOC:   "page_khoa_hoc",
-  PAGE_QUANG_CAO:  "page_quang_cao",
+  PAGE_QUANG_CAO:            "page_quang_cao",
+  PAGE_QUANG_CAO_WHY_CHOOSE: "page_quang_cao_why_choose",
   PAGE_TUT_TRICKS: "page_tut_tricks",
   PAGE_TAI_NGUYEN: "page_tai_nguyen",
   PAGE_NETWORKS:   "page_networks",
@@ -154,6 +155,21 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     subtitle: "Chuyên nghiệp — Hiệu quả — Tối ưu chi phí",
     description: "Tối ưu ngân sách, tăng ROI. Kinh nghiệm 5 năm, quản lý 50B+ ngân sách quảng cáo.",
     thumbnail: "/images/hethongmmo.png",
+  },
+  page_quang_cao_why_choose: {
+    sectionLabel: "Lý do chọn chúng tôi",
+    subtitle: "Chất lượng tạo nên uy tín",
+    bullets: [
+      "Kinh nghiệm thực chiến 5 năm",
+      "Cam kết hiệu quả tối ưu theo CPA/ROI",
+      "Chi phí dịch vụ cạnh tranh nhất thị trường",
+      "Hỗ trợ 1-1, xử lý sự cố tức thì 24/7",
+    ],
+    stats: [
+      { value: "50B+", label: "NGÂN SÁCH ĐÃ QUẢN LÝ" },
+      { value: "1.200+", label: "CHIẾN DỊCH THÀNH CÔNG" },
+      { value: "350%", label: "LỢI NHUẬN TRUNG BÌNH" },
+    ],
   },
   page_tut_tricks: {
     badge: "⚡ KHO TUT TRICK ĐỘC QUYỀN",

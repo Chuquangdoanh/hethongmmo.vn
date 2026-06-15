@@ -18,19 +18,6 @@ export const metadata: Metadata = buildMeta({
   image: "/images/dj-media-classroom.jpg",
 });
 
-const WHY_CHOOSE = [
-  "Kinh nghiệm thực chiến 5 năm",
-  "Cam kết hiệu quả tối ưu theo CPA/ROI",
-  "Chi phí dịch vụ cạnh tranh nhất thị trường",
-  "Hỗ trợ 1-1, xử lý sự cố tức thì 24/7",
-];
-
-const STATS = [
-  { value: "50B+", label: "NGÂN SÁCH ĐÃ QUẢN LÝ" },
-  { value: "1.200+", label: "CHIẾN DỊCH THÀNH CÔNG" },
-  { value: "350%", label: "LỢI NHUẬN TRUNG BÌNH" },
-];
-
 const STEPS = [
   {
     num: "01",
@@ -59,11 +46,20 @@ const STEPS = [
 ];
 
 
+type WhyChooseData = {
+  sectionLabel: string;
+  subtitle: string;
+  bullets: string[];
+  stats: { value: string; label: string }[];
+};
+
 export default async function QuangCaoAdsPage() {
   await guardPublicPage("quang-cao");
-  const pageHero = await getSiteContent<{ badge: string; title: string; subtitle: string; description: string; thumbnail: string }>(SITE_CONTENT_KEYS.PAGE_QUANG_CAO);
-
-  const session = await auth();
+  const [pageHero, whyChooseData, session] = await Promise.all([
+    getSiteContent<{ badge: string; title: string; subtitle: string; description: string; thumbnail: string }>(SITE_CONTENT_KEYS.PAGE_QUANG_CAO),
+    getSiteContent<WhyChooseData>(SITE_CONTENT_KEYS.PAGE_QUANG_CAO_WHY_CHOOSE),
+    auth(),
+  ]);
   const sessionUser = session?.user as AuthenticatedUser | undefined;
 
   let userInfo: { name: string; phone: string } | null = null;
@@ -198,14 +194,14 @@ export default async function QuangCaoAdsPage() {
             {/* Left */}
             <div>
               <p style={{ fontSize: "0.7rem", fontWeight: 700, color: "#f97316", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12 }}>
-                Lý do chọn chúng tôi
+                {whyChooseData.sectionLabel}
               </p>
               <h2 style={{ fontSize: "1.75rem", fontWeight: 800, color: "#0f172a", marginBottom: 24 }}>
-                Chất lượng tạo nên uy tín
+                {whyChooseData.subtitle}
               </h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {WHY_CHOOSE.map((item) => (
-                  <div key={item} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {Array.isArray(whyChooseData.bullets) && whyChooseData.bullets.map((item, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <CheckCircle size={18} strokeWidth={2} style={{ color: "#16a34a", flexShrink: 0 }} />
                     <span style={{ fontSize: "0.9rem", color: "#374151", fontWeight: 500 }}>{item}</span>
                   </div>
@@ -256,8 +252,8 @@ export default async function QuangCaoAdsPage() {
                 }}
               />
               {/* Stats text */}
-              {STATS.map(({ value, label }) => (
-                <div key={label} style={{ position: "relative", zIndex: 2 }}>
+              {Array.isArray(whyChooseData.stats) && whyChooseData.stats.map(({ value, label }, i) => (
+                <div key={i} style={{ position: "relative", zIndex: 2 }}>
                   <p style={{ fontSize: "clamp(2rem, 5vw, 2.8rem)", fontWeight: 900, color: "#ffffff", lineHeight: 1, marginBottom: 4 }}>
                     {value}
                   </p>
