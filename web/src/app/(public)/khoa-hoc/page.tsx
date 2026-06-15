@@ -62,7 +62,7 @@ export default async function KhoaHocPage({
   searchParams: Promise<{ category?: string }>;
 }) {
   await guardPublicPage("khoa-hoc");
-  const pageHero = await getSiteContent<{ badge: string; title: string; description: string }>(SITE_CONTENT_KEYS.PAGE_KHOA_HOC);
+  const pageHero = await getSiteContent<{ badge: string; title: string; description: string; titleAccentColor: string }>(SITE_CONTENT_KEYS.PAGE_KHOA_HOC);
   const { category } = await searchParams;
 
   const [courses, rawCategories, courseCategoryDefs] = await Promise.all([
@@ -153,7 +153,7 @@ export default async function KhoaHocPage({
                 {pageHero.badge}
               </span>
               <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight">
-                <ColoredTitle text={pageHero.title} accentColor="#7c3aed" />
+                <ColoredTitle text={pageHero.title} accentColor={pageHero.titleAccentColor || "#7c3aed"} />
               </h1>
             </div>
 

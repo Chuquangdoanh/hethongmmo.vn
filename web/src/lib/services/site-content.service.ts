@@ -141,6 +141,7 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     subtitle: "",
     description: "Chọn dịch vụ bạn cần và điền thông tin để được hỗ trợ nhanh chóng",
     thumbnail: "",
+    titleAccentColor: "#EF4444",
   },
   page_khoa_hoc: {
     badge: "Digital Learning",
@@ -148,6 +149,7 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     subtitle: "",
     description: "Hệ thống khóa học từ cơ bản đến nâng cao, học cùng chuyên gia thực chiến",
     thumbnail: "",
+    titleAccentColor: "#7c3aed",
   },
   page_quang_cao: {
     badge: "Quảng cáo",
@@ -155,6 +157,7 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     subtitle: "Chuyên nghiệp — Hiệu quả — Tối ưu chi phí",
     description: "Tối ưu ngân sách, tăng ROI. Kinh nghiệm 5 năm, quản lý 50B+ ngân sách quảng cáo.",
     thumbnail: "/images/hethongmmo.png",
+    titleAccentColor: "#f97316",
   },
   page_quang_cao_why_choose: {
     sectionLabel: "Lý do chọn chúng tôi",
@@ -179,6 +182,7 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     subtitle: "Cộng Đồng MMO Việt Nam",
     description: "Bí quyết tăng trưởng chiến, kiếm tiền online — tổng hợp độc quyền, cập nhật liên tục từ các chuyên gia.",
     thumbnail: "",
+    titleAccentColor: "#f59e0b",
   },
   page_tai_nguyen: {
     badge: "Tài nguyên MMO",
@@ -195,6 +199,8 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     communityGroupDesc: "Nơi giao lưu, chia sẻ kiến thức, tài nguyên và cập nhật các xu hướng mới nhất về MMO, Facebook Ads, Marketing và kiếm tiền online.",
     communityFanpageLabel: "Kênh Fanpage Chính Thức",
     communityFanpageUrl: "https://www.facebook.com/hethongmmo.vn/",
+    communityAccentColor: "#0066ff",
+    communityHighlightColor: "#f97316",
   },
   page_networks: {
     badge: "DNET MEDIA NETWORK",
@@ -202,6 +208,7 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     subtitle: "Hệ sinh thái hỗ trợ kiếm tiền từ nội dung Facebook",
     description: "Trang chính thức cung cấp dịch vụ và thông tin hỗ trợ kiếm tiền nội dung cho Content Creator và KOC.",
     thumbnail: "",
+    titleAccentColor: "#0066ff",
   },
   footer: {
     // CTA Banner

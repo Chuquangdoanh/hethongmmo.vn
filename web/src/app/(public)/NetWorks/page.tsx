@@ -89,7 +89,7 @@ const TRUST_POINTS = [
 
 export default async function NetworksPage() {
   await guardPublicPage("NetWorks");
-  const pageHero = await getSiteContent<{ badge: string; title: string; subtitle: string; description: string; thumbnail: string }>(SITE_CONTENT_KEYS.PAGE_NETWORKS);
+  const pageHero = await getSiteContent<{ badge: string; title: string; subtitle: string; description: string; thumbnail: string; titleAccentColor: string }>(SITE_CONTENT_KEYS.PAGE_NETWORKS);
 
   const session = await auth();
   const sessionUser = session?.user as AuthenticatedUser | undefined;
@@ -129,7 +129,7 @@ export default async function NetworksPage() {
               fontSize: "clamp(1.8rem,4.5vw,3rem)", fontWeight: 800,
               color: "#0f172a", lineHeight: 1.2, maxWidth: 760, margin: 0,
             }}>
-              <ColoredTitle text={pageHero.title} accentColor="#0066ff" />
+              <ColoredTitle text={pageHero.title} accentColor={pageHero.titleAccentColor || "#0066ff"} />
             </h1>
 
             <p style={{ fontSize: 15, color: "#475569", maxWidth: 560, lineHeight: 1.7, margin: 0 }}>

@@ -58,7 +58,7 @@ type WhyChooseData = {
 export default async function QuangCaoAdsPage() {
   await guardPublicPage("quang-cao");
   const [pageHero, whyChooseData, session] = await Promise.all([
-    getSiteContent<{ badge: string; title: string; subtitle: string; description: string; thumbnail: string }>(SITE_CONTENT_KEYS.PAGE_QUANG_CAO),
+    getSiteContent<{ badge: string; title: string; subtitle: string; description: string; thumbnail: string; titleAccentColor: string }>(SITE_CONTENT_KEYS.PAGE_QUANG_CAO),
     getSiteContent<WhyChooseData>(SITE_CONTENT_KEYS.PAGE_QUANG_CAO_WHY_CHOOSE),
     auth(),
   ]);
@@ -109,7 +109,7 @@ export default async function QuangCaoAdsPage() {
                   textTransform: "uppercase",
                 }}
               >
-                <ColoredTitle text={pageHero.title} accentColor="#f97316" />
+                <ColoredTitle text={pageHero.title} accentColor={pageHero.titleAccentColor || "#f97316"} />
               </h1>
 
               {/* Thumbnail — chỉ hiện trên mobile, giữa title và mô tả */}

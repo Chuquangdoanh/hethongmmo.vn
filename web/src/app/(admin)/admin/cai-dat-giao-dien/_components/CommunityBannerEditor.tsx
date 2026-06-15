@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { FieldText, FieldGrid, FieldSectionLabel } from "../trang-chu/_components/FieldInput";
+import { ColoredTitle } from "@/components/shared/ColoredTitle";
 
 interface Props {
   sectionKey: string;
@@ -65,13 +66,89 @@ export function CommunityBannerEditor({ sectionKey, initialData }: Props) {
           VD: <code className="bg-blue-100 px-1 rounded font-mono">{`["HỆ THỐNG MMO"]`}</code> → chữ đó sẽ đổi màu trên trang public.
         </div>
 
-        <FieldText
-          label="Tiêu đề banner"
-          value={String(data["communityTitle"] ?? "")}
-          onChange={(v) => handleChange("communityTitle", v)}
-          placeholder="CỘNG ĐỒNG MMO — HỆ THỐNG MMO 5.0"
-          hint={`Dùng ' — ' để tách 2 dòng trên mobile. Dùng ["text"] để đổi màu phần tiêu đề.`}
-        />
+        <div className="space-y-2">
+          <FieldText
+            label="Tiêu đề banner"
+            value={String(data["communityTitle"] ?? "")}
+            onChange={(v) => handleChange("communityTitle", v)}
+            placeholder="CỘNG ĐỒNG MMO — HỆ THỐNG MMO 5.0"
+            hint={`Dùng ' — ' để tách 2 dòng trên mobile. Dùng ["text"] để đổi màu phần tiêu đề.`}
+          />
+          {String(data["communityTitle"] ?? "") && (
+            <div className="px-3 py-2.5 rounded-lg bg-gray-50 border border-dashed border-gray-200">
+              <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Xem trước</p>
+              <p className="text-sm font-extrabold text-gray-800 leading-snug break-words">
+                <ColoredTitle
+                  text={String(data["communityTitle"] ?? "").split(" — ")[0] ?? ""}
+                  accentColor={String(data["communityAccentColor"] ?? "#0066ff")}
+                />
+                {String(data["communityTitle"] ?? "").includes(" — ") && (
+                  <> — <span style={{ color: String(data["communityHighlightColor"] ?? "#f97316") }}>
+                    {String(data["communityTitle"] ?? "").split(" — ").slice(1).join(" — ")}
+                  </span></>
+                )}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <FieldSectionLabel label="🎨 Màu sắc accent" />
+        <FieldGrid cols={2}>
+          <div>
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <FieldText
+                  label="Màu chính (labels, link)"
+                  value={String(data["communityAccentColor"] ?? "")}
+                  onChange={(v) => handleChange("communityAccentColor", v)}
+                  placeholder="#0066ff"
+                  hint={`Màu cho ["text"] trong label và link. Mặc định: #0066ff`}
+                />
+              </div>
+              <div className="shrink-0 pb-1">
+                <input
+                  type="color"
+                  value={String(data["communityAccentColor"] ?? "#0066ff")}
+                  onChange={(e) => handleChange("communityAccentColor", e.target.value)}
+                  className="w-10 h-9 rounded-lg border border-gray-200 cursor-pointer bg-white p-0.5"
+                  title="Màu chính"
+                />
+              </div>
+            </div>
+            {String(data["communityAccentColor"] ?? "") && (
+              <p className="mt-1 text-xs" style={{ color: String(data["communityAccentColor"] ?? "#0066ff") }}>
+                ● Xem trước màu này
+              </p>
+            )}
+          </div>
+          <div>
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <FieldText
+                  label="Màu nổi bật (highlight)"
+                  value={String(data["communityHighlightColor"] ?? "")}
+                  onChange={(v) => handleChange("communityHighlightColor", v)}
+                  placeholder="#f97316"
+                  hint={`Màu cho supportText ["text"] và phần sau dấu " — " trong tiêu đề`}
+                />
+              </div>
+              <div className="shrink-0 pb-1">
+                <input
+                  type="color"
+                  value={String(data["communityHighlightColor"] ?? "#f97316")}
+                  onChange={(e) => handleChange("communityHighlightColor", e.target.value)}
+                  className="w-10 h-9 rounded-lg border border-gray-200 cursor-pointer bg-white p-0.5"
+                  title="Màu nổi bật"
+                />
+              </div>
+            </div>
+            {String(data["communityHighlightColor"] ?? "") && (
+              <p className="mt-1 text-xs" style={{ color: String(data["communityHighlightColor"] ?? "#f97316") }}>
+                ● Xem trước màu này
+              </p>
+            )}
+          </div>
+        </FieldGrid>
 
         <FieldSectionLabel label="🔹 Nhóm Telegram" />
         <FieldGrid cols={2}>

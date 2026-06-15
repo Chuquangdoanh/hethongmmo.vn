@@ -91,7 +91,7 @@ export default function PageHeroEditor({ sectionKey, initialData, pageLabel, pag
               <p className="text-sm font-bold text-gray-800 leading-snug break-words">
                 <ColoredTitle
                   text={String(data["title"] ?? "")}
-                  accentColor={String(data["titleColor"] ?? "#0066ff")}
+                  accentColor={String(data["titleAccentColor"] ?? data["titleColor"] ?? "#0066ff")}
                 />
               </p>
             </div>
@@ -114,6 +114,26 @@ export default function PageHeroEditor({ sectionKey, initialData, pageLabel, pag
               onChange={(e) => handleChange("titleColor", e.target.value)}
               className="w-10 h-9 rounded-lg border border-gray-200 cursor-pointer bg-white p-0.5"
               title="Chọn màu"
+            />
+          </div>
+        </div>
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <FieldText
+              label={`Màu accent ["text"] (hex)`}
+              value={String(data["titleAccentColor"] ?? "")}
+              onChange={(v) => handleChange("titleAccentColor", v)}
+              placeholder="#0066ff"
+              hint={`Màu tô cho phần ["text"] trong tiêu đề. VD: #f97316 cam · #EF4444 đỏ · #7c3aed tím`}
+            />
+          </div>
+          <div className="shrink-0 pb-1">
+            <input
+              type="color"
+              value={String(data["titleAccentColor"] ?? "#0066ff")}
+              onChange={(e) => handleChange("titleAccentColor", e.target.value)}
+              className="w-10 h-9 rounded-lg border border-gray-200 cursor-pointer bg-white p-0.5"
+              title="Chọn màu accent"
             />
           </div>
         </div>

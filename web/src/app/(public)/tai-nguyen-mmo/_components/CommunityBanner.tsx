@@ -115,6 +115,8 @@ export interface CommunityBannerData {
   communityGroupDesc?: string;
   communityFanpageLabel?: string;
   communityFanpageUrl?: string;
+  communityAccentColor?: string;
+  communityHighlightColor?: string;
 }
 
 export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
@@ -127,6 +129,8 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
   const groupDesc         = data.communityGroupDesc    ?? "Nơi giao lưu, chia sẻ kiến thức, tài nguyên và cập nhật các xu hướng mới nhất về MMO, Facebook Ads, Marketing và kiếm tiền online.";
   const fanpageLabel      = data.communityFanpageLabel ?? "Kênh Fanpage Chính Thức";
   const fanpageUrl        = data.communityFanpageUrl  ?? "https://www.facebook.com/hethongmmo.vn/";
+  const accentColor       = data.communityAccentColor  ?? "#0066ff";
+  const highlightColor    = data.communityHighlightColor ?? "#f97316";
 
   const [open, setOpen] = useState<ModalId | null>(null);
 
@@ -162,18 +166,18 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
                 <h2 className="text-2xl md:text-3xl font-extrabold tracking-wider text-center flex-1 md:flex-none" style={{ color: "#111827" }}>
                   {/* Mobile: 2 dòng riêng */}
                   <span className="block md:hidden">
-                    <ColoredTitle text={titleMain ?? ""} accentColor="#0066ff" />
+                    <ColoredTitle text={titleMain ?? ""} accentColor={accentColor} />
                   </span>
                   {titleHighlight && (
-                    <span className="block md:hidden" style={{ color: "#f97316" }}>
+                    <span className="block md:hidden" style={{ color: highlightColor }}>
                       {titleHighlight}
                     </span>
                   )}
                   {/* Desktop: 1 dòng inline */}
                   <span className="hidden md:inline">
-                    <ColoredTitle text={titleMain ?? ""} accentColor="#0066ff" />
+                    <ColoredTitle text={titleMain ?? ""} accentColor={accentColor} />
                     {titleHighlight && (
-                      <> — <span style={{ color: "#f97316" }}>{titleHighlight}</span></>
+                      <> — <span style={{ color: highlightColor }}>{titleHighlight}</span></>
                     )}
                   </span>
                 </h2>
@@ -188,14 +192,14 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
             {/* Telegram group */}
             <div>
               <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>
-                🔹 <ColoredTitle text={telegramLabel} accentColor="#0066ff" />
+                🔹 <ColoredTitle text={telegramLabel} accentColor={accentColor} />
               </p>
               <a
                 href={telegramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs hover:underline underline-offset-2"
-                style={{ color: "#0066ff" }}
+                style={{ color: accentColor }}
               >
                 {telegramUrl} <ExternalLink size={10} strokeWidth={2} />
               </a>
@@ -203,21 +207,21 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
 
             {/* Support */}
             <div>
-              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 <ColoredTitle text={supportLabel} accentColor="#0066ff" /></p>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 <ColoredTitle text={supportLabel} accentColor={accentColor} /></p>
               <p className="text-sm" style={{ color: "#374151" }}>
-                <ColoredTitle text={supportText} accentColor="#f97316" />
+                <ColoredTitle text={supportText} accentColor={highlightColor} />
               </p>
             </div>
 
             {/* Community */}
             <div>
-              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 <ColoredTitle text={groupLabel} accentColor="#0066ff" /></p>
-              <p className="text-xs leading-relaxed" style={{ color: "#374151" }}><ColoredTitle text={groupDesc} accentColor="#0066ff" /></p>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 <ColoredTitle text={groupLabel} accentColor={accentColor} /></p>
+              <p className="text-xs leading-relaxed" style={{ color: "#374151" }}><ColoredTitle text={groupDesc} accentColor={accentColor} /></p>
             </div>
 
             {/* Fanpage */}
             <div>
-              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 <ColoredTitle text={fanpageLabel} accentColor="#0066ff" /></p>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 <ColoredTitle text={fanpageLabel} accentColor={accentColor} /></p>
               <a
                 href={fanpageUrl}
                 target="_blank"

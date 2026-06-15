@@ -27,7 +27,7 @@ export default async function TutTricksPage({
   searchParams: Promise<{ category?: string; tier?: string; page?: string }>;
 }) {
   await guardPublicPage("tut-tricks");
-  const pageHero = await getSiteContent<{ badge: string; title: string; titleColor: string; subtitle: string; description: string; thumbnail: string }>(SITE_CONTENT_KEYS.PAGE_TUT_TRICKS);
+  const pageHero = await getSiteContent<{ badge: string; title: string; titleColor: string; subtitle: string; description: string; thumbnail: string; titleAccentColor: string }>(SITE_CONTENT_KEYS.PAGE_TUT_TRICKS);
   const [{ category, tier, page }, session] = await Promise.all([
     searchParams,
     auth(),
@@ -104,10 +104,10 @@ export default async function TutTricksPage({
             className="text-5xl md:text-7xl font-extrabold mb-1 tracking-tight leading-tight"
             style={{ color: pageHero.titleColor || "#111827" }}
           >
-            <ColoredTitle text={pageHero.title} accentColor="#f59e0b" />
+            <ColoredTitle text={pageHero.title} accentColor={pageHero.titleAccentColor || "#f59e0b"} />
           </h1>
           <h2 className="text-2xl md:text-4xl font-bold text-[#111827] mb-4 tracking-wide">
-            <ColoredTitle text={pageHero.subtitle} accentColor="#f59e0b" />
+            <ColoredTitle text={pageHero.subtitle} accentColor={pageHero.titleAccentColor || "#f59e0b"} />
           </h2>
           <p className="text-base md:text-lg text-[#6b7280] leading-relaxed mb-10">
             {pageHero.description}

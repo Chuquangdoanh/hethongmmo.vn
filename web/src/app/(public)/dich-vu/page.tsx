@@ -41,7 +41,7 @@ export default async function DichVuPage({
   searchParams: Promise<{ category?: string; page?: string }>;
 }) {
   await guardPublicPage("dich-vu");
-  const pageHero = await getSiteContent<{ badge: string; title: string; description: string; thumbnail: string }>(SITE_CONTENT_KEYS.PAGE_DICH_VU);
+  const pageHero = await getSiteContent<{ badge: string; title: string; description: string; thumbnail: string; titleAccentColor: string }>(SITE_CONTENT_KEYS.PAGE_DICH_VU);
   const [{ category, page: pageParam }, session] = await Promise.all([searchParams, auth()]);
   const isLoggedIn = !!session?.user;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10));
@@ -141,7 +141,7 @@ export default async function DichVuPage({
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-3xl font-extrabold text-text-dark uppercase tracking-wide mb-2">
-            <ColoredTitle text={pageHero.title} accentColor="#EF4444" />
+            <ColoredTitle text={pageHero.title} accentColor={pageHero.titleAccentColor || "#EF4444"} />
           </h1>
           <p className="text-sm text-text-muted">
             {pageHero.description}
