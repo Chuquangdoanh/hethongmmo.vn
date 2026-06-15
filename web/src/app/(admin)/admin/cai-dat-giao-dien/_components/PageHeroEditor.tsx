@@ -100,29 +100,12 @@ export default function PageHeroEditor({ sectionKey, initialData, pageLabel, pag
         <div className="flex items-end gap-3">
           <div className="flex-1">
             <FieldText
-              label="Màu tiêu đề (hex)"
-              value={String(data["titleColor"] ?? "")}
-              onChange={(v) => handleChange("titleColor", v)}
-              placeholder="#111827"
-              hint="VD: #ef4444 đỏ · #0066ff xanh · #f59e0b vàng · để trống = màu mặc định"
-            />
-          </div>
-          <div className="shrink-0 pb-1">
-            <input
-              type="color"
-              value={String(data["titleColor"] ?? "#111827")}
-              onChange={(e) => handleChange("titleColor", e.target.value)}
-              className="w-10 h-9 rounded-lg border border-gray-200 cursor-pointer bg-white p-0.5"
-              title="Chọn màu"
-            />
-          </div>
-        </div>
-        <div className="flex items-end gap-3">
-          <div className="flex-1">
-            <FieldText
-              label={`Màu accent ["text"] (hex)`}
-              value={String(data["titleAccentColor"] ?? "")}
-              onChange={(v) => handleChange("titleAccentColor", v)}
+              label={`Màu ["text"] (hex)`}
+              value={String(data["titleAccentColor"] ?? data["titleColor"] ?? "")}
+              onChange={(v) => {
+                handleChange("titleAccentColor", v);
+                handleChange("titleColor", v);
+              }}
               placeholder="#0066ff"
               hint={`Màu tô cho phần ["text"] trong tiêu đề. VD: #f97316 cam · #EF4444 đỏ · #7c3aed tím`}
             />
@@ -130,18 +113,16 @@ export default function PageHeroEditor({ sectionKey, initialData, pageLabel, pag
           <div className="shrink-0 pb-1">
             <input
               type="color"
-              value={String(data["titleAccentColor"] ?? "#0066ff")}
-              onChange={(e) => handleChange("titleAccentColor", e.target.value)}
+              value={String(data["titleAccentColor"] ?? data["titleColor"] ?? "#0066ff")}
+              onChange={(e) => {
+                handleChange("titleAccentColor", e.target.value);
+                handleChange("titleColor", e.target.value);
+              }}
               className="w-10 h-9 rounded-lg border border-gray-200 cursor-pointer bg-white p-0.5"
               title="Chọn màu accent"
             />
           </div>
         </div>
-        <FieldText
-          label="Subtitle (tùy chọn)"
-          value={String(data["subtitle"] ?? "")}
-          onChange={(v) => handleChange("subtitle", v)}
-        />
         <FieldText
           label="Mô tả ngắn"
           value={String(data["description"] ?? "")}

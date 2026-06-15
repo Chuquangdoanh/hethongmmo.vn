@@ -90,18 +90,6 @@ export function ImageUpload({ label, value, onChange, uploadType = "cms-thumbnai
           </button>
           <p className="text-[10px] text-[#52525B]">JPEG, PNG, WebP, GIF · Tối đa 5 MB</p>
 
-          {/* Fallback URL input */}
-          <div>
-            <label className="block text-[10px] text-[#52525B] mb-1">Hoặc dán URL ảnh:</label>
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder="/images/... hoặc https://..."
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-900 focus:border-[#7C3AED] focus:outline-none font-mono"
-            />
-          </div>
-
           {uploadError && <p className="text-[11px] text-[#EF4444]">{uploadError}</p>}
           {hint && <p className="text-[10px] text-gray-400">{hint}</p>}
 
