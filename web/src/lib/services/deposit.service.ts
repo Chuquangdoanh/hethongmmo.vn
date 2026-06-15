@@ -72,8 +72,8 @@ export async function processDeposit(params: DepositParams): Promise<Transaction
       });
     } catch (err) {
       // P2002 = unique constraint violation — referenceCode đã được xử lý bởi request song song
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-        throw new DuplicateError("referenceCode", referenceCode);
+      if (err instanceof Prisma.PrismaClientKnownRequestError) {
+        if (err.code === "P2002") throw new DuplicateError("referenceCode", referenceCode);
       }
       throw err;
     }
