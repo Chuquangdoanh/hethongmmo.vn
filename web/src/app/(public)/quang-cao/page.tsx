@@ -51,6 +51,7 @@ type WhyChooseData = {
   subtitle: string;
   bullets: string[];
   stats: { value: string; label: string }[];
+  statsBgImage?: string;
 };
 
 export default async function QuangCaoAdsPage() {
@@ -231,7 +232,7 @@ export default async function QuangCaoAdsPage() {
                   left: 0,
                   right: 0,
                   height: "52%",
-                  backgroundImage: `url(${r2Url(pageHero.thumbnail) || "/images/hethongmmo.png"})`,
+                  backgroundImage: `url(${r2Url(whyChooseData.statsBgImage ?? "") || r2Url(pageHero.thumbnail) || "/images/hethongmmo.png"})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center top",
                   opacity: 0.5,

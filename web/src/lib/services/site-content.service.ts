@@ -170,6 +170,7 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
       { value: "1.200+", label: "CHIẾN DỊCH THÀNH CÔNG" },
       { value: "350%", label: "LỢI NHUẬN TRUNG BÌNH" },
     ],
+    statsBgImage: "",
   },
   page_tut_tricks: {
     badge: "⚡ KHO TUT TRICK ĐỘC QUYỀN",

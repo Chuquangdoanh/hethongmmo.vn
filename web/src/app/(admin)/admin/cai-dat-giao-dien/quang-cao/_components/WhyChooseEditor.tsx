@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { ImageUpload } from "../../_components/ImageUpload";
 
 interface StatItem { value: string; label: string }
 
@@ -156,6 +157,21 @@ export default function WhyChooseEditor({ sectionKey, initialData }: Props) {
           >
             + Thêm lý do
           </button>
+        </div>
+
+        {/* Stats background image */}
+        <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/50 space-y-3">
+          <div>
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Ảnh nền card thống kê</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">Ảnh mờ hiển thị phía dưới các số liệu (50B+, 1.200+, 350%). Để trống = dùng ảnh hero.</p>
+          </div>
+          <ImageUpload
+            label=""
+            value={String(data["statsBgImage"] ?? "")}
+            onChange={(url) => setField("statsBgImage", url)}
+            uploadType="cms-page"
+            hint="Ảnh sẽ được làm mờ 50% — nên chọn ảnh có nhiều chi tiết, tông sáng."
+          />
         </div>
 
         {/* Stats */}
