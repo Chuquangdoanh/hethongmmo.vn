@@ -6,6 +6,10 @@ import {
   FolderPlus, Check, X, GripVertical,
 } from "lucide-react";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface FaqItem {
   id: string;
   question: string;
@@ -23,6 +27,115 @@ interface FaqCategory {
   faqs: FaqItem[];
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FaqForm — tách ra ngoài để tránh unmount/remount khi parent re-render
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface FaqFormValues {
+  question: string;
+  answer: string;
+  categoryId: string;
+  isActive: boolean;
+}
+
+interface FaqFormProps {
+  categories: { id: string; name: string }[];
+  initialValues: FaqFormValues;
+  saving: boolean;
+  onSave: (data: { question: string; answer: string; categoryId: string | null; isActive: boolean }) => void;
+  onCancel: () => void;
+}
+
+function FaqForm({ categories, initialValues, saving, onSave, onCancel }: FaqFormProps) {
+  const [question, setQuestion]     = useState(initialValues.question);
+  const [answer, setAnswer]         = useState(initialValues.answer);
+  const [categoryId, setCategoryId] = useState(initialValues.categoryId);
+  const [isActive, setIsActive]     = useState(initialValues.isActive);
+
+  function handleSave() {
+    if (!question.trim() || !answer.trim()) return;
+    onSave({ question: question.trim(), answer: answer.trim(), categoryId: categoryId || null, isActive });
+  }
+
+  return (
+    <div className="border border-[#e2e8f0] rounded-xl p-4 bg-[#f8fafc] space-y-3">
+      <div>
+        <label className="block text-xs font-semibold text-[#374151] mb-1">Danh mục</label>
+        <select
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          className="w-full border border-[#e2e8f0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066ff]/30 bg-white"
+        >
+          <option value="">— Không có danh mục —</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-[#374151] mb-1">
+          Câu hỏi <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="Nhập câu hỏi..."
+          autoFocus
+          className="w-full border border-[#e2e8f0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066ff]/30"
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-[#374151] mb-1">
+          Câu trả lời <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          value={answer}
+          onChange={(e) => setAnswer(e.target.value)}
+          placeholder="Nhập câu trả lời..."
+          rows={3}
+          className="w-full border border-[#e2e8f0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066ff]/30 resize-none"
+        />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="faq-active"
+          checked={isActive}
+          onChange={(e) => setIsActive(e.target.checked)}
+          className="rounded"
+        />
+        <label htmlFor="faq-active" className="text-xs text-[#374151]">Hiển thị</label>
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || !question.trim() || !answer.trim()}
+          className="flex items-center gap-1.5 px-4 py-2 bg-[#0066ff] text-white text-xs font-semibold rounded-lg hover:bg-[#0052cc] disabled:opacity-50 transition-colors"
+        >
+          <Check size={13} /> Lưu
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex items-center gap-1.5 px-4 py-2 border border-[#e2e8f0] text-[#64748b] text-xs font-semibold rounded-lg hover:bg-[#f1f5f9] transition-colors"
+        >
+          <X size={13} /> Hủy
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CourseFaqManager
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface Props {
   courseId: string;
   initialCategories: FaqCategory[];
@@ -30,19 +143,19 @@ interface Props {
 }
 
 export default function CourseFaqManager({ courseId, initialCategories, initialFaqs }: Props) {
-  const [categories, setCategories]   = useState<FaqCategory[]>(initialCategories);
-  const [faqs, setFaqs]               = useState<FaqItem[]>(initialFaqs);
+  const [categories, setCategories]     = useState<FaqCategory[]>(initialCategories);
+  const [faqs, setFaqs]                 = useState<FaqItem[]>(initialFaqs);
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
-  const [loading, setLoading]         = useState(false);
+  const [loading, setLoading]           = useState(false);
 
-  // ── Category form ──
+  // Category form
   const [newCatName, setNewCatName]   = useState("");
   const [editingCat, setEditingCat]   = useState<{ id: string; name: string } | null>(null);
 
-  // ── FAQ form ──
-  const [showFaqForm, setShowFaqForm] = useState<string | null>(null); // catId or "uncategorized"
+  // FAQ form: catId = nhóm đang thêm mới | null = ẩn | "editing:<faqId>" = đang sửa
+  const [faqFormKey, setFaqFormKey]   = useState<string | null>(null);
   const [editingFaq, setEditingFaq]   = useState<FaqItem | null>(null);
-  const [faqForm, setFaqForm]         = useState({ question: "", answer: "", categoryId: "", isActive: true });
+  const [faqInitVal, setFaqInitVal]   = useState<FaqFormValues>({ question: "", answer: "", categoryId: "", isActive: true });
 
   const toggleCat = (id: string) =>
     setExpandedCats((prev) => {
@@ -52,6 +165,7 @@ export default function CourseFaqManager({ courseId, initialCategories, initialF
     });
 
   // ── Category CRUD ──
+
   async function addCategory() {
     if (!newCatName.trim()) return;
     setLoading(true);
@@ -67,13 +181,11 @@ export default function CourseFaqManager({ courseId, initialCategories, initialF
         setNewCatName("");
         setExpandedCats((prev) => new Set([...prev, json.data!.id]));
       }
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   async function saveEditCat() {
-    if (!editingCat || !editingCat.name.trim()) return;
+    if (!editingCat?.name.trim()) return;
     setLoading(true);
     try {
       const res  = await fetch(`/api/admin/courses/${courseId}/faq-categories/${editingCat.id}`, {
@@ -83,12 +195,10 @@ export default function CourseFaqManager({ courseId, initialCategories, initialF
       });
       const json = await res.json() as { data?: FaqCategory };
       if (json.data) {
-        setCategories((prev) => prev.map((c) => c.id === editingCat.id ? { ...c, name: editingCat.name } : c));
+        setCategories((prev) => prev.map((c) => c.id === editingCat.id ? { ...c, name: editingCat.name.trim() } : c));
         setEditingCat(null);
       }
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   async function deleteCategory(catId: string) {
@@ -98,63 +208,56 @@ export default function CourseFaqManager({ courseId, initialCategories, initialF
       await fetch(`/api/admin/courses/${courseId}/faq-categories/${catId}`, { method: "DELETE" });
       setCategories((prev) => prev.filter((c) => c.id !== catId));
       setFaqs((prev) => prev.filter((f) => f.categoryId !== catId));
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   // ── FAQ CRUD ──
+
   const openAddFaq = useCallback((catId: string) => {
-    setFaqForm({ question: "", answer: "", categoryId: catId === "uncategorized" ? "" : catId, isActive: true });
     setEditingFaq(null);
-    setShowFaqForm(catId);
+    setFaqInitVal({ question: "", answer: "", categoryId: catId === "uncategorized" ? "" : catId, isActive: true });
+    setFaqFormKey(`add-${catId}`);
     setExpandedCats((prev) => new Set([...prev, catId]));
   }, []);
 
   const openEditFaq = useCallback((faq: FaqItem) => {
-    setFaqForm({ question: faq.question, answer: faq.answer, categoryId: faq.categoryId ?? "", isActive: faq.isActive });
     setEditingFaq(faq);
-    setShowFaqForm(null);
+    setFaqInitVal({ question: faq.question, answer: faq.answer, categoryId: faq.categoryId ?? "", isActive: faq.isActive });
+    setFaqFormKey(`edit-${faq.id}`);
   }, []);
 
-  async function saveFaq() {
+  const closeFaqForm = useCallback(() => {
+    setFaqFormKey(null);
+    setEditingFaq(null);
+  }, []);
+
+  async function saveFaq(data: { question: string; answer: string; categoryId: string | null; isActive: boolean }) {
     setLoading(true);
     try {
-      const payload = {
-        question:   faqForm.question.trim(),
-        answer:     faqForm.answer.trim(),
-        categoryId: faqForm.categoryId || null,
-        isActive:   faqForm.isActive,
-      };
-
       if (editingFaq) {
         const res  = await fetch(`/api/admin/courses/${courseId}/faqs/${editingFaq.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(data),
         });
         const json = await res.json() as { data?: FaqItem };
         if (json.data) {
-          const updated = json.data;
-          setFaqs((prev) => prev.map((f) => f.id === editingFaq.id ? updated : f));
-          setEditingFaq(null);
+          setFaqs((prev) => prev.map((f) => f.id === editingFaq.id ? json.data! : f));
+          closeFaqForm();
         }
       } else {
         const res  = await fetch(`/api/admin/courses/${courseId}/faqs`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...payload, displayOrder: faqs.length }),
+          body: JSON.stringify({ ...data, displayOrder: faqs.length }),
         });
         const json = await res.json() as { data?: FaqItem };
         if (json.data) {
           setFaqs((prev) => [...prev, json.data!]);
-          setShowFaqForm(null);
+          closeFaqForm();
         }
       }
-      setFaqForm({ question: "", answer: "", categoryId: "", isActive: true });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   async function deleteFaq(faqId: string) {
@@ -163,9 +266,8 @@ export default function CourseFaqManager({ courseId, initialCategories, initialF
     try {
       await fetch(`/api/admin/courses/${courseId}/faqs/${faqId}`, { method: "DELETE" });
       setFaqs((prev) => prev.filter((f) => f.id !== faqId));
-    } finally {
-      setLoading(false);
-    }
+      if (editingFaq?.id === faqId) closeFaqForm();
+    } finally { setLoading(false); }
   }
 
   async function toggleFaqActive(faq: FaqItem) {
@@ -178,76 +280,33 @@ export default function CourseFaqManager({ courseId, initialCategories, initialF
     if (json.data) setFaqs((prev) => prev.map((f) => f.id === faq.id ? { ...f, isActive: !faq.isActive } : f));
   }
 
-  const faqsInCat = (catId: string | null) => faqs.filter((f) => f.categoryId === catId);
+  const faqsInCat  = (catId: string | null) => faqs.filter((f) => f.categoryId === catId);
+  const isAddingTo = (key: string) => faqFormKey === `add-${key}` && !editingFaq;
+  const isEditing  = (faqId: string) => faqFormKey === `edit-${faqId}` && editingFaq?.id === faqId;
 
-  const FaqFormInline = ({ onCancel }: { onCancel: () => void }) => (
-    <div className="border border-[#e2e8f0] rounded-xl p-4 bg-[#f8fafc] mt-3 space-y-3">
-      <div>
-        <label className="block text-xs font-semibold text-[#374151] mb-1">Danh mục</label>
-        <select
-          value={faqForm.categoryId}
-          onChange={(e) => setFaqForm((p) => ({ ...p, categoryId: e.target.value }))}
-          className="w-full border border-[#e2e8f0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066ff]/30 bg-white"
-        >
-          <option value="">— Không có danh mục —</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+  const catList = categories.map((c) => ({ id: c.id, name: c.name }));
+
+  // ── Render FAQ row ──
+  const FaqRow = ({ faq }: { faq: FaqItem }) => (
+    <div className={`border rounded-lg px-4 py-3 flex items-start gap-3 ${faq.isActive ? "border-[#e2e8f0] bg-white" : "border-[#f1f5f9] bg-[#f8fafc] opacity-60"}`}>
+      <GripVertical size={14} className="text-[#cbd5e1] shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-[#0f172a] mb-1">{faq.question}</p>
+        <p className="text-xs text-[#64748b] line-clamp-2">{faq.answer}</p>
       </div>
-      <div>
-        <label className="block text-xs font-semibold text-[#374151] mb-1">Câu hỏi <span className="text-red-500">*</span></label>
-        <input
-          type="text"
-          value={faqForm.question}
-          onChange={(e) => setFaqForm((p) => ({ ...p, question: e.target.value }))}
-          placeholder="Nhập câu hỏi..."
-          className="w-full border border-[#e2e8f0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066ff]/30"
-        />
-      </div>
-      <div>
-        <label className="block text-xs font-semibold text-[#374151] mb-1">Câu trả lời <span className="text-red-500">*</span></label>
-        <textarea
-          value={faqForm.answer}
-          onChange={(e) => setFaqForm((p) => ({ ...p, answer: e.target.value }))}
-          placeholder="Nhập câu trả lời..."
-          rows={3}
-          className="w-full border border-[#e2e8f0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0066ff]/30 resize-none"
-        />
-      </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="faq-active"
-          checked={faqForm.isActive}
-          onChange={(e) => setFaqForm((p) => ({ ...p, isActive: e.target.checked }))}
-          className="rounded"
-        />
-        <label htmlFor="faq-active" className="text-xs text-[#374151]">Hiển thị</label>
-      </div>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={saveFaq}
-          disabled={loading || !faqForm.question.trim() || !faqForm.answer.trim()}
-          className="flex items-center gap-1.5 px-4 py-2 bg-[#0066ff] text-white text-xs font-semibold rounded-lg hover:bg-[#0052cc] disabled:opacity-50 transition-colors"
-        >
-          <Check size={13} /> Lưu
+      <div className="flex items-center gap-1 shrink-0">
+        <button type="button" onClick={() => void toggleFaqActive(faq)} title={faq.isActive ? "Ẩn" : "Hiện"} className="p-1 text-[#64748b] hover:text-[#0066ff]">
+          {faq.isActive ? <Check size={13} className="text-[#16a34a]" /> : <X size={13} />}
         </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex items-center gap-1.5 px-4 py-2 border border-[#e2e8f0] text-[#64748b] text-xs font-semibold rounded-lg hover:bg-[#f1f5f9] transition-colors"
-        >
-          <X size={13} /> Hủy
-        </button>
+        <button type="button" onClick={() => openEditFaq(faq)} className="p-1 text-[#64748b] hover:text-[#0066ff]"><Pencil size={13} /></button>
+        <button type="button" onClick={() => void deleteFaq(faq.id)} className="p-1 text-[#64748b] hover:text-red-500"><Trash2 size={13} /></button>
       </div>
     </div>
   );
 
   return (
     <div className="space-y-5">
-      {/* ── Thêm danh mục ── */}
+      {/* Thêm danh mục */}
       <div className="flex gap-2">
         <input
           type="text"
@@ -267,24 +326,24 @@ export default function CourseFaqManager({ courseId, initialCategories, initialF
         </button>
       </div>
 
-      {/* ── Danh sách categories ── */}
       {categories.length === 0 && faqs.length === 0 && (
         <p className="text-sm text-[#94a3b8] text-center py-6 border border-dashed border-[#e2e8f0] rounded-xl">
           Chưa có nhóm câu hỏi nào. Thêm nhóm để bắt đầu.
         </p>
       )}
 
+      {/* Danh mục */}
       {categories.map((cat) => {
         const catFaqs  = faqsInCat(cat.id);
         const expanded = expandedCats.has(cat.id);
         return (
           <div key={cat.id} className="border border-[#e2e8f0] rounded-xl overflow-hidden">
-            {/* Category header */}
             <div className="flex items-center gap-2 px-4 py-3 bg-[#f8fafc] border-b border-[#e2e8f0]">
               <button type="button" onClick={() => toggleCat(cat.id)} className="text-[#64748b] hover:text-[#0f172a]">
                 {expanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
               </button>
               <GripVertical size={14} className="text-[#cbd5e1]" />
+
               {editingCat?.id === cat.id ? (
                 <>
                   <input
@@ -308,36 +367,24 @@ export default function CourseFaqManager({ courseId, initialCategories, initialF
               )}
             </div>
 
-            {/* FAQ list in category */}
             {expanded && (
               <div className="p-4 space-y-2">
-                {catFaqs.length === 0 && showFaqForm !== cat.id && (
+                {catFaqs.length === 0 && !isAddingTo(cat.id) && (
                   <p className="text-xs text-[#94a3b8] text-center py-3">Chưa có câu hỏi nào trong nhóm này.</p>
                 )}
+
                 {catFaqs.map((faq) => (
                   <div key={faq.id}>
-                    {editingFaq?.id === faq.id ? (
-                      <FaqFormInline onCancel={() => setEditingFaq(null)} />
-                    ) : (
-                      <div className={`border rounded-lg px-4 py-3 flex items-start gap-3 ${faq.isActive ? "border-[#e2e8f0] bg-white" : "border-[#f1f5f9] bg-[#f8fafc] opacity-60"}`}>
-                        <GripVertical size={14} className="text-[#cbd5e1] shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-[#0f172a] mb-1">{faq.question}</p>
-                          <p className="text-xs text-[#64748b] line-clamp-2">{faq.answer}</p>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button type="button" onClick={() => void toggleFaqActive(faq)} title={faq.isActive ? "Ẩn" : "Hiện"} className="p-1 text-[#64748b] hover:text-[#0066ff]">
-                            {faq.isActive ? <Check size={13} className="text-[#16a34a]" /> : <X size={13} />}
-                          </button>
-                          <button type="button" onClick={() => openEditFaq(faq)} className="p-1 text-[#64748b] hover:text-[#0066ff]"><Pencil size={13} /></button>
-                          <button type="button" onClick={() => void deleteFaq(faq.id)} className="p-1 text-[#64748b] hover:text-red-500"><Trash2 size={13} /></button>
-                        </div>
-                      </div>
-                    )}
+                    {isEditing(faq.id)
+                      ? <FaqForm key={faqFormKey!} categories={catList} initialValues={faqInitVal} saving={loading} onSave={(d) => void saveFaq(d)} onCancel={closeFaqForm} />
+                      : <FaqRow faq={faq} />
+                    }
                   </div>
                 ))}
 
-                {showFaqForm === cat.id && <FaqFormInline onCancel={() => setShowFaqForm(null)} />}
+                {isAddingTo(cat.id) && (
+                  <FaqForm key={faqFormKey!} categories={catList} initialValues={faqInitVal} saving={loading} onSave={(d) => void saveFaq(d)} onCancel={closeFaqForm} />
+                )}
 
                 <button
                   type="button"
@@ -352,8 +399,8 @@ export default function CourseFaqManager({ courseId, initialCategories, initialF
         );
       })}
 
-      {/* ── Câu hỏi không có danh mục ── */}
-      {(faqsInCat(null).length > 0 || showFaqForm === "uncategorized") && (
+      {/* Câu hỏi không có danh mục */}
+      {(faqsInCat(null).length > 0 || isAddingTo("uncategorized")) && (
         <div className="border border-[#e2e8f0] rounded-xl overflow-hidden">
           <div
             className="flex items-center gap-2 px-4 py-3 bg-[#fffbeb] border-b border-[#fde68a] cursor-pointer"
@@ -369,32 +416,20 @@ export default function CourseFaqManager({ courseId, initialCategories, initialF
             <div className="p-4 space-y-2">
               {faqsInCat(null).map((faq) => (
                 <div key={faq.id}>
-                  {editingFaq?.id === faq.id ? (
-                    <FaqFormInline onCancel={() => setEditingFaq(null)} />
-                  ) : (
-                    <div className={`border rounded-lg px-4 py-3 flex items-start gap-3 ${faq.isActive ? "border-[#e2e8f0] bg-white" : "border-[#f1f5f9] bg-[#f8fafc] opacity-60"}`}>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[#0f172a] mb-1">{faq.question}</p>
-                        <p className="text-xs text-[#64748b] line-clamp-2">{faq.answer}</p>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button type="button" onClick={() => void toggleFaqActive(faq)} className="p-1 text-[#64748b] hover:text-[#0066ff]">
-                          {faq.isActive ? <Check size={13} className="text-[#16a34a]" /> : <X size={13} />}
-                        </button>
-                        <button type="button" onClick={() => openEditFaq(faq)} className="p-1 text-[#64748b] hover:text-[#0066ff]"><Pencil size={13} /></button>
-                        <button type="button" onClick={() => void deleteFaq(faq.id)} className="p-1 text-[#64748b] hover:text-red-500"><Trash2 size={13} /></button>
-                      </div>
-                    </div>
-                  )}
+                  {isEditing(faq.id)
+                    ? <FaqForm key={faqFormKey!} categories={catList} initialValues={faqInitVal} saving={loading} onSave={(d) => void saveFaq(d)} onCancel={closeFaqForm} />
+                    : <FaqRow faq={faq} />
+                  }
                 </div>
               ))}
-              {showFaqForm === "uncategorized" && <FaqFormInline onCancel={() => setShowFaqForm(null)} />}
+              {isAddingTo("uncategorized") && (
+                <FaqForm key={faqFormKey!} categories={catList} initialValues={faqInitVal} saving={loading} onSave={(d) => void saveFaq(d)} onCancel={closeFaqForm} />
+              )}
             </div>
           )}
         </div>
       )}
 
-      {/* Nút thêm câu hỏi không thuộc nhóm */}
       <button
         type="button"
         onClick={() => openAddFaq("uncategorized")}

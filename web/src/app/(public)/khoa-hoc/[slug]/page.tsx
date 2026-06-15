@@ -14,6 +14,7 @@ import {
 import CourseDetailTabs from "./_components/CourseDetailTabs";
 import SidebarRegisterButton from "./_components/SidebarRegisterButton";
 import YoutubeEmbed from "./_components/YoutubeEmbed";
+import { CourseIcon } from "@/lib/utils/course-icons";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -528,7 +529,7 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                     {supportItems.length > 0
                       ? supportItems.map((item) => (
                           <li key={item.id} className="flex items-start gap-2.5">
-                            <span className="text-base shrink-0 leading-none mt-0.5">{item.icon}</span>
+                            <CourseIcon name={item.icon} size={15} className="text-success shrink-0 mt-0.5" />
                             <div>
                               <span className="text-xs font-semibold text-text-dark leading-relaxed">{item.title}</span>
                               {item.description && (
