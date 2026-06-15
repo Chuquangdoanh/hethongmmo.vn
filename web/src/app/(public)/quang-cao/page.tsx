@@ -213,20 +213,52 @@ export default async function QuangCaoAdsPage() {
               </div>
             </div>
 
-            {/* Right — stats box */}
+            {/* Right — stats box with background image */}
             <div
               style={{
                 borderRadius: 20,
-                background: "#f1f5f9",
+                background: "linear-gradient(160deg, #0f172a 0%, #1e293b 100%)",
                 padding: "36px 40px",
                 display: "flex",
                 flexDirection: "column",
                 gap: 28,
+                position: "relative",
+                overflow: "hidden",
+                minHeight: 300,
               }}
             >
+              {/* Ảnh nền mờ 50% phía dưới text */}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: "52%",
+                  backgroundImage: `url(${r2Url(pageHero.thumbnail) || "/images/hethongmmo.png"})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center top",
+                  opacity: 0.5,
+                  pointerEvents: "none",
+                }}
+              />
+              {/* Gradient hoà trộn giữa vùng text và ảnh */}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: "68%",
+                  background: "linear-gradient(to bottom, #1e293b 0%, transparent 45%)",
+                  pointerEvents: "none",
+                  zIndex: 1,
+                }}
+              />
+              {/* Stats text */}
               {STATS.map(({ value, label }) => (
-                <div key={label}>
-                  <p style={{ fontSize: "clamp(2rem, 5vw, 2.8rem)", fontWeight: 900, color: "#0f172a", lineHeight: 1, marginBottom: 4 }}>
+                <div key={label} style={{ position: "relative", zIndex: 2 }}>
+                  <p style={{ fontSize: "clamp(2rem, 5vw, 2.8rem)", fontWeight: 900, color: "#ffffff", lineHeight: 1, marginBottom: 4 }}>
                     {value}
                   </p>
                   <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8", letterSpacing: "0.08em", textTransform: "uppercase" }}>

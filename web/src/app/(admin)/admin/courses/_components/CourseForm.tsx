@@ -6,7 +6,11 @@ import CourseCategoryCombobox from "./CourseCategoryCombobox";
 import { r2Url } from "@/lib/utils/image-url";
 
 const BADGES = ["NONE", "HOT", "POPULAR", "TREND", "NEW", "VIP"];
-const FORMATS = ["ONLINE", "OFFLINE", "HYBRID"];
+const FORMATS: { value: string; label: string }[] = [
+  { value: "ONLINE",  label: "Khóa học online thực chiến" },
+  { value: "OFFLINE", label: "Khóa học thực chiến trực tiếp chuyên sâu" },
+  { value: "HYBRID",  label: "Khóa Học Siêu VIP" },
+];
 const MAX_CONTENT_ITEMS = 20;
 
 // Dùng cho phần "Biến thể Platform" của khóa học (không liên quan đến danh mục)
@@ -283,7 +287,7 @@ export default function CourseForm({ initial }: { initial?: CourseData }) {
             <div>
               <label className="block text-xs text-gray-500 mb-1.5">Hình thức *</label>
               <select value={form.learningFormat} onChange={(e) => set("learningFormat", e.target.value)} className={inputCls}>
-                {FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
+                {FORMATS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
               </select>
             </div>
             <div>
