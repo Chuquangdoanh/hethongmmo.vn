@@ -8,7 +8,7 @@ import {
   Gamepad2, Tags, BookMarked, Tag, FolderOpen, ShieldCheck, Star,
   AlertTriangle, Radio, Wallet, ArrowDownCircle, ArrowUpCircle,
   Store, Settings, Users, Search, ChevronDown, Home, X, Lock,
-  Inbox, Monitor, Megaphone, PanelBottom, Heart,
+  Inbox, Monitor,
   type LucideIcon,
 } from "lucide-react";
 
@@ -101,21 +101,6 @@ const SECTIONS: NavSection[] = [
       { href: "/admin/users",      label: "Người dùng", Icon: Users,  color: "#0066ff" },
       { href: "/admin/audit-log",  label: "Audit Log",  Icon: Search, color: "#64748b" },
       { href: "/admin/phan-quyen", label: "Phân quyền", Icon: Lock,   color: "#64748b", adminOnly: true },
-    ],
-  },
-  {
-    key: "cms", label: "Cài đặt giao diện", Icon: Monitor, color: "#8b5cf6", bg: "#f5f3ff",
-    links: [
-      { href: "/admin/cai-dat-giao-dien/trang-chu",  label: "Trang chủ",    Icon: Home,      color: "#8b5cf6" },
-      { href: "/admin/cai-dat-giao-dien/dich-vu",    label: "Dịch vụ",      Icon: Zap,       color: "#8b5cf6" },
-      { href: "/admin/cai-dat-giao-dien/khoa-hoc",   label: "Khóa học",     Icon: BookOpen,  color: "#8b5cf6" },
-      { href: "/admin/cai-dat-giao-dien/quang-cao",  label: "Quảng cáo",    Icon: Megaphone, color: "#8b5cf6" },
-      { href: "/admin/cai-dat-giao-dien/tut-tricks", label: "Tut & Tricks",  Icon: FileText,  color: "#8b5cf6" },
-      { href: "/admin/cai-dat-giao-dien/tai-nguyen", label: "Tài nguyên",   Icon: Gamepad2,  color: "#8b5cf6" },
-      { href: "/admin/cai-dat-giao-dien/networks",    label: "Networks",      Icon: Radio,       color: "#8b5cf6" },
-      { href: "/admin/cai-dat-giao-dien/footer",     label: "Footer",        Icon: PanelBottom, color: "#8b5cf6" },
-      { href: "/admin/cai-dat-giao-dien/trang-cam-on",  label: "Trang Cảm Ơn",  Icon: Heart,        color: "#8b5cf6" },
-      { href: "/admin/cai-dat-giao-dien/lien-he-ho-tro", label: "Liên hệ hỗ trợ", Icon: Inbox,       color: "#8b5cf6" },
     ],
   },
 ];
@@ -373,7 +358,7 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
 
           <div className="h-px bg-gray-100 my-1.5" />
 
-          {/* Collapsible sections */}
+          {/* Collapsible sections — products, categories, quality, finance, selling, system */}
           {SECTIONS.map((section) => {
             const isOpen           = hydrated ? (open[section.key] ?? true) : true;
             const hasActive        = section.links.some((l) => isActive(l.href));
@@ -443,6 +428,32 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
               </div>
             );
           })}
+          {/* ── Cài đặt group ── */}
+          <div className="h-px bg-gray-100 my-1.5" />
+          <p className="px-3 pt-1 pb-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            Cài đặt
+          </p>
+          {(() => {
+            const cmsActive = isActive("/admin/cai-dat-giao-dien");
+            return (
+              <Link
+                href="/admin/cai-dat-giao-dien"
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  cmsActive
+                    ? "bg-[#fef9c3] text-[#78350f]"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <div
+                  className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                  style={{ background: cmsActive ? "#fef08a" : "#f5f3ff" }}
+                >
+                  <Monitor size={13} strokeWidth={1.75} style={{ color: cmsActive ? "#92400e" : "#8b5cf6" }} />
+                </div>
+                <span className="flex-1">Cài đặt giao diện</span>
+              </Link>
+            );
+          })()}
         </nav>
 
         {/* Footer */}
@@ -467,27 +478,3 @@ function BadgeCount({ count }: { count: number }) {
   );
 }
 
-function NavLinkItem({
-  href, label, Icon, active,
-}: {
-  href: string; label: string; Icon: LucideIcon; color?: string; active: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-        active
-          ? "bg-[#fef9c3] text-[#78350f]"
-          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-      }`}
-    >
-      <div
-        className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-        style={{ background: active ? "#fef08a" : "#f1f5f9" }}
-      >
-        <Icon size={13} strokeWidth={1.75} style={{ color: active ? "#92400e" : "#94a3b8" }} />
-      </div>
-      {label}
-    </Link>
-  );
-}
