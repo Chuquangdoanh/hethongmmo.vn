@@ -20,7 +20,7 @@ export type AuthenticatedUser = {
   requiresTwoFactor?: boolean;
 };
 
-class AppAuthError extends AppError {
+export class AppAuthError extends AppError {
   constructor(message: string, code: string, statusCode: number) {
     super(message, code, statusCode);
     this.name = "AppAuthError";
@@ -83,4 +83,4 @@ export function requireAdmin(session: Session | null): AuthenticatedUser {
   return user;
 }
 
-export { AppAuthError };
+
