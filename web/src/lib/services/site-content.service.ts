@@ -282,6 +282,10 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
 export async function getSiteContent<T = unknown>(key: SiteContentKey): Promise<T> {
   const row = await prisma.siteContent.findUnique({ where: { key } });
   if (!row) return DEFAULTS[key] as T;
+  const def = DEFAULTS[key];
+  if (def && typeof def === "object" && !Array.isArray(def) && typeof row.content === "object" && row.content !== null && !Array.isArray(row.content)) {
+    return { ...def, ...(row.content as object) } as T;
+  }
   return row.content as T;
 }
 
