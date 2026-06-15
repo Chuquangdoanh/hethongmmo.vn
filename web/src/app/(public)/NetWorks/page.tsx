@@ -8,6 +8,7 @@ import { r2Url } from "@/lib/utils/image-url";
 import ServiceSectionClient, { type Illustration, type UserInfo } from "./_components/ServiceSectionClient";
 import ImageLightbox from "@/components/shared/ImageLightbox";
 import KocGalleryClient from "./_components/KocGalleryClient";
+import { ColoredTitle } from "@/components/shared/ColoredTitle";
 
 import { buildMeta } from "@/lib/utils/seo";
 export const metadata: Metadata = buildMeta({
@@ -128,7 +129,7 @@ export default async function NetworksPage() {
               fontSize: "clamp(1.8rem,4.5vw,3rem)", fontWeight: 800,
               color: "#0f172a", lineHeight: 1.2, maxWidth: 760, margin: 0,
             }}>
-              {pageHero.title}
+              <ColoredTitle text={pageHero.title} accentColor="#0066ff" />
             </h1>
 
             <p style={{ fontSize: 15, color: "#475569", maxWidth: 560, lineHeight: 1.7, margin: 0 }}>
