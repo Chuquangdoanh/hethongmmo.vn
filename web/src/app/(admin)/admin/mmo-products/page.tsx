@@ -183,7 +183,7 @@ export default async function AdminMmoProductsPage({
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate max-w-[180px]">{product.name}</p>
+                        <p className="text-sm font-medium text-gray-900">{product.name}</p>
                         <p className="text-[10px] text-gray-400 font-mono mt-0.5">{product.slug}</p>
                       </div>
                     </div>

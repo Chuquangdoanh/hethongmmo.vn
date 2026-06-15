@@ -223,7 +223,7 @@ export default function TutTricksTable({ items, total, platform, category, tier,
                       <div className="w-10 h-10 rounded-lg bg-[#7C3AED]/10 flex items-center justify-center text-lg shrink-0">📖</div>
                     )}
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{item.name}</p>
+                      <p className="text-sm font-medium text-gray-900">{item.name}</p>
                       {/* Hiện platform enum nhỏ phía dưới tên */}
                       <span className="inline-flex items-center gap-1 text-[10px] text-gray-400 mt-0.5">
                         {PLATFORM_ICONS[item.platform] && (
