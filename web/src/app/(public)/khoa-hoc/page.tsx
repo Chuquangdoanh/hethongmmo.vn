@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { r2Url } from "@/lib/utils/image-url";
 import { buildMeta } from "@/lib/utils/seo";
+import { ColoredTitle } from "@/components/shared/ColoredTitle";
 
 export const metadata: Metadata = buildMeta({
   title: "Khóa Học MMO Thực Chiến | Hệ Thống MMO",
@@ -152,7 +153,7 @@ export default async function KhoaHocPage({
                 {pageHero.badge}
               </span>
               <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight">
-                {pageHero.title}
+                <ColoredTitle text={pageHero.title} accentColor="#7c3aed" />
               </h1>
             </div>
 
