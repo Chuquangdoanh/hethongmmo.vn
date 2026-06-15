@@ -209,8 +209,8 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                 {course.name}
               </h1>
               {course.description && (
-                <p className="text-sm text-[#64748b] mb-4 leading-relaxed line-clamp-2">
-                  {course.description.replace(/<[^>]+>/g, "").slice(0, 180)}
+                <p className="text-sm text-[#64748b] mb-4 leading-relaxed">
+                  {course.description.replace(/<[^>]+>/g, "")}
                 </p>
               )}
 
