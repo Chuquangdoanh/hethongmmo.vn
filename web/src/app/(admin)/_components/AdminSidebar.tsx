@@ -8,7 +8,7 @@ import {
   Gamepad2, Tags, BookMarked, Tag, FolderOpen, ShieldCheck, Star,
   AlertTriangle, Radio, Wallet, ArrowDownCircle, ArrowUpCircle,
   Store, Settings, Users, Search, ChevronDown, Home, X, Lock,
-  Inbox, Monitor, Megaphone,
+  Inbox, Monitor, Megaphone, PanelBottom, Heart,
   type LucideIcon,
 } from "lucide-react";
 
@@ -75,8 +75,9 @@ const SECTIONS: NavSection[] = [
   {
     key: "quality", label: "Chất lượng", Icon: ShieldCheck, color: "#f59e0b", bg: "#fef3c7",
     links: [
-      { href: "/admin/danh-gia",   label: "Đánh giá",  Icon: Star,          color: "#f59e0b" },
       { href: "/admin/complaints", label: "Khiếu nại", Icon: AlertTriangle, color: "#ef4444", badge: "complaints" },
+      { href: "/admin/danh-gia",   label: "Đánh giá",  Icon: Star,          color: "#f59e0b" },
+      
       { href: "/admin/tickers",    label: "Ticker",    Icon: Radio,         color: "#0066ff" },
     ],
   },
@@ -104,7 +105,7 @@ const SECTIONS: NavSection[] = [
     ],
   },
   {
-    key: "cms", label: "Giao diện", Icon: Monitor, color: "#8b5cf6", bg: "#f5f3ff",
+    key: "cms", label: "Cài đặt giao diện", Icon: Monitor, color: "#8b5cf6", bg: "#f5f3ff",
     links: [
       { href: "/admin/cai-dat-giao-dien/trang-chu",  label: "Trang chủ",    Icon: Home,      color: "#8b5cf6" },
       { href: "/admin/cai-dat-giao-dien/dich-vu",    label: "Dịch vụ",      Icon: Zap,       color: "#8b5cf6" },
@@ -112,7 +113,9 @@ const SECTIONS: NavSection[] = [
       { href: "/admin/cai-dat-giao-dien/quang-cao",  label: "Quảng cáo",    Icon: Megaphone, color: "#8b5cf6" },
       { href: "/admin/cai-dat-giao-dien/tut-tricks", label: "Tut & Tricks",  Icon: FileText,  color: "#8b5cf6" },
       { href: "/admin/cai-dat-giao-dien/tai-nguyen", label: "Tài nguyên",   Icon: Gamepad2,  color: "#8b5cf6" },
-      { href: "/admin/cai-dat-giao-dien/networks",   label: "Networks",     Icon: Radio,     color: "#8b5cf6" },
+      { href: "/admin/cai-dat-giao-dien/networks",    label: "Networks",      Icon: Radio,       color: "#8b5cf6" },
+      { href: "/admin/cai-dat-giao-dien/footer",     label: "Footer",        Icon: PanelBottom, color: "#8b5cf6" },
+      { href: "/admin/cai-dat-giao-dien/trang-cam-on", label: "Trang Cảm Ơn", Icon: Heart,      color: "#8b5cf6" },
     ],
   },
 ];
