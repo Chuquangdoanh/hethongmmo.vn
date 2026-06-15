@@ -179,7 +179,12 @@ jobs:
             if [ "${{ needs.changes.outputs.app }}" = "true" ]; then
               echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ghcr.io \
                 -u "${{ secrets.REGISTRY_USER }}" --password-stdin
-              docker compose pull
+
+              # Dọn containerd content store cũ để tránh lỗi "lease does not exist"
+              docker system prune -f || true
+
+              # Pull với retry — lỗi lease thường tự hết sau lần thử lại
+              docker compose pull || (echo "⚠️  Pull lần 1 thất bại, thử lại..." && sleep 5 && docker compose pull)
               docker compose up -d
               docker image prune -f
               echo "🐳 App image updated"
