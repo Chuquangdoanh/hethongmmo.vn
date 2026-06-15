@@ -88,39 +88,58 @@ export default function PageHeroEditor({ sectionKey, initialData, pageLabel, pag
           {String(data["title"] ?? "") && (
             <div className="px-3 py-2.5 rounded-lg bg-gray-50 border border-dashed border-gray-200">
               <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-1">Xem trước</p>
-              <p className="text-sm font-bold text-gray-800 leading-snug break-words">
+              <p
+                className="text-sm font-bold leading-snug break-words"
+                style={{ color: String(data["titleColor"] ?? "#111827") }}
+              >
                 <ColoredTitle
                   text={String(data["title"] ?? "")}
-                  accentColor={String(data["titleAccentColor"] ?? data["titleColor"] ?? "#0066ff")}
+                  accentColor={String(data["titleAccentColor"] ?? "#0066ff")}
                 />
               </p>
             </div>
           )}
         </div>
-        <div className="flex items-end gap-3">
-          <div className="flex-1">
-            <FieldText
-              label={`Màu ["text"] (hex)`}
-              value={String(data["titleAccentColor"] ?? data["titleColor"] ?? "")}
-              onChange={(v) => {
-                handleChange("titleAccentColor", v);
-                handleChange("titleColor", v);
-              }}
-              placeholder="#0066ff"
-              hint={`Màu tô cho phần ["text"] trong tiêu đề. VD: #f97316 cam · #EF4444 đỏ · #7c3aed tím`}
-            />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <FieldText
+                label="Màu chữ tiêu đề"
+                value={String(data["titleColor"] ?? "")}
+                onChange={(v) => handleChange("titleColor", v)}
+                placeholder="#111827"
+                hint="Màu toàn bộ chữ h1. Để trống = đen mặc định"
+              />
+            </div>
+            <div className="shrink-0 pb-1">
+              <input
+                type="color"
+                value={String(data["titleColor"] ?? "#111827")}
+                onChange={(e) => handleChange("titleColor", e.target.value)}
+                className="w-10 h-9 rounded-lg border border-gray-200 cursor-pointer bg-white p-0.5"
+                title="Màu chữ tiêu đề"
+              />
+            </div>
           </div>
-          <div className="shrink-0 pb-1">
-            <input
-              type="color"
-              value={String(data["titleAccentColor"] ?? data["titleColor"] ?? "#0066ff")}
-              onChange={(e) => {
-                handleChange("titleAccentColor", e.target.value);
-                handleChange("titleColor", e.target.value);
-              }}
-              className="w-10 h-9 rounded-lg border border-gray-200 cursor-pointer bg-white p-0.5"
-              title="Chọn màu accent"
-            />
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <FieldText
+                label={`Màu ["text"]`}
+                value={String(data["titleAccentColor"] ?? "")}
+                onChange={(v) => handleChange("titleAccentColor", v)}
+                placeholder="#0066ff"
+                hint={`Màu riêng cho phần ["text"] trong tiêu đề`}
+              />
+            </div>
+            <div className="shrink-0 pb-1">
+              <input
+                type="color"
+                value={String(data["titleAccentColor"] ?? "#0066ff")}
+                onChange={(e) => handleChange("titleAccentColor", e.target.value)}
+                className="w-10 h-9 rounded-lg border border-gray-200 cursor-pointer bg-white p-0.5"
+                title={`Màu ["text"]`}
+              />
+            </div>
           </div>
         </div>
         <FieldText

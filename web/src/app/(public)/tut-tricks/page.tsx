@@ -104,7 +104,8 @@ export default async function TutTricksPage({
             {pageHero.badge}
           </span>
           <h1
-            className="text-5xl md:text-7xl font-extrabold mb-1 tracking-tight leading-tight text-[#111827]"
+            className="text-5xl md:text-7xl font-extrabold mb-1 tracking-tight leading-tight"
+            style={{ color: pageHero.titleColor || "#111827" }}
           >
             <ColoredTitle text={pageHero.title} accentColor={pageHero.titleAccentColor || "#f59e0b"} />
           </h1>
