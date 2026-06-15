@@ -116,10 +116,15 @@ export default async function CamOnPage({
   const type: PType = rawType in TYPE_INFO ? (rawType as PType) : "dich-vu";
   const info = TYPE_INFO[type];
   const cms = await getSiteContent<Record<string, unknown>>(SITE_CONTENT_KEYS.THANK_YOU);
-  const telegramHref  = String(cms["telegramHref"]  ?? "https://t.me/BossMeta789");
-  const zaloHref      = String(cms["zaloHref"]      ?? "https://zalo.me/0393118789");
-  const supportTitle  = String(cms["supportTitle"]  ?? "KÊNH HỖ TRỢ 24/7");
-  const supportDesc   = String(cms["supportDesc"]   ?? "Chúng tôi luôn sẵn sàng hỗ trợ mọi lúc, mọi nơi");
+  const supportTitle      = String(cms["supportTitle"]      ?? "Cần hỗ trợ?");
+  const supportDesc       = String(cms["supportDesc"]       ?? "Liên hệ với chúng tôi qua Telegram hoặc Zalo — phản hồi trong vài phút.");
+  const telegramHref      = String(cms["telegramHref"]      ?? "https://t.me/BossMeta789");
+  const telegramUsername  = String(cms["telegramUsername"]  ?? "@BossMeta789");
+  const fanpageHref       = String(cms["fanpageHref"]       ?? "https://facebook.com/hethongmmo.vn");
+  const fanpageLabel      = String(cms["fanpageLabel"]      ?? "Hệ Thống MMO");
+  const zaloHref          = String(cms["zaloHref"]          ?? "https://zalo.me/0393118789");
+  const zaloLabel         = String(cms["zaloLabel"]         ?? "Chat Zalo ngay");
+  const hotlineNumber     = String(cms["hotlineNumber"]     ?? "0393.118.789");
 
   return (
     <div className="co-page">
@@ -393,10 +398,10 @@ export default async function CamOnPage({
                 </div>
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#0369a1" }}>Telegram</span>
               </div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#0088cc" }}>@BossMeta789</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#0088cc" }}>{telegramUsername}</p>
             </a>
 
-            <a href="https://facebook.com/chuquangdoanh" target="_blank" rel="noopener noreferrer"
+            <a href={fanpageHref} target="_blank" rel="noopener noreferrer"
               style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 14, padding: "20px 18px", textDecoration: "none", display: "block" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: "#1877f2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -406,7 +411,7 @@ export default async function CamOnPage({
                 </div>
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#1d4ed8" }}>Fanpage</span>
               </div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#1877f2" }}>Hệ Thống MMO</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#1877f2" }}>{fanpageLabel}</p>
             </a>
 
             <a href={zaloHref} target="_blank" rel="noopener noreferrer"
@@ -417,10 +422,10 @@ export default async function CamOnPage({
                 </div>
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#1d4ed8" }}>Zalo</span>
               </div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#0068ff" }}>Chat Zalo ngay</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#0068ff" }}>{zaloLabel}</p>
             </a>
 
-            <a href="tel:0393118789"
+            <a href={`tel:${hotlineNumber.replace(/\./g, "")}`}
               style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 14, padding: "20px 18px", textDecoration: "none", display: "block" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -428,7 +433,7 @@ export default async function CamOnPage({
                 </div>
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#15803d" }}>Hotline</span>
               </div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "#16a34a" }}>0393.118.789</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#16a34a" }}>{hotlineNumber}</p>
             </a>
           </div>
         </div>

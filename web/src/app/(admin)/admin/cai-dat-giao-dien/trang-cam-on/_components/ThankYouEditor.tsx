@@ -16,8 +16,12 @@ interface ThankYouData {
   supportDesc: string;
   telegramHref: string;
   telegramLabel: string;
+  telegramUsername: string;
+  fanpageHref: string;
+  fanpageLabel: string;
   zaloHref: string;
   zaloLabel: string;
+  hotlineNumber: string;
 }
 
 const PREVIEW_ICONS: { value: string; label: string; emoji: string }[] = [
@@ -45,12 +49,16 @@ export default function ThankYouEditor({
     btn1Href:     String(initialData["btn1Href"] ?? ""),
     btn2Text:     String(initialData["btn2Text"] ?? ""),
     btn2Href:     String(initialData["btn2Href"] ?? ""),
-    supportTitle: String(initialData["supportTitle"] ?? ""),
-    supportDesc:  String(initialData["supportDesc"] ?? ""),
-    telegramHref:  String(initialData["telegramHref"] ?? ""),
-    telegramLabel: String(initialData["telegramLabel"] ?? ""),
-    zaloHref:     String(initialData["zaloHref"] ?? ""),
-    zaloLabel:    String(initialData["zaloLabel"] ?? ""),
+    supportTitle:     String(initialData["supportTitle"]     ?? ""),
+    supportDesc:      String(initialData["supportDesc"]      ?? ""),
+    telegramHref:     String(initialData["telegramHref"]     ?? ""),
+    telegramLabel:    String(initialData["telegramLabel"]    ?? ""),
+    telegramUsername: String(initialData["telegramUsername"] ?? ""),
+    fanpageHref:      String(initialData["fanpageHref"]      ?? ""),
+    fanpageLabel:     String(initialData["fanpageLabel"]     ?? ""),
+    zaloHref:         String(initialData["zaloHref"]         ?? ""),
+    zaloLabel:        String(initialData["zaloLabel"]        ?? ""),
+    hotlineNumber:    String(initialData["hotlineNumber"]    ?? ""),
   });
 
   const [saving, setSaving] = useState(false);
@@ -182,16 +190,26 @@ export default function ThankYouEditor({
           textarea
           rows={2}
         />
-        <FieldSectionLabel label="Nút Telegram" />
+        <FieldSectionLabel label="Telegram" />
         <FieldGrid cols={2}>
-          <FieldText label="Link Telegram" value={data.telegramHref} onChange={(v) => set("telegramHref", v)} placeholder="https://t.me/..." />
-          <FieldText label="Nhãn Telegram" value={data.telegramLabel} onChange={(v) => set("telegramLabel", v)} placeholder="Chat Telegram ngay" />
+          <FieldText label="Link Telegram" value={data.telegramHref} onChange={(v) => set("telegramHref", v)} placeholder="https://t.me/BossMeta789" />
+          <FieldText label="Username (@...)" value={data.telegramUsername} onChange={(v) => set("telegramUsername", v)} placeholder="@BossMeta789" />
         </FieldGrid>
-        <FieldSectionLabel label="Nút Zalo" />
+
+        <FieldSectionLabel label="Fanpage" />
+        <FieldGrid cols={2}>
+          <FieldText label="Link Fanpage" value={data.fanpageHref} onChange={(v) => set("fanpageHref", v)} placeholder="https://facebook.com/..." />
+          <FieldText label="Tên Fanpage" value={data.fanpageLabel} onChange={(v) => set("fanpageLabel", v)} placeholder="Hệ Thống MMO" />
+        </FieldGrid>
+
+        <FieldSectionLabel label="Zalo" />
         <FieldGrid cols={2}>
           <FieldText label="Link Zalo" value={data.zaloHref} onChange={(v) => set("zaloHref", v)} placeholder="https://zalo.me/..." />
-          <FieldText label="Nhãn Zalo" value={data.zaloLabel} onChange={(v) => set("zaloLabel", v)} placeholder="Chat Zalo ngay" />
+          <FieldText label="Nhãn hiển thị" value={data.zaloLabel} onChange={(v) => set("zaloLabel", v)} placeholder="Chat Zalo ngay" />
         </FieldGrid>
+
+        <FieldSectionLabel label="Hotline" />
+        <FieldText label="Số hotline" value={data.hotlineNumber} onChange={(v) => set("hotlineNumber", v)} placeholder="0393.118.789" hint="Hiển thị dạng text và dùng cho href tel:" />
       </div>
     </div>
   );
