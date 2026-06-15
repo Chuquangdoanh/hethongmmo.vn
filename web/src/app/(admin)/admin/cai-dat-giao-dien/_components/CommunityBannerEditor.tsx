@@ -214,6 +214,48 @@ export function CommunityBannerEditor({ sectionKey, initialData }: Props) {
             placeholder="https://www.facebook.com/hethongmmo.vn/"
           />
         </FieldGrid>
+
+        <FieldSectionLabel label="📞 Card liên hệ hỗ trợ (sidebar trang Người Bán & Hệ Thống)" />
+        <FieldText
+          label="Tiêu đề card"
+          value={String(data["contactTitle"] ?? "")}
+          onChange={(v) => handleChange("contactTitle", v)}
+          placeholder="Chăm sóc khách hàng Hệ Thống MMO"
+        />
+        <FieldGrid cols={2}>
+          <FieldText
+            label="Link Telegram"
+            value={String(data["contactTelegramUrl"] ?? "")}
+            onChange={(v) => handleChange("contactTelegramUrl", v)}
+            placeholder="https://t.me/BossMeta789"
+          />
+          <FieldText
+            label="Nhãn Telegram"
+            value={String(data["contactTelegramLabel"] ?? "")}
+            onChange={(v) => handleChange("contactTelegramLabel", v)}
+            placeholder="@BossMeta789"
+          />
+        </FieldGrid>
+        <FieldGrid cols={2}>
+          <FieldText
+            label="Link Facebook"
+            value={String(data["contactFacebookUrl"] ?? "")}
+            onChange={(v) => handleChange("contactFacebookUrl", v)}
+            placeholder="https://www.facebook.com/..."
+          />
+          <FieldText
+            label="Nhãn Facebook"
+            value={String(data["contactFacebookLabel"] ?? "")}
+            onChange={(v) => handleChange("contactFacebookLabel", v)}
+            placeholder="HỆ THỐNG MMO"
+          />
+        </FieldGrid>
+        <FieldText
+          label="Giờ làm việc"
+          value={String(data["contactHours"] ?? "")}
+          onChange={(v) => handleChange("contactHours", v)}
+          placeholder="08:00 – 23:00 hàng ngày"
+        />
       </div>
     </div>
   );

@@ -201,6 +201,13 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     communityFanpageUrl: "https://www.facebook.com/hethongmmo.vn/",
     communityAccentColor: "#0066ff",
     communityHighlightColor: "#f97316",
+    // Sidebar contact card (nguoi-ban + he-thong pages)
+    contactTitle: "Chăm sóc khách hàng Hệ Thống MMO",
+    contactTelegramUrl: "https://t.me/BossMeta789",
+    contactTelegramLabel: "@BossMeta789",
+    contactFacebookUrl: "https://www.facebook.com/Chu.Quang.Doanh.Media88/",
+    contactFacebookLabel: "HỆ THỐNG MMO",
+    contactHours: "08:00 – 23:00 hàng ngày",
   },
   page_networks: {
     badge: "DNET MEDIA NETWORK",
