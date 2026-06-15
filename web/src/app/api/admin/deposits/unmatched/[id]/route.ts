@@ -70,7 +70,7 @@ export async function PATCH(
 
     await prisma.unmatchedTransfer.update({
       where: { id },
-      data: { status: "RESOLVED", resolvedByUserId: user.id, resolvedAt: new Date() },
+      data: { status: "RESOLVED", resolvedByUserId: me.id, resolvedAt: new Date() },
     });
 
     return apiOk({ resolvedForEmail: user.email, amount: Number(transfer.amount) });

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import Decimal from "decimal.js";
+import { Prisma } from "@prisma/client";
 import type { TxType, Transaction } from "@prisma/client";
 import { DuplicateError, NotFoundError } from "@/lib/errors";
 import { logger } from "@/lib/utils/logger";
@@ -53,20 +54,29 @@ export async function processDeposit(params: DepositParams): Promise<Transaction
       WHERE id = ${userId}::uuid
     `;
 
-    const transaction = await tx.transaction.create({
-      data: {
-        userId,
-        type,
-        amount: depositAmount.toFixed(2),
-        description,
-        balanceBefore: balanceBefore.toFixed(2),
-        balanceAfter: balanceAfter.toFixed(2),
-        referenceCode,
-        metadata: metadata ?? undefined,
-        transactionDate: transactionDate ?? undefined,
-        accountNumber: accountNumber ?? undefined,
-      },
-    });
+    let transaction: Awaited<ReturnType<typeof tx.transaction.create>>;
+    try {
+      transaction = await tx.transaction.create({
+        data: {
+          userId,
+          type,
+          amount: depositAmount.toFixed(2),
+          description,
+          balanceBefore: balanceBefore.toFixed(2),
+          balanceAfter: balanceAfter.toFixed(2),
+          referenceCode,
+          metadata: metadata ?? undefined,
+          transactionDate: transactionDate ?? undefined,
+          accountNumber: accountNumber ?? undefined,
+        },
+      });
+    } catch (err) {
+      // P2002 = unique constraint violation — referenceCode đã được xử lý bởi request song song
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        throw new DuplicateError("referenceCode", referenceCode);
+      }
+      throw err;
+    }
 
     await tx.auditLog.create({
       data: {
