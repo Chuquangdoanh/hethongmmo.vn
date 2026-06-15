@@ -1,14 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { r2Url } from "@/lib/utils/image-url";
 
-const KOC_GALLERY = [
-  { label: "IDOLS SÁNG CON TV", sub: "100.000k Followers", src: "/images/sangcon.jpg" },
-  { label: "IDLOS VIỆT XĂM",    sub: "100.000K Followers",  src: "/images/vietxam.jpg" },
-  { label: "Đối Tác Kiên Love", sub: "54.000K Followers",  src: "/images/kienlove.jpg" },
-];
+export interface KocItem {
+  label: string;
+  sub: string;
+  src: string;
+}
 
-export default function KocGalleryClient() {
+interface Props {
+  items: KocItem[];
+}
+
+export default function KocGalleryClient({ items }: Props) {
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
 
   useEffect(() => {
@@ -26,34 +31,37 @@ export default function KocGalleryClient() {
   return (
     <>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }} className="fa-koc-grid">
-        {KOC_GALLERY.map((koc) => (
-          <div
-            key={koc.label}
-            style={{
-              borderRadius: 16, aspectRatio: "4/3",
-              position: "relative", overflow: "hidden",
-              boxShadow: "0 8px 32px rgba(0,0,0,.18)",
-              cursor: "zoom-in",
-            }}
-            onClick={() => setLightbox({ src: koc.src, alt: koc.label })}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={koc.src}
-              alt={koc.label}
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }}
-            />
-            <div style={{
-              position: "absolute", inset: 0,
-              background: "linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.7) 100%)",
-              pointerEvents: "none",
-            }} />
-            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px 20px", textAlign: "center", pointerEvents: "none" }}>
-              <p style={{ color: "#fff", fontWeight: 800, fontSize: 14, margin: "0 0 4px" }}>{koc.label}</p>
-              <p style={{ color: "rgba(255,255,255,.8)", fontSize: 12, margin: 0 }}>{koc.sub}</p>
+        {items.map((koc) => {
+          const resolvedSrc = r2Url(koc.src) || koc.src;
+          return (
+            <div
+              key={koc.label}
+              style={{
+                borderRadius: 16, aspectRatio: "4/3",
+                position: "relative", overflow: "hidden",
+                boxShadow: "0 8px 32px rgba(0,0,0,.18)",
+                cursor: "zoom-in",
+              }}
+              onClick={() => setLightbox({ src: resolvedSrc, alt: koc.label })}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={resolvedSrc}
+                alt={koc.label}
+                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }}
+              />
+              <div style={{
+                position: "absolute", inset: 0,
+                background: "linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.7) 100%)",
+                pointerEvents: "none",
+              }} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "16px 20px", textAlign: "center", pointerEvents: "none" }}>
+                <p style={{ color: "#fff", fontWeight: 800, fontSize: 14, margin: "0 0 4px" }}>{koc.label}</p>
+                <p style={{ color: "rgba(255,255,255,.8)", fontSize: 12, margin: 0 }}>{koc.sub}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Pagination dots */}

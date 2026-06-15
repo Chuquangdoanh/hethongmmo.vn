@@ -16,7 +16,9 @@ export const SITE_CONTENT_KEYS = {
   PAGE_QUANG_CAO_WHY_CHOOSE: "page_quang_cao_why_choose",
   PAGE_TUT_TRICKS: "page_tut_tricks",
   PAGE_TAI_NGUYEN: "page_tai_nguyen",
-  PAGE_NETWORKS:   "page_networks",
+  PAGE_NETWORKS:       "page_networks",
+  PAGE_NETWORKS_TRUST: "page_networks_trust",
+  PAGE_NETWORKS_KOC:   "page_networks_koc",
   FOOTER:       "footer",
   THANK_YOU:    "thank_you",
 } as const;
@@ -216,6 +218,25 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     description: "Trang chính thức cung cấp dịch vụ và thông tin hỗ trợ kiếm tiền nội dung cho Content Creator và KOC.",
     thumbnail: "",
     titleAccentColor: "#0066ff",
+  },
+  page_networks_trust: {
+    sectionTitle: "Cam kết uy tín và bảo mật",
+    sideImage: "/images/dj-media-classroom.jpg",
+    trustPoints: [
+      "Kinh nghiệm thực chiến trong lĩnh vực nội dung",
+      "Support 24/7 cho các đối tác của Network",
+      "Giải pháp thanh toán an toàn, minh bạch",
+      "Mở rộng mạng lưới KOC và Brand uy tín",
+    ],
+  },
+  page_networks_koc: {
+    sectionLabel: "THƯ VIỆN HÌNH ẢNH",
+    sectionTitle: "Đối Tác KOC tiêu biểu",
+    items: [
+      { label: "IDOLS SÁNG CON TV", sub: "100.000k Followers", src: "/images/sangcon.jpg" },
+      { label: "IDLOS VIỆT XĂM",    sub: "100.000K Followers", src: "/images/vietxam.jpg" },
+      { label: "Đối Tác Kiên Love", sub: "54.000K Followers",  src: "/images/kienlove.jpg" },
+    ],
   },
   footer: {
     // CTA Banner

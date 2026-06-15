@@ -76,20 +76,38 @@ const SERVICES = [
 // Ảnh minh họa do hệ thống cung cấp — chỉ admin mới có thể thay đổi (sửa mảng này)
 const ILLUSTRATIONS: Illustration[] = [
   { src: "/images/pagecm.jpg", label: "Fanpage chuyên nghiệp" },
-  { src: "/images/doinguctydjmedia.jpg",          label: "Đội ngũ DNET Media" },
+  { src: "/images/doinguctydjmedia.jpg", label: "Đội ngũ DNET Media" },
 ];
 
-const TRUST_POINTS = [
-  "Kinh nghiệm thực chiến trong lĩnh vực nội dung",
-  "Support 24/7 cho các đối tác của Network",
-  "Giải pháp thanh toán an toàn, minh bạch",
-  "Mở rộng mạng lưới KOC và Brand uy tín",
-];
+interface PageNetworksHero {
+  badge: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  thumbnail: string;
+  titleAccentColor: string;
+}
 
+interface PageNetworksTrust {
+  sectionTitle: string;
+  sideImage: string;
+  trustPoints: string[];
+}
+
+interface PageNetworksKoc {
+  sectionLabel: string;
+  sectionTitle: string;
+  items: Array<{ label: string; sub: string; src: string }>;
+}
 
 export default async function NetworksPage() {
   await guardPublicPage("NetWorks");
-  const pageHero = await getSiteContent<{ badge: string; title: string; subtitle: string; description: string; thumbnail: string; titleAccentColor: string }>(SITE_CONTENT_KEYS.PAGE_NETWORKS);
+
+  const [pageHero, trustContent, kocContent] = await Promise.all([
+    getSiteContent<PageNetworksHero>(SITE_CONTENT_KEYS.PAGE_NETWORKS),
+    getSiteContent<PageNetworksTrust>(SITE_CONTENT_KEYS.PAGE_NETWORKS_TRUST),
+    getSiteContent<PageNetworksKoc>(SITE_CONTENT_KEYS.PAGE_NETWORKS_KOC),
+  ]);
 
   const session = await auth();
   const sessionUser = session?.user as AuthenticatedUser | undefined;
@@ -104,6 +122,8 @@ export default async function NetworksPage() {
       userInfo = { name: row.fullName, phone: row.phone ?? "" };
     }
   }
+
+  const trustSideImageSrc = r2Url(trustContent.sideImage) || "/images/dj-media-classroom.jpg";
 
   return (
     <div style={{ background: "linear-gradient(160deg,#eef2ff 0%,#f0f9ff 50%,#faf5ff 100%)", minHeight: "100vh" }}>
@@ -184,7 +204,6 @@ export default async function NetworksPage() {
             </h2>
           </div>
 
-          {/* ServiceSectionClient manages the popup */}
           <ServiceSectionClient services={SERVICES} illustrations={ILLUSTRATIONS} userInfo={userInfo} />
         </div>
       </section>
@@ -205,10 +224,10 @@ export default async function NetworksPage() {
                 VỀ NETWORK
               </p>
               <h2 style={{ fontSize: "clamp(1.3rem,2.5vw,1.7rem)", fontWeight: 800, color: "#0f172a", marginBottom: 24, lineHeight: 1.3 }}>
-                Cam kết uy tín và bảo mật
+                {trustContent.sectionTitle}
               </h2>
               <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
-                {TRUST_POINTS.map((pt) => (
+                {trustContent.trustPoints.map((pt) => (
                   <li key={pt} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                     <div style={{
                       width: 22, height: 22, borderRadius: "50%",
@@ -228,7 +247,7 @@ export default async function NetworksPage() {
             {/* Image side */}
             <div style={{ overflow: "hidden" }}>
               <ImageLightbox
-                src="/images/dj-media-classroom.jpg"
+                src={trustSideImageSrc}
                 alt="Đội ngũ DNET Media"
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
               />
@@ -242,13 +261,13 @@ export default async function NetworksPage() {
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 36 }}>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "#6366f1", textTransform: "uppercase", marginBottom: 8 }}>
-              THƯ VIỆN HÌNH ẢNH
+              {kocContent.sectionLabel}
             </p>
             <h2 style={{ fontSize: "clamp(1.5rem,3vw,2rem)", fontWeight: 800, color: "#0f172a", margin: 0 }}>
-              Đối Tác KOC tiêu biểu
+              {kocContent.sectionTitle}
             </h2>
           </div>
-          <KocGalleryClient />
+          <KocGalleryClient items={kocContent.items} />
         </div>
       </section>
 
