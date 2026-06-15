@@ -2,7 +2,7 @@
 import SectionSaveClient from "../../trang-chu/_components/SectionSaveClient";
 import { FieldText, FieldSectionLabel } from "../../trang-chu/_components/FieldInput";
 import { ImageUpload } from "../../_components/ImageUpload";
-import { SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
+import { SITE_CONTENT_KEYS } from "@/lib/services/site-content.keys";
 
 interface KocItem {
   label: string;
