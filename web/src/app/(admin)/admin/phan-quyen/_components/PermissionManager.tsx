@@ -285,10 +285,10 @@ export default function PermissionManager({
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500">Trang</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 w-52">Tên hiển thị</th>
+                
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 w-28">Hiển thị</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 w-28">Nổi bật</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 w-16">Xóa</th>
+                
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -376,7 +376,7 @@ export default function PermissionManager({
             </tbody>
 
             {/* ── Add new page row ── */}
-            <tfoot>
+            {/* <tfoot>
               <tr className="bg-gray-50 border-t-2 border-dashed border-gray-200">
                 <td className="px-5 py-3" colSpan={5}>
                   <p className="text-xs font-semibold text-gray-600 mb-2 flex items-center gap-1.5">
@@ -425,7 +425,7 @@ export default function PermissionManager({
                   </div>
                 </td>
               </tr>
-            </tfoot>
+            </tfoot> */}
           </table>
         </div>
       )}
