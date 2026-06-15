@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
 import Decimal from "decimal.js";
-import { Prisma } from "@prisma/client";
 import type { TxType, Transaction } from "@prisma/client";
 import { DuplicateError, NotFoundError } from "@/lib/errors";
 import { logger } from "@/lib/utils/logger";
@@ -72,8 +71,8 @@ export async function processDeposit(params: DepositParams): Promise<Transaction
       });
     } catch (err) {
       // P2002 = unique constraint violation — referenceCode đã được xử lý bởi request song song
-      if (err instanceof Prisma.PrismaClientKnownRequestError) {
-        if (err.code === "P2002") throw new DuplicateError("referenceCode", referenceCode);
+      if (typeof err === "object" && err !== null && "code" in err && (err as { code: unknown }).code === "P2002") {
+        throw new DuplicateError("referenceCode", referenceCode);
       }
       throw err;
     }
