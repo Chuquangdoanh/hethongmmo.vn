@@ -79,16 +79,16 @@ export default async function AdminCourseEditPage({
         },
       },
       orderBy: { displayOrder: "asc" },
-    }),
+    }).catch(() => []),
     prisma.courseFaq.findMany({
       where: { courseId: id },
       include: { category: { select: { id: true, name: true } } },
       orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
-    }),
+    }).catch(() => []),
     prisma.courseSupportItem.findMany({
       where: { courseId: id },
       orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
-    }),
+    }).catch(() => []),
   ]);
 
   if (!course) notFound();

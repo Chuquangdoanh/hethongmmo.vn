@@ -102,7 +102,7 @@ export default async function KhoaHocDetailPage({ params }: Props) {
   if (!course) notFound();
 
   const userId = (session?.user as { id: string } | null | undefined)?.id;
-  const [userRow, categoryRow, faqCategories, supportItems] = await Promise.all([
+  const [userRow, categoryRow] = await Promise.all([
     userId
       ? prisma.user.findUnique({ where: { id: userId }, select: { discountPercent: true, totalDeposited: true } })
       : Promise.resolve(null),
@@ -110,6 +110,13 @@ export default async function KhoaHocDetailPage({ params }: Props) {
       where: { name: course.category },
       select: { icon: true },
     }),
+  ]);
+  const discountPct = userRow
+    ? getDiscountInfo(Number(userRow.totalDeposited), userRow.discountPercent).pct
+    : 0;
+
+  // Bọc trong try/catch — bảng chưa tồn tại nếu migration chưa chạy trên server
+  const [faqCategories, supportItems, uncategorizedFaqs] = await Promise.all([
     prisma.courseFaqCategory.findMany({
       where: { courseId: course.id },
       include: {
@@ -120,16 +127,18 @@ export default async function KhoaHocDetailPage({ params }: Props) {
         },
       },
       orderBy: { displayOrder: "asc" },
-    }),
+    }).catch(() => []),
     prisma.courseSupportItem.findMany({
       where: { courseId: course.id, isActive: true },
       select: { id: true, icon: true, title: true, description: true },
       orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
-    }),
+    }).catch(() => []),
+    prisma.courseFaq.findMany({
+      where: { courseId: course.id, isActive: true, categoryId: null },
+      select: { id: true, question: true, answer: true, categoryId: true },
+      orderBy: { displayOrder: "asc" },
+    }).catch(() => []),
   ]);
-  const discountPct = userRow
-    ? getDiscountInfo(Number(userRow.totalDeposited), userRow.discountPercent).pct
-    : 0;
 
   const isOnSale  = Number(course.salePrice) < Number(course.originalPrice);
   const isExpired = course.saleDeadline ? new Date(course.saleDeadline) < new Date() : false;
@@ -137,15 +146,10 @@ export default async function KhoaHocDetailPage({ params }: Props) {
   const savedAmount   = isOnSale && !isExpired ? Number(course.originalPrice) - finalPrice : 0;
   const discountedFinalPrice = discountPct > 0 ? Math.round(finalPrice * (1 - discountPct / 100)) : finalPrice;
 
-  const contentList       = Array.isArray(course.contentList)  ? (course.contentList  as string[]) : [];
-  const commitments       = Array.isArray(course.commitments)   ? (course.commitments  as string[]) : [];
-  const embedId           = course.youtubeUrl ? getYoutubeEmbedId(course.youtubeUrl) : null;
-  const uncategorizedFaqs = await prisma.courseFaq.findMany({
-    where: { courseId: course.id, isActive: true, categoryId: null },
-    select: { id: true, question: true, answer: true, categoryId: true },
-    orderBy: { displayOrder: "asc" },
-  });
-  const catIcon       = categoryRow?.icon || null;
+  const contentList = Array.isArray(course.contentList)  ? (course.contentList  as string[]) : [];
+  const commitments = Array.isArray(course.commitments)   ? (course.commitments  as string[]) : [];
+  const embedId     = course.youtubeUrl ? getYoutubeEmbedId(course.youtubeUrl) : null;
+  const catIcon     = categoryRow?.icon || null;
 
   const upd = new Date(course.updatedAt);
   const updatedLabel = `${String(upd.getMonth() + 1).padStart(2, "0")}/${upd.getFullYear()}`;
