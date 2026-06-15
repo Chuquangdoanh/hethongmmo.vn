@@ -97,7 +97,10 @@ export default async function TutTricksPage({
       <section className="relative bg-[#f1f5f9] py-14 text-center overflow-hidden select-none border-b border-border">
 
         <div className="relative z-10 mx-auto max-w-2xl px-4">
-          <span className="inline-flex items-center gap-1.5 mb-5 px-4 py-1.5 rounded-full text-[11px] font-extrabold tracking-widest bg-[#f59e0b] text-black uppercase shadow-lg">
+          <span
+            className="inline-flex items-center gap-1.5 mb-5 px-4 py-1.5 rounded-full text-[11px] font-extrabold tracking-widest text-black uppercase shadow-lg"
+            style={{ backgroundColor: pageHero.titleAccentColor || "#f59e0b" }}
+          >
             {pageHero.badge}
           </span>
           <h1
