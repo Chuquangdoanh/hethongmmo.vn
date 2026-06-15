@@ -34,6 +34,7 @@ interface FooterData {
   contactTelegramLabel?: string;
   contactTelegramSub?: string;
   copyrightText?: string;
+  bctHref?: string;
 }
 
 const TRUST_BADGES = [
@@ -297,13 +298,41 @@ export default function FooterClient({ data }: { data: Record<string, unknown> }
       {/* ── Bottom bar ─────────────────────────────────────────────── */}
       <div className="border-t border-[#e2e8f0] bg-[#f8fafc]">
         <div className="mx-auto max-w-[1200px] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="text-xs text-[#94a3b8]">
-            {d.copyrightText ? (
-              d.copyrightText
+          {/* Left: BCT seal + copyright */}
+          <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
+            {d.bctHref ? (
+              <a
+                href={d.bctHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Đã đăng ký Bộ Công Thương"
+                className="shrink-0 hover:opacity-80 transition-opacity"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/B%E1%BB%99%20C%C3%B4ng%20Th%C6%B0%C6%A1ng.png"
+                  alt="Đã đăng ký Bộ Công Thương"
+                  style={{ height: 40, width: "auto", display: "block" }}
+                />
+              </a>
             ) : (
-              <>© 2026 <span className="font-semibold text-[#64748b]">hethongmmo.vn</span>. Tất cả quyền được bảo lưu.</>
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src="/images/B%E1%BB%99%20C%C3%B4ng%20Th%C6%B0%C6%A1ng.png"
+                alt="Đã đăng ký Bộ Công Thương"
+                style={{ height: 40, width: "auto", display: "block" }}
+                className="shrink-0"
+              />
             )}
-          </span>
+            <span className="text-xs text-[#94a3b8]">
+              {d.copyrightText ? (
+                d.copyrightText
+              ) : (
+                <>© 2026 <span className="font-semibold text-[#64748b]">hethongmmo.vn</span>. Tất cả quyền được bảo lưu.</>
+              )}
+            </span>
+          </div>
+          {/* Right: legal links + scroll-to-top */}
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-0 text-xs text-[#64748b]">
               {LEGAL.map(({ href, label }, i) => (

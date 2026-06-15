@@ -247,6 +247,8 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     contactTelegramSub: "Phản hồi trong vài phút",
     // Copyright
     copyrightText: "© 2026 hethongmmo.vn. Tất cả quyền được bảo lưu.",
+    // Bộ Công Thương
+    bctHref: "",
   },
   thank_you: {
     title: "Cảm ơn bạn đã tin tưởng!",

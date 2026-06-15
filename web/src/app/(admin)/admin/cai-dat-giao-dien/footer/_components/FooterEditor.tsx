@@ -37,6 +37,8 @@ interface FooterData {
   contactTelegramSub: string;
   // Copyright
   copyrightText: string;
+  // Bộ Công Thương
+  bctHref: string;
 }
 
 function LinkListEditor({
@@ -137,6 +139,7 @@ export default function FooterEditor({
     contactTelegramLabel: String(initialData["contactTelegramLabel"] ?? ""),
     contactTelegramSub:   String(initialData["contactTelegramSub"] ?? ""),
     copyrightText:        String(initialData["copyrightText"] ?? ""),
+    bctHref:              String(initialData["bctHref"] ?? ""),
   });
 
   const [saving, setSaving] = useState(false);
@@ -279,6 +282,34 @@ export default function FooterEditor({
           value={data.copyrightText}
           onChange={(v) => set("copyrightText", v)}
           hint="VD: © 2026 hethongmmo.vn. Tất cả quyền được bảo lưu."
+        />
+      </div>
+
+      {/* Bộ Công Thương */}
+      <div className={cardClass}>
+        <div className="flex items-start gap-4">
+          {/* Preview ảnh cố định */}
+          <div className="shrink-0 rounded-xl border border-gray-200 bg-gray-50 p-2 flex items-center justify-center" style={{ minWidth: 80 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/B%E1%BB%99%20C%C3%B4ng%20Th%C6%B0%C6%A1ng.png"
+              alt="Bộ Công Thương"
+              style={{ height: 48, width: "auto", display: "block" }}
+            />
+          </div>
+          <div className="flex-1 space-y-1">
+            <h2 className="text-base font-bold text-gray-800">Chứng nhận Bộ Công Thương</h2>
+            <p className="text-xs text-gray-400">
+              Logo hiển thị cố định tại bottom bar. Nhập đường dẫn xác nhận để logo trở thành link click được.
+            </p>
+          </div>
+        </div>
+        <FieldText
+          label="Đường dẫn xác nhận BCT"
+          value={data.bctHref}
+          onChange={(v) => set("bctHref", v)}
+          placeholder="http://online.gov.vn/Home/WebDetails/..."
+          hint="Để trống = logo hiển thị nhưng không có link. Điền URL = logo thành link mở tab mới."
         />
       </div>
     </div>
