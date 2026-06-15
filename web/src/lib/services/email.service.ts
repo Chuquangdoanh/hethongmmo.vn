@@ -429,3 +429,137 @@ export async function sendPasswordResetEmail({
     `Đặt lại mật khẩu: ${resetUrl} (hiệu lực 30 phút)`,
   );
 }
+
+// ── 8. Complaint Emails ───────────────────────────────────────────────────────
+
+export async function sendComplaintCreatedToUserEmail({
+  to,
+  subject,
+  complaintId,
+}: {
+  to: string;
+  subject: string;
+  complaintId: string;
+}): Promise<EmailResult> {
+  const content = `
+    <h2 style="margin:0 0 16px;font-size:20px;color:#18181B;font-weight:700;">📋 Khiếu nại đã được tiếp nhận</h2>
+    <p style="color:#71717A;font-size:14px;line-height:1.7;margin:0 0 16px;">
+      Khiếu nại của bạn về <strong style="color:#18181B;">"${escapeHtml(subject)}"</strong> đã được ghi nhận thành công.
+    </p>
+    <p style="color:#71717A;font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Admin sẽ xem xét và liên hệ với bạn sớm nhất có thể. Vui lòng theo dõi email để nhận thông báo cập nhật.
+    </p>
+    <div style="background:#F5F3FF;border-radius:8px;padding:14px 20px;margin:0 0 24px;border:1px solid #DDD6FE;">
+      <p style="margin:0;font-size:12px;color:#7C3AED;">Mã khiếu nại: <code style="font-family:monospace;">${escapeHtml(complaintId.slice(0, 8).toUpperCase())}</code></p>
+    </div>
+    <a href="${APP_URL}/don-hang"
+       style="display:inline-block;padding:12px 24px;background:#7C3AED;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;">
+      Xem đơn hàng →
+    </a>`;
+
+  return sendEmail(
+    to,
+    `Khiếu nại "${subject.slice(0, 40)}" đã được tiếp nhận`,
+    baseTemplate(content, `Khiếu nại của bạn đã được ghi nhận — admin đang xem xét`),
+  );
+}
+
+export async function sendComplaintCreatedToSellerEmail({
+  to,
+  subject,
+  complaintId,
+}: {
+  to: string;
+  subject: string;
+  complaintId: string;
+}): Promise<EmailResult> {
+  const content = `
+    <h2 style="margin:0 0 16px;font-size:20px;color:#D97706;font-weight:700;">⚠️ Có khiếu nại mới về đơn hàng của bạn</h2>
+    <p style="color:#71717A;font-size:14px;line-height:1.7;margin:0 0 16px;">
+      Một người mua hàng đã gửi khiếu nại liên quan đến đơn hàng của bạn.
+    </p>
+    <div style="background:#FFFBEB;border-radius:8px;padding:14px 20px;margin:0 0 24px;border:1px solid #FDE68A;">
+      <p style="margin:0 0 6px;font-size:12px;color:#92400E;">Chủ đề khiếu nại</p>
+      <p style="margin:0;font-size:14px;color:#18181B;font-weight:600;">${escapeHtml(subject)}</p>
+    </div>
+    <p style="color:#71717A;font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Admin đang xem xét. Vui lòng theo dõi email để nhận thông báo về kết quả xử lý.
+    </p>
+    <a href="${APP_URL}/ban-hang/khieu-nai"
+       style="display:inline-block;padding:12px 24px;background:#D97706;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;">
+      Xem khiếu nại →
+    </a>`;
+
+  return sendEmail(
+    to,
+    `Có khiếu nại mới liên quan đến đơn hàng của bạn`,
+    baseTemplate(content, `Người mua vừa gửi khiếu nại về đơn hàng của bạn`),
+  );
+}
+
+export async function sendComplaintChatOpenedEmail({
+  to,
+  subject,
+}: {
+  to: string;
+  subject: string;
+}): Promise<EmailResult> {
+  const content = `
+    <h2 style="margin:0 0 16px;font-size:20px;color:#2563EB;font-weight:700;">💬 Phòng chat khiếu nại đã được mở</h2>
+    <p style="color:#71717A;font-size:14px;line-height:1.7;margin:0 0 16px;">
+      Admin đã mở phòng chat để hỗ trợ giải quyết khiếu nại:
+    </p>
+    <div style="background:#EFF6FF;border-radius:8px;padding:14px 20px;margin:0 0 24px;border:1px solid #BFDBFE;">
+      <p style="margin:0;font-size:14px;color:#18181B;font-weight:600;">${escapeHtml(subject)}</p>
+    </div>
+    <p style="color:#71717A;font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Vui lòng đăng nhập và tham gia phòng chat để trao đổi trực tiếp với admin và các bên liên quan.
+    </p>
+    <a href="${APP_URL}/tro-chuyen"
+       style="display:inline-block;padding:12px 24px;background:#2563EB;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;">
+      Vào phòng chat →
+    </a>`;
+
+  return sendEmail(
+    to,
+    `Phòng chat khiếu nại đã được mở — "${subject.slice(0, 40)}"`,
+    baseTemplate(content, `Admin đã mở phòng chat để xử lý khiếu nại`),
+  );
+}
+
+export async function sendComplaintResolvedEmail({
+  to,
+  subject,
+  title,
+  body,
+  isPositive,
+}: {
+  to: string;
+  subject: string;
+  title: string;
+  body: string;
+  isPositive: boolean;
+}): Promise<EmailResult> {
+  const color  = isPositive ? "#059669" : "#DC2626";
+  const bg     = isPositive ? "#F0FDF4" : "#FEF2F2";
+  const border = isPositive ? "#A7F3D0" : "#FECACA";
+  const icon   = isPositive ? "✅" : "❌";
+
+  const content = `
+    <h2 style="margin:0 0 16px;font-size:20px;color:${color};font-weight:700;">${icon} ${escapeHtml(title)}</h2>
+    <div style="background:${bg};border-radius:8px;padding:14px 20px;margin:0 0 16px;border:1px solid ${border};">
+      <p style="margin:0 0 4px;font-size:12px;color:#6B7280;">Chủ đề khiếu nại</p>
+      <p style="margin:0;font-size:14px;color:#18181B;font-weight:600;">${escapeHtml(subject)}</p>
+    </div>
+    <p style="color:#71717A;font-size:14px;line-height:1.7;margin:0 0 24px;">${escapeHtml(body)}</p>
+    <a href="${APP_URL}/don-hang"
+       style="display:inline-block;padding:12px 24px;background:#7C3AED;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;">
+      Xem chi tiết →
+    </a>`;
+
+  return sendEmail(
+    to,
+    `Kết quả khiếu nại — ${title}`,
+    baseTemplate(content, title),
+  );
+}

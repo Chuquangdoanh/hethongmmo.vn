@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { apiOk, apiCatch } from "@/lib/api-response";
 import { writeAuditLog } from "@/lib/security/audit";
+import { sendComplaintChatOpenedEmail } from "@/lib/services/email.service";
 
 export const runtime = "nodejs";
 
@@ -47,16 +48,18 @@ export async function POST(
 
     // Resolve seller if SELLER_PRODUCT order
     let sellerId: string | null = null;
+    let sellerEmail: string | null = null;
     if (complaint.orderId) {
       const order = await prisma.order.findUnique({
         where: { id: complaint.orderId },
         select: {
           orderType: true,
-          sellerProduct: { select: { seller: { select: { id: true } } } },
+          sellerProduct: { select: { seller: { select: { id: true, email: true } } } },
         },
       });
       if (order?.orderType === "SELLER_PRODUCT" && order.sellerProduct?.seller) {
         sellerId = order.sellerProduct.seller.id;
+        sellerEmail = order.sellerProduct.seller.email;
       }
     }
 
@@ -95,6 +98,11 @@ export async function POST(
       targetId: complaintId,
       after: { chatRoomId: chatRoom.id },
     });
+
+    sendComplaintChatOpenedEmail({ to: buyer.email, subject: complaint.subject }).catch(() => {});
+    if (sellerEmail && sellerEmail !== buyer.email) {
+      sendComplaintChatOpenedEmail({ to: sellerEmail, subject: complaint.subject }).catch(() => {});
+    }
 
     return apiOk(formatRoom(chatRoom), 201);
   } catch (err) {

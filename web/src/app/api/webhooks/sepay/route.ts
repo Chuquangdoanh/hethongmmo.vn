@@ -114,23 +114,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     valid = apiKeyValid;
   }
 
-  // WARN-level debug để chẩn đoán (xóa sau khi xác nhận hoạt động)
-  logger.warn({
-    rawSigLen: rawHmacSig.length,
-    sigLen: hmacSig.length,
-    hasSha256Prefix: rawHmacSig.startsWith("sha256="),
-    hasWhsecPrefix: secret.startsWith("whsec_"),
-    secretLen: secret.length,
-    apiKeyLen: apiKey.length,
-    authHeader: authHeader.slice(0, 12) || "none",
-    bodyLen: rawBody.length,
-    hmacValid,
-    apiKeyValid,
-    valid,
-  }, "SePay webhook auth detail");
-
   if (!valid) {
-    logger.warn({ hasHmac: !!hmacSig, hasApiKey: !!apiKey }, "SePay auth mismatch — check SEPAY_WEBHOOK_SECRET in .env");
+    logger.warn({
+      hasHmacHeader:   !!hmacSig,
+      hasSha256Prefix: rawHmacSig.startsWith("sha256="),
+      hasApikeyHeader: !!apiKey,
+      hasWhsecPrefix:  secret.startsWith("whsec_"),
+      bodyLen:         rawBody.length,
+    }, "SePay webhook auth failed — kiểm tra SEPAY_WEBHOOK_SECRET trong .env");
     return NextResponse.json({ success: false, message: "Invalid signature" }, { status: 200 });
   }
 

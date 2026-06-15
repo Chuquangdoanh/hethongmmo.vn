@@ -77,7 +77,6 @@ const SECTIONS: NavSection[] = [
     links: [
       { href: "/admin/complaints", label: "Khiếu nại", Icon: AlertTriangle, color: "#ef4444", badge: "complaints" },
       { href: "/admin/danh-gia",   label: "Đánh giá",  Icon: Star,          color: "#f59e0b" },
-      
       { href: "/admin/tickers",    label: "Ticker",    Icon: Radio,         color: "#0066ff" },
     ],
   },

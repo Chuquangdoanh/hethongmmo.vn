@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
 import { apiOk, apiCatch, apiError } from "@/lib/api-response";
+import { sendComplaintResolvedEmail } from "@/lib/services/email.service";
 
 export const runtime = "nodejs";
 
@@ -18,7 +19,7 @@ export async function POST(
 
     const complaint = await prisma.complaint.findUnique({
       where: { id },
-      select: { id: true, status: true, orderId: true },
+      select: { id: true, status: true, orderId: true, subject: true, userId: true },
     });
     if (!complaint) return apiError("Khiếu nại không tồn tại", "NOT_FOUND", 404);
     if (complaint.status === "RESOLVED" || complaint.status === "REJECTED") {
@@ -52,6 +53,36 @@ export async function POST(
       targetId: id,
       after: { status: "RESOLVED", orderId: complaint.orderId, outcome: "seller_wins" },
     });
+
+    void (async () => {
+      try {
+        const userRow = await prisma.user.findUnique({ where: { id: complaint.userId }, select: { email: true } });
+        if (userRow?.email) {
+          await sendComplaintResolvedEmail({
+            to: userRow.email,
+            subject: complaint.subject,
+            title: "Khiếu nại bị từ chối",
+            body: "Đơn hàng đã được xác nhận hợp lệ. Nếu bạn vẫn gặp vấn đề, vui lòng liên hệ hỗ trợ.",
+            isPositive: false,
+          });
+        }
+        if (complaint.orderId) {
+          const order = await prisma.order.findUnique({ where: { id: complaint.orderId }, select: { sellerId: true } });
+          if (order?.sellerId) {
+            const seller = await prisma.user.findUnique({ where: { id: order.sellerId }, select: { email: true } });
+            if (seller?.email) {
+              await sendComplaintResolvedEmail({
+                to: seller.email,
+                subject: complaint.subject,
+                title: "Khiếu nại được giải quyết — Đơn hàng hợp lệ",
+                body: "Đơn hàng đã được xác nhận hợp lệ. Bạn có thể tiến hành rút tiền.",
+                isPositive: true,
+              });
+            }
+          }
+        }
+      } catch { /* silent — không block response */ }
+    })();
 
     return apiOk({ resolved: true, outcome: "seller_wins" });
   } catch (err) {
