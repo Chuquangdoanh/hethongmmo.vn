@@ -12,6 +12,19 @@ import TestimonialsSection, { type TestimonialItem } from "@/components/shared/T
 
 type Tab = "intro" | "content" | "reviews" | "faq";
 
+export interface FaqItemPublic {
+  id: string;
+  question: string;
+  answer: string;
+  categoryId: string | null;
+}
+
+export interface FaqCategoryPublic {
+  id: string;
+  name: string;
+  faqs: FaqItemPublic[];
+}
+
 interface Props {
   description: string | null;
   contentList: string[];
@@ -26,6 +39,8 @@ interface Props {
   registrationProcedure: string | null;
   testimonials: TestimonialItem[];
   discountPct?: number;
+  faqCategories?: FaqCategoryPublic[];
+  uncategorizedFaqs?: FaqItemPublic[];
 }
 
 const BENEFITS = [
@@ -78,9 +93,10 @@ export default function CourseDetailTabs({
   description, contentList, studentCount,
   courseId, price, originalPrice, isOnSale, isLoggedIn, userName,
   commitments, registrationProcedure, testimonials, discountPct = 0,
+  faqCategories = [], uncategorizedFaqs = [],
 }: Props) {
   const [tab, setTab] = useState<Tab>("intro");
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
 
   useEffect(() => {
     function onScrollToRegister() {
@@ -289,31 +305,74 @@ export default function CourseDetailTabs({
 
       {/* ── Hỏi đáp ── */}
       {tab === "faq" && (
-        <div>
-          <div style={{ borderLeft: "4px solid #f59e0b", paddingLeft: "12px" }} className="mb-4">
-            <h3 className="text-base font-bold text-[#0f172a]">Câu hỏi thường gặp</h3>
-          </div>
-          <div className="space-y-2">
-            {STATIC_FAQS.map((faq, i) => (
-              <div key={i} className="border border-[#e2e8f0] rounded-xl overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between px-5 py-4 text-left bg-white hover:bg-[#f8fafc] transition-colors"
-                >
-                  <span className="text-sm font-semibold text-[#0f172a]">{faq.q}</span>
-                  {openFaq === i
-                    ? <ChevronUp size={16} strokeWidth={2} className="text-[#64748b] shrink-0 ml-2" />
-                    : <ChevronDown size={16} strokeWidth={2} className="text-[#64748b] shrink-0 ml-2" />}
-                </button>
-                {openFaq === i && (
-                  <div className="px-5 py-4 border-t border-[#f1f5f9] bg-[#fafafa]">
-                    <p className="text-sm text-[#64748b] leading-relaxed">{faq.a}</p>
+        <div className="space-y-6">
+          {faqCategories.length === 0 && uncategorizedFaqs.length === 0 ? (
+            <p className="text-sm text-text-muted text-center py-8">Chưa có câu hỏi thường gặp nào.</p>
+          ) : (
+            <>
+              {/* Nhóm theo danh mục */}
+              {faqCategories.map((cat) => cat.faqs.length > 0 && (
+                <div key={cat.id}>
+                  <div style={{ borderLeft: "4px solid #f59e0b", paddingLeft: "12px" }} className="mb-3">
+                    <h3 className="text-base font-bold text-text-dark">{cat.name}</h3>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
+                  <div className="space-y-2">
+                    {cat.faqs.map((faq) => (
+                      <div key={faq.id} className="border border-border rounded-xl overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)}
+                          className="w-full flex items-center justify-between px-5 py-4 text-left bg-white hover:bg-light transition-colors"
+                        >
+                          <span className="text-sm font-semibold text-text-dark">{faq.question}</span>
+                          {openFaq === faq.id
+                            ? <ChevronUp size={16} strokeWidth={2} className="text-text-muted shrink-0 ml-2" />
+                            : <ChevronDown size={16} strokeWidth={2} className="text-text-muted shrink-0 ml-2" />}
+                        </button>
+                        {openFaq === faq.id && (
+                          <div className="px-5 py-4 border-t border-[#f1f5f9] bg-[#fafafa]">
+                            <p className="text-sm text-text-muted leading-relaxed">{faq.answer}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {/* Câu hỏi không thuộc nhóm */}
+              {uncategorizedFaqs.length > 0 && (
+                <div>
+                  {faqCategories.length > 0 && (
+                    <div style={{ borderLeft: "4px solid #f59e0b", paddingLeft: "12px" }} className="mb-3">
+                      <h3 className="text-base font-bold text-text-dark">Câu hỏi khác</h3>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    {uncategorizedFaqs.map((faq) => (
+                      <div key={faq.id} className="border border-border rounded-xl overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)}
+                          className="w-full flex items-center justify-between px-5 py-4 text-left bg-white hover:bg-light transition-colors"
+                        >
+                          <span className="text-sm font-semibold text-text-dark">{faq.question}</span>
+                          {openFaq === faq.id
+                            ? <ChevronUp size={16} strokeWidth={2} className="text-text-muted shrink-0 ml-2" />
+                            : <ChevronDown size={16} strokeWidth={2} className="text-text-muted shrink-0 ml-2" />}
+                        </button>
+                        {openFaq === faq.id && (
+                          <div className="px-5 py-4 border-t border-[#f1f5f9] bg-[#fafafa]">
+                            <p className="text-sm text-text-muted leading-relaxed">{faq.answer}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

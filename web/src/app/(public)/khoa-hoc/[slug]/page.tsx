@@ -102,13 +102,29 @@ export default async function KhoaHocDetailPage({ params }: Props) {
   if (!course) notFound();
 
   const userId = (session?.user as { id: string } | null | undefined)?.id;
-  const [userRow, categoryRow] = await Promise.all([
+  const [userRow, categoryRow, faqCategories, supportItems] = await Promise.all([
     userId
       ? prisma.user.findUnique({ where: { id: userId }, select: { discountPercent: true, totalDeposited: true } })
       : Promise.resolve(null),
     prisma.courseCategory.findUnique({
       where: { name: course.category },
       select: { icon: true },
+    }),
+    prisma.courseFaqCategory.findMany({
+      where: { courseId: course.id },
+      include: {
+        faqs: {
+          where: { isActive: true },
+          select: { id: true, question: true, answer: true, categoryId: true },
+          orderBy: { displayOrder: "asc" },
+        },
+      },
+      orderBy: { displayOrder: "asc" },
+    }),
+    prisma.courseSupportItem.findMany({
+      where: { courseId: course.id, isActive: true },
+      select: { id: true, icon: true, title: true, description: true },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
     }),
   ]);
   const discountPct = userRow
@@ -121,9 +137,14 @@ export default async function KhoaHocDetailPage({ params }: Props) {
   const savedAmount   = isOnSale && !isExpired ? Number(course.originalPrice) - finalPrice : 0;
   const discountedFinalPrice = discountPct > 0 ? Math.round(finalPrice * (1 - discountPct / 100)) : finalPrice;
 
-  const contentList   = Array.isArray(course.contentList)  ? (course.contentList  as string[]) : [];
-  const commitments   = Array.isArray(course.commitments)   ? (course.commitments  as string[]) : [];
-  const embedId       = course.youtubeUrl ? getYoutubeEmbedId(course.youtubeUrl) : null;
+  const contentList       = Array.isArray(course.contentList)  ? (course.contentList  as string[]) : [];
+  const commitments       = Array.isArray(course.commitments)   ? (course.commitments  as string[]) : [];
+  const embedId           = course.youtubeUrl ? getYoutubeEmbedId(course.youtubeUrl) : null;
+  const uncategorizedFaqs = await prisma.courseFaq.findMany({
+    where: { courseId: course.id, isActive: true, categoryId: null },
+    select: { id: true, question: true, answer: true, categoryId: true },
+    orderBy: { displayOrder: "asc" },
+  });
   const catIcon       = categoryRow?.icon || null;
 
   const upd = new Date(course.updatedAt);
@@ -368,6 +389,8 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                 registrationProcedure={course.registrationProcedure ?? null}
                 testimonials={testimonials}
                 discountPct={discountPct}
+                faqCategories={faqCategories}
+                uncategorizedFaqs={uncategorizedFaqs}
               />
             </div>
           </div>
@@ -488,23 +511,37 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                 </div>
               </div>
 
-              {/* Hỗ trợ trong khóa học — cố định cho tất cả khóa học */}
-              <div className="bg-white rounded-2xl border border-[#bbf7d0] p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#d1fae5" }}>
-                    <Shield size={14} strokeWidth={1.75} style={{ color: "#16a34a" }} />
+              {/* Hỗ trợ trong khóa học */}
+              {(supportItems.length > 0 || SIDEBAR_SUPPORT.length > 0) && (
+                <div className="bg-white rounded-2xl border border-[#bbf7d0] p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#d1fae5" }}>
+                      <Shield size={14} strokeWidth={1.75} style={{ color: "#16a34a" }} />
+                    </div>
+                    <h3 className="text-sm font-bold text-[#0f172a]">Hỗ trợ trong khóa học</h3>
                   </div>
-                  <h3 className="text-sm font-bold text-[#0f172a]">Hỗ trợ trong khóa học</h3>
+                  <ul className="space-y-2.5">
+                    {supportItems.length > 0
+                      ? supportItems.map((item) => (
+                          <li key={item.id} className="flex items-start gap-2.5">
+                            <span className="text-base shrink-0 leading-none mt-0.5">{item.icon}</span>
+                            <div>
+                              <span className="text-xs font-semibold text-text-dark leading-relaxed">{item.title}</span>
+                              {item.description && (
+                                <p className="text-xs text-text-muted leading-relaxed mt-0.5">{item.description}</p>
+                              )}
+                            </div>
+                          </li>
+                        ))
+                      : SIDEBAR_SUPPORT.map((c) => (
+                          <li key={c} className="flex items-start gap-2.5">
+                            <CheckCircle size={14} strokeWidth={2} className="text-success shrink-0 mt-0.5" />
+                            <span className="text-xs text-[#374151] leading-relaxed">{c}</span>
+                          </li>
+                        ))}
+                  </ul>
                 </div>
-                <ul className="space-y-2.5">
-                  {SIDEBAR_SUPPORT.map((c) => (
-                    <li key={c} className="flex items-start gap-2.5">
-                      <CheckCircle size={14} strokeWidth={2} className="text-[#16a34a] shrink-0 mt-0.5" />
-                      <span className="text-xs text-[#374151] leading-relaxed">{c}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              )}
 
               {/* Support */}
               <div

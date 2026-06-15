@@ -378,11 +378,64 @@ model Course {
 
   orders           Order[]
   testimonials     Testimonial[]
+  faqCategories    CourseFaqCategory[]
+  faqs             CourseFaq[]
+  supportItems     CourseSupportItem[]
 
   @@index([slug])
   @@index([category])
   @@index([isActive, displayOrder])
   @@map("courses")
+}
+
+model CourseFaqCategory {
+  id           String      @id @default(uuid()) @db.Uuid
+  courseId     String      @map("course_id") @db.Uuid
+  name         String
+  displayOrder Int         @default(0) @map("display_order")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  course       Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  faqs         CourseFaq[]
+
+  @@index([courseId, displayOrder])
+  @@map("course_faq_categories")
+}
+
+model CourseFaq {
+  id           String             @id @default(uuid()) @db.Uuid
+  courseId     String             @map("course_id") @db.Uuid
+  categoryId   String?            @map("category_id") @db.Uuid
+  question     String
+  answer       String
+  displayOrder Int                @default(0) @map("display_order")
+  isActive     Boolean            @default(true) @map("is_active")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  course       Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  category     CourseFaqCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([courseId, displayOrder])
+  @@map("course_faqs")
+}
+
+model CourseSupportItem {
+  id           String   @id @default(uuid()) @db.Uuid
+  courseId     String   @map("course_id") @db.Uuid
+  icon         String   @default("✅")
+  title        String
+  description  String?
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, displayOrder])
+  @@map("course_support_items")
 }
 
 // ====================================================================
