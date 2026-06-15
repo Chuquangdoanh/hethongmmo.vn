@@ -8,7 +8,6 @@ import TutTierFilterClient from "./_components/TutTierFilterClient";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import { getDiscountInfo } from "@/lib/utils/discount";
-import { r2Url } from "@/lib/utils/image-url";
 import { buildMeta } from "@/lib/utils/seo";
 import Pagination from "@/components/shared/Pagination";
 
@@ -128,16 +127,6 @@ export default async function TutTricksPage({
             </div>
           </div>
 
-          {pageHero.thumbnail && (
-            <div className="mt-8 w-full max-w-2xl mx-auto rounded-2xl overflow-hidden shadow-xl" style={{ aspectRatio: "16/9" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={r2Url(pageHero.thumbnail)}
-                alt="TUT & Tricks MMO"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
         </div>
       </section>
 

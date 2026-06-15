@@ -147,20 +147,6 @@ export default async function DichVuPage({
           </p>
         </div>
 
-        {/* Hero thumbnail */}
-        {pageHero.thumbnail && (
-          <div className="flex justify-center mb-6">
-            <div className="w-full max-w-3xl rounded-2xl overflow-hidden shadow-lg" style={{ aspectRatio: "16/9" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={r2Url(pageHero.thumbnail)}
-                alt="Dịch vụ hethongmmo.vn"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-        )}
-
         {/* Stats bar */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
           {OVERVIEW_STATS.map(({ Icon, color, bg, value, label }) => (
