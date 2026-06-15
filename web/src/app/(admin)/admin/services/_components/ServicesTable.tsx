@@ -198,7 +198,7 @@ export default function ServicesTable({ services, total, category, q, currentPag
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{svc.name}</p>
+                      <p className="text-sm font-medium text-gray-900">{svc.name}</p>
                       {svc.processingTime && (
                         <p className="text-[10px] text-gray-400 mt-0.5">{svc.processingTime}</p>
                       )}
