@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, FileText, ShieldCheck, AlertTriangle, CheckCircle, ExternalLink, Zap, Headphones } from "lucide-react";
+import { ColoredTitle } from "@/components/shared/ColoredTitle";
 
 type ModalId = "rules" | "commitments" | "warnings";
 
@@ -121,7 +122,7 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
   const telegramLabel     = data.communityTelegramLabel ?? "Nhóm Telegram – Cộng đồng Update Biến Chuyển Meta";
   const telegramUrl       = data.communityTelegramUrl ?? "https://t.me/hethongmmovn";
   const supportLabel      = data.communitySupportLabel ?? "Chăm sóc khách hàng";
-  const supportText       = data.communitySupportText ?? "HỆ THỐNG MMO - Telegram : @hethongmmo.vn (Hỗ trợ 24/7 mọi ngày)";
+  const supportText       = data.communitySupportText ?? '["HỆ THỐNG MMO"] - Telegram : @hethongmmo.vn (Hỗ trợ 24/7 mọi ngày)';
   const groupLabel        = data.communityGroupLabel   ?? "Cộng Đồng MMO";
   const groupDesc         = data.communityGroupDesc    ?? "Nơi giao lưu, chia sẻ kiến thức, tài nguyên và cập nhật các xu hướng mới nhất về MMO, Facebook Ads, Marketing và kiếm tiền online.";
   const fanpageLabel      = data.communityFanpageLabel ?? "Kênh Fanpage Chính Thức";
@@ -161,7 +162,7 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
                 <h2 className="text-2xl md:text-3xl font-extrabold tracking-wider text-center flex-1 md:flex-none" style={{ color: "#111827" }}>
                   {/* Mobile: 2 dòng riêng */}
                   <span className="block md:hidden">
-                    {titleMain}
+                    <ColoredTitle text={titleMain ?? ""} accentColor="#0066ff" />
                   </span>
                   {titleHighlight && (
                     <span className="block md:hidden" style={{ color: "#f97316" }}>
@@ -170,7 +171,7 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
                   )}
                   {/* Desktop: 1 dòng inline */}
                   <span className="hidden md:inline">
-                    {titleMain}
+                    <ColoredTitle text={titleMain ?? ""} accentColor="#0066ff" />
                     {titleHighlight && (
                       <> — <span style={{ color: "#f97316" }}>{titleHighlight}</span></>
                     )}
@@ -187,7 +188,7 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
             {/* Telegram group */}
             <div>
               <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>
-                🔹 {telegramLabel}
+                🔹 <ColoredTitle text={telegramLabel} accentColor="#0066ff" />
               </p>
               <a
                 href={telegramUrl}
@@ -202,22 +203,21 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
 
             {/* Support */}
             <div>
-              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 {supportLabel}</p>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 <ColoredTitle text={supportLabel} accentColor="#0066ff" /></p>
               <p className="text-sm" style={{ color: "#374151" }}>
-                <span style={{ color: "#f97316", fontWeight: 700 }}>HỆ THỐNG MMO</span>
-                {supportText.replace("HỆ THỐNG MMO", "")}
+                <ColoredTitle text={supportText} accentColor="#f97316" />
               </p>
             </div>
 
             {/* Community */}
             <div>
-              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 {groupLabel}</p>
-              <p className="text-xs leading-relaxed" style={{ color: "#374151" }}>{groupDesc}</p>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 <ColoredTitle text={groupLabel} accentColor="#0066ff" /></p>
+              <p className="text-xs leading-relaxed" style={{ color: "#374151" }}><ColoredTitle text={groupDesc} accentColor="#0066ff" /></p>
             </div>
 
             {/* Fanpage */}
             <div>
-              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 {fanpageLabel}</p>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: "#111827" }}>🔹 <ColoredTitle text={fanpageLabel} accentColor="#0066ff" /></p>
               <a
                 href={fanpageUrl}
                 target="_blank"

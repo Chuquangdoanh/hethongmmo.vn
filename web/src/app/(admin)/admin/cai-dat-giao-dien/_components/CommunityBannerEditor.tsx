@@ -60,12 +60,17 @@ export function CommunityBannerEditor({ sectionKey, initialData }: Props) {
       </div>
 
       <div className="space-y-4">
+        <div className="px-3 py-2 rounded-lg bg-blue-50 border border-blue-100 text-[11px] text-blue-700 leading-relaxed">
+          Dùng <code className="bg-blue-100 px-1 rounded font-mono">{`["text"]`}</code> để tô màu một phần văn bản.{" "}
+          VD: <code className="bg-blue-100 px-1 rounded font-mono">{`["HỆ THỐNG MMO"]`}</code> → chữ đó sẽ đổi màu trên trang public.
+        </div>
+
         <FieldText
           label="Tiêu đề banner"
           value={String(data["communityTitle"] ?? "")}
           onChange={(v) => handleChange("communityTitle", v)}
           placeholder="CỘNG ĐỒNG MMO — HỆ THỐNG MMO 5.0"
-          hint="Dùng ' — ' để tách 2 dòng trên mobile: phần trước màu đen, phần sau màu cam"
+          hint={`Dùng ' — ' để tách 2 dòng trên mobile. Dùng ["text"] để đổi màu phần tiêu đề.`}
         />
 
         <FieldSectionLabel label="🔹 Nhóm Telegram" />
@@ -96,7 +101,8 @@ export function CommunityBannerEditor({ sectionKey, initialData }: Props) {
             label="Nội dung hiển thị"
             value={String(data["communitySupportText"] ?? "")}
             onChange={(v) => handleChange("communitySupportText", v)}
-            placeholder="HỆ THỐNG MMO - Telegram : @hethongmmo.vn (Hỗ trợ 24/7 mọi ngày)"
+            placeholder='["HỆ THỐNG MMO"] - Telegram : @hethongmmo.vn (Hỗ trợ 24/7 mọi ngày)'
+            hint='Dùng ["text"] để tô màu cam. VD: ["HỆ THỐNG MMO"] - Telegram...'
           />
         </FieldGrid>
 

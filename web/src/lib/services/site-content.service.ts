@@ -190,7 +190,7 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     communityTelegramLabel: "Nhóm Telegram – Cộng đồng Update Biến Chuyển Meta",
     communityTelegramUrl: "https://t.me/hethongmmovn",
     communitySupportLabel: "Chăm sóc khách hàng",
-    communitySupportText: "HỆ THỐNG MMO - Telegram : @hethongmmo.vn (Hỗ trợ 24/7 mọi ngày)",
+    communitySupportText: '["HỆ THỐNG MMO"] - Telegram : @hethongmmo.vn (Hỗ trợ 24/7 mọi ngày)',
     communityGroupLabel: "Cộng Đồng MMO",
     communityGroupDesc: "Nơi giao lưu, chia sẻ kiến thức, tài nguyên và cập nhật các xu hướng mới nhất về MMO, Facebook Ads, Marketing và kiếm tiền online.",
     communityFanpageLabel: "Kênh Fanpage Chính Thức",
