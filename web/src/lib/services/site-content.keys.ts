@@ -17,6 +17,7 @@ export const SITE_CONTENT_KEYS = {
   PAGE_NETWORKS_KOC:   "page_networks_koc",
   FOOTER:       "footer",
   THANK_YOU:    "thank_you",
+  CONTACT_SUPPORT: "contact_support",
 } as const;
 
 export type SiteContentKey = (typeof SITE_CONTENT_KEYS)[keyof typeof SITE_CONTENT_KEYS];

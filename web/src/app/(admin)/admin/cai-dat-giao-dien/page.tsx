@@ -58,6 +58,12 @@ const PAGES = [
     desc: "Tiêu đề, thông điệp, nút hành động, kênh hỗ trợ trang /cam-on",
     icon: "🙏",
   },
+  {
+    href: "/admin/cai-dat-giao-dien/lien-he-ho-tro",
+    title: "Liên hệ hỗ trợ",
+    desc: "Popup nút liên hệ cố định góc phải: Facebook, Zalo, Telegram, TikTok...",
+    icon: "💬",
+  },
 ];
 
 export default function CaiDatGiaoDienPage() {

@@ -114,7 +114,8 @@ const SECTIONS: NavSection[] = [
       { href: "/admin/cai-dat-giao-dien/tai-nguyen", label: "Tài nguyên",   Icon: Gamepad2,  color: "#8b5cf6" },
       { href: "/admin/cai-dat-giao-dien/networks",    label: "Networks",      Icon: Radio,       color: "#8b5cf6" },
       { href: "/admin/cai-dat-giao-dien/footer",     label: "Footer",        Icon: PanelBottom, color: "#8b5cf6" },
-      { href: "/admin/cai-dat-giao-dien/trang-cam-on", label: "Trang Cảm Ơn", Icon: Heart,      color: "#8b5cf6" },
+      { href: "/admin/cai-dat-giao-dien/trang-cam-on",  label: "Trang Cảm Ơn",  Icon: Heart,        color: "#8b5cf6" },
+      { href: "/admin/cai-dat-giao-dien/lien-he-ho-tro", label: "Liên hệ hỗ trợ", Icon: Inbox,       color: "#8b5cf6" },
     ],
   },
 ];
