@@ -462,4 +462,70 @@ body.menu-open .scm-wrapper { display: none !important; }
 }
 @media (min-width: 769px) {
   .hdr-hamburger { display: none !important; }
+
+  /* ── Sidebar dọc (desktop) — giữ nguyên toàn bộ nav/auth/sticker hiện có,
+     chỉ đổi hướng đặt từ thanh ngang trên cùng sang sidebar trái cố định ── */
+  .hdr-sticky {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 240px;
+    height: 100vh;
+  }
+  .hdr-bar {
+    height: 100%;
+    border-bottom: none;
+    border-right: 1px solid rgba(0, 0, 0, 0.06);
+    overflow-y: auto;
+  }
+  .hdr-sticky.hdr-scrolled .hdr-bar {
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08), 1px 0 0 rgba(0, 0, 0, 0.04);
+  }
+  .hdr-inner {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    height: auto;
+    min-height: 100%;
+    padding: 20px 16px;
+    gap: 22px;
+  }
+  .hdr-logo { justify-content: center; }
+  .hdr-nav { flex: none; width: 100%; justify-content: flex-start; }
+  .hdr-nav-list { flex-direction: column; align-items: stretch; width: 100%; gap: 3px; }
+  .hdr-nav-link { padding: 10px 13px; }
+  .hdr-nav-link.hdr-active::after {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: auto;
+    width: 3px;
+    height: auto;
+    transform-origin: top center;
+    animation: hdr-sidebar-accent-in 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  .hdr-nav-flame { left: auto; right: 8px; top: 50%; transform: translateY(-50%); }
+  .hdr-actions { flex-direction: column; align-items: stretch; width: 100%; gap: 10px; margin-top: auto; }
+  .hdr-desktop-auth { flex-direction: column; align-items: stretch; width: 100%; gap: 8px; }
+  .hdr-btn-login,
+  .hdr-btn-cta { justify-content: center; width: 100%; }
+
+  /* ── Ticker thoát khỏi cột sidebar, dàn ngang phần còn lại của trang ── */
+  .hdr-ticker-pop {
+    position: fixed;
+    top: 0;
+    left: 240px;
+    right: 0;
+    z-index: 997;
+  }
+
+  /* ── Nội dung trang nhường chỗ cho sidebar trái ── */
+  .hdr-content-shift { margin-left: 240px; }
+  .hdr-content-shift--with-ticker { padding-top: 40px; }
+}
+
+@keyframes hdr-sidebar-accent-in {
+  from { transform: scaleY(0); opacity: 0; }
+  to   { transform: scaleY(1); opacity: 1; }
 }

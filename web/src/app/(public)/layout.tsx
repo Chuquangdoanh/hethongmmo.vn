@@ -12,13 +12,17 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <ScrollRestorer />
       <StickyHeaderWrapper>
         <Header />
-        <Ticker />
+        <div className="hdr-ticker-pop">
+          <Ticker />
+        </div>
       </StickyHeaderWrapper>
-      <main className="flex flex-col flex-1">
-        <PageTransitionWrapper>{children}</PageTransitionWrapper>
-      </main>
-      <Footer />
-      <StickyContactMenuLoader />
+      <div className="hdr-content-shift hdr-content-shift--with-ticker flex flex-col flex-1">
+        <main className="flex flex-col flex-1">
+          <PageTransitionWrapper>{children}</PageTransitionWrapper>
+        </main>
+        <Footer />
+        <StickyContactMenuLoader />
+      </div>
     </>
   );
 }

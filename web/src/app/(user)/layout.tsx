@@ -14,10 +14,12 @@ export default async function UserLayout({ children }: { children: React.ReactNo
       <StickyHeaderWrapper>
         <Header />
       </StickyHeaderWrapper>
-      <main className="flex flex-col flex-1 mx-auto max-w-7xl w-full px-4 md:px-6 lg:px-8 py-8">
-        <PageTransitionWrapper>{children}</PageTransitionWrapper>
-      </main>
-      <Footer />
+      <div className="hdr-content-shift flex flex-col flex-1">
+        <main className="flex flex-col flex-1 mx-auto max-w-7xl w-full px-4 md:px-6 lg:px-8 py-8">
+          <PageTransitionWrapper>{children}</PageTransitionWrapper>
+        </main>
+        <Footer />
+      </div>
     </>
   );
 }
