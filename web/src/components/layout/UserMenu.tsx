@@ -152,14 +152,14 @@ export default function UserMenu({ user, balance, avatarUrl }: UserMenuProps) {
             )}
           </div>
 
-          <MenuItem href="/thong-tin-ca-nhan" Icon={User}          iconBg="#f1f5f9" iconColor="#475569" label="Hồ sơ"       onClick={() => setOpen(false)} />
-          <MenuItem href="/nap-tien"          Icon={CreditCard}   iconBg="#dbeafe" iconColor="#2563eb" label="Nạp tiền"    onClick={() => setOpen(false)} />
-          <MenuItem href="/don-hang"          Icon={Package}      iconBg="#fef3c7" iconColor="#b45309" label="Đơn hàng"   onClick={() => setOpen(false)} />
+          <MenuItem href="/thong-tin-ca-nhan" Icon={User}          iconBg="#f1f5f9" iconColor="#475569" label="Hồ Sơ"       onClick={() => setOpen(false)} />
+          <MenuItem href="/nap-tien"          Icon={CreditCard}   iconBg="#dbeafe" iconColor="#2563eb" label="Nạp Tiền"    onClick={() => setOpen(false)} />
+          <MenuItem href="/don-hang"          Icon={Package}      iconBg="#fef3c7" iconColor="#b45309" label="Đơn Hàng"   onClick={() => setOpen(false)} />
 
           {isSeller ? (
-            <MenuItem href="/ban-hang" Icon={Store} iconBg="#f0fdf4" iconColor="#16a34a" label="Bán hàng" onClick={() => setOpen(false)} />
+            <MenuItem href="/ban-hang" Icon={Store} iconBg="#f0fdf4" iconColor="#16a34a" label="Bán Hàng" onClick={() => setOpen(false)} />
           ) : (
-            <MenuItem href="/thong-tin-ca-nhan#seller-register" Icon={Store} iconBg="#f5f3ff" iconColor="#7c3aed" label="Đăng ký bán hàng" onClick={() => setOpen(false)} />
+            <MenuItem href="/thong-tin-ca-nhan#seller-register" Icon={Store} iconBg="#f5f3ff" iconColor="#7c3aed" label="Đăng Ký Bán Hàng" onClick={() => setOpen(false)} />
           )}
           {isAdmin && (
             <MenuItem href="/admin/dashboard" Icon={LayoutDashboard} iconBg="#ede9fe" iconColor="#7c3aed" label="Admin Panel" onClick={() => setOpen(false)} />
