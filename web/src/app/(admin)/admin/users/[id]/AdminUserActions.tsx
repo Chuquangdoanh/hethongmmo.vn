@@ -151,7 +151,7 @@ export default function AdminUserActions({ userId, currentRole, currentStatus, b
           Giảm giá khi mua (Service / Khóa học / Tut)
         </p>
         <p className="text-[10px] text-gray-400">
-          0 = dùng tier tự động (50tr→5%, 100tr→7%, 200tr→10%). &gt;0 = override cứng.
+          0 = dùng tier tự động (Trên 15tr: +5% - Chuyên Gia Tăng Trưởng; Trên 50tr: +10% - Chuyên Gia Bứt Phá; Trên 100tr: +15% - Đối Tác Toàn Diện). &gt;0 = override cứng.
         </p>
         <div className="flex gap-2 items-center">
           <input
