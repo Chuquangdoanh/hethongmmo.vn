@@ -207,7 +207,7 @@ export default function CoursesTable({ courses, total, category, q, currentPage 
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate max-w-[220px]">{course.name}</p>
+                      <p className="text-sm font-medium text-gray-900">{course.name}</p>
                       <p className="text-[10px] text-gray-400 mt-0.5">{course.category}</p>
                     </div>
                   </div>
