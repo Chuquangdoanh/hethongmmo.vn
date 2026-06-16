@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/auth";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import AdminUserActions from "./AdminUserActions";
+import AdminBalanceAdjust from "./AdminBalanceAdjust";
 
 export const metadata: Metadata = { title: "Chi tiết người dùng" };
 
@@ -208,25 +209,27 @@ export default async function AdminUserDetailPage({
               userId={user.id}
               currentRole={user.role}
               currentStatus={user.status}
-              balance={Number(user.balance)}
               discountPercent={user.discountPercent}
               isSelf={user.id === meId}
             />
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="self-start rounded-xl border border-gray-200 bg-white divide-y divide-gray-100">
-          {[
-            { label: "Số dư hiện tại", value: formatVnd(Number(user.balance)), color: "text-gray-900" },
-            { label: "Tổng nạp", value: formatVnd(Number(user.totalDeposited)), color: "text-emerald-600" },
-            { label: "Tổng chi", value: formatVnd(Number(user.totalSpent)), color: "text-red-500" },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="px-4 py-3 flex items-center justify-between">
-              <p className="text-xs text-gray-500">{label}</p>
-              <p className={`text-base font-bold ${color}`}>{value}</p>
-            </div>
-          ))}
+        {/* Điều chỉnh số dư + Stats */}
+        <div className="self-start space-y-3">
+          <AdminBalanceAdjust userId={user.id} balance={Number(user.balance)} />
+          <div className="rounded-xl border border-gray-200 bg-white divide-y divide-gray-100">
+            {[
+              { label: "Số dư hiện tại", value: formatVnd(Number(user.balance)), color: "text-gray-900" },
+              { label: "Tổng nạp", value: formatVnd(Number(user.totalDeposited)), color: "text-emerald-600" },
+              { label: "Tổng chi", value: formatVnd(Number(user.totalSpent)), color: "text-red-500" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="px-4 py-3 flex items-center justify-between">
+                <p className="text-xs text-gray-500">{label}</p>
+                <p className={`text-base font-bold ${color}`}>{value}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

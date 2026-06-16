@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatVnd } from "@/lib/utils/format";
 
 const ROLE_OPTIONS = [
   { value: "USER",   label: "Người dùng" },
@@ -15,16 +14,13 @@ interface Props {
   userId: string;
   currentRole: string;
   currentStatus: string;
-  balance: number;
   discountPercent: number;
   isSelf: boolean;
 }
 
-export default function AdminUserActions({ userId, currentRole, currentStatus, balance, discountPercent, isSelf }: Props) {
+export default function AdminUserActions({ userId, currentRole, currentStatus, discountPercent, isSelf }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
-  const [adjustAmount, setAdjustAmount] = useState("");
-  const [adjustNote, setAdjustNote] = useState("");
   const [error, setError] = useState("");
   const [selectedRole, setSelectedRole] = useState(currentRole);
   const [confirmRole, setConfirmRole] = useState(false);
@@ -48,14 +44,6 @@ export default function AdminUserActions({ userId, currentRole, currentStatus, b
     } finally {
       setLoading(null);
     }
-  }
-
-  async function adjustBalance() {
-    const amount = parseFloat(adjustAmount);
-    if (isNaN(amount) || amount === 0) { setError("Số tiền không hợp lệ."); return; }
-    await patch({ action: "adjust_balance", amount, note: adjustNote.trim() || undefined }, "adjust");
-    setAdjustAmount("");
-    setAdjustNote("");
   }
 
   function handleRoleApply() {
@@ -116,34 +104,6 @@ export default function AdminUserActions({ userId, currentRole, currentStatus, b
           </p>
         </div>
       )}
-
-      {/* Balance adjustment */}
-      <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
-        <p className="text-xs text-gray-500">Điều chỉnh số dư (hiện tại: <span className="font-medium text-gray-700">{formatVnd(balance)}</span>)</p>
-        <div className="flex gap-2">
-          <input
-            type="number"
-            value={adjustAmount}
-            onChange={(e) => setAdjustAmount(e.target.value)}
-            placeholder="VD: 50000 hoặc -50000"
-            className="flex-1 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-900 focus:border-[#7C3AED] focus:outline-none"
-          />
-          <button
-            onClick={adjustBalance}
-            disabled={!!loading}
-            className="px-3 py-1.5 rounded-md bg-[#7C3AED] text-white text-xs hover:bg-[#A855F7] disabled:opacity-60 transition-colors"
-          >
-            {loading === "adjust" ? "..." : "Áp dụng"}
-          </button>
-        </div>
-        <input
-          type="text"
-          value={adjustNote}
-          onChange={(e) => setAdjustNote(e.target.value)}
-          placeholder="Ghi chú (bắt buộc)"
-          className="w-full rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-900 focus:border-[#7C3AED] focus:outline-none"
-        />
-      </div>
 
       {/* Discount override */}
       <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
