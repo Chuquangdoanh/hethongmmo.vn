@@ -506,23 +506,30 @@ body.menu-open .scm-wrapper { display: none !important; }
     animation: hdr-sidebar-accent-in 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
   .hdr-nav-flame { left: auto; right: 8px; top: 50%; transform: translateY(-50%); }
-  .hdr-actions { flex-direction: column; align-items: stretch; width: 100%; gap: 10px; margin-top: auto; }
-  .hdr-desktop-auth { flex-direction: column; align-items: stretch; width: 100%; gap: 8px; }
-  .hdr-btn-login,
-  .hdr-btn-cta { justify-content: center; width: 100%; }
 
-  /* ── Ticker thoát khỏi cột sidebar, dàn ngang phần còn lại của trang ── */
+  /* ── Tài khoản (login/register/UserMenu) thoát khỏi sidebar,
+     giữ nguyên vị trí góc phải trên màn hình như thiết kế cũ ── */
+  .hdr-desktop-auth {
+    position: fixed;
+    top: 14px;
+    right: 24px;
+    z-index: 999;
+    width: auto;
+  }
+
+  /* ── Ticker thoát khỏi cột sidebar, dàn ngang phần còn lại của trang.
+     Chừa 64px phía trên (bằng chiều cao header cũ) để không đè lên khối tài khoản. ── */
   .hdr-ticker-pop {
     position: fixed;
-    top: 0;
+    top: 64px;
     left: 240px;
     right: 0;
     z-index: 997;
   }
 
-  /* ── Nội dung trang nhường chỗ cho sidebar trái ── */
-  .hdr-content-shift { margin-left: 240px; }
-  .hdr-content-shift--with-ticker { padding-top: 40px; }
+  /* ── Nội dung trang nhường chỗ cho sidebar trái + khoảng trống cho khối tài khoản ── */
+  .hdr-content-shift { margin-left: 240px; padding-top: 64px; }
+  .hdr-content-shift--with-ticker { padding-top: 104px; }
 }
 
 @keyframes hdr-sidebar-accent-in {
