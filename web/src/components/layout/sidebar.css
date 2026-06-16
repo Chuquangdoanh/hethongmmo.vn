@@ -1,0 +1,216 @@
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR — dark vertical nav (desktop only, ≥769px)
+   Namespace: .sb-*   (không xung đột code khác)
+═══════════════════════════════════════════════════════════════ */
+
+.sb-sidebar { display: none; }
+
+.sb-content-shift { margin-left: 0; }
+
+@media (min-width: 769px) {
+  .sb-sidebar {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 240px;
+    background: linear-gradient(180deg, #0b1530 0%, #0f1c3f 100%);
+    z-index: 998;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+    transition: width 0.2s ease;
+  }
+  html.sb-collapsed .sb-sidebar { width: 76px; }
+
+  .sb-content-shift {
+    margin-left: 240px;
+    transition: margin-left 0.2s ease;
+  }
+  html.sb-collapsed .sb-content-shift { margin-left: 76px; }
+}
+
+/* ── Scroll area ────────────────────────────────────────────── */
+.sb-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 14px;
+}
+
+/* ── Brand ──────────────────────────────────────────────────── */
+.sb-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  padding: 0 4px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+.sb-brand-logo {
+  height: 34px;
+  width: auto;
+  border-radius: 8px;
+  background: #fff;
+  padding: 3px;
+  flex-shrink: 0;
+}
+.sb-brand-text { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.sb-brand-text strong { color: #fff; font-size: 13px; font-weight: 800; letter-spacing: 0.02em; white-space: nowrap; }
+.sb-brand-text small { color: #94a3b8; font-size: 10.5px; font-weight: 500; white-space: nowrap; }
+html.sb-collapsed .sb-brand { justify-content: center; }
+
+/* ── User balance card ─────────────────────────────────────── */
+.sb-user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+html.sb-collapsed .sb-user-card { justify-content: center; padding: 8px; }
+.sb-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.sb-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.sb-user-avatar span { color: #fff; font-size: 12px; font-weight: 800; }
+.sb-user-info { flex: 1; min-width: 0; }
+.sb-user-name {
+  font-size: 11.5px;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.sb-user-name svg { color: #22c55e; flex-shrink: 0; }
+.sb-user-balance { font-size: 13px; font-weight: 800; color: #fff; margin-top: 2px; white-space: nowrap; }
+.sb-user-add {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.sb-user-add:hover { background: #1d4ed8; }
+
+/* ── "Trang chủ" pill ──────────────────────────────────────── */
+.sb-home-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.04);
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.sb-home-link:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.sb-home-link.sb-active { background: #2563eb; color: #fff; box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4); }
+html.sb-collapsed .sb-home-link,
+html.sb-collapsed .sb-link,
+html.sb-collapsed .sb-collapse-btn { justify-content: center; }
+
+/* ── Grouped nav ───────────────────────────────────────────── */
+.sb-groups { display: flex; flex-direction: column; gap: 14px; }
+.sb-group { display: flex; flex-direction: column; gap: 1px; }
+.sb-group-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 12px 4px;
+}
+.sb-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  color: #cbd5e1;
+  font-size: 12.5px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.sb-link:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.sb-link.sb-active { background: rgba(37, 99, 235, 0.18); color: #60a5fa; font-weight: 700; }
+.sb-link-icon { display: flex; flex-shrink: 0; }
+.sb-icon-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sb-cat-icon { width: 18px; height: 18px; object-fit: contain; border-radius: 4px; background: #fff; padding: 2px; }
+.sb-link-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-badge {
+  flex-shrink: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Collapse: ẩn toàn bộ text/label, chỉ giữ icon ───────────── */
+html.sb-collapsed .sb-label { display: none; }
+
+/* ── Footer — nút thu gọn ─────────────────────────────────────── */
+.sb-footer {
+  padding: 12px 14px max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+.sb-collapse-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.sb-collapse-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }

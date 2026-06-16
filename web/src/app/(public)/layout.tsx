@@ -1,4 +1,5 @@
 import Header from "@/components/layout/Header";
+import Sidebar from "@/components/layout/Sidebar";
 import Footer from "@/components/layout/Footer";
 import Ticker from "@/components/layout/Ticker";
 import StickyContactMenuLoader from "@/components/shared/StickyContactMenuLoader";
@@ -10,13 +11,12 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   return (
     <>
       <ScrollRestorer />
-      <StickyHeaderWrapper>
-        <Header />
-        <div className="hdr-ticker-pop">
+      <Sidebar />
+      <div className="sb-content-shift flex flex-col flex-1">
+        <StickyHeaderWrapper>
+          <Header />
           <Ticker />
-        </div>
-      </StickyHeaderWrapper>
-      <div className="hdr-content-shift hdr-content-shift--with-ticker flex flex-col flex-1">
+        </StickyHeaderWrapper>
         <main className="flex flex-col flex-1">
           <PageTransitionWrapper>{children}</PageTransitionWrapper>
         </main>

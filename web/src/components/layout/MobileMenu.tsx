@@ -8,9 +8,9 @@ import { formatVnd } from "@/lib/utils/format";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import {
   X, Store, LayoutDashboard,
-  Home, Wrench, GraduationCap, Lightbulb, FolderOpen, Megaphone, Globe,
   Banknote, LogOut,
 } from "lucide-react";
+import { NAV_ICONS } from "./nav-links";
 
 interface NavLink {
   href: string;
@@ -27,16 +27,6 @@ interface Props {
   balance?: number | null;
   avatarUrl?: string | null;
 }
-
-const NAV_ICONS: Record<string, { Icon: React.ElementType; bg: string; color: string }> = {
-  "/":               { Icon: Home,          bg: "#dbeafe", color: "#2563eb" },
-  "/dich-vu":        { Icon: Wrench,        bg: "#ede9fe", color: "#7c3aed" },
-  "/khoa-hoc":       { Icon: GraduationCap, bg: "#d1fae5", color: "#059669" },
-  "/tut-tricks":     { Icon: Lightbulb,     bg: "#fee2e2", color: "#dc2626" },
-  "/tai-nguyen-mmo": { Icon: FolderOpen,    bg: "#fef3c7", color: "#d97706" },
-  "/quang-cao":      { Icon: Megaphone,     bg: "#e0f2fe", color: "#0891b2" },
-  "/NetWorks":       { Icon: Globe,         bg: "#fee2e2", color: "#dc2626" },
-};
 
 export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatarUrl }: Props) {
   const [open, setOpen]       = useState(false);

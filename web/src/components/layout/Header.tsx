@@ -4,20 +4,12 @@ import { prisma } from "@/lib/db/prisma";
 import { getCachedPageVisibility } from "@/lib/services/public-page-config.service";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { r2Url } from "@/lib/utils/image-url";
+import { Search, Bell, MessageSquare } from "lucide-react";
 import UserMenu from "./UserMenu";
 import MobileMenu from "./MobileMenu";
-import NavLinks from "./NavLinks";
+import SidebarCollapseToggle from "./SidebarCollapseToggle";
+import { NAV_LINKS } from "./nav-links";
 import "./header.css";
-
-export const NAV_LINKS = [
-  { href: "/",               label: "TRANG CHỦ",     color: "#0066ff", shadow: "rgba(0,102,255,0.45)" },
-  { href: "/dich-vu",        label: "DỊCH VỤ",       color: "#7c3aed", shadow: "rgba(124,58,237,0.45)" },
-  { href: "/khoa-hoc",       label: "KHÓA HỌC",      color: "#059669", shadow: "rgba(5,150,105,0.45)" },
-  { href: "/tut-tricks",     label: "TUT MMO",       color: "#dc2626", shadow: "rgba(220,38,38,0.45)" },
-  { href: "/tai-nguyen-mmo", label: "TÀI NGUYÊN",    color: "#f59e0b", shadow: "rgba(245,158,11,0.45)" },
-  { href: "/quang-cao",      label: "QUẢNG CÁO ADS", color: "#0891b2", shadow: "rgba(8,145,178,0.45)" },
-  { href: "/NetWorks",   label: "NETWORKS (ADB)",   color: "#dc2626", shadow: "rgba(220,38,38,0.45)" },
-];
 
 export default async function Header() {
   const [session, pageConfigs] = await Promise.all([
@@ -49,17 +41,31 @@ export default async function Header() {
     <header className="hdr-bar" role="banner">
       <div className="hdr-inner">
 
-        {/* ── Logo ── */}
+        {/* ── Logo (mobile only — desktop dùng logo trong Sidebar) ── */}
         <Link href="/" className="hdr-logo" aria-label="hethongmmo.vn">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/images/djmedia-logo.gif" alt="hethongmmo.vn" />
         </Link>
 
-        {/* ── Desktop navigation (center) ── */}
-        <NavLinks links={visibleLinks} />
+        {/* ── Thu gọn/mở rộng sidebar (desktop only) ── */}
+        <SidebarCollapseToggle className="hdr-collapse-btn" variant="header" />
 
-        {/* ── Right: auth + hamburger ── */}
+        {/* ── Tìm kiếm (desktop only) ── */}
+        <div className="hdr-search">
+          <Search size={16} strokeWidth={2} className="hdr-search-icon" />
+          <input type="text" placeholder="Tìm kiếm dịch vụ, khóa học, tài nguyên..." className="hdr-search-input" />
+        </div>
+
+        {/* ── Right: icons + auth + hamburger ── */}
         <div className="hdr-actions">
+          <div className="hdr-desktop-icons">
+            <button type="button" className="hdr-icon-btn" aria-label="Thông báo">
+              <Bell size={18} strokeWidth={1.75} />
+            </button>
+            <button type="button" className="hdr-icon-btn" aria-label="Tin nhắn">
+              <MessageSquare size={18} strokeWidth={1.75} />
+            </button>
+          </div>
           <div className="hdr-desktop-auth">
             {sessionUser ? (
               <UserMenu user={sessionUser} balance={balance} avatarUrl={avatarUrl} />
