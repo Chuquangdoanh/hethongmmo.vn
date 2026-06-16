@@ -15,19 +15,19 @@
     top: 0;
     left: 0;
     bottom: 0;
-    width: 240px;
+    width: 312px;
     background: linear-gradient(180deg, #1456db 0%, #0d3fb0 100%);
     z-index: 998;
     box-shadow: 4px 0 24px rgba(13, 63, 176, 0.18);
     transition: width 0.2s ease;
   }
-  html.sb-collapsed .sb-sidebar { width: 76px; }
+  html.sb-collapsed .sb-sidebar { width: 100px; }
 
   .sb-content-shift {
-    margin-left: 240px;
+    margin-left: 312px;
     transition: margin-left 0.2s ease;
   }
-  html.sb-collapsed .sb-content-shift { margin-left: 76px; }
+  html.sb-collapsed .sb-content-shift { margin-left: 100px; }
 }
 
 /* ── Scroll area ────────────────────────────────────────────── */
@@ -41,28 +41,32 @@
   padding: 18px 14px;
 }
 
-/* ── Brand ──────────────────────────────────────────────────── */
+/* ── Brand — ảnh gif chiếm toàn bộ chiều ngang, headline nổi bật bên dưới ── */
 .sb-brand {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
   text-decoration: none;
-  padding: 0 4px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  margin: -18px -14px 16px;
+  padding: 14px 14px 16px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
   flex-shrink: 0;
 }
 .sb-brand-logo {
-  height: 34px;
-  width: auto;
-  border-radius: 8px;
-  background: #fff;
-  padding: 3px;
-  flex-shrink: 0;
+  width: 100%;
+  height: auto;
+  display: block;
 }
-.sb-brand-text { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
-.sb-brand-text strong { color: #fff; font-size: 13px; font-weight: 800; letter-spacing: 0.02em; white-space: nowrap; }
-.sb-brand-text small { color: rgba(255, 255, 255, 0.65); font-size: 10.5px; font-weight: 500; white-space: nowrap; }
-html.sb-collapsed .sb-brand { justify-content: center; }
+.sb-brand-headline {
+  margin: 10px 0 0;
+  color: #1456db;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+html.sb-collapsed .sb-brand { padding: 12px 8px 14px; }
 
 /* ── User balance card ─────────────────────────────────────── */
 .sb-user-card {

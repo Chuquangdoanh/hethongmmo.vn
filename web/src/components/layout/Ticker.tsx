@@ -30,9 +30,11 @@ function ItemSpan({ item }: { item: DisplayItem }) {
         alignItems: "center",
         gap:        "8px",
         padding:    "0 60px",
-        fontSize:   "12.5px",
-        fontWeight: 500,
-        color:      "#e7fef3",
+        fontSize:   "13px",
+        fontWeight: 700,
+        color:      "#0f172a",
+        WebkitTextStroke: "0.6px #facc15",
+        paintOrder: "stroke fill",
         lineHeight: 1,
         whiteSpace: "nowrap",
         flexShrink: 0,
@@ -44,9 +46,9 @@ function ItemSpan({ item }: { item: DisplayItem }) {
         style={{
           width: "6px", height: "6px",
           borderRadius: "1px",
-          background: "#86efac",
+          background: "#facc15",
           transform:  "rotate(45deg)",
-          opacity:    0.75,
+          opacity:    0.9,
           flexShrink: 0,
           display:    "inline-block",
         }}
@@ -203,12 +205,11 @@ export default function Ticker() {
         height:          "40px",
         width:           "100%",
         overflow:        "hidden",
-        background:      "linear-gradient(90deg,#15803d 0%,#16a34a 18%,#22c55e 50%,#16a34a 82%,#15803d 100%)",
-        backgroundSize:  "200% 100%",
-        boxShadow:       "0 2px 10px rgba(34,197,94,0.18),inset 0 1px 0 rgba(255,255,255,0.08)",
+        background:      "#ffffff",
+        boxShadow:       "0 2px 10px rgba(250,204,21,0.28),inset 0 -2px 0 #facc15",
         fontFamily:      "'Inter','Segoe UI',sans-serif",
         userSelect:      "none",
-        animation:       "noti-bar-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both,noti-bar-shift 14s ease infinite",
+        animation:       "noti-bar-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both",
       }}
     >
       {/* ── LIVE badge ── */}
@@ -220,8 +221,8 @@ export default function Ticker() {
           alignItems:    "center",
           gap:           "7px",
           padding:       "0 16px",
-          background:    "rgba(0,0,0,0.28)",
-          borderRight:   "1px solid rgba(255,255,255,0.10)",
+          background:    "#0066ff",
+          borderRight:   "1px solid rgba(0,0,0,0.06)",
           color:         "#fff",
           fontSize:      "10px",
           fontWeight:    800,
@@ -230,7 +231,7 @@ export default function Ticker() {
           whiteSpace:    "nowrap",
         }}
       >
-        <Megaphone size={14} strokeWidth={2} style={{ color: "#4ade80", flexShrink: 0 }} />
+        <Megaphone size={14} strokeWidth={2} style={{ color: "#fff", flexShrink: 0 }} />
       </div>
 
       {/* ── Scrolling area ── */}
