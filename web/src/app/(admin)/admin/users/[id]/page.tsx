@@ -180,112 +180,115 @@ export default async function AdminUserDetailPage({
         ← Quản lý người dùng
       </Link>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Cột trái — Hồ sơ & thông tin */}
-        <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-6 lg:self-start">
-          {/* Header */}
-          <div className="rounded-xl border border-gray-200 bg-white p-5">
-            <div className="flex items-start gap-4">
-              <div className="h-14 w-14 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 text-lg font-bold flex-shrink-0">
-                {initials}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-xl font-bold text-gray-900">{user.fullName || "—"}</h1>
-                  <Badge text={user.role} className={ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-600"} />
-                  <Badge text={user.status} className={STATUS_BADGE[user.status] ?? "bg-gray-100 text-gray-600"} />
-                  {user.deletedAt && <Badge text="Đã xóa" className="bg-red-50 text-red-600" />}
-                </div>
-                <p className="text-sm text-gray-500 mt-0.5 break-all">{user.email}</p>
-              </div>
+      {/* Hàng 1 (5:5) — Tên & hồ sơ | Số dư - Tổng nạp - Tổng chi */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Header */}
+        <div className="rounded-xl border border-gray-200 bg-white p-5">
+          <div className="flex items-start gap-4">
+            <div className="h-14 w-14 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 text-lg font-bold flex-shrink-0">
+              {initials}
             </div>
-            <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
-              <span>{orderCount} đơn hàng</span>
-              <span>{txCount} giao dịch</span>
-              <span>Tham gia {formatDate(user.createdAt)}</span>
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <AdminUserActions
-                userId={user.id}
-                currentRole={user.role}
-                currentStatus={user.status}
-                balance={Number(user.balance)}
-                discountPercent={user.discountPercent}
-                isSelf={user.id === meId}
-              />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl font-bold text-gray-900">{user.fullName || "—"}</h1>
+                <Badge text={user.role} className={ROLE_BADGE[user.role] ?? "bg-gray-100 text-gray-600"} />
+                <Badge text={user.status} className={STATUS_BADGE[user.status] ?? "bg-gray-100 text-gray-600"} />
+                {user.deletedAt && <Badge text="Đã xóa" className="bg-red-50 text-red-600" />}
+              </div>
+              <p className="text-sm text-gray-500 mt-0.5 break-all">{user.email}</p>
             </div>
           </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-1 gap-3">
-            {[
-              { label: "Số dư hiện tại", value: formatVnd(Number(user.balance)), color: "text-gray-900" },
-              { label: "Tổng nạp", value: formatVnd(Number(user.totalDeposited)), color: "text-emerald-600" },
-              { label: "Tổng chi", value: formatVnd(Number(user.totalSpent)), color: "text-red-500" },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="rounded-xl border border-gray-200 bg-white p-4 flex items-center justify-between">
-                <p className="text-xs text-gray-500">{label}</p>
-                <p className={`text-lg font-bold ${color}`}>{value}</p>
-              </div>
-            ))}
+          <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
+            <span>{orderCount} đơn hàng</span>
+            <span>{txCount} giao dịch</span>
+            <span>Tham gia {formatDate(user.createdAt)}</span>
           </div>
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <AdminUserActions
+              userId={user.id}
+              currentRole={user.role}
+              currentStatus={user.status}
+              balance={Number(user.balance)}
+              discountPercent={user.discountPercent}
+              isSelf={user.id === meId}
+            />
+          </div>
+        </div>
 
-          {/* Thông tin cá nhân */}
-          <SectionCard title="Thông tin cá nhân">
-            <InfoRow label="ID" value={<span className="font-mono text-[11px]">{user.id}</span>} />
-            <InfoRow label="UID Prefix" value={<span className="font-mono">{user.uidPrefix}</span>} />
-            <InfoRow label="Email" value={user.email} />
-            <InfoRow label="Họ tên" value={user.fullName || "—"} />
-            <InfoRow label="Số điện thoại" value={user.phone ?? "—"} />
-            <InfoRow label="Facebook"  value={facebookUrl ?? "—"} />
-            <InfoRow label="Telegram"  value={telegramUsername ?? "—"} />
-            <InfoRow label="Ngày tạo" value={formatDate(user.createdAt)} />
-            <InfoRow label="Cập nhật lần cuối" value={formatDate(user.updatedAt)} />
-            {user.deletedAt && (
-              <InfoRow label="Ngày xóa" value={<span className="text-red-600">{formatDate(user.deletedAt)}</span>} />
-            )}
-          </SectionCard>
+        {/* Stats */}
+        <div className="self-start rounded-xl border border-gray-200 bg-white divide-y divide-gray-100">
+          {[
+            { label: "Số dư hiện tại", value: formatVnd(Number(user.balance)), color: "text-gray-900" },
+            { label: "Tổng nạp", value: formatVnd(Number(user.totalDeposited)), color: "text-emerald-600" },
+            { label: "Tổng chi", value: formatVnd(Number(user.totalSpent)), color: "text-red-500" },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="px-4 py-3 flex items-center justify-between">
+              <p className="text-xs text-gray-500">{label}</p>
+              <p className={`text-base font-bold ${color}`}>{value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
 
-          {/* Bảo mật & Đăng nhập */}
-          <SectionCard title="Bảo mật & Đăng nhập">
-            <InfoRow
-              label="Xác minh email"
-              value={
-                user.emailVerifiedAt
-                  ? <span className="text-emerald-600">{formatDate(user.emailVerifiedAt)}</span>
-                  : <span className="text-amber-600">Chưa xác minh</span>
-              }
-            />
-            <InfoRow
-              label="Xác thực 2 lớp"
-              value={
-                user.twoFactorEnabled
-                  ? <Badge text="Đã bật" className="bg-emerald-50 text-emerald-700" />
-                  : <Badge text="Chưa bật" className="bg-gray-100 text-gray-500" />
-              }
-            />
-            <InfoRow label="Đăng nhập cuối" value={user.lastLoginAt ? formatDate(user.lastLoginAt) : "—"} />
-            <InfoRow label="IP đăng nhập cuối" value={user.lastLoginIp ?? "—"} />
-            <InfoRow
-              label="Đăng nhập sai"
-              value={
-                user.failedLoginCount > 0
-                  ? <span className="text-red-600">{user.failedLoginCount} lần</span>
-                  : <span>0 lần</span>
-              }
-            />
-            <InfoRow
-              label="Tài khoản khóa đến"
-              value={
-                user.lockedUntil
-                  ? <span className="text-red-600">{formatDate(user.lockedUntil)}</span>
-                  : <span className="text-gray-400">Không bị khóa</span>
-              }
-            />
-          </SectionCard>
+      {/* Hàng 2 (5:5) — Thông tin cá nhân | Bảo mật & Đăng nhập */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Thông tin cá nhân */}
+        <SectionCard title="Thông tin cá nhân">
+          <InfoRow label="ID" value={<span className="font-mono text-[11px]">{user.id}</span>} />
+          <InfoRow label="UID Prefix" value={<span className="font-mono">{user.uidPrefix}</span>} />
+          <InfoRow label="Email" value={user.email} />
+          <InfoRow label="Họ tên" value={user.fullName || "—"} />
+          <InfoRow label="Số điện thoại" value={user.phone ?? "—"} />
+          <InfoRow label="Facebook"  value={facebookUrl ?? "—"} />
+          <InfoRow label="Telegram"  value={telegramUsername ?? "—"} />
+          <InfoRow label="Ngày tạo" value={formatDate(user.createdAt)} />
+          <InfoRow label="Cập nhật lần cuối" value={formatDate(user.updatedAt)} />
+          {user.deletedAt && (
+            <InfoRow label="Ngày xóa" value={<span className="text-red-600">{formatDate(user.deletedAt)}</span>} />
+          )}
+        </SectionCard>
 
-          {/* Seller info */}
-          {user.sellerStatus !== "NONE" && (
+        {/* Bảo mật & Đăng nhập */}
+        <SectionCard title="Bảo mật & Đăng nhập">
+          <InfoRow
+            label="Xác minh email"
+            value={
+              user.emailVerifiedAt
+                ? <span className="text-emerald-600">{formatDate(user.emailVerifiedAt)}</span>
+                : <span className="text-amber-600">Chưa xác minh</span>
+            }
+          />
+          <InfoRow
+            label="Xác thực 2 lớp"
+            value={
+              user.twoFactorEnabled
+                ? <Badge text="Đã bật" className="bg-emerald-50 text-emerald-700" />
+                : <Badge text="Chưa bật" className="bg-gray-100 text-gray-500" />
+            }
+          />
+          <InfoRow label="Đăng nhập cuối" value={user.lastLoginAt ? formatDate(user.lastLoginAt) : "—"} />
+          <InfoRow label="IP đăng nhập cuối" value={user.lastLoginIp ?? "—"} />
+          <InfoRow
+            label="Đăng nhập sai"
+            value={
+              user.failedLoginCount > 0
+                ? <span className="text-red-600">{user.failedLoginCount} lần</span>
+                : <span>0 lần</span>
+            }
+          />
+          <InfoRow
+            label="Tài khoản khóa đến"
+            value={
+              user.lockedUntil
+                ? <span className="text-red-600">{formatDate(user.lockedUntil)}</span>
+                : <span className="text-gray-400">Không bị khóa</span>
+            }
+          />
+        </SectionCard>
+
+        {/* Seller info — full chiều ngang trong cùng lưới 5:5 */}
+        {user.sellerStatus !== "NONE" && (
+          <div className="lg:col-span-2">
             <SectionCard title="Thông tin Seller">
               <InfoRow
                 label="Trạng thái Seller"
@@ -326,11 +329,9 @@ export default async function AdminUserDetailPage({
                 </div>
               )}
             </SectionCard>
-          )}
-        </div>
-
-        {/* Cột phải — Hoạt động */}
-        <div className="lg:col-span-2 space-y-6">
+          </div>
+        )}
+      </div>
 
       {/* Recent transactions */}
       {recentTransactions.length > 0 && (
@@ -479,8 +480,6 @@ export default async function AdminUserDetailPage({
           </div>
         </div>
       )}
-        </div>
-      </div>
     </div>
   );
 }
