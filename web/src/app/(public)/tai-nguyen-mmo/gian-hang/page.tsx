@@ -482,6 +482,7 @@ export default async function NhaBanHangPage({
                 totalPages={totalSellerPages}
                 basePath="/tai-nguyen-mmo/gian-hang"
                 searchParams={sellerPageParams}
+                scrollToTop
               />
             )}
           </div>

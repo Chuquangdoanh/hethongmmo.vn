@@ -208,6 +208,7 @@ export default async function TutTricksPage({
                   ...(category ? { category } : {}),
                   ...(tier ? { tier } : {}),
                 }}
+                scrollToTop
               />
             </div>
           </>

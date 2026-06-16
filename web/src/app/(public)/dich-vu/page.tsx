@@ -228,6 +228,7 @@ export default async function DichVuPage({
             totalPages={totalPages}
             basePath="/dich-vu"
             searchParams={category ? { category } : {}}
+            scrollToTop
           />
         </div>
 

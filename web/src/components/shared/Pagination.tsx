@@ -10,6 +10,8 @@ interface PaginationProps {
   searchParams?: Record<string, string>;
   onPageChange?: (page: number) => void;
   pageParam?: string;
+  /** Cuộn lên đầu trang khi chuyển trang — tránh bị kẹt ở vị trí scroll cũ khi trang mới ngắn hơn (vd. trang cuối ít item, scroll bị tràn xuống footer) */
+  scrollToTop?: boolean;
 }
 
 function buildHref(basePath: string, page: number, extra: Record<string, string> = {}, pageKey = "page"): string {
@@ -24,6 +26,7 @@ export default function Pagination({
   searchParams = {},
   onPageChange,
   pageParam = "page",
+  scrollToTop = false,
 }: PaginationProps) {
   if (totalPages <= 1) return null;
 
@@ -69,7 +72,7 @@ export default function Pagination({
       return (
         <Link
           href={buildHref(basePath, page, searchParams, pageParam)}
-          scroll={false}
+          scroll={!scrollToTop}
           className={cls}
           aria-current={isActive ? "page" : undefined}
         >
@@ -97,7 +100,7 @@ export default function Pagination({
         {basePath ? (
           <Link
             href={buildHref(basePath, currentPage - 1, searchParams, pageParam)}
-            scroll={false}
+            scroll={!scrollToTop}
             aria-disabled={prevDisabled}
             aria-label="Trang trước"
             className={`${arrowBase} ${prevDisabled ? arrowDisabled : arrowEnabled}`}
@@ -125,7 +128,7 @@ export default function Pagination({
         {basePath ? (
           <Link
             href={buildHref(basePath, currentPage + 1, searchParams, pageParam)}
-            scroll={false}
+            scroll={!scrollToTop}
             aria-disabled={nextDisabled}
             aria-label="Trang sau"
             className={`${arrowBase} ${nextDisabled ? arrowDisabled : arrowEnabled}`}
@@ -150,7 +153,7 @@ export default function Pagination({
         {basePath ? (
           <Link
             href={buildHref(basePath, currentPage - 1, searchParams, pageParam)}
-            scroll={false}
+            scroll={!scrollToTop}
             aria-disabled={prevDisabled}
             className={`${arrowBase} gap-1 px-3 w-auto text-sm font-medium ${prevDisabled ? arrowDisabled : arrowEnabled}`}
           >
@@ -176,7 +179,7 @@ export default function Pagination({
         {basePath ? (
           <Link
             href={buildHref(basePath, currentPage + 1, searchParams, pageParam)}
-            scroll={false}
+            scroll={!scrollToTop}
             aria-disabled={nextDisabled}
             className={`${arrowBase} gap-1 px-3 w-auto text-sm font-medium ${nextDisabled ? arrowDisabled : arrowEnabled}`}
           >

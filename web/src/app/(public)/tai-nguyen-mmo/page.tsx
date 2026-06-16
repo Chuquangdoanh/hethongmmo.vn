@@ -587,6 +587,7 @@ export default async function TaiNguyenMmoPage({
                 totalPages={totalPages}
                 basePath="/tai-nguyen-mmo"
                 searchParams={paginationParams}
+                scrollToTop
               />
             )}
           </div>
