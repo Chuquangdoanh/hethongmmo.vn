@@ -228,7 +228,7 @@ export default async function ThongTinCaNhanPage() {
             </div>
 
             {/* Đăng ký bán hàng */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div id="seller-register" className="scroll-mt-24 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center">
                   <Store size={14} className="text-violet-600" />

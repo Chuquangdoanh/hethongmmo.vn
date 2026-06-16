@@ -94,6 +94,7 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
 
   const quickLinks: { href: string; Icon: React.ElementType; bg: string; color: string; label: string }[] = [
     ...(isSeller ? [{ href: "/ban-hang",        Icon: Store,           bg: "#f0fdf4", color: "#16a34a", label: "Bán hàng" }]    : []),
+    ...(!isSeller ? [{ href: "/thong-tin-ca-nhan#seller-register", Icon: Store, bg: "#f5f3ff", color: "#7c3aed", label: "Đăng ký bán hàng" }] : []),
     ...(isAdmin  ? [{ href: "/admin/dashboard", Icon: LayoutDashboard, bg: "#ede9fe", color: "#7c3aed", label: "Admin" }]        : []),
   ];
 

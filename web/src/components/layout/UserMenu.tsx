@@ -156,8 +156,10 @@ export default function UserMenu({ user, balance, avatarUrl }: UserMenuProps) {
           <MenuItem href="/nap-tien"          Icon={CreditCard}   iconBg="#dbeafe" iconColor="#2563eb" label="Nạp tiền"    onClick={() => setOpen(false)} />
           <MenuItem href="/don-hang"          Icon={Package}      iconBg="#fef3c7" iconColor="#b45309" label="Đơn hàng"   onClick={() => setOpen(false)} />
 
-          {isSeller && (
+          {isSeller ? (
             <MenuItem href="/ban-hang" Icon={Store} iconBg="#f0fdf4" iconColor="#16a34a" label="Bán hàng" onClick={() => setOpen(false)} />
+          ) : (
+            <MenuItem href="/thong-tin-ca-nhan#seller-register" Icon={Store} iconBg="#f5f3ff" iconColor="#7c3aed" label="Đăng ký bán hàng" onClick={() => setOpen(false)} />
           )}
           {isAdmin && (
             <MenuItem href="/admin/dashboard" Icon={LayoutDashboard} iconBg="#ede9fe" iconColor="#7c3aed" label="Admin Panel" onClick={() => setOpen(false)} />
