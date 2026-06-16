@@ -43,6 +43,16 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
   const [mounted, setMounted] = useState(false);
   const pathname              = usePathname();
   const navigatingRef         = useRef(false);
+  const transitioningRef      = useRef(false);
+
+  // Chặn spam-click trong lúc overlay/drawer đang transition (350ms)
+  // — tránh backdrop-filter bị toggle dồn dập gây kẹt lớp blur trên mobile WebKit
+  const toggleOpen = () => {
+    if (transitioningRef.current) return;
+    transitioningRef.current = true;
+    setOpen((o) => !o);
+    setTimeout(() => { transitioningRef.current = false; }, 350);
+  };
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
@@ -92,7 +102,7 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
       {/* ── Hamburger ── */}
       <button
         className={`hdr-hamburger${open ? " open" : ""}`}
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggleOpen}
         aria-label={open ? "Đóng menu" : "Mở menu"}
         aria-expanded={open}
         aria-controls="hdr-mobile-drawer"
