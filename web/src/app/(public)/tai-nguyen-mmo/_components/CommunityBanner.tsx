@@ -155,15 +155,15 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
     <>
       {/* ── BANNER ── */}
       <div className="bg-[#f1f5f9] border-b border-border">
-        <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-8">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-5">
 
           {/* Title */}
           {(() => {
             const [titleMain, titleHighlight] = communityTitle.split(" — ");
             return (
-              <div className="flex items-center gap-3 mb-8">
+              <div className="flex items-center gap-3 mb-5">
                 <span className="hidden md:block h-px flex-1 bg-[#e5e7eb]" />
-                <h2 className="text-2xl md:text-3xl font-extrabold tracking-wider text-center flex-1 md:flex-none" style={{ color: "#111827" }}>
+                <h2 className="text-xl md:text-2xl font-extrabold tracking-wider text-center flex-1 md:flex-none" style={{ color: "#111827" }}>
                   {/* Mobile: 2 dòng riêng */}
                   <span className="block md:hidden">
                     <ColoredTitle text={titleMain ?? ""} accentColor={accentColor} />
@@ -187,7 +187,7 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
           })()}
 
           {/* Community channels — centered text layout */}
-          <div className="max-w-xl mx-auto text-center space-y-4 mb-8">
+          <div className="max-w-xl mx-auto text-center space-y-3 mb-5">
 
             {/* Telegram group */}
             <div>
@@ -235,23 +235,23 @@ export function CommunityBanner({ data = {} }: { data?: CommunityBannerData }) {
           </div>
 
           {/* Trust icons */}
-          <div className="flex items-center justify-center gap-6 mb-6">
+          <div className="flex items-center justify-center gap-5 mb-4">
             {([
               { Icon: Zap,         color: "#f59e0b", text: "Giao hàng tự động" },
               { Icon: ShieldCheck, color: "#10b981", text: "Bảo mật 100%"      },
               { Icon: Headphones,  color: "#7c3aed", text: "Hỗ trợ 24/7"       },
             ] as const).map(({ Icon, color, text }) => (
-              <div key={text} className="flex flex-col items-center gap-1.5">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}1a` }}>
-                  <Icon size={16} strokeWidth={2} style={{ color }} />
+              <div key={text} className="flex flex-col items-center gap-1">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}1a` }}>
+                  <Icon size={13} strokeWidth={2} style={{ color }} />
                 </div>
-                <span className="text-xs font-semibold text-[#374151] leading-snug text-center">{text}</span>
+                <span className="text-[11px] font-semibold text-[#374151] leading-snug text-center">{text}</span>
               </div>
             ))}
           </div>
 
           {/* Divider */}
-          <div className="flex items-center gap-3 max-w-xl mx-auto mb-6">
+          <div className="flex items-center gap-3 max-w-xl mx-auto mb-4">
             <span className="h-px flex-1 bg-[#e5e7eb]" />
             <span className="text-[10px] text-text-muted uppercase tracking-widest font-semibold">Chính sách & cam kết</span>
             <span className="h-px flex-1 bg-[#e5e7eb]" />
