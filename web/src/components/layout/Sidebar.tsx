@@ -142,19 +142,21 @@ export default async function Sidebar() {
 
         {sessionUser && (
           <div className="sb-user-card">
-            <div className="sb-user-avatar">
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarUrl} alt={sessionUser.fullName ?? ""} />
-              ) : (
-                <span>{initials}</span>
-              )}
-            </div>
-            <div className="sb-label sb-user-info">
-              <p className="sb-user-name">Tài khoản <CheckCircle size={12} /></p>
-              {balance !== null && <p className="sb-user-balance">{formatVnd(balance)}</p>}
-            </div>
-            <Link href="/nap-tien" className="sb-label sb-user-add" aria-label="Nạp tiền">
+            <Link href="/thong-tin-ca-nhan" className="sb-user-card-link" aria-label="Thông tin tài khoản">
+              <div className="sb-user-avatar">
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt={sessionUser.fullName ?? ""} />
+                ) : (
+                  <span>{initials}</span>
+                )}
+              </div>
+              <div className="sb-label sb-user-info">
+                <p className="sb-user-name">Tài khoản <CheckCircle size={12} /></p>
+                {balance !== null && <p className="sb-user-balance">{formatVnd(balance)}</p>}
+              </div>
+            </Link>
+            <Link href="/nap-tien" className="sb-user-add" aria-label="Nạp tiền">
               <Plus size={14} strokeWidth={2.5} />
             </Link>
           </div>
