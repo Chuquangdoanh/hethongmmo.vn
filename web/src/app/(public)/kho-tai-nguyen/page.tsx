@@ -81,26 +81,21 @@ export default function GlobalError({
         </svg>
       </div>
 
-      <h1 className="text-2xl font-bold text-[#F4F4F5] mb-2">Có lỗi xảy ra</h1>
-      <p className="text-[#71717A] text-sm mb-1 max-w-sm">
-        Hệ thống gặp sự cố không mong muốn. Vui lòng thử lại hoặc quay về trang chủ.
+      <h1 className="text-2xl font-bold text-[#f00d0dfb] mb-2">Tính Năng Kho tài nguyên đang được phát triển</h1>
+      <p className="text-[#7a7171] text-sm mb-1 max-w-sm">
+        Hệ thống đang phát triển tính năng này, vui lòng quay lại sau. Nếu bạn cần hỗ trợ, hãy liên hệ với chúng tôi qua Telegram.
       </p>
       {error.digest && (
         <p className="text-[#3F3F4E] text-xs mb-6 font-mono">ID: {error.digest}</p>
       )}
 
       <div className="flex items-center gap-3 mt-4">
-        <button
-          onClick={reset}
-          className="px-4 py-2 rounded-md bg-[#7C3AED] text-white text-sm font-medium hover:bg-[#A855F7] transition-colors"
-        >
-          Thử lại
-        </button>
+        
         <Link
           href="/"
           className="px-4 py-2 rounded-md border border-[#2A2A38] text-[#A1A1AA] text-sm hover:border-[#7C3AED] hover:text-[#F4F4F5] transition-colors"
         >
-          Trang chủ
+          Về Trang chủ
         </Link>
       </div>
     </div>
