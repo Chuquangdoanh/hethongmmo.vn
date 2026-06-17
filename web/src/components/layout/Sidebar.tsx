@@ -75,7 +75,7 @@ export default async function Sidebar() {
   const systemItems: SidebarNavItem[] = [
     ...(isPageVisible("khoa-hoc")       ? [{ href: "/khoa-hoc",       label: navLabel("/khoa-hoc"),       icon: iconBadge("/khoa-hoc") }] : []),
     ...(isPageVisible("tut-tricks")     ? [{ href: "/tut-tricks",     label: navLabel("/tut-tricks"),     icon: iconBadge("/tut-tricks") }] : []),
-        // ...(isPageVisible("tai-nguyen-mmo") ? [{ href: "/tai-nguyen-mmo", label: navLabel("/tai-nguyen-mmo"), icon: iconBadge("/tai-nguyen-mmo") }] : []),
+        ...(isPageVisible("kho-tai-nguyen") ? [{ href: "/kho-tai-nguyen", label: navLabel("/kho-tai-nguyen"), icon: iconBadge("/kho-tai-nguyen") }] : []),
     ...(isPageVisible("tai-nguyen-mmo") ? [{ href: "/tai-nguyen-mmo", label: navLabel("/tai-nguyen-mmo"), icon: iconBadge("/tai-nguyen-mmo") }] : []),
     ...(isPageVisible("quang-cao")      ? [{ href: "/quang-cao",      label: navLabel("/quang-cao"),      icon: iconBadge("/quang-cao") }] : []),
     ...(isPageVisible("NetWorks")       ? [{ href: "/NetWorks",       label: navLabel("/NetWorks"),       icon: iconBadge("/NetWorks") }] : []),
@@ -137,7 +137,7 @@ export default async function Sidebar() {
         <Link href="/" className="sb-brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/images/djmedia-logo.gif" alt="hethongmmo.vn" className="sb-brand-logo" />
-          <p className="sb-label sb-brand-headline">Hệ Thống MMO</p>
+          <p className="sb-label sb-brand-headline">HỆ THỐNG MMO</p>
         </Link>
 
         {sessionUser && (

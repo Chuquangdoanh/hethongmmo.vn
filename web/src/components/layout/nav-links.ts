@@ -15,8 +15,8 @@ export const NAV_LINKS: NavLinkDef[] = [
   { href: "/dich-vu",        label: "DỊCH VỤ",       color: "#7c3aed", shadow: "rgba(124,58,237,0.45)" },
   { href: "/khoa-hoc",       label: "KHÓA HỌC",      color: "#059669", shadow: "rgba(5,150,105,0.45)" },
   { href: "/tut-tricks",     label: "TUT MMO",       color: "#dc2626", shadow: "rgba(220,38,38,0.45)" },
-  { href: "/", label: "NGUYÊN LIỆU",    color: "#f59e0b", shadow: "rgba(245,158,11,0.45)" },
-  { href: "/tai-nguyen-mmo", label: "KHO TÀI NGUYÊN",    color: "#f59e0b", shadow: "rgba(245,158,11,0.45)" },
+  { href: "/kho-tai-nguyen", label: "KHO TÀI NGUYÊN",    color: "#f59e0b", shadow: "rgba(245,158,11,0.45)" },
+  { href: "/tai-nguyen-mmo", label: "NGUYÊN LIỆU",    color: "#f59e0b", shadow: "rgba(245,158,11,0.45)" },
   { href: "/quang-cao",      label: "QUẢNG CÁO ADS", color: "#0891b2", shadow: "rgba(8,145,178,0.45)" },
   { href: "/NetWorks",       label: "NETWORKS (ADB)", color: "#dc2626", shadow: "rgba(220,38,38,0.45)" },
 ];
