@@ -1005,7 +1005,7 @@ export default async function HomePage() {
                       <div>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                           <span style={{ fontSize: ".75rem", color: "#64748b" }}>Tỉ lệ thành công</span>
-                          <span style={{ fontSize: ".75rem", fontWeight: "700", color: "#0066ff" }}>{tut.successRate}%</span>
+                          <span style={{ fontSize: ".75rem", fontWeight: "700", color: "#00FF00" }}>{tut.successRate}%</span>
                         </div>
                         <div style={{ height: "5px", background: "#e2e8f0", borderRadius: "3px", overflow: "hidden" }}>
                           <div style={{
