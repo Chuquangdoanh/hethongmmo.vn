@@ -145,6 +145,11 @@ enum StockItemStatus {
   SOLD
 }
 
+enum StoreType {
+  TAI_NGUYEN_MMO
+  KHO_TAI_NGUYEN
+}
+
 // ====================================================================
 // 1. USERS & AUTH
 // ====================================================================
@@ -693,6 +698,7 @@ model SellerRequest {
   userId           String       @unique @map("user_id") @db.Uuid
   user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   category         String
+  storeType        StoreType    @default(TAI_NGUYEN_MMO) @map("store_type")
   fee              Decimal      @default(50000) @db.Decimal(18, 2)
   status           SellerStatus @default(PENDING)
   approvedCategory String?      @map("approved_category")
@@ -713,6 +719,7 @@ model SellerProduct {
   id              String    @id @default(uuid()) @db.Uuid
   sellerId        String    @map("seller_id") @db.Uuid
   seller          User      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  storeType       StoreType @default(TAI_NGUYEN_MMO) @map("store_type")
   sellerCategory  String    @map("seller_category")
   subCategoryId   String?   @map("sub_category_id") @db.Uuid
   subCategory     SellerSubCategory? @relation(fields: [subCategoryId], references: [id], onDelete: SetNull)

@@ -28,9 +28,10 @@ export interface CategoryItem {
 interface FilterSidebarProps {
   categories: CategoryItem[];
   totalCount: number;
+  basePath?: string;
 }
 
-export function FilterSidebar({ categories, totalCount }: FilterSidebarProps) {
+export function FilterSidebar({ categories, totalCount, basePath = "/tai-nguyen-mmo" }: FilterSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchParamsRef = useRef(searchParams);
@@ -58,12 +59,12 @@ export function FilterSidebar({ categories, totalCount }: FilterSidebarProps) {
       if (trimmed) params.set("q", trimmed); else params.delete("q");
       params.delete("page");
       startTransition(() => {
-        router.replace(`/tai-nguyen-mmo?${params.toString()}`, { scroll: false });
+        router.replace(`${basePath}?${params.toString()}`, { scroll: false });
       });
     }, 400);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchValue]);
+  }, [searchValue, basePath]);
 
   function setParam(key: string, value: string) {
     const params = new URLSearchParams(searchParamsRef.current.toString());
@@ -72,7 +73,7 @@ export function FilterSidebar({ categories, totalCount }: FilterSidebarProps) {
     // When changing main category, clear sub-category selection
     if (key === "category") params.delete("subcategory");
     startTransition(() => {
-      router.replace(`/tai-nguyen-mmo?${params.toString()}`, { scroll: false });
+      router.replace(`${basePath}?${params.toString()}`, { scroll: false });
     });
   }
 

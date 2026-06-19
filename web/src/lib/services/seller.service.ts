@@ -12,12 +12,13 @@ interface RegisterSellerParams {
   userId: string;
   category: string;
   subCategoryIds?: string[];
+  storeType?: "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN";
   ip?: string;
 }
 
 /** Deducts registration fee (from system_config) and creates a pending seller request. */
 export async function registerSeller(params: RegisterSellerParams): Promise<void> {
-  const { userId, category, subCategoryIds = [], ip } = params;
+  const { userId, category, subCategoryIds = [], storeType = "TAI_NGUYEN_MMO", ip } = params;
   const SELLER_REGISTRATION_FEE = await getRegistrationFee();
 
   await prisma.$transaction(async (tx) => {
@@ -54,8 +55,8 @@ export async function registerSeller(params: RegisterSellerParams): Promise<void
 
     await tx.sellerRequest.upsert({
       where: { userId },
-      create: { userId, category, fee: fee.toFixed(2) },
-      update: { category, fee: fee.toFixed(2), status: "PENDING", rejectReason: null },
+      create: { userId, category, storeType, fee: fee.toFixed(2) },
+      update: { category, storeType, fee: fee.toFixed(2), status: "PENDING", rejectReason: null },
     });
 
     await tx.transaction.create({
@@ -84,7 +85,7 @@ export async function registerSeller(params: RegisterSellerParams): Promise<void
         action: "SELLER_REGISTRATION_REQUESTED",
         targetType: "SellerRequest",
         targetId: userId,
-        metadata: { category, subCategoryCount: subCategoryIds.length, ip: ip ?? "unknown" },
+        metadata: { category, storeType, subCategoryCount: subCategoryIds.length, ip: ip ?? "unknown" },
       },
     });
   });
