@@ -18,7 +18,7 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
 
     const [orders, complaints, withdrawals, deposits] = await Promise.all([
       prisma.order.count({ where: { status: "PENDING" } }),
-      prisma.complaint.count({ where: { status: "OPEN" } }),
+      prisma.complaint.count({ where: { status: { in: ["IN_REVIEW", "PENDING_ADMIN"] } } }),
       prisma.sellerWithdrawal.count({ where: { status: "PENDING" } }),
       prisma.transaction.count({
         where: {

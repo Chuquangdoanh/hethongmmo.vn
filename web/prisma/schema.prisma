@@ -133,10 +133,10 @@ enum NotificationType {
 }
 
 enum ComplaintStatus {
-  OPEN
-  IN_REVIEW
-  RESOLVED
-  REJECTED
+  IN_REVIEW      // đang chat (không còn OPEN — chat room tạo ngay)
+  PENDING_ADMIN  // user bấm "chưa xong" → admin phán quyết
+  RESOLVED       // seller thắng (tiền pass seller)
+  REJECTED       // user thắng (hoàn tiền)
 }
 
 enum StockItemStatus {
@@ -944,7 +944,7 @@ model Complaint {
   orderId          String?         @map("order_id") @db.Uuid
   subject          String
   content          String
-  status           ComplaintStatus @default(OPEN)
+  status           ComplaintStatus @default(IN_REVIEW)
   resolution       String?
   resolvedByUserId String?         @map("resolved_by_user_id") @db.Uuid
   resolvedAt       DateTime?       @map("resolved_at")
@@ -966,6 +966,16 @@ model ChatRoom {
   complaintId String        @unique @map("complaint_id") @db.Uuid
   complaint   Complaint     @relation(fields: [complaintId], references: [id])
   createdAt   DateTime      @default(now()) @map("created_at")
+
+  // Quota & turn tracking
+  totalMsgCount     Int       @default(0)  @map("total_messages")
+  userTurnCount     Int       @default(0)  @map("user_turn_count")
+  firstSellerMsgAt  DateTime? @map("first_seller_msg_at")
+
+  // Resolution
+  sellerConfirmed   Boolean   @default(false) @map("seller_confirmed")
+  sellerConfirmedAt DateTime? @map("seller_confirmed_at")
+  userDone          Boolean?  @map("user_done")
 
   participants ChatParticipant[]
   messages     ChatMessage[]

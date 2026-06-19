@@ -27,7 +27,7 @@ export default async function Sidebar() {
   if (sessionUser?.id) {
     const [row, ticketCount] = await Promise.all([
       prisma.user.findUnique({ where: { id: sessionUser.id }, select: { balance: true, avatarUrl: true } }),
-      prisma.complaint.count({ where: { userId: sessionUser.id, status: { in: ["OPEN", "IN_REVIEW"] } } }),
+      prisma.complaint.count({ where: { userId: sessionUser.id, status: { in: ["IN_REVIEW", "PENDING_ADMIN"] } } }),
     ]);
     if (row) {
       balance = Number(row.balance);

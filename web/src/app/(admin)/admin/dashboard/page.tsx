@@ -76,7 +76,7 @@ export default async function AdminDashboardPage({
     prisma.order.count(),
     prisma.order.count({ where: { createdAt: { gte: todayDate } } }),
     prisma.sellerWithdrawal.count({ where: { status: "PENDING", createdAt: { gte: periodStart, lt: periodEnd } } }),
-    prisma.complaint.count({ where: { status: "OPEN" } }),
+    prisma.complaint.count({ where: { status: "IN_REVIEW" } }),
     prisma.transaction.aggregate({
       where: { type: { in: ["DEPOSIT_AUTO", "DEPOSIT_MANUAL"] } },
       _sum: { amount: true },

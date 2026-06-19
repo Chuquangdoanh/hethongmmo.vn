@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatVnd, formatDate } from "@/lib/utils/format";
-import { Search, Clock, CheckCircle, TicketCheck, MessageCircle } from "lucide-react";
+import { Search, Clock, CheckCircle, TicketCheck, MessageCircle, ShieldAlert } from "lucide-react";
 import TicketChatPanel from "./_components/TicketChatPanel";
 import SlaTimer from "./_components/SlaTimer";
 import "./ho-tro.css";
@@ -14,49 +14,46 @@ export const metadata: Metadata = { title: "Ticket hỗ trợ" };
 
 /* ─── Status display ──────────────────────────────────────────── */
 const STATUS_LABEL: Record<string, string> = {
-  OPEN: "Chờ xử lý", IN_REVIEW: "Đang xử lý",
-  RESOLVED: "Đã hoàn thành", REJECTED: "Đã đóng",
+  IN_REVIEW:     "Đang xử lý",
+  PENDING_ADMIN: "Chờ Admin",
+  RESOLVED:      "Đã hoàn thành",
+  REJECTED:      "Đã hoàn tiền",
 };
 const STATUS_STYLE: Record<string, { bg: string; color: string; border: string }> = {
-  OPEN:      { bg: "#fffbeb", color: "#b45309",  border: "#fde68a" },
-  IN_REVIEW: { bg: "#eff6ff", color: "#1d4ed8",  border: "#bfdbfe" },
-  RESOLVED:  { bg: "#f0fdf4", color: "#15803d",  border: "#bbf7d0" },
-  REJECTED:  { bg: "#f8fafc", color: "#64748b",  border: "#e2e8f0" },
+  IN_REVIEW:     { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
+  PENDING_ADMIN: { bg: "#fdf4ff", color: "#7c3aed", border: "#e9d5ff" },
+  RESOLVED:      { bg: "#f0fdf4", color: "#15803d", border: "#bbf7d0" },
+  REJECTED:      { bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
 };
 const defaultStyle = { bg: "#f8fafc", color: "#64748b", border: "#e2e8f0" };
 
 const ticketCode = (id: string) => `#KN-${id.slice(0, 8).toUpperCase()}`;
 
-/* ─── Progress steps builder ──────────────────────────────────── */
-function buildSteps(
-  status: string,
-  createdAt: Date,
-  chatRoomCreatedAt: Date | null,
-  resolvedAt: Date | null,
-) {
-  const hasChatRoom = chatRoomCreatedAt != null;
-  const isDone      = status === "RESOLVED" || status === "REJECTED";
+/* ─── Progress steps ──────────────────────────────────────────── */
+function buildSteps(status: string, createdAt: Date, resolvedAt: Date | null) {
+  const isDone   = status === "RESOLVED" || status === "REJECTED";
+  const isAdmin  = status === "PENDING_ADMIN";
 
   return [
     {
       n: 1, label: "Đã mở khiếu nại",
       sub: formatDate(createdAt),
-      done: true, active: !hasChatRoom && !isDone,
+      done: true, active: false,
     },
     {
-      n: 2, label: "Seller phản hồi",
-      sub: hasChatRoom ? formatDate(chatRoomCreatedAt!) : "Đang chờ phản hồi",
-      done: hasChatRoom, active: hasChatRoom && !isDone,
+      n: 2, label: "Đang đàm phán",
+      sub: "Chat với nhà bán hàng",
+      done: isDone || isAdmin, active: status === "IN_REVIEW",
     },
     {
-      n: 3, label: "Đang xử lý",
-      sub: "Trong thời gian SLA",
-      done: isDone, active: status === "IN_REVIEW",
+      n: 3, label: "Xác nhận kết quả",
+      sub: "Seller & user đồng ý",
+      done: isDone, active: isAdmin,
     },
     {
-      n: 4, label: "Chờ phản hồi thêm",
-      sub: "Nếu cần thiết",
-      done: isDone, active: false,
+      n: 4, label: "Admin phán quyết",
+      sub: isAdmin ? "Đang chờ admin" : "Nếu cần thiết",
+      done: isDone && isAdmin, active: isAdmin,
     },
     {
       n: 5, label: "Kết thúc",
@@ -95,15 +92,15 @@ export default async function HoTroPage({
     },
   });
 
-  /* Auto-redirect to first active ticket */
+  /* Auto-redirect đến ticket đang hoạt động */
   if (!activeId && complaints.length > 0) {
     const first =
-      complaints.find(c => c.status === "OPEN" || c.status === "IN_REVIEW") ??
+      complaints.find(c => c.status === "IN_REVIEW" || c.status === "PENDING_ADMIN") ??
       complaints[0]!;
     redirect(`/ho-tro?id=${first.id}`);
   }
 
-  /* Order info for list */
+  /* Order info cho list */
   const listOrderIds = complaints.map(c => c.orderId).filter(Boolean) as string[];
   const listOrders   = listOrderIds.length > 0
     ? await prisma.order.findMany({
@@ -113,7 +110,7 @@ export default async function HoTroPage({
     : [];
   const orderListMap = new Map(listOrders.map(o => [o.id, o]));
 
-  /* ── Selected complaint (middle + right panels) ── */
+  /* ── Selected complaint ── */
   const selected = activeId
     ? await prisma.complaint.findFirst({
         where: { id: activeId, userId: me.id },
@@ -142,21 +139,50 @@ export default async function HoTroPage({
       })
     : null;
 
-  const chatRoomForPanel: {
-    id: string;
-    participants: Array<{ userId: string; label: string; userName: string }>;
-    messages: Array<{ id: string; senderId: string; senderName: string; senderLabel: string; content: string; createdAt: string }>;
-  } | null = selected?.chatRoom
+  /* ── Build chat room props ── */
+  const chatRoom = selected?.chatRoom ?? null;
+
+  // Xác định label của user hiện tại trong chat room
+  const myParticipant = chatRoom?.participants.find(p => p.userId === me.id);
+  const currentUserLabel =
+    me.role === "ADMIN" || me.role === "STAFF"
+      ? "Admin"
+      : (myParticipant?.label ?? "Người mua");
+
+  // Build quota từ chatRoom data (server-side initial state)
+  const TOTAL_MSG_LIMIT = 20;
+  const USER_TURN_LIMIT = 3;
+  const initialQuota = chatRoom
     ? {
-        id: selected.chatRoom.id,
-        participants: selected.chatRoom.participants.map(p => ({
+        total: TOTAL_MSG_LIMIT,
+        used: chatRoom.totalMsgCount,
+        remaining: Math.max(0, TOTAL_MSG_LIMIT - chatRoom.totalMsgCount),
+        warning: chatRoom.totalMsgCount >= 17,
+        locked: chatRoom.totalMsgCount >= TOTAL_MSG_LIMIT,
+        userTurnLimit: USER_TURN_LIMIT,
+        userTurnUsed: chatRoom.userTurnCount,
+      }
+    : undefined;
+
+  const initialResolution = chatRoom
+    ? {
+        sellerConfirmed: chatRoom.sellerConfirmed,
+        sellerConfirmedAt: chatRoom.sellerConfirmedAt?.toISOString() ?? null,
+        userDone: chatRoom.userDone,
+      }
+    : undefined;
+
+  const chatRoomForPanel = chatRoom
+    ? {
+        id: chatRoom.id,
+        participants: chatRoom.participants.map(p => ({
           userId:   p.userId,
           label:    p.label,
           userName: p.label === "Nhà bán hàng"
             ? `Seller #${p.userId.slice(0, 8).toUpperCase()}`
             : (p.user.fullName ?? p.user.email),
         })),
-        messages: selected.chatRoom.messages.map(m => ({
+        messages: chatRoom.messages.map(m => ({
           id:          m.id,
           senderId:    m.senderId,
           senderName:  m.senderName,
@@ -167,22 +193,16 @@ export default async function HoTroPage({
       }
     : null;
 
-  const chatEnded     = selected?.status === "RESOLVED" || selected?.status === "REJECTED";
+  const chatEnded     = selected?.status === "RESOLVED" || selected?.status === "REJECTED" || selected?.status === "PENDING_ADMIN";
   const progressSteps = selected
-    ? buildSteps(
-        selected.status,
-        selected.createdAt,
-        selected.chatRoom?.createdAt ?? null,
-        selected.resolvedAt ?? null,
-      )
+    ? buildSteps(selected.status, selected.createdAt, selected.resolvedAt ?? null)
     : null;
 
-  /* ── Status tab config ── */
   const STATUS_TABS = [
-    { key: "IN_REVIEW", label: "Đang xử lý" },
-    { key: "OPEN",      label: "Chờ khách hàng phản hồi" },
-    { key: "RESOLVED",  label: "Đã xử lý thành công" },
-    { key: "REJECTED",  label: "Đã xử lý thất bại" },
+    { key: "IN_REVIEW",     label: "Đang xử lý" },
+    { key: "PENDING_ADMIN", label: "Chờ Admin phán quyết" },
+    { key: "RESOLVED",      label: "Đã xử lý thành công" },
+    { key: "REJECTED",      label: "Đã hoàn tiền" },
   ];
 
   return (
@@ -190,19 +210,16 @@ export default async function HoTroPage({
 
       {/* ══ LEFT — Danh sách ticket ═══════════════════════════════ */}
       <div className="ht-sidebar">
-
-        {/* Header */}
         <div className="ht-sidebar-head">
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a" }}>
               Danh sách hội thoại
             </span>
             <span style={{
-              fontSize: "10px", padding: "2px 8px",
-              background: "#f1f5f9", borderRadius: "20px",
-              border: "1px solid #e2e8f0", color: "#64748b",
+              fontSize: "10px", padding: "2px 8px", background: "#f1f5f9",
+              borderRadius: "20px", border: "1px solid #e2e8f0", color: "#64748b",
             }}>
-              Tất cả
+              {complaints.length} ticket
             </span>
           </div>
           <div className="ht-search">
@@ -211,7 +228,6 @@ export default async function HoTroPage({
           </div>
         </div>
 
-        {/* Ticket list */}
         <div className="ht-sidebar-list">
           {complaints.length === 0 ? (
             <div style={{ padding: "40px 16px", textAlign: "center" }}>
@@ -238,8 +254,7 @@ export default async function HoTroPage({
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{
                         fontSize: "12px", fontWeight: "700",
-                        color: isActive ? "#1d4ed8" : "#1e293b",
-                        marginBottom: "2px",
+                        color: isActive ? "#1d4ed8" : "#1e293b", marginBottom: "2px",
                       }}>
                         {ticketCode(c.id)}
                       </p>
@@ -267,16 +282,12 @@ export default async function HoTroPage({
                     </div>
                     <div style={{ flexShrink: 0, textAlign: "right" }}>
                       <p style={{ fontSize: "10px", color: "#94a3b8", marginBottom: "5px" }}>
-                        {new Date(c.updatedAt).toLocaleDateString("vi-VN", {
-                          day: "2-digit", month: "2-digit",
-                        })}
+                        {new Date(c.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}
                       </p>
                       <span style={{
-                        display: "inline-block",
-                        fontSize: "9px", padding: "2px 7px",
+                        display: "inline-block", fontSize: "9px", padding: "2px 7px",
                         borderRadius: "10px", fontWeight: "600",
-                        background: st.bg, color: st.color,
-                        border: `1px solid ${st.border}`,
+                        background: st.bg, color: st.color, border: `1px solid ${st.border}`,
                       }}>
                         {STATUS_LABEL[c.status] ?? c.status}
                       </span>
@@ -292,20 +303,13 @@ export default async function HoTroPage({
       {/* ══ MIDDLE — Chi tiết ticket ══════════════════════════════ */}
       {selected ? (
         <div className="ht-middle">
-
           {/* Breadcrumb */}
           <div className="ht-breadcrumb">
-            <Link href="/" style={{ fontSize: "12px", color: "#64748b", textDecoration: "none" }}>
-              Trang chủ
-            </Link>
+            <Link href="/" style={{ fontSize: "12px", color: "#64748b", textDecoration: "none" }}>Trang chủ</Link>
             <span style={{ color: "#cbd5e1", fontSize: "12px" }}>›</span>
-            <Link href="/ho-tro" style={{ fontSize: "12px", color: "#64748b", textDecoration: "none" }}>
-              Ticket hỗ trợ
-            </Link>
+            <Link href="/ho-tro" style={{ fontSize: "12px", color: "#64748b", textDecoration: "none" }}>Ticket hỗ trợ</Link>
             <span style={{ color: "#cbd5e1", fontSize: "12px" }}>›</span>
-            <span style={{ fontSize: "12px", color: "#1e293b", fontWeight: "500" }}>
-              Chi tiết khiếu nại
-            </span>
+            <span style={{ fontSize: "12px", color: "#1e293b", fontWeight: "500" }}>Chi tiết khiếu nại</span>
           </div>
 
           {/* Title bar */}
@@ -322,9 +326,7 @@ export default async function HoTroPage({
                   <span style={{ margin: "0 6px", color: "#e2e8f0" }}>·</span>
                   <span>Dịch vụ: {selectedOrder.itemName}</span>
                   <span style={{ margin: "0 6px", color: "#e2e8f0" }}>·</span>
-                  <Link href="/don-hang" style={{ color: "#2563eb", textDecoration: "none" }}>
-                    Xem chi tiết đơn hàng ↗
-                  </Link>
+                  <Link href="/don-hang" style={{ color: "#2563eb", textDecoration: "none" }}>Xem đơn ↗</Link>
                 </p>
               )}
             </div>
@@ -353,32 +355,22 @@ export default async function HoTroPage({
                   <div className={`ht-step-circle${step.done ? " ht-step-circle--done" : step.active ? " ht-step-circle--active" : ""}`}>
                     {step.done && !step.active ? (
                       <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                        <path d="M2.5 6.5L5 9L10.5 3.5"
-                          stroke="white" strokeWidth="2"
-                          strokeLinecap="round" strokeLinejoin="round"
-                        />
+                        <path d="M2.5 6.5L5 9L10.5 3.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     ) : (
-                      <span style={{
-                        fontSize: "11px", fontWeight: "700",
-                        color: step.active ? "white" : "#94a3b8",
-                      }}>
+                      <span style={{ fontSize: "11px", fontWeight: "700", color: step.active ? "white" : "#94a3b8" }}>
                         {step.n}
                       </span>
                     )}
                   </div>
                   <div className="ht-step-label">
                     <p style={{
-                      fontSize: "10px",
-                      fontWeight: step.active || step.done ? "600" : "400",
-                      color: step.active || step.done ? "#1e293b" : "#94a3b8",
-                      margin: 0,
+                      fontSize: "10px", fontWeight: step.active || step.done ? "600" : "400",
+                      color: step.active || step.done ? "#1e293b" : "#94a3b8", margin: 0,
                     }}>
                       {step.label}
                     </p>
-                    <p style={{ fontSize: "9px", color: "#94a3b8", margin: "1px 0 0" }}>
-                      {step.sub}
-                    </p>
+                    <p style={{ fontSize: "9px", color: "#94a3b8", margin: "1px 0 0" }}>{step.sub}</p>
                   </div>
                 </div>
               ))}
@@ -388,14 +380,13 @@ export default async function HoTroPage({
           {/* Status tabs (read-only) */}
           <div className="ht-status-tabs">
             <span style={{ fontSize: "11px", color: "#475569", fontWeight: "500", flexShrink: 0 }}>
-              Trạng thái xử lý cuộc trò chuyện
+              Trạng thái:
             </span>
             {STATUS_TABS.map(tab => {
               const isActive = selected.status === tab.key;
               return (
                 <span key={tab.key} style={{
-                  fontSize: "10px", padding: "3px 10px",
-                  borderRadius: "20px", fontWeight: "600",
+                  fontSize: "10px", padding: "3px 10px", borderRadius: "20px", fontWeight: "600",
                   background: isActive ? "#2563eb" : "#f1f5f9",
                   color: isActive ? "white" : "#64748b",
                   border: `1px solid ${isActive ? "#2563eb" : "#e2e8f0"}`,
@@ -408,7 +399,6 @@ export default async function HoTroPage({
 
           {/* Chat area */}
           <div className="ht-chat-area">
-            {/* Ticket summary bar */}
             <div className="ht-chat-summary">
               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                 <span style={{ fontWeight: "700", color: "#1e293b", fontSize: "12px" }}>
@@ -425,22 +415,37 @@ export default async function HoTroPage({
               </div>
             </div>
 
-            {/* Chat or waiting state */}
             {chatRoomForPanel ? (
               <TicketChatPanel
                 room={chatRoomForPanel}
                 currentUserId={me.id}
+                currentUserLabel={currentUserLabel}
                 initialChatEnded={chatEnded}
+                initialComplaintStatus={selected.status}
+                initialQuota={initialQuota}
+                initialResolution={initialResolution}
               />
-            ) : chatEnded ? (
+            ) : selected.status === "RESOLVED" ? (
               <div className="ht-state-box" style={{ background: "#f0fdf4", borderColor: "#bbf7d0" }}>
                 <CheckCircle size={22} style={{ color: "#16a34a", flexShrink: 0, marginTop: "1px" }} />
                 <div>
                   <p style={{ fontSize: "13px", fontWeight: "700", color: "#15803d", margin: "0 0 3px" }}>
-                    Khiếu nại đã được xử lý
+                    Khiếu nại đã giải quyết thành công
                   </p>
                   <p style={{ fontSize: "12px", color: "#166534" }}>
-                    Bộ phận hỗ trợ đã xem xét và xử lý khiếu nại. Liên hệ thêm: Zalo 0393.118.789
+                    {selected.resolution ?? "Đơn hàng đã được xác nhận hoàn thành."}
+                  </p>
+                </div>
+              </div>
+            ) : selected.status === "PENDING_ADMIN" ? (
+              <div className="ht-state-box" style={{ background: "#fdf4ff", borderColor: "#e9d5ff" }}>
+                <ShieldAlert size={22} style={{ color: "#7c3aed", flexShrink: 0, marginTop: "1px" }} />
+                <div>
+                  <p style={{ fontSize: "13px", fontWeight: "700", color: "#7c3aed", margin: "0 0 3px" }}>
+                    Admin đang xem xét
+                  </p>
+                  <p style={{ fontSize: "12px", color: "#6d28d9" }}>
+                    Bộ phận admin đang đánh giá khiếu nại và sẽ phán quyết sớm nhất có thể.
                   </p>
                 </div>
               </div>
@@ -452,7 +457,7 @@ export default async function HoTroPage({
                     Đang xác minh đơn hàng
                   </p>
                   <p style={{ fontSize: "12px", color: "#78350f" }}>
-                    Hệ Thống MMO đang xác minh đơn hàng. Vui lòng chờ đội ngũ hỗ trợ phản hồi.
+                    Hệ thống đang xác minh. Nhà bán hàng sẽ phản hồi trong 12 giờ.
                   </p>
                 </div>
               </div>
@@ -460,33 +465,21 @@ export default async function HoTroPage({
           </div>
         </div>
       ) : (
-        /* Empty middle */
         <div className="ht-middle ht-middle--empty">
           <TicketCheck size={44} style={{ color: "#cbd5e1" }} />
-          <p style={{ fontSize: "14px", fontWeight: "600", color: "#94a3b8" }}>
-            Chọn ticket để xem chi tiết
-          </p>
-          <p style={{ fontSize: "12px", color: "#cbd5e1" }}>
-            Chọn một khiếu nại từ danh sách bên trái
-          </p>
+          <p style={{ fontSize: "14px", fontWeight: "600", color: "#94a3b8" }}>Chọn ticket để xem chi tiết</p>
+          <p style={{ fontSize: "12px", color: "#cbd5e1" }}>Chọn một khiếu nại từ danh sách bên trái</p>
         </div>
       )}
 
       {/* ══ RIGHT — Thông tin đơn hàng + SLA ══════════════════════ */}
       {selected ? (
         <div className="ht-right">
-
-          {/* Order info */}
           <div className="ht-right-section">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
-              <h3 style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a", margin: 0 }}>
-                Thông tin đơn hàng
-              </h3>
-              <Link href="/don-hang" style={{ fontSize: "11px", color: "#2563eb", textDecoration: "none" }}>
-                Xem chi tiết
-              </Link>
+              <h3 style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a", margin: 0 }}>Thông tin đơn hàng</h3>
+              <Link href="/don-hang" style={{ fontSize: "11px", color: "#2563eb", textDecoration: "none" }}>Xem chi tiết</Link>
             </div>
-
             {selectedOrder ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 <InfoRow icon="📋" label="Mã đơn hàng">
@@ -495,28 +488,23 @@ export default async function HoTroPage({
                   </span>
                 </InfoRow>
                 <InfoRow icon="🛍️" label="Dịch vụ">
-                  <span style={{ fontSize: "12px", color: "#1e293b", fontWeight: "500" }}>
-                    {selectedOrder.itemName}
-                  </span>
+                  <span style={{ fontSize: "12px", color: "#1e293b", fontWeight: "500" }}>{selectedOrder.itemName}</span>
                 </InfoRow>
                 <InfoRow icon="💰" label="Số tiền">
                   <span style={{ fontSize: "13px", fontWeight: "800", color: "#16a34a" }}>
                     {formatVnd(Number(selectedOrder.finalPrice))}
                   </span>
                 </InfoRow>
-                <InfoRow icon="✅" label="Thanh toán">
+                <InfoRow icon="🔒" label="Trạng thái tiền">
                   <span style={{
                     fontSize: "11px", padding: "2px 8px", borderRadius: "20px",
-                    background: "#f0fdf4", color: "#15803d",
-                    border: "1px solid #bbf7d0", fontWeight: "600",
+                    background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", fontWeight: "600",
                   }}>
-                    Đã thanh toán
+                    Đang bị treo
                   </span>
                 </InfoRow>
                 <InfoRow icon="🕐" label="Thời gian mua">
-                  <span style={{ fontSize: "11px", color: "#475569" }}>
-                    {formatDate(selectedOrder.createdAt)}
-                  </span>
+                  <span style={{ fontSize: "11px", color: "#475569" }}>{formatDate(selectedOrder.createdAt)}</span>
                 </InfoRow>
               </div>
             ) : (
@@ -524,7 +512,7 @@ export default async function HoTroPage({
             )}
           </div>
 
-          {/* SLA Timer — chỉ hiện khi đang IN_REVIEW */}
+          {/* SLA Timer */}
           {selected.status === "IN_REVIEW" && (
             <>
               <div className="ht-divider" />
@@ -544,7 +532,6 @@ export default async function HoTroPage({
             </>
           )}
 
-          {/* Rights */}
           <div className="ht-divider" />
           <div className="ht-right-section">
             <h3 style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a", margin: "0 0 12px" }}>
@@ -552,24 +539,21 @@ export default async function HoTroPage({
             </h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
               {[
-                "Được hỗ trợ trong 60 phút",
-                "Bảo vệ bởi hệ thống hoàn tiền",
-                "Thông tin đơn hàng bảo mật tuyệt đối",
+                "Nhà bán hàng phải phản hồi trong 12 giờ",
+                "Tự động hoàn tiền nếu seller không hỗ trợ",
+                "Tối đa 20 tin nhắn để giải quyết",
+                "Admin phán quyết khi không đồng thuận",
               ].map(r => (
                 <div key={r} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: "2px" }}>
                     <circle cx="7" cy="7" r="7" fill="#dcfce7" />
-                    <path d="M4 7.5L5.8 9.5L10 4.5"
-                      stroke="#16a34a" strokeWidth="1.5"
-                      strokeLinecap="round" strokeLinejoin="round"
-                    />
+                    <path d="M4 7.5L5.8 9.5L10 4.5" stroke="#16a34a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   <span style={{ fontSize: "11px", color: "#475569", lineHeight: "1.45" }}>{r}</span>
                 </div>
               ))}
             </div>
           </div>
-
         </div>
       ) : (
         <div className="ht-right" />
@@ -578,7 +562,6 @@ export default async function HoTroPage({
   );
 }
 
-/* ── Helper component ─────────────────────────────────────────── */
 function InfoRow({ icon, label, children }: { icon: string; label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>

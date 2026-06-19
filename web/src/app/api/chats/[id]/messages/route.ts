@@ -4,8 +4,13 @@ import { auth } from "@/auth";
 import { requireUser } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
+import { checkAutoResolution } from "@/lib/services/complaint-auto-resolve";
 
 export const runtime = "nodejs";
+
+const TOTAL_MSG_LIMIT = 20;
+const USER_TURN_LIMIT = 3;
+const WARN_THRESHOLD  = 17; // hiện warning khi >= 17 tin
 
 async function assertAccess(roomId: string, userId: string, role: string): Promise<string> {
   if (role === "ADMIN" || role === "STAFF") return "Admin";
@@ -17,6 +22,18 @@ async function assertAccess(roomId: string, userId: string, role: string): Promi
   return participant.label;
 }
 
+function makeQuota(totalMsgCount: number, userTurnCount: number, senderLabel: string) {
+  return {
+    total: TOTAL_MSG_LIMIT,
+    used: totalMsgCount,
+    remaining: Math.max(0, TOTAL_MSG_LIMIT - totalMsgCount),
+    warning: totalMsgCount >= WARN_THRESHOLD,
+    locked: totalMsgCount >= TOTAL_MSG_LIMIT,
+    userTurnLimit: USER_TURN_LIMIT,
+    userTurnUsed: senderLabel === "Người mua" ? userTurnCount : undefined,
+  };
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -26,7 +43,10 @@ export async function GET(
     const me = requireUser(session);
     const { id: roomId } = await params;
 
-    await assertAccess(roomId, me.id, me.role);
+    const senderLabel = await assertAccess(roomId, me.id, me.role);
+
+    // Lazy auto-resolution check
+    await checkAutoResolution(roomId);
 
     const afterStr = req.nextUrl.searchParams.get("after");
     const after = afterStr ? new Date(afterStr) : null;
@@ -40,17 +60,32 @@ export async function GET(
       }),
       prisma.chatRoom.findUnique({
         where: { id: roomId },
-        select: { complaint: { select: { status: true } } },
+        select: {
+          totalMsgCount: true,
+          userTurnCount: true,
+          sellerConfirmed: true,
+          sellerConfirmedAt: true,
+          userDone: true,
+          complaint: { select: { status: true } },
+        },
       }),
     ]);
 
-    const chatEnded =
-      chatRoom?.complaint?.status === "RESOLVED" ||
-      chatRoom?.complaint?.status === "REJECTED";
+    if (!chatRoom) return NextResponse.json({ error: "Không tìm thấy phòng chat", code: "NOT_FOUND" }, { status: 404 });
+
+    const status = chatRoom.complaint?.status;
+    const chatEnded = status === "RESOLVED" || status === "REJECTED";
 
     return apiOk({
       messages: messages.map((m) => ({ ...m, createdAt: m.createdAt.toISOString() })),
       chatEnded,
+      complaintStatus: status,
+      quota: makeQuota(chatRoom.totalMsgCount, chatRoom.userTurnCount, senderLabel),
+      resolution: {
+        sellerConfirmed: chatRoom.sellerConfirmed,
+        sellerConfirmedAt: chatRoom.sellerConfirmedAt?.toISOString() ?? null,
+        userDone: chatRoom.userDone,
+      },
     });
   } catch (err: unknown) {
     if (err instanceof Error && (err as { statusCode?: number }).statusCode === 403) {
@@ -71,26 +106,78 @@ export async function POST(
 
     const senderLabel = await assertAccess(roomId, me.id, me.role);
 
+    // Lazy auto-resolution check
+    await checkAutoResolution(roomId);
+
+    const room = await prisma.chatRoom.findUnique({
+      where: { id: roomId },
+      select: {
+        totalMsgCount: true,
+        userTurnCount: true,
+        firstSellerMsgAt: true,
+        sellerConfirmed: true,
+        complaint: { select: { status: true } },
+      },
+    });
+
+    if (!room) return NextResponse.json({ error: "Không tìm thấy phòng chat", code: "NOT_FOUND" }, { status: 404 });
+
+    const status = room.complaint?.status;
+    if (status === "RESOLVED" || status === "REJECTED" || status === "PENDING_ADMIN") {
+      return NextResponse.json({ error: "Khiếu nại đã kết thúc.", code: "CHAT_ENDED" }, { status: 400 });
+    }
+
+    // Hết tổng quota → block
+    if (room.totalMsgCount >= TOTAL_MSG_LIMIT) {
+      return NextResponse.json(
+        { error: "Đã đạt giới hạn 20 tin nhắn. Vui lòng xác nhận kết quả.", code: "QUOTA_EXCEEDED" },
+        { status: 400 },
+      );
+    }
+
+    // User bị giới hạn 3 tin/lượt
+    if (senderLabel === "Người mua" && room.userTurnCount >= USER_TURN_LIMIT) {
+      return NextResponse.json(
+        { error: "Bạn đã gửi 3 tin nhắn. Vui lòng chờ nhà bán hàng phản hồi.", code: "TURN_LIMIT_REACHED" },
+        { status: 429 },
+      );
+    }
+
     const body: unknown = await req.json();
     const parsed = z.object({ content: z.string().min(1).max(2000).trim() }).safeParse(body);
     if (!parsed.success) return apiValidationError(parsed.error.issues);
 
     const senderName = senderLabel === "Nhà bán hàng"
       ? `Seller #${me.id.slice(0, 8).toUpperCase()}`
-      : me.fullName;
+      : (me.fullName ?? me.email);
 
-    const message = await prisma.chatMessage.create({
-      data: {
-        roomId,
-        senderId: me.id,
-        senderName,
-        senderLabel,
-        content: parsed.data.content,
-      },
-      select: { id: true, senderId: true, senderName: true, senderLabel: true, content: true, createdAt: true },
-    });
+    // Cập nhật counters + ghi tin nhắn
+    const isSeller = senderLabel === "Nhà bán hàng";
+    const newTotalMsgCount = room.totalMsgCount + 1;
+    const newUserTurnCount = isSeller ? 0 : room.userTurnCount + 1;
 
-    return apiOk({ ...message, createdAt: message.createdAt.toISOString() }, 201);
+    const [message] = await prisma.$transaction([
+      prisma.chatMessage.create({
+        data: { roomId, senderId: me.id, senderName, senderLabel, content: parsed.data.content },
+        select: { id: true, senderId: true, senderName: true, senderLabel: true, content: true, createdAt: true },
+      }),
+      prisma.chatRoom.update({
+        where: { id: roomId },
+        data: {
+          totalMsgCount: newTotalMsgCount,
+          userTurnCount: newUserTurnCount,
+          // Set firstSellerMsgAt khi seller gửi tin đầu tiên (dùng để check 12h deadline)
+          ...(isSeller && !room.firstSellerMsgAt ? { firstSellerMsgAt: new Date() } : {}),
+        },
+      }),
+    ]);
+
+    const quota = makeQuota(newTotalMsgCount, newUserTurnCount, senderLabel);
+
+    return apiOk(
+      { ...message, createdAt: message.createdAt.toISOString(), quota },
+      201,
+    );
   } catch (err: unknown) {
     if (err instanceof Error && (err as { statusCode?: number }).statusCode === 403) {
       return NextResponse.json({ error: "Không có quyền truy cập", code: "FORBIDDEN" }, { status: 403 });
