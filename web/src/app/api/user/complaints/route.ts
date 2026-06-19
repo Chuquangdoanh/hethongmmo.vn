@@ -50,9 +50,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    if (Date.now() - order.createdAt.getTime() > 24 * 60 * 60 * 1000) {
+    if (Date.now() - order.createdAt.getTime() > 2 * 60 * 60 * 1000) {
       return NextResponse.json(
-        { error: "Đã quá 24 giờ kể từ khi mua hàng, không thể khiếu nại.", code: "COMPLAINT_WINDOW_EXPIRED" },
+        { error: "Đã quá 2 giờ kể từ khi mua hàng, không thể khiếu nại.", code: "COMPLAINT_WINDOW_EXPIRED" },
         { status: 400 },
       );
     }
