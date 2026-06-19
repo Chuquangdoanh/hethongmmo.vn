@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Search, X } from "lucide-react";
 
 interface Props {
@@ -13,22 +13,31 @@ export function BannerSearchInput({ defaultValue, basePath }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [value, setValue] = useState(defaultValue);
+  const [, startTransition] = useTransition();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchParamsRef = useRef(searchParams);
   // eslint-disable-next-line react-hooks/refs
   searchParamsRef.current = searchParams;
+  // Skip debounce on initial mount — chỉ chạy khi user thực sự gõ
+  const isMounted = useRef(false);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setValue(defaultValue); }, [defaultValue]);
 
   useEffect(() => {
+    if (!isMounted.current) {
+      isMounted.current = true;
+      return;
+    }
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       const params = new URLSearchParams(searchParamsRef.current.toString());
       const trimmed = value.trim();
       if (trimmed) params.set("q", trimmed); else params.delete("q");
       params.delete("page");
-      router.replace(`${basePath}?${params.toString()}`, { scroll: false });
+      startTransition(() => {
+        router.replace(`${basePath}?${params.toString()}`, { scroll: false });
+      });
     }, 400);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
