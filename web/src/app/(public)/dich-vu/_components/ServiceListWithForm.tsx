@@ -221,7 +221,7 @@ function ServiceCard({
               }`}
             >
               <ShoppingCart size={13} strokeWidth={2} />
-              {isSelected ? "✓ Đang chọn" : "Đặt hàng ngay"}
+              {isSelected ? "✓ Đang chọn" : "Sử Dụng"}
             </button>
           </div>
 
@@ -495,7 +495,7 @@ function ServiceOrderPanel({
               <label className="block text-xs font-semibold text-[#374151] mb-1.5 flex items-center gap-1.5">
                 {isICloud
                   ? <><Smartphone size={12} strokeWidth={2} className="text-[#7c3aed]" /> IMEI Máy *</>
-                  : <><Link2 size={12} strokeWidth={2} className="text-[#0066ff]" /> Link {PLATFORM_LABELS[service.platform] ?? "trang"} *</>}
+                  : <><Link2 size={12} strokeWidth={2} className="text-[#0066ff]" /> Link URL *</>}
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]">
@@ -511,7 +511,7 @@ function ServiceOrderPanel({
                     if (linkTouched) setLinkError(validateLink(e.target.value));
                   }}
                   onBlur={() => { setLinkTouched(true); setLinkError(validateLink(form.imeiOrLink)); }}
-                  placeholder={isICloud ? "VD: 352456789013456" : `Link ${PLATFORM_LABELS[service.platform] ?? ""}`}
+                  placeholder={isICloud ? "VD: 352456789013456" : "Link Tài khoản , Bài viết , fanpage"}
                   className={`w-full rounded-xl border pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none transition-colors ${
                     linkError ? "border-[#ef4444] bg-[#fff5f5] focus:border-[#ef4444]" : "border-[#e2e8f0] bg-[#f8fafc] focus:border-[#7C3AED]"
                   }`}
