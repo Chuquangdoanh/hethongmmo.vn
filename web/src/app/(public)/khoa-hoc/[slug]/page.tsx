@@ -257,12 +257,7 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                   {course.duration}
                 </span>
               )}
-              {contentList.length > 0 && (
-                <span className="flex items-center gap-1.5">
-                  <BookOpen size={13} strokeWidth={1.75} className="text-[#718096]" />
-                  {contentList.length} bài học
-                </span>
-              )}
+              
               {course.studentCount > 0 && (
                 <span className="flex items-center gap-1.5">
                   <Users size={13} strokeWidth={1.75} className="text-[#718096]" />
