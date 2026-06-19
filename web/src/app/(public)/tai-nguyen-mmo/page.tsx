@@ -14,7 +14,7 @@ import Pagination from "@/components/shared/Pagination";
 import {
   Package, ShoppingBag, ShoppingCart, Store,
   Pencil, CheckCircle,
-  FolderOpen, Search, Users, Shield, ChevronRight, X, Star, TrendingUp, Warehouse,
+  FolderOpen, Search, Shield, X,
 } from "lucide-react";
 import { SortSelect } from "./_components/SortSelect";
 import { buildMeta } from "@/lib/utils/seo";
@@ -29,23 +29,6 @@ export const metadata: Metadata = buildMeta({
 const PAGE_SIZE = 20;
 const BASE_PATH = "/tai-nguyen-mmo";
 
-const AVATAR_GRADIENTS = [
-  "from-[#0d9488] to-[#0284c7]",
-  "from-[#7c3aed] to-[#2563eb]",
-  "from-[#dc2626] to-[#d97706]",
-  "from-[#059669] to-[#0d9488]",
-  "from-[#0284c7] to-[#7c3aed]",
-  "from-[#d97706] to-[#dc2626]",
-];
-
-function idToGradientIndex(id: string): number {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) {
-    hash = ((hash << 5) - hash) + id.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash) % AVATAR_GRADIENTS.length;
-}
 
 type SortId = "noi-bat" | "ban-chay" | "moi-nhat" | "gia-cao" | "gia-thap";
 
@@ -131,7 +114,6 @@ export default async function TaiNguyenMmoPage({
     sellerReviewStats,
     allSellerCats,
     resourceCategories,
-    topSellerRows,
   ] = await Promise.all([
     prisma.mmoProduct.findMany({
       where: {
@@ -209,20 +191,9 @@ export default async function TaiNguyenMmoPage({
         },
       },
     }),
-    prisma.$queryRaw<Array<{ seller_id: string; order_count: number }>>`
-      SELECT sp.seller_id, COUNT(o.id)::int AS order_count
-      FROM seller_products sp
-      LEFT JOIN orders o ON o.seller_product_id = sp.id AND o.status = 'DONE'
-      WHERE sp.deleted_at IS NULL AND sp.is_active = true AND sp.store_type = 'TAI_NGUYEN_MMO'
-      GROUP BY sp.seller_id
-      ORDER BY order_count DESC
-      LIMIT 5
-    `,
   ]);
 
-  const topSellerIds = topSellerRows.map((r) => r.seller_id);
-
-  const [purchasedSellerIds, reviewedSellerIds, purchasedMmoIds, reviewedMmoIds, topSellerUsers] =
+  const [purchasedSellerIds, reviewedSellerIds, purchasedMmoIds, reviewedMmoIds] =
     await Promise.all([
       me ? prisma.order.findMany({
         where: { userId: me.id, orderType: "SELLER_PRODUCT", status: "DONE" },
@@ -242,12 +213,6 @@ export default async function TaiNguyenMmoPage({
         where: { userId: me.id, productType: "MMO_PRODUCT" },
         select: { productId: true },
       }).then((rows) => new Set(rows.map((r) => r.productId))) : Promise.resolve(new Set<string>()),
-      topSellerIds.length > 0
-        ? prisma.user.findMany({
-            where: { id: { in: topSellerIds } },
-            select: { id: true, uidPrefix: true, avatarUrl: true, sellerTier: true },
-          })
-        : Promise.resolve([] as Array<{ id: string; uidPrefix: string; avatarUrl: string | null; sellerTier: string }>),
     ]);
 
   const mmoReviewMap = new Map(
@@ -328,33 +293,6 @@ export default async function TaiNguyenMmoPage({
   const featuredPlatformSubcats = featuredPlatformName
     ? (categoryItems.find((c) => c.name === featuredPlatformName)?.subCategories ?? []).filter((s) => (s.count ?? 0) > 0)
     : [];
-
-  // Top sellers for right sidebar
-  const sellerRatingAgg = new Map<string, { total: number; count: number }>();
-  for (const sp of sellerProducts) {
-    const rev = sellerReviewMap.get(sp.id);
-    if (rev && rev.count > 0) {
-      const existing = sellerRatingAgg.get(sp.seller.id) ?? { total: 0, count: 0 };
-      existing.total += rev.avg * rev.count;
-      existing.count += rev.count;
-      sellerRatingAgg.set(sp.seller.id, existing);
-    }
-  }
-
-  const topSellers = topSellerIds
-    .map((id) => {
-      const user = topSellerUsers.find((u) => u.id === id);
-      if (!user) return null;
-      const rating = sellerRatingAgg.get(id);
-      return {
-        id,
-        uidPrefix: user.uidPrefix,
-        avatarUrl: user.avatarUrl,
-        orderCount: Number(topSellerRows.find((r) => r.seller_id === id)?.order_count ?? 0),
-        avgRating: rating ? rating.total / rating.count : 0,
-      };
-    })
-    .filter((s): s is NonNullable<typeof s> => s !== null);
 
   // eslint-disable-next-line react-hooks/purity
   const fourteenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -502,42 +440,6 @@ export default async function TaiNguyenMmoPage({
             </div>
           </div>
 
-          {/* SEO Breadcrumb */}
-          <nav className="flex items-center gap-1.5 text-xs text-text-muted flex-wrap px-0.5">
-            <Link href="/" className="hover:text-primary transition-colors">Trang chủ</Link>
-            <ChevronRight size={11} strokeWidth={2} className="text-[#cbd5e1] shrink-0" />
-            <Link href={BASE_PATH} className={`hover:text-primary transition-colors ${!selectedCategories.length ? "text-text-dark font-semibold" : ""}`}>
-              Nguyên Liệu MMO
-            </Link>
-            {selectedCategories[0] && (
-              <>
-                <ChevronRight size={11} strokeWidth={2} className="text-[#cbd5e1] shrink-0" />
-                <span className={`${!selectedSubcatNames.length ? "text-text-dark font-semibold" : ""}`}>
-                  {selectedCategories[0]}
-                </span>
-              </>
-            )}
-            {selectedSubcatNames[0] && (
-              <>
-                <ChevronRight size={11} strokeWidth={2} className="text-[#cbd5e1] shrink-0" />
-                <span className="text-text-dark font-semibold">{selectedSubcatNames[0]}</span>
-              </>
-            )}
-          </nav>
-
-          {/* Store type toggle */}
-          <div className="flex items-center gap-1 bg-white rounded-xl border border-border p-1 shadow-sm w-fit">
-            <span className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#1e293b] text-white cursor-default">
-              <Package size={13} /> Tài Nguyên MMO
-            </span>
-            <Link
-              href="/kho-tai-nguyen"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-text-muted hover:bg-[#f1f5f9] transition-colors"
-            >
-              <Warehouse size={13} /> Kho Tài Nguyên
-            </Link>
-          </div>
-
           {/* Danh mục — grid card lớn */}
           {platformCards.length > 0 && (
             <div className="bg-white rounded-2xl border border-border p-4 shadow-sm">
@@ -641,14 +543,6 @@ export default async function TaiNguyenMmoPage({
                     <X size={11} strokeWidth={2.5} /> Xoá bộ lọc
                   </Link>
                 )}
-                <Link
-                  href={`${BASE_PATH}/gian-hang`}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-text-muted border border-border hover:border-primary/40 hover:text-primary hover:bg-[#f0f4f8] transition-colors"
-                >
-                  <Store size={11} strokeWidth={2} />
-                  Gian hàng
-                  <ChevronRight size={10} strokeWidth={2.5} />
-                </Link>
                 <SortSelect />
               </div>
             </div>
@@ -803,129 +697,6 @@ export default async function TaiNguyenMmoPage({
           </div>
         </div>
 
-        {/* ── RIGHT SIDEBAR ── */}
-        <div className="hidden xl:flex w-54 shrink-0 flex-col gap-4 self-start sticky top-24">
-
-          {/* System stats */}
-          <div className="bg-white rounded-xl border border-border p-4">
-            <p className="text-xs font-extrabold text-text-dark mb-3 flex items-center gap-1.5">
-              <TrendingUp size={13} strokeWidth={2.5} className="text-primary" />
-              Thống kê hệ thống
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-light rounded-lg p-2.5 text-center">
-                <p className="text-sm font-extrabold text-text-dark">{mmoProducts.length + sellerProducts.length}</p>
-                <p className="text-[9px] text-text-muted mt-0.5">Sản phẩm</p>
-              </div>
-              <div className="bg-light rounded-lg p-2.5 text-center">
-                <p className="text-sm font-extrabold text-text-dark">{totalSellers}</p>
-                <p className="text-[9px] text-text-muted mt-0.5">Nhà bán</p>
-              </div>
-              <div className="bg-light rounded-lg p-2.5 text-center">
-                <p className="text-sm font-extrabold text-text-dark">{allCategories.length}</p>
-                <p className="text-[9px] text-text-muted mt-0.5">Danh mục</p>
-              </div>
-              <div className="bg-light rounded-lg p-2.5 text-center">
-                <p className="text-sm font-extrabold text-[#059669]">24/7</p>
-                <p className="text-[9px] text-text-muted mt-0.5">Hỗ trợ</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Top sellers */}
-          {topSellers.length > 0 && (
-            <div className="bg-white rounded-xl border border-border p-4">
-              <p className="text-xs font-extrabold text-text-dark mb-3 flex items-center gap-1.5">
-                <Users size={13} strokeWidth={2.5} className="text-primary" />
-                Top nhà bán hàng
-              </p>
-              <div className="flex flex-col gap-2.5">
-                {topSellers.map((seller, i) => {
-                  const gradient = AVATAR_GRADIENTS[idToGradientIndex(seller.id)]!;
-                  return (
-                    <Link
-                      key={seller.id}
-                      href={`${BASE_PATH}/nguoi-ban/${seller.id}`}
-                      className="flex items-center gap-2 group"
-                    >
-                      <span className="w-5 h-5 rounded-full bg-[#f1f5f9] text-[10px] font-extrabold text-text-muted flex items-center justify-center shrink-0">
-                        {i + 1}
-                      </span>
-                      {seller.avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={r2Url(seller.avatarUrl)}
-                          alt={`#${seller.uidPrefix}`}
-                          className="w-7 h-7 rounded-full object-cover shrink-0"
-                        />
-                      ) : (
-                        <div className={`w-7 h-7 rounded-full bg-linear-to-br ${gradient} flex items-center justify-center shrink-0`}>
-                          <Store size={12} strokeWidth={1.75} className="text-white" />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-bold text-text-dark truncate group-hover:text-primary transition-colors">
-                          #{seller.uidPrefix}
-                        </p>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          {seller.avgRating > 0 && (
-                            <span className="flex items-center gap-0.5 text-[9px] text-warning">
-                              <Star size={7} fill="#f59e0b" />
-                              {seller.avgRating.toFixed(1)}
-                            </span>
-                          )}
-                          <span className="text-[9px] text-text-muted">
-                            {seller.avgRating > 0 ? "·" : ""} {seller.orderCount} đơn
-                          </span>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-              <Link
-                href={`${BASE_PATH}/gian-hang`}
-                className="mt-3 w-full py-2 rounded-lg text-[11px] font-bold text-primary border border-primary/40 hover:bg-primary hover:text-white transition-all text-center flex items-center justify-center gap-1"
-              >
-                Xem tất cả gian hàng
-                <ChevronRight size={11} strokeWidth={2.5} />
-              </Link>
-            </div>
-          )}
-
-          {/* Trust badges */}
-          <div className="bg-white rounded-xl border border-border p-4">
-            <div className="flex flex-col gap-2.5">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[#dbeafe] flex items-center justify-center shrink-0">
-                  <Shield size={12} strokeWidth={2} className="text-[#1d4ed8]" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-text-dark">Giao hàng tự động</p>
-                  <p className="text-[9px] text-text-muted">Nhận ngay sau thanh toán</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[#dcfce7] flex items-center justify-center shrink-0">
-                  <CheckCircle size={12} strokeWidth={2} className="text-[#059669]" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-text-dark">Bảo hành uy tín</p>
-                  <p className="text-[9px] text-text-muted">Hỗ trợ đổi trả nhanh</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[#fef3c7] flex items-center justify-center shrink-0">
-                  <Star size={12} strokeWidth={2} className="text-[#d97706]" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-text-dark">Đánh giá thực</p>
-                  <p className="text-[9px] text-text-muted">Từ người mua đã xác minh</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

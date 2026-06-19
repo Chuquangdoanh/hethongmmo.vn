@@ -13,9 +13,9 @@ import { SortSelect } from "@/app/(public)/tai-nguyen-mmo/_components/SortSelect
 import { buildMeta } from "@/lib/utils/seo";
 import { KhoFilterSidebar } from "./_components/KhoFilterSidebar";
 import {
-  Package, ShoppingBag, ShoppingCart, Store,
+  Package, ShoppingBag, ShoppingCart,
   Pencil, CheckCircle, FolderOpen, Search,
-  Users, TrendingUp, Clock, Shield, Star, ChevronRight, X, Warehouse,
+  Users, Clock, Shield, X,
 } from "lucide-react";
 
 export const metadata: Metadata = buildMeta({
@@ -47,15 +47,6 @@ function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }
   );
 }
 
-function tierBadge(tier: string | null): { label: string; bg: string; fg: string } | null {
-  if (!tier) return null;
-  const map: Record<string, { label: string; bg: string; fg: string }> = {
-    GOLD:     { label: "TOP SELLER", bg: "#fef3c7", fg: "#b45309" },
-    SILVER:   { label: "VERIFIED",   bg: "#dbeafe", fg: "#1d4ed8" },
-    STANDARD: { label: "SELLER",     bg: "#f1f5f9", fg: "#475569" },
-  };
-  return map[tier.toUpperCase()] ?? { label: tier, bg: "#f1f5f9", fg: "#475569" };
-}
 
 export default async function KhoTaiNguyenPage({
   searchParams,
@@ -132,7 +123,7 @@ export default async function KhoTaiNguyenPage({
     : activeSort === "gia-thap" ? [{ price: "asc" as const }]
     : [{ salesCount: "desc" as const }, { createdAt: "desc" as const }];
 
-  const [allStatProducts, filteredProducts, resourceCategories, reviewStats, topSellerRows] = await Promise.all([
+  const [allStatProducts, filteredProducts, resourceCategories, reviewStats] = await Promise.all([
     prisma.sellerProduct.findMany({
       where: baseWhere,
       select: { id: true, sellerCategory: true, sellerId: true, subCategoryId: true },
@@ -172,25 +163,9 @@ export default async function KhoTaiNguyenPage({
       _count: { id: true },
       _avg: { rating: true },
     }),
-    prisma.$queryRaw<Array<{ seller_id: string; order_count: number }>>`
-      SELECT sp.seller_id, COUNT(o.id)::int AS order_count
-      FROM seller_products sp
-      LEFT JOIN orders o ON o.seller_product_id = sp.id AND o.status = 'DONE'
-      WHERE sp.store_type = 'KHO_TAI_NGUYEN' AND sp.deleted_at IS NULL
-      GROUP BY sp.seller_id
-      ORDER BY order_count DESC
-      LIMIT 5
-    `,
   ]);
 
-  const topSellerIds = topSellerRows.map((r) => r.seller_id);
-  const [topSellerUsers, purchasedIds, reviewedIds] = await Promise.all([
-    topSellerIds.length > 0
-      ? prisma.user.findMany({
-          where: { id: { in: topSellerIds } },
-          select: { id: true, uidPrefix: true, avatarUrl: true, sellerTier: true },
-        })
-      : ([] as Array<{ id: string; uidPrefix: string; avatarUrl: string | null; sellerTier: string }>),
+  const [purchasedIds, reviewedIds] = await Promise.all([
     me
       ? prisma.order
           .findMany({
@@ -264,35 +239,6 @@ export default async function KhoTaiNguyenPage({
 
   // Review map
   const reviewMap = new Map(reviewStats.map((r) => [r.productId, { count: r._count.id, avg: r._avg.rating ?? 0 }]));
-
-  // Seller rating aggregate (for top sellers card)
-  const sellerRatingAgg = new Map<string, { total: number; count: number }>();
-  for (const p of allStatProducts) {
-    const rev = reviewMap.get(p.id);
-    if (rev && rev.count > 0) {
-      const existing = sellerRatingAgg.get(p.sellerId) ?? { total: 0, count: 0 };
-      existing.total += rev.avg * rev.count;
-      existing.count += rev.count;
-      sellerRatingAgg.set(p.sellerId, existing);
-    }
-  }
-
-  const topSellers = topSellerIds
-    .map((id) => {
-      const user = topSellerUsers.find((u) => u.id === id);
-      if (!user) return null;
-      const rating = sellerRatingAgg.get(id);
-      return {
-        id,
-        uidPrefix: user.uidPrefix,
-        avatarUrl: user.avatarUrl,
-        tier: user.sellerTier,
-        orderCount: Number(topSellerRows.find((r) => r.seller_id === id)?.order_count ?? 0),
-        avgRating: rating ? rating.total / rating.count : 0,
-        reviewCount: rating?.count ?? 0,
-      };
-    })
-    .filter((s): s is NonNullable<typeof s> => s !== null);
 
   // Paginate
   const fourteenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -388,40 +334,6 @@ export default async function KhoTaiNguyenPage({
             <div className="absolute inset-0 bg-gradient-to-l from-[#1e40af]/20 to-transparent pointer-events-none" />
           </div>
 
-          {/* SEO Breadcrumb */}
-          <nav aria-label="Điều hướng" className="flex items-center gap-1.5 text-xs text-[#64748b] bg-white rounded-xl border border-[#e2e8f0] px-4 py-2.5 shadow-sm">
-            <Link href="/" className="hover:text-[#3b82f6] transition-colors">Trang chủ</Link>
-            <ChevronRight size={12} className="text-[#cbd5e1]" />
-            <Link href={BASE_PATH} className={selectedCategories.length === 0 ? "font-semibold text-[#1e293b]" : "hover:text-[#3b82f6] transition-colors"}>
-              Kho Tài Nguyên
-            </Link>
-            {selectedCategories.length > 0 && (
-              <>
-                <ChevronRight size={12} className="text-[#cbd5e1]" />
-                <span className="font-semibold text-[#1e293b] truncate max-w-[200px]">{selectedCategories.join(", ")}</span>
-              </>
-            )}
-            {selectedSubcatNames.length > 0 && (
-              <>
-                <ChevronRight size={12} className="text-[#cbd5e1]" />
-                <span className="font-semibold text-[#1e293b] truncate max-w-[160px]">{selectedSubcatNames.join(", ")}</span>
-              </>
-            )}
-          </nav>
-
-          {/* Store type toggle */}
-          <div className="flex items-center gap-1 bg-white rounded-xl border border-[#e2e8f0] p-1 shadow-sm w-fit">
-            <Link
-              href="/tai-nguyen-mmo"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-[#64748b] hover:bg-[#f1f5f9] transition-colors"
-            >
-              <Package size={13} /> Tài Nguyên MMO
-            </Link>
-            <span className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#1e293b] text-white cursor-default">
-              <Warehouse size={13} /> Kho Tài Nguyên
-            </span>
-          </div>
-
           {/* Danh mục — grid card lớn */}
           {platformCards.length > 0 && (
             <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm">
@@ -504,13 +416,6 @@ export default async function KhoTaiNguyenPage({
                 <h2 className="font-bold text-[#1e293b] text-[15px]">Tài nguyên trong kho</h2>
               </div>
               <div className="flex items-center gap-2">
-                <Link
-                  href="/kho-tai-nguyen/gian-hang"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-[#475569] hover:bg-light transition-colors whitespace-nowrap"
-                >
-                  <Store size={12} />
-                  Gian hàng
-                </Link>
                 <SortSelect basePath={BASE_PATH} />
               </div>
             </div>
@@ -699,82 +604,6 @@ export default async function KhoTaiNguyenPage({
 
         </div>
 
-        {/* ── RIGHT SIDEBAR ── */}
-        <div className="w-[216px] shrink-0 flex flex-col gap-4 self-start sticky top-24">
-
-          {/* Thống kê hệ thống */}
-          <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm">
-            <h3 className="font-bold text-[#1e293b] text-[13px] mb-3">Thống kê hệ thống</h3>
-            <div className="space-y-3">
-              {([
-                { Icon: Package,    bg: "#dbeafe", fg: "#2563eb", label: "Tài nguyên",     value: `${allStatProducts.length.toLocaleString("vi-VN")}+` },
-                { Icon: Users,      bg: "#d1fae5", fg: "#059669", label: "Khách hàng",     value: "10.000+"                                             },
-                { Icon: TrendingUp, bg: "#fef3c7", fg: "#d97706", label: "Tỷ lệ thành công", value: "99.9%"                                             },
-                { Icon: Clock,      bg: "#ede9fe", fg: "#7c3aed", label: "Hỗ trợ",         value: "24/7"                                                },
-              ] as const).map(({ Icon, bg, fg, label, value }) => (
-                <div key={label} className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: bg }}>
-                    <Icon size={14} style={{ color: fg }} />
-                  </div>
-                  <div>
-                    <p className="font-extrabold text-[#1e293b] text-[13px] leading-tight">{value}</p>
-                    <p className="text-[10px] text-[#64748b]">{label}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Top nhà bán hàng */}
-          {topSellers.length > 0 && (
-            <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm">
-              <h3 className="font-bold text-[#1e293b] text-[13px] mb-3">Top nhà bán hàng</h3>
-              <div className="space-y-3">
-                {topSellers.map((seller, idx) => {
-                  const initials = seller.uidPrefix.slice(0, 2).toUpperCase();
-                  const badge    = tierBadge(seller.tier);
-                  const grad     = AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length] ?? "from-[#3b82f6] to-[#6366f1]";
-                  return (
-                    <div key={seller.id} className="flex items-center gap-2.5">
-                      <div className={`w-8 h-8 rounded-full shrink-0 overflow-hidden bg-gradient-to-br ${grad} flex items-center justify-center`}>
-                        {seller.avatarUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={r2Url(seller.avatarUrl)} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-[10px] font-extrabold text-white">{initials}</span>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                          <span className="text-[13px] font-bold text-[#1e293b] truncate">#{seller.uidPrefix}</span>
-                          {badge && (
-                            <span
-                              className="px-1 py-px rounded text-[9px] font-bold shrink-0"
-                              style={{ background: badge.bg, color: badge.fg }}
-                            >
-                              {badge.label}
-                            </span>
-                          )}
-                        </div>
-                        {seller.avgRating > 0 && (
-                          <div className="flex items-center gap-1">
-                            <Star size={9} fill="#f59e0b" strokeWidth={0} className="text-[#f59e0b]" />
-                            <span className="text-[11px] font-bold text-[#374151]">{seller.avgRating.toFixed(1)}</span>
-                            <span className="text-[10px] text-[#94a3b8]">({seller.reviewCount})</span>
-                          </div>
-                        )}
-                        <p className="text-[10px] text-[#64748b]">
-                          {seller.orderCount.toLocaleString("vi-VN")} đơn hàng
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-        </div>
       </div>
     </div>
   );
