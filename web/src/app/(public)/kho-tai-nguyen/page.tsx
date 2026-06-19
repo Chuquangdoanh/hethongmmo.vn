@@ -311,7 +311,7 @@ export default async function KhoTaiNguyenPage({
             </Link>
           </div>
           <div className="overflow-x-auto">
-            <SortSelect />
+            <SortSelect basePath={BASE_PATH} />
           </div>
         </div>
 

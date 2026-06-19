@@ -87,7 +87,7 @@ export default async function Sidebar() {
   ];
 
   const groups: SidebarNavGroup[] = [
-    { title: "DỊCH VỤ MMO", items: serviceItems },
+    { title: "DỊCH VỤ MẠNG XÃ HỘI", items: serviceItems },
     { title: "HỆ THỐNG", items: systemItems },
   ];
 

@@ -49,7 +49,7 @@ async function verifyCaptcha(token: string, ip: string): Promise<boolean> {
   }
 }
 
-const FIVE_MIN_MS = 5 * 60 * 1000;
+const FIVE_MIN_MS = 30 * 1000; // 30s — đủ nhanh để role/sellerStatus propagate sau khi admin duyệt
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   ...authConfig,

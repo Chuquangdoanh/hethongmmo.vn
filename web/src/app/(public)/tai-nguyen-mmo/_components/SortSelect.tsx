@@ -11,7 +11,7 @@ const SORT_OPTIONS = [
   { id: "gia-thap", label: "Giá Thấp" },
 ] as const;
 
-export function SortSelect() {
+export function SortSelect({ basePath = "/tai-nguyen-mmo" }: { basePath?: string }) {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const activeSort   = searchParams.get("sort") ?? "noi-bat";
@@ -23,7 +23,7 @@ export function SortSelect() {
     else params.delete("sort");
     params.delete("page");
     startTransition(() => {
-      router.replace(`/tai-nguyen-mmo?${params.toString()}`, { scroll: false });
+      router.replace(`${basePath}?${params.toString()}`, { scroll: false });
     });
   }
 
