@@ -55,6 +55,10 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
 
+  // Store type flags for the form
+  const [formShowKho, setFormShowKho] = useState(false);
+  const [formShowMmo, setFormShowMmo] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [uploadError, setUploadError] = useState("");
@@ -81,10 +85,26 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
   const khoCount = categories.filter((c) => c.showInKhoTaiNguyen).length;
   const mmoCount = categories.filter((c) => c.showInTaiNguyenMmo).length;
 
+  // Open form pre-set for a specific store type
+  function openFormFor(storeType: "kho" | "mmo") {
+    setEditingId(null);
+    setName("");
+    setIconUrl("");
+    setError("");
+    setUploadError("");
+    setImportUrl("");
+    setFormShowKho(storeType === "kho");
+    setFormShowMmo(storeType === "mmo");
+    setFormOpen(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function startEdit(cat: Category) {
     setEditingId(cat.id);
     setName(cat.name);
     setIconUrl(cat.iconUrl ?? "");
+    setFormShowKho(cat.showInKhoTaiNguyen);
+    setFormShowMmo(cat.showInTaiNguyenMmo);
     setError("");
     setUploadError("");
     setFormOpen(true);
@@ -95,6 +115,8 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
     setEditingId(null);
     setName("");
     setIconUrl("");
+    setFormShowKho(false);
+    setFormShowMmo(false);
     setError("");
     setUploadError("");
     setImportUrl("");
@@ -103,6 +125,7 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
 
   async function handleSave() {
     if (!name.trim()) { setError("Tên danh mục không được để trống"); return; }
+    if (!formShowKho && !formShowMmo) { setError("Phải chọn ít nhất 1 loại cửa hàng"); return; }
     setError("");
     setLoading(true);
     try {
@@ -111,7 +134,12 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), iconUrl: iconUrl.trim() }),
+        body: JSON.stringify({
+          name: name.trim(),
+          iconUrl: iconUrl.trim(),
+          showInKhoTaiNguyen: formShowKho,
+          showInTaiNguyenMmo: formShowMmo,
+        }),
       });
       const json = (await res.json()) as { data?: Category; error?: string };
       if (!res.ok) { setError(json.error ?? "Lưu thất bại"); return; }
@@ -203,31 +231,92 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
     }
   }
 
+  // Label for form header based on selected flags
+  const formStoreLabel = formShowKho && formShowMmo ? "Kho TN + TN MMO"
+    : formShowKho ? "Kho Tài Nguyên"
+    : formShowMmo ? "Tài Nguyên MMO"
+    : "—";
+
+  const formStoreBg = formShowKho && !formShowMmo ? "bg-blue-50 border-blue-200"
+    : !formShowKho && formShowMmo ? "bg-violet-50 border-violet-200"
+    : "bg-gray-50 border-gray-200";
+
   return (
     <div className="space-y-6">
 
-      {/* ── Form toggle button ── */}
-      {!formOpen ? (
-        <button
-          type="button"
-          onClick={() => setFormOpen(true)}
-          className="px-4 py-2 rounded-lg bg-[#7C3AED] text-white text-sm font-medium hover:bg-[#A855F7] transition-colors"
-        >
-          + Thêm danh mục mới
-        </button>
-      ) : (
-        /* ── Form thêm / sửa (full width) ── */
-        <section className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-900">
-              {editingId ? "Sửa danh mục" : "Thêm danh mục mới"}
-            </h2>
+      {/* ── 2 nút thêm tách biệt ── */}
+      {!formOpen && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => openFormFor("kho")}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+          >
+            <Warehouse size={15} />
+            + Thêm danh mục Kho Tài Nguyên
+          </button>
+          <button
+            type="button"
+            onClick={() => openFormFor("mmo")}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 transition-colors"
+          >
+            <Package size={15} />
+            + Thêm danh mục Tài Nguyên MMO
+          </button>
+        </div>
+      )}
+
+      {/* ── Form thêm / sửa (full width) ── */}
+      {formOpen && (
+        <section className={`rounded-xl border p-5 space-y-4 ${formStoreBg}`}>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-gray-900">
+                {editingId ? "Sửa danh mục" : "Thêm danh mục mới"}
+              </h2>
+              <span className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                formShowKho && !formShowMmo ? "bg-blue-100 text-blue-700"
+                  : !formShowKho && formShowMmo ? "bg-violet-100 text-violet-700"
+                  : "bg-gray-100 text-gray-600"
+              }`}>
+                {formShowKho && <Warehouse size={10} />}
+                {formShowMmo && <Package size={10} />}
+                {formStoreLabel}
+              </span>
+            </div>
             {!editingId && (
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#7C3AED] bg-[#7C3AED]/8 border border-[#7C3AED]/20 rounded-full px-2.5 py-1">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#7C3AED] bg-white border border-[#7C3AED]/20 rounded-full px-2.5 py-1">
                 <span className="w-4 h-4 rounded-full bg-[#7C3AED] text-white text-[9px] font-bold flex items-center justify-center">{nextOrder}</span>
                 Số thứ tự tiếp theo
               </span>
             )}
+          </div>
+
+          {/* Store type checkboxes — hiển thị rõ trong form */}
+          <div className="flex items-center gap-5 p-3 bg-white rounded-lg border border-gray-200">
+            <span className="text-xs text-gray-500 font-medium shrink-0">Hiển thị tại:</span>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formShowKho}
+                onChange={(e) => setFormShowKho(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+              <span className="flex items-center gap-1 text-xs font-semibold text-blue-700">
+                <Warehouse size={13} /> Kho Tài Nguyên
+              </span>
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formShowMmo}
+                onChange={(e) => setFormShowMmo(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer"
+              />
+              <span className="flex items-center gap-1 text-xs font-semibold text-violet-700">
+                <Package size={13} /> Tài Nguyên MMO
+              </span>
+            </label>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -262,7 +351,7 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
                   onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                   onDragLeave={() => setIsDragging(false)}
                   onClick={() => fileInputRef.current?.click()}
-                  className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors py-5 ${
+                  className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors py-5 bg-white ${
                     isDragging ? "border-[#7C3AED] bg-[#7C3AED]/5" : "border-gray-200 hover:border-[#7C3AED]/50"
                   }`}
                 >
@@ -353,7 +442,11 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
               type="button"
               onClick={() => void handleSave()}
               disabled={loading}
-              className="px-4 py-2 rounded-lg bg-[#7C3AED] text-white text-sm font-medium hover:bg-[#A855F7] disabled:opacity-60 transition-colors"
+              className={`px-4 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-60 transition-colors ${
+                formShowKho && !formShowMmo ? "bg-blue-600 hover:bg-blue-700"
+                  : !formShowKho && formShowMmo ? "bg-violet-600 hover:bg-violet-700"
+                  : "bg-[#7C3AED] hover:bg-[#A855F7]"
+              }`}
             >
               {loading ? "Đang lưu..." : editingId ? "Cập nhật" : "Thêm danh mục"}
             </button>
@@ -375,15 +468,12 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
           <p className="text-sm font-semibold text-gray-900 shrink-0">
             Danh sách danh mục ({filteredCategories.length}/{categories.length})
           </p>
-          {/* Store type filter */}
           <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-0.5">
             <button
               type="button"
               onClick={() => setStoreFilter("all")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
-                storeFilter === "all"
-                  ? "bg-gray-800 text-white"
-                  : "text-gray-500 hover:text-gray-700"
+                storeFilter === "all" ? "bg-gray-800 text-white" : "text-gray-500 hover:text-gray-700"
               }`}
             >
               Tất cả ({categories.length})
@@ -392,9 +482,7 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
               type="button"
               onClick={() => setStoreFilter("kho")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
-                storeFilter === "kho"
-                  ? "bg-blue-600 text-white"
-                  : "text-blue-600 hover:bg-blue-50"
+                storeFilter === "kho" ? "bg-blue-600 text-white" : "text-blue-600 hover:bg-blue-50"
               }`}
             >
               <Warehouse size={11} /> Kho TN ({khoCount})
@@ -403,9 +491,7 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
               type="button"
               onClick={() => setStoreFilter("mmo")}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
-                storeFilter === "mmo"
-                  ? "bg-violet-600 text-white"
-                  : "text-violet-600 hover:bg-violet-50"
+                storeFilter === "mmo" ? "bg-violet-600 text-white" : "text-violet-600 hover:bg-violet-50"
               }`}
             >
               <Package size={11} /> TN MMO ({mmoCount})
@@ -441,9 +527,9 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
                   <p className="text-sm font-semibold text-gray-900">{cat.name}</p>
                   <p className="text-[10px] text-gray-400 truncate mt-0.5">{cat.iconUrl ?? "Chưa có icon"}</p>
 
-                  {/* Store type checkboxes */}
-                  <div className="flex gap-4 mt-2">
-                    <label className="flex items-center gap-1.5 cursor-pointer group">
+                  {/* Store type badges / inline toggles */}
+                  <div className="flex gap-3 mt-2">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={cat.showInKhoTaiNguyen}
@@ -454,7 +540,7 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
                         <Warehouse size={11} /> Kho Tài Nguyên
                       </span>
                     </label>
-                    <label className="flex items-center gap-1.5 cursor-pointer group">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={cat.showInTaiNguyenMmo}

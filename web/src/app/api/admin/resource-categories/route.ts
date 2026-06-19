@@ -31,7 +31,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const parsed = createResourceCategorySchema.safeParse(body);
     if (!parsed.success) return apiValidationError(parsed.error.issues);
 
-    const { name, iconUrl } = parsed.data;
+    const { name, iconUrl, showInKhoTaiNguyen, showInTaiNguyenMmo } = parsed.data;
 
     const existing = await prisma.resourceCategory.findUnique({ where: { name } });
     if (existing) return apiError("Danh mục đã tồn tại", "DUPLICATE", 409);
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const nextOrder = (maxOrder._max.displayOrder ?? 0) + 1;
 
     const category = await prisma.resourceCategory.create({
-      data: { name, iconUrl: iconUrl || null, displayOrder: nextOrder },
+      data: { name, iconUrl: iconUrl || null, displayOrder: nextOrder, showInKhoTaiNguyen, showInTaiNguyenMmo },
       select: { id: true, name: true, iconUrl: true, displayOrder: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
     });
 
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       action: "CREATE_RESOURCE_CATEGORY",
       targetType: "ResourceCategory",
       targetId: category.id,
-      after: { name, iconUrl: iconUrl || null },
+      after: { name, iconUrl: iconUrl || null, showInKhoTaiNguyen, showInTaiNguyenMmo },
     });
 
     return apiOk(category);
