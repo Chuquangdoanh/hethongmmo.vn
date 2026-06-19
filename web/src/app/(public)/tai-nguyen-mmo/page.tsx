@@ -6,8 +6,6 @@ import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
 import { r2Url } from "@/lib/utils/image-url";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
-import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
-import type { CommunityBannerData } from "./_components/CommunityBanner";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ProductBuyButton from "./_components/ProductBuyButton";
 import { FilterSidebar } from "./_components/FilterSidebar";
@@ -17,7 +15,6 @@ import {
   Package, ShoppingBag, ShoppingCart, Store,
   Pencil, CheckCircle,
 } from "lucide-react";
-import { CommunityBanner } from "./_components/CommunityBanner";
 import { SortSelect } from "./_components/SortSelect";
 
 const PAGE_SIZE = 20;
@@ -85,7 +82,6 @@ export default async function TaiNguyenMmoPage({
   searchParams: Promise<{ category?: string; sort?: string; q?: string; price?: string; page?: string; subcategory?: string }>;
 }) {
   await guardPublicPage("tai-nguyen-mmo");
-  const cmsData = await getSiteContent<CommunityBannerData>(SITE_CONTENT_KEYS.PAGE_TAI_NGUYEN);
   const [{ category, sort: sortParam, q: rawQ, price: priceParam, page: pageParam, subcategory: subcategoryParam }, session] = await Promise.all([
     searchParams,
     auth(),
@@ -378,9 +374,6 @@ export default async function TaiNguyenMmoPage({
 
   return (
     <div className="min-h-screen bg-[#f1f5f9]">
-
-      {/* ── CỘNG ĐỒNG MMO (client component with popup modals) ── */}
-      <CommunityBanner data={cmsData} />
 
 {/* ── MAIN LAYOUT ── */}
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-6">
