@@ -105,7 +105,7 @@ export default async function Sidebar() {
     title: "HỖ TRỢ",
     items: [
       ...(sessionUser ? [{
-        href: "/tro-chuyen",
+        href: "/ho-tro",
         label: "Ticket hỗ trợ",
         icon: <span className="sb-icon-badge" style={{ background: "#fee2e2" }}><MessageCircle size={15} strokeWidth={1.75} style={{ color: "#dc2626" }} /></span>,
         badge: openTicketCount || undefined,

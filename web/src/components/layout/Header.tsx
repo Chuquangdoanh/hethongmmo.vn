@@ -63,7 +63,7 @@ export default async function Header() {
               <Bell size={18} strokeWidth={1.75} />
             </button>
             {sessionUser && (
-              <Link href="/tro-chuyen" className="hdr-icon-btn" aria-label="Ticket hỗ trợ" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Link href="/ho-tro" className="hdr-icon-btn" aria-label="Ticket hỗ trợ" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <TicketCheck size={18} strokeWidth={1.75} />
               </Link>
             )}
