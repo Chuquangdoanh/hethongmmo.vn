@@ -9,9 +9,11 @@ import { apiOk, apiSuccess, apiCatch, apiValidationError } from "@/lib/api-respo
 export const runtime = "nodejs";
 
 const updateSchema = z.object({
-  name:         z.string().min(1).max(100).trim().optional(),
-  displayOrder: z.number().int().min(0).optional(),
-  isActive:     z.boolean().optional(),
+  name:                z.string().min(1).max(100).trim().optional(),
+  displayOrder:        z.number().int().min(0).optional(),
+  isActive:            z.boolean().optional(),
+  showInKhoTaiNguyen:  z.boolean().optional(),
+  showInTaiNguyenMmo:  z.boolean().optional(),
 });
 
 // PATCH /api/admin/sub-categories/[id]
@@ -34,7 +36,7 @@ export async function PATCH(
     const updated = await prisma.sellerSubCategory.update({
       where: { id },
       data: parsed.data,
-      select: { id: true, name: true, categoryName: true, displayOrder: true, isActive: true },
+      select: { id: true, name: true, categoryName: true, displayOrder: true, isActive: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
     });
 
     return apiOk(updated);

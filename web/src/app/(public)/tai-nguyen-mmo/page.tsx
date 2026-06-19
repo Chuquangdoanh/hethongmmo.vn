@@ -167,7 +167,7 @@ export default async function TaiNguyenMmoPage({
         stockItems: { some: { status: "AVAILABLE" } },
         ...(lockedSellerIds.length > 0 ? { NOT: { sellerId: { in: lockedSellerIds } } } : {}),
         ...(category ? { sellerCategory: category } : {}),
-        ...(subcategoryParam ? { seller: { subCategories: { some: { subCategory: { name: subcategoryParam, isActive: true } } } } } : {}),
+        ...(subcategoryParam ? { seller: { subCategories: { some: { subCategory: { name: subcategoryParam, isActive: true, showInTaiNguyenMmo: true } } } } } : {}),
         ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
         ...priceFilter,
       },
@@ -201,7 +201,7 @@ export default async function TaiNguyenMmoPage({
       select: {
         name: true, iconUrl: true,
         subCategories: {
-          where: { isActive: true },
+          where: { isActive: true, showInTaiNguyenMmo: true },
           orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
           select: { id: true, name: true },
         },

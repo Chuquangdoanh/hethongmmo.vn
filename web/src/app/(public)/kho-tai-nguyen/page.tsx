@@ -101,7 +101,7 @@ export default async function KhoTaiNguyenPage({
     selectedSubcatNames.length > 0
       ? (
           await prisma.sellerSubCategory.findMany({
-            where: { name: { in: selectedSubcatNames }, isActive: true },
+            where: { name: { in: selectedSubcatNames }, isActive: true, showInKhoTaiNguyen: true },
             select: { id: true },
           })
         ).map((s) => s.id)
@@ -160,7 +160,7 @@ export default async function KhoTaiNguyenPage({
         name: true,
         iconUrl: true,
         subCategories: {
-          where: { isActive: true },
+          where: { isActive: true, showInKhoTaiNguyen: true },
           orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
           select: { id: true, name: true },
         },

@@ -18,7 +18,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const subs = await prisma.sellerSubCategory.findMany({
       where: categoryName ? { categoryName } : undefined,
       orderBy: [{ categoryName: "asc" }, { displayOrder: "asc" }, { name: "asc" }],
-      select: { id: true, name: true, categoryName: true, displayOrder: true, isActive: true },
+      select: { id: true, name: true, categoryName: true, displayOrder: true, isActive: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
     });
 
     return apiOk(subs);
@@ -28,9 +28,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 }
 
 const createSchema = z.object({
-  name:         z.string().min(1).max(100).trim(),
-  categoryName: z.string().min(1).max(250).trim(),
-  displayOrder: z.number().int().min(0).optional().default(0),
+  name:                z.string().min(1).max(100).trim(),
+  categoryName:        z.string().min(1).max(250).trim(),
+  displayOrder:        z.number().int().min(0).optional().default(0),
+  showInKhoTaiNguyen:  z.boolean().optional().default(true),
+  showInTaiNguyenMmo:  z.boolean().optional().default(true),
 });
 
 // POST /api/admin/sub-categories
@@ -43,15 +45,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const parsed = createSchema.safeParse(body);
     if (!parsed.success) return apiValidationError(parsed.error.issues);
 
-    const { name, categoryName, displayOrder } = parsed.data;
+    const { name, categoryName, displayOrder, showInKhoTaiNguyen, showInTaiNguyenMmo } = parsed.data;
 
     // Verify parent category exists
     const cat = await prisma.resourceCategory.findUnique({ where: { name: categoryName } });
     if (!cat) return apiOk({ error: "Danh mục cha không tồn tại" });
 
     const sub = await prisma.sellerSubCategory.create({
-      data: { name, categoryName, displayOrder },
-      select: { id: true, name: true, categoryName: true, displayOrder: true, isActive: true },
+      data: { name, categoryName, displayOrder, showInKhoTaiNguyen, showInTaiNguyenMmo },
+      select: { id: true, name: true, categoryName: true, displayOrder: true, isActive: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
     });
 
     return apiOk(sub);

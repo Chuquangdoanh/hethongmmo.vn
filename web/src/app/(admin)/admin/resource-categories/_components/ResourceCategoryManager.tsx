@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { r2Url } from "@/lib/utils/image-url";
+import { FolderOpen, Warehouse, Package } from "lucide-react";
 import SubCategoryManager from "./SubCategoryManager";
 
 const SVGL_PRESETS = [
@@ -42,6 +43,8 @@ interface Props {
 const inputCls =
   "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none";
 
+type StoreFilter = "all" | "kho" | "mmo";
+
 export default function ResourceCategoryManager({ initialCategories }: Props) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,19 +53,33 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
   const [name, setName] = useState("");
   const [iconUrl, setIconUrl] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-
   const [importUrl, setImportUrl] = useState("");
+  const [importing, setImporting] = useState(false);
+
+  const [storeFilter, setStoreFilter] = useState<StoreFilter>("all");
 
   const nextOrder = categories.length > 0
     ? Math.max(...categories.map((c) => c.displayOrder)) + 1
     : 1;
-  const [importing, setImporting] = useState(false);
+
+  const filteredCategories = categories
+    .slice()
+    .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name))
+    .filter((c) => {
+      if (storeFilter === "kho") return c.showInKhoTaiNguyen;
+      if (storeFilter === "mmo") return c.showInTaiNguyenMmo;
+      return true;
+    });
+
+  const khoCount = categories.filter((c) => c.showInKhoTaiNguyen).length;
+  const mmoCount = categories.filter((c) => c.showInTaiNguyenMmo).length;
 
   function startEdit(cat: Category) {
     setEditingId(cat.id);
@@ -70,6 +87,8 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
     setIconUrl(cat.iconUrl ?? "");
     setError("");
     setUploadError("");
+    setFormOpen(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function cancelEdit() {
@@ -79,6 +98,7 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
     setError("");
     setUploadError("");
     setImportUrl("");
+    setFormOpen(false);
   }
 
   async function handleSave() {
@@ -88,22 +108,16 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
     try {
       const url = editingId ? `/api/admin/resource-categories/${editingId}` : "/api/admin/resource-categories";
       const method = editingId ? "PATCH" : "POST";
-      const body = editingId
-        ? { name: name.trim(), iconUrl: iconUrl.trim() }
-        : { name: name.trim(), iconUrl: iconUrl.trim() };
-
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ name: name.trim(), iconUrl: iconUrl.trim() }),
       });
       const json = (await res.json()) as { data?: Category; error?: string };
       if (!res.ok) { setError(json.error ?? "Lưu thất bại"); return; }
 
       if (editingId) {
-        setCategories((prev) =>
-          prev.map((c) => c.id === editingId ? (json.data ?? c) : c)
-        );
+        setCategories((prev) => prev.map((c) => c.id === editingId ? (json.data ?? c) : c));
       } else {
         setCategories((prev) => [...prev, json.data!]);
       }
@@ -135,23 +149,15 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
       body: JSON.stringify({ [field]: value }),
     });
     if (res.ok) {
-      setCategories((prev) =>
-        prev.map((c) => c.id === id ? { ...c, [field]: value } : c)
-      );
+      setCategories((prev) => prev.map((c) => c.id === id ? { ...c, [field]: value } : c));
     }
   }
 
   const uploadFile = useCallback(async (file: File) => {
     setUploadError("");
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
-    if (!allowed.includes(file.type)) {
-      setUploadError("Chỉ chấp nhận JPG, PNG, WebP, GIF, SVG");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError("File quá lớn, tối đa 5 MB");
-      return;
-    }
+    if (!allowed.includes(file.type)) { setUploadError("Chỉ chấp nhận JPG, PNG, WebP, GIF, SVG"); return; }
+    if (file.size > 5 * 1024 * 1024) { setUploadError("File quá lớn, tối đa 5 MB"); return; }
     const fd = new FormData();
     fd.append("file", file);
     setUploading(true);
@@ -198,156 +204,159 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 items-start">
-      {/* ── Cột trái: Form thêm / sửa (6/10) ── */}
-      <div className="lg:col-span-6">
-      <section className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">
-            {editingId ? "Sửa danh mục" : "Thêm danh mục mới"}
-          </h2>
-          {!editingId && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#7C3AED] bg-[#7C3AED]/8 border border-[#7C3AED]/20 rounded-full px-2.5 py-1">
-              <span className="w-4 h-4 rounded-full bg-[#7C3AED] text-white text-[9px] font-bold flex items-center justify-center">{nextOrder}</span>
-              Số thứ tự tiếp theo
-            </span>
-          )}
-        </div>
+    <div className="space-y-6">
 
-        {/* Tên danh mục */}
-        <div>
-          <label className="block text-xs text-gray-500 mb-1.5">Tên danh mục *</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="vd: Facebook, Game, TikTok..."
-            className={inputCls}
-          />
-        </div>
+      {/* ── Form toggle button ── */}
+      {!formOpen ? (
+        <button
+          type="button"
+          onClick={() => setFormOpen(true)}
+          className="px-4 py-2 rounded-lg bg-[#7C3AED] text-white text-sm font-medium hover:bg-[#A855F7] transition-colors"
+        >
+          + Thêm danh mục mới
+        </button>
+      ) : (
+        /* ── Form thêm / sửa (full width) ── */
+        <section className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900">
+              {editingId ? "Sửa danh mục" : "Thêm danh mục mới"}
+            </h2>
+            {!editingId && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#7C3AED] bg-[#7C3AED]/8 border border-[#7C3AED]/20 rounded-full px-2.5 py-1">
+                <span className="w-4 h-4 rounded-full bg-[#7C3AED] text-white text-[9px] font-bold flex items-center justify-center">{nextOrder}</span>
+                Số thứ tự tiếp theo
+              </span>
+            )}
+          </div>
 
-        {/* Icon — preview */}
-        {iconUrl && (
-          <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={r2Url(iconUrl)} alt="icon preview" className="w-10 h-10 object-contain rounded border border-gray-200 bg-gray-50 p-1 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-gray-500 truncate">{iconUrl}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Cột trái */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">Tên danh mục *</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="vd: Facebook, Game, TikTok..."
+                  className={inputCls}
+                />
+              </div>
+
+              {iconUrl && (
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={r2Url(iconUrl)} alt="icon preview" className="w-10 h-10 object-contain rounded border border-gray-200 bg-gray-50 p-1 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-500 truncate">{iconUrl}</p>
+                  </div>
+                  <button type="button" onClick={() => setIconUrl("")} className="text-xs text-red-500 hover:text-red-700 shrink-0 transition-colors">Xóa</button>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">Upload ảnh icon</label>
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors py-5 ${
+                    isDragging ? "border-[#7C3AED] bg-[#7C3AED]/5" : "border-gray-200 hover:border-[#7C3AED]/50"
+                  }`}
+                >
+                  {uploading ? (
+                    <p className="text-xs text-gray-500">Đang upload...</p>
+                  ) : (
+                    <>
+                      <svg className="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      <p className="text-xs text-gray-400">Kéo thả hoặc click để chọn (JPG, PNG, WebP, SVG, GIF)</p>
+                    </>
+                  )}
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" className="hidden" onChange={handleFileChange} />
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">Hoặc nhập URL icon trực tiếp</label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="url"
+                    value={iconUrl}
+                    onChange={(e) => setIconUrl(e.target.value)}
+                    placeholder="https://..."
+                    className={inputCls}
+                  />
+                  {iconUrl && iconUrl.startsWith("http") && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={r2Url(iconUrl)} alt="preview" className="w-8 h-8 object-contain shrink-0 rounded border border-gray-200 bg-white p-1" />
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">Import từ URL (svgl.app, URL ảnh...)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={importUrl}
+                    onChange={(e) => setImportUrl(e.target.value)}
+                    placeholder="https://svgl.app/library/facebook-icon.svg"
+                    className={inputCls}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleImportUrl()}
+                    disabled={importing || !importUrl.trim()}
+                    className="px-3 py-2 rounded-lg bg-gray-800 text-white text-xs font-medium hover:bg-gray-900 disabled:opacity-50 transition-colors whitespace-nowrap"
+                  >
+                    {importing ? "..." : "Import"}
+                  </button>
+                </div>
+                <p className="mt-1 text-[10px] text-gray-400">Hệ thống tải ảnh về server, không dùng URL ngoài trực tiếp.</p>
+              </div>
             </div>
+
+            {/* Cột phải — Preset svgl.app */}
+            <div>
+              <p className="text-xs text-gray-500 mb-2">Chọn nhanh từ svgl.app:</p>
+              <div className="flex flex-wrap gap-2">
+                {SVGL_PRESETS.map((p) => (
+                  <button
+                    key={p.name}
+                    type="button"
+                    title={p.name}
+                    onClick={() => setIconUrl(p.icon)}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg border transition-all ${
+                      iconUrl === p.icon
+                        ? "border-[#7C3AED] bg-[#7C3AED]/10 ring-1 ring-[#7C3AED]/40"
+                        : "border-gray-200 bg-white hover:border-[#7C3AED]/50"
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={r2Url(p.icon)} alt={p.name} className="w-6 h-6 object-contain" />
+                    <span className="text-[9px] text-gray-500 max-w-13 truncate">{p.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
+          {error && <p className="text-xs text-red-500">{error}</p>}
+
+          <div className="flex gap-2 pt-1">
             <button
               type="button"
-              onClick={() => setIconUrl("")}
-              className="text-xs text-red-500 hover:text-red-700 shrink-0 transition-colors"
+              onClick={() => void handleSave()}
+              disabled={loading}
+              className="px-4 py-2 rounded-lg bg-[#7C3AED] text-white text-sm font-medium hover:bg-[#A855F7] disabled:opacity-60 transition-colors"
             >
-              Xóa
+              {loading ? "Đang lưu..." : editingId ? "Cập nhật" : "Thêm danh mục"}
             </button>
-          </div>
-        )}
-
-        {/* Upload kéo thả */}
-        <div>
-          <label className="block text-xs text-gray-500 mb-1.5">Upload ảnh icon</label>
-          <div
-            onDrop={handleDrop}
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-            onDragLeave={() => setIsDragging(false)}
-            onClick={() => fileInputRef.current?.click()}
-            className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors py-5 ${
-              isDragging ? "border-[#7C3AED] bg-[#7C3AED]/5" : "border-gray-200 hover:border-[#7C3AED]/50"
-            }`}
-          >
-            {uploading ? (
-              <p className="text-xs text-gray-500">Đang upload...</p>
-            ) : (
-              <>
-                <svg className="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
-                <p className="text-xs text-gray-400">Kéo thả hoặc click để chọn ảnh (JPG, PNG, WebP, SVG, GIF)</p>
-              </>
-            )}
-          </div>
-          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" className="hidden" onChange={handleFileChange} />
-        </div>
-
-        {/* Import từ URL */}
-        <div>
-          <label className="block text-xs text-gray-500 mb-1.5">Import từ URL (svgl.app, URL ảnh...)</label>
-          <div className="flex gap-2">
-            <input
-              type="url"
-              value={importUrl}
-              onChange={(e) => setImportUrl(e.target.value)}
-              placeholder="https://svgl.app/library/facebook-icon.svg"
-              className={inputCls}
-            />
-            <button
-              type="button"
-              onClick={() => void handleImportUrl()}
-              disabled={importing || !importUrl.trim()}
-              className="px-3 py-2 rounded-lg bg-gray-800 text-white text-xs font-medium hover:bg-gray-900 disabled:opacity-50 transition-colors whitespace-nowrap"
-            >
-              {importing ? "..." : "Import"}
-            </button>
-          </div>
-          <p className="mt-1 text-[10px] text-gray-400">Hệ thống sẽ tải ảnh về server, không dùng URL ngoài trực tiếp.</p>
-        </div>
-
-        {/* Hoặc nhập URL trực tiếp */}
-        <div>
-          <label className="block text-xs text-gray-500 mb-1.5">Hoặc nhập URL icon trực tiếp</label>
-          <div className="flex gap-2 items-center">
-            <input
-              type="url"
-              value={iconUrl}
-              onChange={(e) => setIconUrl(e.target.value)}
-              placeholder="https://..."
-              className={inputCls}
-            />
-            {iconUrl && iconUrl.startsWith("http") && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={r2Url(iconUrl)} alt="preview" className="w-8 h-8 object-contain shrink-0 rounded border border-gray-200 bg-white p-1" />
-            )}
-          </div>
-        </div>
-
-        {/* Preset svgl.app */}
-        <div>
-          <p className="text-xs text-gray-500 mb-2">Chọn nhanh từ svgl.app:</p>
-          <div className="flex flex-wrap gap-2">
-            {SVGL_PRESETS.map((p) => (
-              <button
-                key={p.name}
-                type="button"
-                title={p.name}
-                onClick={() => setIconUrl(p.icon)}
-                className={`flex flex-col items-center gap-1 p-2 rounded-lg border transition-all ${
-                  iconUrl === p.icon
-                    ? "border-[#7C3AED] bg-[#7C3AED]/10 ring-1 ring-[#7C3AED]/40"
-                    : "border-gray-200 bg-white hover:border-[#7C3AED]/50"
-                }`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={r2Url(p.icon)} alt={p.name} className="w-6 h-6 object-contain" />
-                <span className="text-[9px] text-gray-500 max-w-[52px] truncate">{p.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
-        {error && <p className="text-xs text-red-500">{error}</p>}
-
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={loading}
-            className="px-4 py-2 rounded-lg bg-[#7C3AED] text-white text-sm font-medium hover:bg-[#A855F7] disabled:opacity-60 transition-colors"
-          >
-            {loading ? "Đang lưu..." : editingId ? "Cập nhật" : "Thêm danh mục"}
-          </button>
-          {editingId && (
             <button
               type="button"
               onClick={cancelEdit}
@@ -355,86 +364,135 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
             >
               Hủy
             </button>
-          )}
-        </div>
-      </section>
-      </div>
+          </div>
+        </section>
+      )}
 
-      {/* ── Cột phải: Danh sách (4/10) ── */}
-      <div className="lg:col-span-4 lg:sticky lg:top-4">
+      {/* ── Danh sách danh mục ── */}
       <section className="rounded-xl border border-gray-200 overflow-hidden">
-        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-          <p className="text-sm font-semibold text-gray-900">Danh sách danh mục ({categories.length})</p>
+        {/* Header + filter toggle */}
+        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center gap-3">
+          <p className="text-sm font-semibold text-gray-900 shrink-0">
+            Danh sách danh mục ({filteredCategories.length}/{categories.length})
+          </p>
+          {/* Store type filter */}
+          <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-0.5">
+            <button
+              type="button"
+              onClick={() => setStoreFilter("all")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
+                storeFilter === "all"
+                  ? "bg-gray-800 text-white"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Tất cả ({categories.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStoreFilter("kho")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
+                storeFilter === "kho"
+                  ? "bg-blue-600 text-white"
+                  : "text-blue-600 hover:bg-blue-50"
+              }`}
+            >
+              <Warehouse size={11} /> Kho TN ({khoCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStoreFilter("mmo")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
+                storeFilter === "mmo"
+                  ? "bg-violet-600 text-white"
+                  : "text-violet-600 hover:bg-violet-50"
+              }`}
+            >
+              <Package size={11} /> TN MMO ({mmoCount})
+            </button>
+          </div>
         </div>
-        {categories.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-gray-500">Chưa có danh mục nào</div>
+
+        {filteredCategories.length === 0 ? (
+          <div className="px-4 py-8 text-center text-sm text-gray-500">
+            {storeFilter === "all" ? "Chưa có danh mục nào" : "Không có danh mục nào trong bộ lọc này"}
+          </div>
         ) : (
-          <ul className="divide-y divide-gray-100">
-            {categories
-              .slice()
-              .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name))
-              .map((cat) => (
-                <li key={cat.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
-                  <div className="w-7 h-7 rounded-full bg-[#7C3AED]/10 border border-[#7C3AED]/25 flex items-center justify-center shrink-0">
-                    <span className="text-[11px] font-bold text-[#7C3AED]">{cat.displayOrder}</span>
+          <div className="divide-y divide-gray-100">
+            {filteredCategories.map((cat) => (
+              <div key={cat.id} className="flex items-start gap-4 px-5 py-4 hover:bg-gray-50 transition-colors">
+                {/* Order badge */}
+                <div className="w-7 h-7 rounded-full bg-[#7C3AED]/10 border border-[#7C3AED]/25 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-[11px] font-bold text-[#7C3AED]">{cat.displayOrder}</span>
+                </div>
+
+                {/* Icon */}
+                <div className="w-10 h-10 rounded-xl border border-gray-200 bg-white flex items-center justify-center shrink-0 p-1.5">
+                  {cat.iconUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={r2Url(cat.iconUrl)} alt={cat.name} className="w-full h-full object-contain" />
+                  ) : (
+                    <FolderOpen size={18} className="text-gray-400" />
+                  )}
+                </div>
+
+                {/* Info + subs */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">{cat.name}</p>
+                  <p className="text-[10px] text-gray-400 truncate mt-0.5">{cat.iconUrl ?? "Chưa có icon"}</p>
+
+                  {/* Store type checkboxes */}
+                  <div className="flex gap-4 mt-2">
+                    <label className="flex items-center gap-1.5 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={cat.showInKhoTaiNguyen}
+                        onChange={(e) => { void handleToggleStoreType(cat.id, "showInKhoTaiNguyen", e.target.checked); }}
+                        className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                      <span className="flex items-center gap-1 text-[11px] font-medium text-blue-600">
+                        <Warehouse size={11} /> Kho Tài Nguyên
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={cat.showInTaiNguyenMmo}
+                        onChange={(e) => { void handleToggleStoreType(cat.id, "showInTaiNguyenMmo", e.target.checked); }}
+                        className="w-3.5 h-3.5 rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer"
+                      />
+                      <span className="flex items-center gap-1 text-[11px] font-medium text-violet-600">
+                        <Package size={11} /> Tài Nguyên MMO
+                      </span>
+                    </label>
                   </div>
-                  <div className="w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center shrink-0 p-1.5">
-                    {cat.iconUrl && cat.iconUrl.startsWith("http") ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={r2Url(cat.iconUrl)} alt={cat.name} className="w-full h-full object-contain" />
-                    ) : (
-                      <span className="text-base">📁</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{cat.name}</p>
-                    <p className="text-[10px] text-gray-400 truncate">{cat.iconUrl ?? "Chưa có icon"}</p>
-                    {/* Store type toggles */}
-                    <div className="flex gap-3 mt-1.5">
-                      <label className="flex items-center gap-1 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={cat.showInKhoTaiNguyen}
-                          onChange={(e) => { void handleToggleStoreType(cat.id, "showInKhoTaiNguyen", e.target.checked); }}
-                          className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                        />
-                        <span className="text-[10px] font-medium text-blue-600 group-hover:text-blue-700">Kho TN</span>
-                      </label>
-                      <label className="flex items-center gap-1 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={cat.showInTaiNguyenMmo}
-                          onChange={(e) => { void handleToggleStoreType(cat.id, "showInTaiNguyenMmo", e.target.checked); }}
-                          className="w-3.5 h-3.5 rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer"
-                        />
-                        <span className="text-[10px] font-medium text-violet-600 group-hover:text-violet-700">TN MMO</span>
-                      </label>
-                    </div>
-                    <SubCategoryManager categoryName={cat.name} />
-                  </div>
-                  <div className="flex gap-3 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => startEdit(cat)}
-                      className="text-xs text-[#7C3AED] hover:text-[#A855F7] transition-colors"
-                    >
-                      Sửa
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleDelete(cat.id, cat.name)}
-                      disabled={loading}
-                      className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors"
-                    >
-                      Xóa
-                    </button>
-                  </div>
-                </li>
-              ))}
-          </ul>
+
+                  <SubCategoryManager categoryName={cat.name} />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 shrink-0 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(cat)}
+                    className="text-xs text-[#7C3AED] hover:text-[#A855F7] transition-colors"
+                  >
+                    Sửa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDelete(cat.id, cat.name)}
+                    disabled={loading}
+                    className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors"
+                  >
+                    Xóa
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </section>
-      </div>
     </div>
   );
 }

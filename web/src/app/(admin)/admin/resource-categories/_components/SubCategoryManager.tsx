@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ChevronDown, ChevronUp, Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Pencil, Trash2, Check, X, Warehouse, Package } from "lucide-react";
 
 interface SubCategory {
   id: string;
@@ -9,6 +9,8 @@ interface SubCategory {
   categoryName: string;
   displayOrder: number;
   isActive: boolean;
+  showInKhoTaiNguyen: boolean;
+  showInTaiNguyenMmo: boolean;
 }
 
 interface Props {
@@ -24,6 +26,8 @@ export default function SubCategoryManager({ categoryName }: Props) {
   // Add form state
   const [addName, setAddName] = useState("");
   const [addOrder, setAddOrder] = useState(0);
+  const [addKho, setAddKho] = useState(true);
+  const [addMmo, setAddMmo] = useState(true);
   const [adding, setAdding] = useState(false);
 
   // Edit state
@@ -59,13 +63,21 @@ export default function SubCategoryManager({ categoryName }: Props) {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: addName.trim(), categoryName, displayOrder: addOrder }),
+        body: JSON.stringify({
+          name: addName.trim(),
+          categoryName,
+          displayOrder: addOrder,
+          showInKhoTaiNguyen: addKho,
+          showInTaiNguyenMmo: addMmo,
+        }),
       });
       const json = await res.json() as { data?: SubCategory; error?: string };
       if (!res.ok || !json.data) { setError(json.error ?? "Thêm thất bại"); return; }
       setSubs((prev) => [...prev, json.data!].sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name)));
       setAddName("");
       setAddOrder(subs.length);
+      setAddKho(true);
+      setAddMmo(true);
     } catch {
       setError("Có lỗi xảy ra");
     } finally {
@@ -95,15 +107,18 @@ export default function SubCategoryManager({ categoryName }: Props) {
     }
   }
 
-  async function handleToggleActive(sub: SubCategory) {
+  async function handleToggleField(sub: SubCategory, field: "isActive" | "showInKhoTaiNguyen" | "showInTaiNguyenMmo") {
+    const newVal = !sub[field];
     try {
-      await fetch(`/api/admin/sub-categories/${sub.id}`, {
+      const res = await fetch(`/api/admin/sub-categories/${sub.id}`, {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !sub.isActive }),
+        body: JSON.stringify({ [field]: newVal }),
       });
-      setSubs((prev) => prev.map((s) => s.id === sub.id ? { ...s, isActive: !s.isActive } : s));
+      if (res.ok) {
+        setSubs((prev) => prev.map((s) => s.id === sub.id ? { ...s, [field]: newVal } : s));
+      }
     } catch { /* silent */ }
   }
 
@@ -141,9 +156,9 @@ export default function SubCategoryManager({ categoryName }: Props) {
           ) : (
             <div className="space-y-1.5">
               {subs.map((sub) => (
-                <div key={sub.id} className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 px-3 py-2">
+                <div key={sub.id} className="bg-white rounded-lg border border-gray-200 px-3 py-2 space-y-1.5">
                   {editId === sub.id ? (
-                    <>
+                    <div className="flex items-center gap-2">
                       <input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
@@ -164,16 +179,16 @@ export default function SubCategoryManager({ categoryName }: Props) {
                       <button onClick={() => setEditId(null)} className="text-gray-400 hover:text-gray-600">
                         <X size={14} />
                       </button>
-                    </>
+                    </div>
                   ) : (
-                    <>
+                    <div className="flex items-center gap-2">
                       <span className={`flex-1 text-sm font-medium ${sub.isActive ? "text-gray-800" : "text-gray-400 line-through"}`}>
                         {sub.name}
                       </span>
                       <span className="text-xs text-gray-400 w-8 text-center">{sub.displayOrder}</span>
                       <button
                         title={sub.isActive ? "Ẩn" : "Hiện"}
-                        onClick={() => void handleToggleActive(sub)}
+                        onClick={() => void handleToggleField(sub, "isActive")}
                         className={`text-xs px-1.5 py-0.5 rounded font-medium transition-colors ${sub.isActive ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
                       >
                         {sub.isActive ? "Hiện" : "Ẩn"}
@@ -187,30 +202,84 @@ export default function SubCategoryManager({ categoryName }: Props) {
                       <button onClick={() => void handleDelete(sub.id)} className="text-gray-400 hover:text-red-600">
                         <Trash2 size={13} />
                       </button>
-                    </>
+                    </div>
                   )}
+
+                  {/* Store type toggles — always visible */}
+                  <div className="flex gap-3 pl-0.5">
+                    <label className="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={sub.showInKhoTaiNguyen}
+                        onChange={() => void handleToggleField(sub, "showInKhoTaiNguyen")}
+                        className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                      <span className="flex items-center gap-0.5 text-[10px] font-medium text-blue-600">
+                        <Warehouse size={9} /> Kho TN
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={sub.showInTaiNguyenMmo}
+                        onChange={() => void handleToggleField(sub, "showInTaiNguyenMmo")}
+                        className="w-3 h-3 rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer"
+                      />
+                      <span className="flex items-center gap-0.5 text-[10px] font-medium text-violet-600">
+                        <Package size={9} /> TN MMO
+                      </span>
+                    </label>
+                  </div>
                 </div>
               ))}
             </div>
           )}
 
           {/* Add new */}
-          <div className="flex items-center gap-2 pt-1">
-            <input
-              value={addName}
-              onChange={(e) => setAddName(e.target.value)}
-              placeholder="Tên danh mục con..."
-              className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-violet-400"
-              onKeyDown={(e) => { if (e.key === "Enter") void handleAdd(); }}
-            />
-            <input
-              type="number"
-              value={addOrder}
-              onChange={(e) => setAddOrder(Number(e.target.value))}
-              className="w-16 text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:border-violet-400 text-center"
-              min={0}
-              title="Thứ tự hiển thị"
-            />
+          <div className="space-y-2 pt-1 border-t border-violet-100">
+            <p className="text-[10px] text-gray-500 font-medium">Thêm danh mục con mới:</p>
+            <div className="flex items-center gap-2">
+              <input
+                value={addName}
+                onChange={(e) => setAddName(e.target.value)}
+                placeholder="Tên danh mục con..."
+                className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:border-violet-400"
+                onKeyDown={(e) => { if (e.key === "Enter") void handleAdd(); }}
+              />
+              <input
+                type="number"
+                value={addOrder}
+                onChange={(e) => setAddOrder(Number(e.target.value))}
+                className="w-16 text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:border-violet-400 text-center"
+                min={0}
+                title="Thứ tự hiển thị"
+              />
+            </div>
+            {/* Store type checkboxes for new sub */}
+            <div className="flex gap-4">
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={addKho}
+                  onChange={(e) => setAddKho(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+                <span className="flex items-center gap-1 text-[11px] font-medium text-blue-600">
+                  <Warehouse size={11} /> Kho Tài Nguyên
+                </span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={addMmo}
+                  onChange={(e) => setAddMmo(e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer"
+                />
+                <span className="flex items-center gap-1 text-[11px] font-medium text-violet-600">
+                  <Package size={11} /> Tài Nguyên MMO
+                </span>
+              </label>
+            </div>
             <button
               type="button"
               onClick={() => void handleAdd()}
@@ -219,8 +288,8 @@ export default function SubCategoryManager({ categoryName }: Props) {
             >
               <Plus size={12} /> Thêm
             </button>
+            <p className="text-[10px] text-gray-400">Ô số = thứ tự hiển thị (nhỏ hơn → hiển thị trước)</p>
           </div>
-          <p className="text-[10px] text-gray-400">Ô số = thứ tự hiển thị (nhỏ hơn → hiển thị trước)</p>
         </div>
       )}
     </div>
