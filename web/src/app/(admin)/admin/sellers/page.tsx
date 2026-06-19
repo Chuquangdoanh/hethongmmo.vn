@@ -37,9 +37,9 @@ const YEARS = [2024, 2025, 2026, 2027];
 export default async function AdminSellersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; tier?: string; q?: string; sort?: string; month?: string; year?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; tier?: string; q?: string; sort?: string; month?: string; year?: string; storeType?: string }>;
 }) {
-  const { page, status, tier, q, sort: sortParam, month, year } = await searchParams;
+  const { page, status, tier, q, sort: sortParam, month, year, storeType } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
   const search = q?.trim() || undefined;
   const activeSort = VALID_SORTS.includes(sortParam as SortKey) ? sortParam as SortKey : undefined;
@@ -69,8 +69,11 @@ export default async function AdminSellersPage({
     { email:    { contains: search, mode: "insensitive" } },
   ];
 
+  const validStoreType = storeType === "TAI_NGUYEN_MMO" || storeType === "KHO_TAI_NGUYEN" ? storeType : undefined;
+
   const where = {
-    ...(status ? { status: status as never } : {}),
+    ...(status          ? { status: status as never }            : {}),
+    ...(validStoreType  ? { storeType: validStoreType as never } : {}),
     ...(Object.keys(userFilter).length > 0 ? { user: userFilter } : {}),
   };
 
@@ -183,10 +186,10 @@ export default async function AdminSellersPage({
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const nextRevenueSort = activeSort === "revenue_desc" ? "revenue_asc" : "revenue_desc";
-  const revenueSortHref = buildHref({ status, tier, q: search, sort: nextRevenueSort, month, year, page: undefined });
+  const revenueSortHref = buildHref({ status, tier, q: search, sort: nextRevenueSort, month, year, storeType, page: undefined });
 
   const nextRatingSort = activeSort === "rating_desc" ? "rating_asc" : "rating_desc";
-  const ratingSortHref = buildHref({ status, tier, q: search, sort: nextRatingSort, month, year, page: undefined });
+  const ratingSortHref = buildHref({ status, tier, q: search, sort: nextRatingSort, month, year, storeType, page: undefined });
 
   // Serialize data for client component
   const serializedRows: SellerRowData[] = requests.map((r) => {
@@ -199,6 +202,7 @@ export default async function AdminSellersPage({
       fullName:     r.user.fullName,
       email:        r.user.email,
       category:     r.category,
+      storeType:    r.storeType,
       status:       r.status,
       tierLabel:    tierLabelMap.get(r.user.sellerTier) ?? r.user.sellerTier,
       tierColorClass,
@@ -212,7 +216,7 @@ export default async function AdminSellersPage({
     };
   });
 
-  const clearDateHref = buildHref({ status, tier, q: search, sort: activeSort, page: undefined });
+  const clearDateHref = buildHref({ status, tier, q: search, sort: activeSort, storeType, page: undefined });
 
   return (
     <div className="space-y-6">
@@ -225,10 +229,11 @@ export default async function AdminSellersPage({
 
         {/* Revenue date filter — right side */}
         <form method="get" action="/admin/sellers" className="flex items-center gap-2 flex-wrap">
-          {status    && <input type="hidden" name="status" value={status} />}
-          {tier      && <input type="hidden" name="tier"   value={tier} />}
-          {search    && <input type="hidden" name="q"      value={search} />}
-          {activeSort && <input type="hidden" name="sort"  value={activeSort} />}
+          {status    && <input type="hidden" name="status"    value={status} />}
+          {tier      && <input type="hidden" name="tier"      value={tier} />}
+          {search    && <input type="hidden" name="q"         value={search} />}
+          {activeSort && <input type="hidden" name="sort"     value={activeSort} />}
+          {storeType && <input type="hidden" name="storeType" value={storeType} />}
 
           <span className="text-xs text-gray-500 whitespace-nowrap">Lọc doanh số:</span>
 
@@ -274,9 +279,10 @@ export default async function AdminSellersPage({
 
       {/* ── Search + Tier filter ── */}
       <form method="get" action="/admin/sellers" className="flex items-center gap-2 flex-wrap">
-        {status && <input type="hidden" name="status" value={status} />}
-        {month  && <input type="hidden" name="month"  value={month} />}
-        {year   && <input type="hidden" name="year"   value={year} />}
+        {status    && <input type="hidden" name="status"    value={status} />}
+        {month     && <input type="hidden" name="month"     value={month} />}
+        {year      && <input type="hidden" name="year"      value={year} />}
+        {storeType && <input type="hidden" name="storeType" value={storeType} />}
         <div className="relative">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
@@ -292,7 +298,7 @@ export default async function AdminSellersPage({
           Tìm kiếm
         </button>
         {search && (
-          <a href={buildHref({ status, tier, month, year })} className="px-3 py-2 rounded-lg border border-gray-200 text-xs text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
+          <a href={buildHref({ status, tier, month, year, storeType })} className="px-3 py-2 rounded-lg border border-gray-200 text-xs text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
             Xóa
           </a>
         )}
@@ -301,7 +307,7 @@ export default async function AdminSellersPage({
 
         {/* Tier chips */}
         <a
-          href={buildHref({ status, tier: undefined, q: search, month, year })}
+          href={buildHref({ status, tier: undefined, q: search, month, year, storeType })}
           className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
             !tier ? "bg-[#7C3AED] text-white" : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
           }`}
@@ -311,7 +317,7 @@ export default async function AdminSellersPage({
         {tierDefs.map(({ key, label }) => (
           <a
             key={key}
-            href={buildHref({ status, tier: key, q: search, month, year })}
+            href={buildHref({ status, tier: key, q: search, month, year, storeType })}
             className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
               tier === key ? "bg-[#7C3AED] text-white" : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
             }`}
@@ -332,11 +338,33 @@ export default async function AdminSellersPage({
         ].map(({ key, label }) => (
           <Link
             key={key}
-            href={buildHref({ status: key || undefined, tier, q: search, month, year })}
+            href={buildHref({ status: key || undefined, tier, q: search, month, year, storeType })}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               status === key || (!status && !key)
                 ? "bg-[#7C3AED] text-white"
                 : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
+            }`}
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
+
+      {/* ── Store type filter ── */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-gray-400 font-medium mr-1">Loại cửa hàng:</span>
+        {[
+          { key: "",               label: "Tất cả" },
+          { key: "TAI_NGUYEN_MMO", label: "Tài Nguyên MMO" },
+          { key: "KHO_TAI_NGUYEN", label: "Kho Tài Nguyên" },
+        ].map(({ key, label }) => (
+          <Link
+            key={key}
+            href={buildHref({ status, tier, q: search, month, year, storeType: key || undefined })}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              storeType === key || (!storeType && !key)
+                ? "bg-blue-600 text-white"
+                : "border border-gray-200 text-gray-500 hover:border-blue-500 hover:text-gray-900"
             }`}
           >
             {label}

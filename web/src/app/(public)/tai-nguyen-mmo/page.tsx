@@ -14,7 +14,7 @@ import Pagination from "@/components/shared/Pagination";
 import {
   Package, ShoppingBag, ShoppingCart, Store,
   Pencil, CheckCircle,
-  FolderOpen, Search, Users, Shield, ChevronRight, X, Star, TrendingUp,
+  FolderOpen, Search, Users, Shield, ChevronRight, X, Star, TrendingUp, Warehouse,
 } from "lucide-react";
 import { SortSelect } from "./_components/SortSelect";
 import { buildMeta } from "@/lib/utils/seo";
@@ -522,56 +522,57 @@ export default async function TaiNguyenMmoPage({
             )}
           </nav>
 
-          {/* Danh mục nổi bật */}
-          {platformCards.length > 0 && !hasActiveFilter && (
-            <div>
-              <p className="text-sm font-extrabold text-text-dark mb-2.5">Danh mục nổi bật</p>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+          {/* Store type toggle */}
+          <div className="flex items-center gap-1 bg-white rounded-xl border border-border p-1 shadow-sm w-fit">
+            <span className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#1e293b] text-white cursor-default">
+              <Package size={13} /> Tài Nguyên MMO
+            </span>
+            <Link
+              href="/kho-tai-nguyen"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-text-muted hover:bg-[#f1f5f9] transition-colors"
+            >
+              <Warehouse size={13} /> Kho Tài Nguyên
+            </Link>
+          </div>
+
+          {/* Danh mục — grid card lớn */}
+          {platformCards.length > 0 && (
+            <div className="bg-white rounded-2xl border border-border p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-bold text-text-dark">Danh mục</p>
+                {category && (
+                  <Link href={BASE_PATH} className="text-xs text-text-muted hover:text-primary transition-colors flex items-center gap-0.5">
+                    <X size={11} /> Bỏ lọc
+                  </Link>
+                )}
+              </div>
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
                 {platformCards.map((card) => {
                   const isActive = category === card.name;
                   return (
                     <Link
                       key={card.name}
                       href={isActive ? BASE_PATH : `${BASE_PATH}?category=${encodeURIComponent(card.name)}`}
-                      className={`bg-white rounded-xl border p-3 hover:shadow-md transition-all flex flex-col gap-1.5 ${
-                        isActive ? "border-primary/60 bg-blue-50/40" : "border-border hover:border-primary/30"
+                      className={`flex flex-col items-center text-center p-3 rounded-xl border transition-all group ${
+                        isActive
+                          ? "border-primary/60 bg-blue-50/40 shadow-sm"
+                          : "border-border hover:border-primary/30 hover:shadow-sm"
                       }`}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className={`w-13 h-13 rounded-xl overflow-hidden flex items-center justify-center mb-2 shrink-0 ${isActive ? "bg-[#dbeafe]" : "bg-[#f1f5f9]"}`}>
                         {card.iconUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={r2Url(card.iconUrl)}
-                            alt={card.name}
-                            className="w-7 h-7 rounded-lg object-cover shrink-0"
-                          />
+                          <img src={r2Url(card.iconUrl)} alt={card.name} className="w-9 h-9 object-contain" />
                         ) : (
-                          <div className="w-7 h-7 rounded-lg bg-[#dbeafe] flex items-center justify-center shrink-0">
-                            <FolderOpen size={13} strokeWidth={2} className="text-[#1d4ed8]" />
-                          </div>
+                          <FolderOpen size={22} className={isActive ? "text-primary" : "text-text-muted"} strokeWidth={2} />
                         )}
-                        <div className="min-w-0">
-                          <p className="text-xs font-extrabold text-text-dark truncate">{card.name}</p>
-                          <p className="text-[10px] text-text-muted">
-                            {card.count} SP
-                            {card.sellerCount > 0 && ` · ${card.sellerCount} nhà bán`}
-                          </p>
-                        </div>
                       </div>
-                      {card.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {card.tags.map((tag) => (
-                            <span key={tag} className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-[#f1f5f9] text-text-muted">
-                              {tag}
-                            </span>
-                          ))}
-                          {card.extraTags > 0 && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-[#f1f5f9] text-text-muted">
-                              +{card.extraTags}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      <p className={`font-bold text-[12px] leading-tight truncate w-full ${isActive ? "text-primary" : "text-text-dark group-hover:text-primary"} transition-colors`}>
+                        {card.name}
+                      </p>
+                      <p className="text-[10px] text-text-muted mt-0.5">
+                        {card.count} SP
+                      </p>
                     </Link>
                   );
                 })}

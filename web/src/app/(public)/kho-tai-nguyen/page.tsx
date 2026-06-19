@@ -15,7 +15,7 @@ import { KhoFilterSidebar } from "./_components/KhoFilterSidebar";
 import {
   Package, ShoppingBag, ShoppingCart, Store,
   Pencil, CheckCircle, FolderOpen, Search,
-  Users, TrendingUp, Clock, Shield, Star, ChevronRight, X,
+  Users, TrendingUp, Clock, Shield, Star, ChevronRight, X, Warehouse,
 } from "lucide-react";
 
 export const metadata: Metadata = buildMeta({
@@ -408,54 +408,60 @@ export default async function KhoTaiNguyenPage({
             )}
           </nav>
 
-          {/* Danh mục nổi bật */}
+          {/* Store type toggle */}
+          <div className="flex items-center gap-1 bg-white rounded-xl border border-[#e2e8f0] p-1 shadow-sm w-fit">
+            <Link
+              href="/tai-nguyen-mmo"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-[#64748b] hover:bg-[#f1f5f9] transition-colors"
+            >
+              <Package size={13} /> Tài Nguyên MMO
+            </Link>
+            <span className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#1e293b] text-white cursor-default">
+              <Warehouse size={13} /> Kho Tài Nguyên
+            </span>
+          </div>
+
+          {/* Danh mục — grid card lớn */}
           {platformCards.length > 0 && (
             <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="font-bold text-[#1e293b] text-[15px]">Danh mục nổi bật</h2>
-                <Link href={BASE_PATH} className="text-xs text-[#3b82f6] font-bold hover:underline flex items-center gap-0.5">
-                  Xem tất cả <ChevronRight size={12} />
-                </Link>
+                <h2 className="font-bold text-[#1e293b] text-[15px]">Danh mục</h2>
+                {selectedCategories.length > 0 && (
+                  <Link href={BASE_PATH} className="text-xs text-[#64748b] hover:text-[#3b82f6] transition-colors flex items-center gap-0.5">
+                    <X size={11} /> Bỏ lọc
+                  </Link>
+                )}
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
-                {platformCards.map((card) => (
-                  <Link
-                    key={card.name}
-                    href={`${BASE_PATH}?category=${encodeURIComponent(card.name)}`}
-                    className="flex items-start gap-2.5 p-2.5 rounded-xl border border-[#f1f5f9] hover:border-[#3b82f6]/40 hover:bg-[#eff6ff]/50 transition-all group"
-                  >
-                    <div className="w-9 h-9 rounded-lg overflow-hidden bg-[#f1f5f9] shrink-0 flex items-center justify-center">
-                      {card.iconUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={r2Url(card.iconUrl)} alt={card.name} className="w-full h-full object-contain" />
-                      ) : (
-                        <FolderOpen size={16} className="text-[#94a3b8]" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-bold text-[13px] text-[#1e293b] group-hover:text-[#2563eb] transition-colors truncate">
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+                {platformCards.map((card) => {
+                  const isActive = selectedCategories.includes(card.name);
+                  return (
+                    <Link
+                      key={card.name}
+                      href={isActive ? BASE_PATH : `${BASE_PATH}?category=${encodeURIComponent(card.name)}`}
+                      className={`flex flex-col items-center text-center p-3 rounded-xl border transition-all group ${
+                        isActive
+                          ? "border-[#3b82f6] bg-[#eff6ff] shadow-sm shadow-blue-100"
+                          : "border-[#f1f5f9] hover:border-[#3b82f6]/40 hover:bg-[#eff6ff]/40 hover:shadow-sm"
+                      }`}
+                    >
+                      <div className={`w-13 h-13 rounded-xl overflow-hidden flex items-center justify-center mb-2 shrink-0 ${isActive ? "bg-[#dbeafe]" : "bg-[#f1f5f9]"}`}>
+                        {card.iconUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={r2Url(card.iconUrl)} alt={card.name} className="w-9 h-9 object-contain" />
+                        ) : (
+                          <FolderOpen size={22} className={isActive ? "text-[#3b82f6]" : "text-[#94a3b8]"} />
+                        )}
+                      </div>
+                      <p className={`font-bold text-[12px] leading-tight truncate w-full ${isActive ? "text-[#1d4ed8]" : "text-[#1e293b] group-hover:text-[#2563eb]"} transition-colors`}>
                         {card.name}
                       </p>
-                      <p className="text-[11px] text-[#64748b]">
-                        {card.count.toLocaleString("vi-VN")} · {card.sellerCount} seller
+                      <p className="text-[10px] text-[#64748b] mt-0.5">
+                        {card.count.toLocaleString("vi-VN")} SP
                       </p>
-                      {card.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {card.tags.map((tag) => (
-                            <span key={tag} className="px-1.5 py-px rounded text-[9px] font-bold bg-[#dbeafe] text-[#1d4ed8]">
-                              {tag}
-                            </span>
-                          ))}
-                          {card.extraTags > 0 && (
-                            <span className="px-1.5 py-px rounded text-[9px] font-bold bg-[#f1f5f9] text-[#64748b]">
-                              +{card.extraTags}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           )}

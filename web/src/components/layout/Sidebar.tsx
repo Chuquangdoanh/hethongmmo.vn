@@ -5,7 +5,7 @@ import { getCachedPageVisibility } from "@/lib/services/public-page-config.servi
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { r2Url } from "@/lib/utils/image-url";
 import { formatVnd } from "@/lib/utils/format";
-import { CheckCircle, Plus, Store, Wallet, Package, MessageCircle, Send, Settings } from "lucide-react";
+import { CheckCircle, Plus, Store, Wallet, Package, TicketCheck, Send, Settings } from "lucide-react";
 import { NAV_LINKS, NAV_ICONS } from "./nav-links";
 import SidebarNav, { type SidebarNavGroup, type SidebarNavItem } from "./SidebarNav";
 import SidebarCollapseToggle from "./SidebarCollapseToggle";
@@ -80,7 +80,7 @@ export default async function Sidebar() {
     ...(isPageVisible("quang-cao")      ? [{ href: "/quang-cao",      label: navLabel("/quang-cao"),      icon: iconBadge("/quang-cao") }] : []),
     ...(isPageVisible("NetWorks")       ? [{ href: "/NetWorks",       label: navLabel("/NetWorks"),       icon: iconBadge("/NetWorks") }] : []),
     ...(sessionUser ? [{
-      href: isSeller ? "/ban-hang" : "/thong-tin-ca-nhan#seller-register",
+      href: isSeller ? "/ban-hang" : "/dang-ky-ban-hang",
       label: "Seller Center",
       icon: <span className="sb-icon-badge" style={{ background: "#f0fdf4" }}><Store size={15} strokeWidth={1.75} style={{ color: "#16a34a" }} /></span>,
     }] : []),
@@ -107,7 +107,7 @@ export default async function Sidebar() {
       ...(sessionUser ? [{
         href: "/ho-tro",
         label: "Ticket hỗ trợ",
-        icon: <span className="sb-icon-badge" style={{ background: "#fee2e2" }}><MessageCircle size={15} strokeWidth={1.75} style={{ color: "#dc2626" }} /></span>,
+        icon: <span className="sb-icon-badge" style={{ background: "#eff6ff" }}><TicketCheck size={15} strokeWidth={1.75} style={{ color: "#2563eb" }} /></span>,
         badge: openTicketCount || undefined,
       }] : []),
       {

@@ -12,6 +12,7 @@ export interface SellerRowData {
   fullName: string;
   email: string;
   category: string;
+  storeType: string;
   status: string;
   tierLabel: string;
   tierColorClass: string;
@@ -197,7 +198,16 @@ export default function SellersTableClient({ rows, revenueSortHref, ratingSortHr
                       <p className="text-sm text-gray-900">{r.fullName}</p>
                       <p className="text-[11px] text-gray-500">{r.email}</p>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">{r.category}</td>
+                    <td className="px-4 py-3">
+                      <p className="text-sm text-gray-700">{r.category}</p>
+                      <span className={`inline-block mt-0.5 px-1.5 py-px rounded text-[9px] font-semibold ${
+                        r.storeType === "KHO_TAI_NGUYEN"
+                          ? "bg-blue-50 text-blue-600"
+                          : "bg-violet-50 text-violet-600"
+                      }`}>
+                        {r.storeType === "KHO_TAI_NGUYEN" ? "Kho TN" : "TN MMO"}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_STYLES[r.status] ?? ""}`}>
                         {STATUS_LABELS[r.status] ?? r.status}
