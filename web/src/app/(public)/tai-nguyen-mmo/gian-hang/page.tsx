@@ -78,6 +78,7 @@ export default async function NhaBanHangPage({
             isHidden: false,
             isRestricted: false,
             deletedAt: null,
+            storeType: "TAI_NGUYEN_MMO",
             stockItems: { some: { status: "AVAILABLE" } },
           },
         },
@@ -95,6 +96,7 @@ export default async function NhaBanHangPage({
             isHidden: false,
             isRestricted: false,
             deletedAt: null,
+            storeType: "TAI_NGUYEN_MMO",
           },
           select: {
             id: true,
