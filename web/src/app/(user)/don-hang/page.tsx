@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
@@ -94,7 +95,7 @@ export default async function DonHangPage({
     prisma.order.count({ where: { userId: me.id, orderType: { in: ["MMO_PRODUCT", "SELLER_PRODUCT"] as never[] }, createdAt: { gte: sevenDaysAgo } } }),
   ]);
 
-  if (!user) return null;
+  if (!user) redirect("/");
 
   const complainedOrderIds = new Set<string>();
   if (orders.length > 0) {

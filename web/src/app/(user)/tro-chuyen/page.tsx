@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
@@ -55,7 +56,7 @@ export default async function TroChuyenPage() {
     }),
   ]);
 
-  if (!user) return null;
+  if (!user) redirect("/");
 
   const orderIds = complaints.map((c) => c.orderId).filter((id): id is string => Boolean(id));
   const orders = orderIds.length > 0

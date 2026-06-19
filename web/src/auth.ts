@@ -100,6 +100,9 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             token.sellerStatus = fresh.sellerStatus;
             token.requiresTwoFactor = (fresh.role === "ADMIN" || fresh.role === "STAFF") && !fresh.twoFactorEnabled;
             token.statusCheckedAt = Date.now();
+          } else {
+            // User no longer exists in DB — revoke session to force re-login
+            return null;
           }
         } catch {
           // Keep stale token if DB is unavailable — don't break auth

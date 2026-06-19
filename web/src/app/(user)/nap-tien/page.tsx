@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
@@ -44,7 +45,7 @@ export default async function NapTienPage() {
     }),
   ]);
 
-  if (!user) return null;
+  if (!user) redirect("/");
 
   const balance        = Number(user.balance);
   const totalDeposited = Number(user.totalDeposited);

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
@@ -49,7 +50,7 @@ export default async function ThongTinCaNhanPage() {
     prisma.$queryRaw<SocialRow[]>`SELECT facebook_url, telegram_username FROM users WHERE id = ${me.id}`,
   ]);
 
-  if (!user) return null;
+  if (!user) redirect("/");
 
   const facebookUrl      = socialRows[0]?.facebook_url ?? null;
   const telegramUsername = socialRows[0]?.telegram_username ?? null;

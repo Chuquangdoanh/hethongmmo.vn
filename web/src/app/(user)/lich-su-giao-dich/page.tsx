@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
@@ -64,7 +65,7 @@ export default async function LichSuGiaoDichPage({
     prisma.transaction.count({ where: { userId: me.id } }),
   ]);
 
-  if (!user) return null;
+  if (!user) redirect("/");
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
