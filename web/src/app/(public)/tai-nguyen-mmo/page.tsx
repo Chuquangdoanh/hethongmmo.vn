@@ -164,6 +164,7 @@ export default async function TaiNguyenMmoPage({
     prisma.sellerProduct.findMany({
       where: {
         isActive: true, isHidden: false, isRestricted: false, deletedAt: null,
+        storeType: "TAI_NGUYEN_MMO",
         stockItems: { some: { status: "AVAILABLE" } },
         ...(lockedSellerIds.length > 0 ? { NOT: { sellerId: { in: lockedSellerIds } } } : {}),
         ...(category ? { sellerCategory: category } : {}),
@@ -188,6 +189,7 @@ export default async function TaiNguyenMmoPage({
     prisma.sellerProduct.findMany({
       where: {
         isActive: true, isHidden: false, isRestricted: false, deletedAt: null,
+        storeType: "TAI_NGUYEN_MMO",
         stockItems: { some: { status: "AVAILABLE" } },
         ...(lockedSellerIds.length > 0 ? { NOT: { sellerId: { in: lockedSellerIds } } } : {}),
       },
@@ -211,7 +213,7 @@ export default async function TaiNguyenMmoPage({
       SELECT sp.seller_id, COUNT(o.id)::int AS order_count
       FROM seller_products sp
       LEFT JOIN orders o ON o.seller_product_id = sp.id AND o.status = 'DONE'
-      WHERE sp.deleted_at IS NULL AND sp.is_active = true
+      WHERE sp.deleted_at IS NULL AND sp.is_active = true AND sp.store_type = 'TAI_NGUYEN_MMO'
       GROUP BY sp.seller_id
       ORDER BY order_count DESC
       LIMIT 5
