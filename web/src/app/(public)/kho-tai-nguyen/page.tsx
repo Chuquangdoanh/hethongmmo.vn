@@ -8,15 +8,15 @@ import { r2Url } from "@/lib/utils/image-url";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ProductBuyButton from "@/app/(public)/tai-nguyen-mmo/_components/ProductBuyButton";
-import { FilterSidebar } from "@/app/(public)/tai-nguyen-mmo/_components/FilterSidebar";
-import type { CategoryItem } from "@/app/(public)/tai-nguyen-mmo/_components/FilterSidebar";
 import Pagination from "@/components/shared/Pagination";
-import {
-  Package, ShoppingBag, ShoppingCart, Store,
-  Pencil, CheckCircle, FolderOpen,
-} from "lucide-react";
 import { SortSelect } from "@/app/(public)/tai-nguyen-mmo/_components/SortSelect";
 import { buildMeta } from "@/lib/utils/seo";
+import { KhoFilterSidebar } from "./_components/KhoFilterSidebar";
+import {
+  Package, ShoppingBag, ShoppingCart, Store,
+  Pencil, CheckCircle, FolderOpen, Search,
+  Users, TrendingUp, Clock, Shield, Star, ChevronRight,
+} from "lucide-react";
 
 export const metadata: Metadata = buildMeta({
   title: "Kho Tài Nguyên | Hệ Thống MMO",
@@ -27,28 +27,7 @@ export const metadata: Metadata = buildMeta({
 
 const PAGE_SIZE = 20;
 const BASE_PATH = "/kho-tai-nguyen";
-
 type SortId = "noi-bat" | "ban-chay" | "moi-nhat" | "gia-cao" | "gia-thap";
-
-type UnifiedProduct = {
-  id: string;
-  name: string;
-  description: string | null;
-  imageUrl: string | null;
-  price: number;
-  rating: number;
-  reviewCount: number;
-  salesCount: number;
-  available: number;
-  isNew: boolean;
-  isHot: boolean;
-  href: string;
-  createdAt: Date;
-  sellerName: string;
-  purchasedByMe: boolean;
-  reviewedByMe: boolean;
-  category: string;
-};
 
 function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }) {
   const cls = size === "xs" ? "w-2.5 h-2.5" : "w-3 h-3";
@@ -57,7 +36,7 @@ function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }
       {[1, 2, 3, 4, 5].map((s) => (
         <svg
           key={s}
-          className={`${cls} ${s <= Math.round(rating) ? "text-warning" : "text-white/30"}`}
+          className={`${cls} ${s <= Math.round(rating) ? "text-warning" : "text-[#e2e8f0]"}`}
           fill="currentColor"
           viewBox="0 0 20 20"
         >
@@ -68,6 +47,16 @@ function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }
   );
 }
 
+function tierBadge(tier: string | null): { label: string; bg: string; fg: string } | null {
+  if (!tier) return null;
+  const map: Record<string, { label: string; bg: string; fg: string }> = {
+    GOLD:     { label: "TOP SELLER", bg: "#fef3c7", fg: "#b45309" },
+    SILVER:   { label: "VERIFIED",   bg: "#dbeafe", fg: "#1d4ed8" },
+    STANDARD: { label: "SELLER",     bg: "#f1f5f9", fg: "#475569" },
+  };
+  return map[tier.toUpperCase()] ?? { label: tier, bg: "#f1f5f9", fg: "#475569" };
+}
+
 export default async function KhoTaiNguyenPage({
   searchParams,
 }: {
@@ -75,16 +64,19 @@ export default async function KhoTaiNguyenPage({
 }) {
   await guardPublicPage("kho-tai-nguyen");
 
-  const [{ category, sort: sortParam, q: rawQ, price: priceParam, page: pageParam, subcategory: subcategoryParam }, session] = await Promise.all([
-    searchParams,
-    auth(),
-  ]);
+  const [
+    { category: categoryParam, sort: sortParam, q: rawQ, price: priceParam, page: pageParam, subcategory: subcatParam },
+    session,
+  ] = await Promise.all([searchParams, auth()]);
 
   const currentPage = Math.max(1, Number(pageParam ?? 1) || 1);
   const activeSort = (sortParam as SortId | undefined) ?? "noi-bat";
   const q = rawQ?.trim() || undefined;
   const me = session?.user as AuthenticatedUser | undefined;
   const isLoggedIn = !!me;
+
+  const selectedCategories = categoryParam ? categoryParam.split(",").filter(Boolean) : [];
+  const selectedSubcatNames = subcatParam ? subcatParam.split(",").filter(Boolean) : [];
 
   let minPrice: number | undefined;
   let maxPrice: number | undefined;
@@ -95,37 +87,82 @@ export default async function KhoTaiNguyenPage({
     if (rawMin !== undefined) { const n = Number(rawMin); if (!isNaN(n)) minPrice = n; }
     if (rawMax !== undefined) { const n = Number(rawMax); if (!isNaN(n) && n < 9_999_999_999) maxPrice = n; }
   }
-  const priceFilter = (minPrice !== undefined || maxPrice !== undefined)
-    ? { price: { ...(minPrice !== undefined ? { gte: minPrice } : {}), ...(maxPrice !== undefined ? { lte: maxPrice } : {}) } }
-    : {};
+  const priceFilter =
+    minPrice !== undefined || maxPrice !== undefined
+      ? { price: { ...(minPrice !== undefined ? { gte: minPrice } : {}), ...(maxPrice !== undefined ? { lte: maxPrice } : {}) } }
+      : {};
 
   type LockedRow = { id: string };
   const lockedSellerRows = await prisma.$queryRaw<LockedRow[]>`SELECT id FROM users WHERE shop_locked = true`;
   const lockedSellerIds = lockedSellerRows.map((r) => r.id);
+  const notLockedFilter = lockedSellerIds.length > 0 ? { NOT: { sellerId: { in: lockedSellerIds } } } : {};
 
-  const [
-    sellerProducts,
-    sellerReviewStats,
-    allSellerCats,
-    resourceCategories,
-  ] = await Promise.all([
+  const subCatIds =
+    selectedSubcatNames.length > 0
+      ? (
+          await prisma.sellerSubCategory.findMany({
+            where: { name: { in: selectedSubcatNames }, isActive: true },
+            select: { id: true },
+          })
+        ).map((s) => s.id)
+      : [];
+
+  const baseWhere = {
+    isActive: true,
+    isHidden: false,
+    isRestricted: false,
+    deletedAt: null,
+    storeType: "KHO_TAI_NGUYEN" as const,
+    stockItems: { some: { status: "AVAILABLE" as const } },
+    ...notLockedFilter,
+  };
+
+  const filteredWhere = {
+    ...baseWhere,
+    ...(selectedCategories.length > 0 ? { sellerCategory: { in: selectedCategories } } : {}),
+    ...(subCatIds.length > 0 ? { subCategoryId: { in: subCatIds } } : {}),
+    ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
+    ...priceFilter,
+  };
+
+  const orderBy =
+    activeSort === "ban-chay" ? [{ salesCount: "desc" as const }]
+    : activeSort === "moi-nhat" ? [{ createdAt: "desc" as const }]
+    : activeSort === "gia-cao"  ? [{ price: "desc" as const }]
+    : activeSort === "gia-thap" ? [{ price: "asc" as const }]
+    : [{ salesCount: "desc" as const }, { createdAt: "desc" as const }];
+
+  const [allStatProducts, filteredProducts, resourceCategories, reviewStats, topSellerRows] = await Promise.all([
     prisma.sellerProduct.findMany({
-      where: {
-        isActive: true, isHidden: false, isRestricted: false, deletedAt: null,
-        storeType: "KHO_TAI_NGUYEN",
-        stockItems: { some: { status: "AVAILABLE" } },
-        ...(lockedSellerIds.length > 0 ? { NOT: { sellerId: { in: lockedSellerIds } } } : {}),
-        ...(category ? { sellerCategory: category } : {}),
-        ...(subcategoryParam ? { seller: { subCategories: { some: { subCategory: { name: subcategoryParam, isActive: true } } } } } : {}),
-        ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
-        ...priceFilter,
-      },
-      orderBy: [{ salesCount: "desc" }, { createdAt: "desc" }],
+      where: baseWhere,
+      select: { id: true, sellerCategory: true, sellerId: true, subCategoryId: true },
+    }),
+    prisma.sellerProduct.findMany({
+      where: filteredWhere,
+      orderBy,
       select: {
-        id: true, name: true, imageUrl: true, sellerCategory: true, description: true,
-        price: true, salesCount: true, createdAt: true, subCategoryId: true,
+        id: true,
+        name: true,
+        imageUrl: true,
+        sellerCategory: true,
+        description: true,
+        price: true,
+        salesCount: true,
+        createdAt: true,
         seller: { select: { id: true, uidPrefix: true } },
-        _count: { select: { stockItems: { where: { status: "AVAILABLE" } } } },
+        _count: { select: { stockItems: { where: { status: "AVAILABLE" as const } } } },
+      },
+    }),
+    prisma.resourceCategory.findMany({
+      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+      select: {
+        name: true,
+        iconUrl: true,
+        subCategories: {
+          where: { isActive: true },
+          orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+          select: { id: true, name: true },
+        },
       },
     }),
     prisma.review.groupBy({
@@ -134,358 +171,543 @@ export default async function KhoTaiNguyenPage({
       _count: { id: true },
       _avg: { rating: true },
     }),
-    prisma.sellerProduct.findMany({
-      where: {
-        isActive: true, isHidden: false, isRestricted: false, deletedAt: null,
-        storeType: "KHO_TAI_NGUYEN",
-        stockItems: { some: { status: "AVAILABLE" } },
-        ...(lockedSellerIds.length > 0 ? { NOT: { sellerId: { in: lockedSellerIds } } } : {}),
-      },
-      select: { sellerCategory: true },
-      distinct: ["sellerCategory"],
-      orderBy: { sellerCategory: "asc" },
-    }),
-    prisma.resourceCategory.findMany({
-      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
-      select: {
-        name: true, iconUrl: true,
-        subCategories: {
-          where: { isActive: true },
-          orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
-          select: { id: true, name: true },
-        },
-      },
-    }),
+    prisma.$queryRaw<Array<{ seller_id: string; order_count: number }>>`
+      SELECT sp.seller_id, COUNT(o.id)::int AS order_count
+      FROM seller_products sp
+      LEFT JOIN orders o ON o.seller_product_id = sp.id AND o.status = 'DONE'
+      WHERE sp.store_type = 'KHO_TAI_NGUYEN' AND sp.deleted_at IS NULL
+      GROUP BY sp.seller_id
+      ORDER BY order_count DESC
+      LIMIT 5
+    `,
   ]);
 
-  const [purchasedSellerIds, reviewedSellerIds] = me
-    ? await Promise.all([
-        prisma.order.findMany({
-          where: { userId: me.id, orderType: "SELLER_PRODUCT", status: "DONE" },
-          select: { sellerProductId: true },
-          distinct: ["sellerProductId"],
-        }).then((rows) => new Set(rows.map((r) => r.sellerProductId!).filter(Boolean))),
-        prisma.review.findMany({
-          where: { userId: me.id, productType: "SELLER_PRODUCT" },
-          select: { productId: true },
-        }).then((rows) => new Set(rows.map((r) => r.productId))),
-      ])
-    : [new Set<string>(), new Set<string>()];
+  const topSellerIds = topSellerRows.map((r) => r.seller_id);
+  const [topSellerUsers, purchasedIds, reviewedIds] = await Promise.all([
+    topSellerIds.length > 0
+      ? prisma.user.findMany({
+          where: { id: { in: topSellerIds } },
+          select: { id: true, uidPrefix: true, avatarUrl: true, sellerTier: true },
+        })
+      : ([] as Array<{ id: string; uidPrefix: string; avatarUrl: string | null; sellerTier: string }>),
+    me
+      ? prisma.order
+          .findMany({
+            where: { userId: me.id, orderType: "SELLER_PRODUCT", status: "DONE" },
+            select: { sellerProductId: true },
+            distinct: ["sellerProductId"],
+          })
+          .then((rows) => new Set(rows.map((r) => r.sellerProductId!).filter(Boolean)))
+      : new Set<string>(),
+    me
+      ? prisma.review
+          .findMany({
+            where: { userId: me.id, productType: "SELLER_PRODUCT" },
+            select: { productId: true },
+          })
+          .then((rows) => new Set(rows.map((r) => r.productId)))
+      : new Set<string>(),
+  ]);
 
-  const sellerReviewMap = new Map(
-    sellerReviewStats.map((r) => [r.productId, { count: r._count.id, avg: r._avg.rating ?? 0 }])
+  // Build platform stats
+  const platformProductCount = new Map<string, number>();
+  const platformSellerSet = new Map<string, Set<string>>();
+  for (const p of allStatProducts) {
+    platformProductCount.set(p.sellerCategory, (platformProductCount.get(p.sellerCategory) ?? 0) + 1);
+    if (!platformSellerSet.has(p.sellerCategory)) platformSellerSet.set(p.sellerCategory, new Set());
+    platformSellerSet.get(p.sellerCategory)!.add(p.sellerId);
+  }
+
+  // Subcategory count map
+  const allSubCatById = new Map(
+    resourceCategories.flatMap((rc) => rc.subCategories.map((s) => [s.id, s.name] as [string, string]))
   );
-  const categoryIconMap = new Map(resourceCategories.map((c) => [c.name, c.iconUrl]));
-
-  const sellerCatSet = new Set(allSellerCats.map((c) => c.sellerCategory));
-  const allCategories = [
-    ...resourceCategories.map((c) => c.name).filter((n) => sellerCatSet.has(n)),
-    ...[...sellerCatSet].filter((n) => !resourceCategories.some((r) => r.name === n)).sort(),
-  ];
-
-  const sellerGrouped = sellerProducts.reduce<Record<string, number>>((acc, p) => {
-    acc[p.sellerCategory] = (acc[p.sellerCategory] ?? 0) + 1;
-    return acc;
-  }, {});
-
-  const allSubCatById = new Map<string, string>(
-    resourceCategories.flatMap((c) => c.subCategories.map((s) => [s.id, s.name] as [string, string]))
-  );
-  const sellerSubGrouped = sellerProducts.reduce<Record<string, number>>((acc, sp) => {
-    if (sp.subCategoryId) {
-      const subName = allSubCatById.get(sp.subCategoryId);
-      if (subName) acc[subName] = (acc[subName] ?? 0) + 1;
+  const subCatCountMap = new Map<string, number>();
+  for (const p of allStatProducts) {
+    if (p.subCategoryId) {
+      const name = allSubCatById.get(p.subCategoryId);
+      if (name) subCatCountMap.set(name, (subCatCountMap.get(name) ?? 0) + 1);
     }
-    return acc;
-  }, {});
+  }
 
-  const resourceCatMap = new Map(resourceCategories.map((c) => [c.name, c]));
-  const categoryItems: CategoryItem[] = allCategories.map((name) => ({
-    name,
-    count: sellerGrouped[name] ?? 0,
-    iconUrl: categoryIconMap.get(name) ?? null,
-    subCategories: (resourceCatMap.get(name)?.subCategories ?? []).map((sub) => ({
-      id: sub.id,
-      name: sub.name,
-      count: sellerSubGrouped[sub.name] ?? 0,
-    })),
-  }));
+  // Filter sidebar props
+  const platformsForFilter = [...platformProductCount.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
 
+  const resourceTypesForFilter = [...subCatCountMap.entries()]
+    .map(([name, count]) => ({ id: name, name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // Platform cards for "Danh mục nổi bật"
+  const platformCards = resourceCategories
+    .filter((rc) => platformProductCount.has(rc.name))
+    .map((rc) => ({
+      name: rc.name,
+      iconUrl: rc.iconUrl,
+      count: platformProductCount.get(rc.name) ?? 0,
+      sellerCount: platformSellerSet.get(rc.name)?.size ?? 0,
+      tags: rc.subCategories.slice(0, 3).map((s) => s.name),
+      extraTags: Math.max(0, rc.subCategories.length - 3),
+    }));
+
+  // Featured platform subcategory cards
+  const featuredPlatformName = selectedCategories[0] ?? platformCards[0]?.name;
+  const featuredPlatformSubcats = featuredPlatformName
+    ? (resourceCategories.find((rc) => rc.name === featuredPlatformName)?.subCategories ?? []).map((s) => ({
+        id: s.id,
+        name: s.name,
+        count: subCatCountMap.get(s.name) ?? 0,
+      }))
+    : [];
+
+  // Review map
+  const reviewMap = new Map(reviewStats.map((r) => [r.productId, { count: r._count.id, avg: r._avg.rating ?? 0 }]));
+
+  // Seller rating aggregate (for top sellers card)
+  const sellerRatingAgg = new Map<string, { total: number; count: number }>();
+  for (const p of allStatProducts) {
+    const rev = reviewMap.get(p.id);
+    if (rev && rev.count > 0) {
+      const existing = sellerRatingAgg.get(p.sellerId) ?? { total: 0, count: 0 };
+      existing.total += rev.avg * rev.count;
+      existing.count += rev.count;
+      sellerRatingAgg.set(p.sellerId, existing);
+    }
+  }
+
+  const topSellers = topSellerIds
+    .map((id) => {
+      const user = topSellerUsers.find((u) => u.id === id);
+      if (!user) return null;
+      const rating = sellerRatingAgg.get(id);
+      return {
+        id,
+        uidPrefix: user.uidPrefix,
+        avatarUrl: user.avatarUrl,
+        tier: user.sellerTier,
+        orderCount: Number(topSellerRows.find((r) => r.seller_id === id)?.order_count ?? 0),
+        avgRating: rating ? rating.total / rating.count : 0,
+        reviewCount: rating?.count ?? 0,
+      };
+    })
+    .filter((s): s is NonNullable<typeof s> => s !== null);
+
+  // Paginate
   const fourteenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const stripHtml = (html: string | null) =>
-    html ? html.replace(/<[^>]*>/g, "").trim() || null : null;
-
-  const allProducts: UnifiedProduct[] = sellerProducts.map((sp) => {
-    const review = sellerReviewMap.get(sp.id);
-    return {
-      id: sp.id,
-      name: sp.name,
-      description: stripHtml(sp.description ?? null),
-      imageUrl: sp.imageUrl,
-      price: Number(sp.price),
-      rating: review?.avg ?? 0,
-      reviewCount: review?.count ?? 0,
-      salesCount: sp.salesCount,
-      available: sp._count.stockItems,
-      isNew: sp.createdAt > fourteenDaysAgo,
-      isHot: sp.salesCount >= 15,
-      href: `/tai-nguyen-mmo/san-pham/${sp.id}`,
-      createdAt: sp.createdAt,
-      sellerName: `#${sp.seller.uidPrefix}`,
-      purchasedByMe: purchasedSellerIds.has(sp.id),
-      reviewedByMe: reviewedSellerIds.has(sp.id),
-      category: sp.sellerCategory,
-    };
-  });
-
-  const resCatOrder = new Map(resourceCategories.map((c, idx) => [c.name, idx]));
-  const sortedProducts = [...allProducts].sort((a, b) => {
-    const oa = resCatOrder.get(a.category) ?? 999;
-    const ob = resCatOrder.get(b.category) ?? 999;
-    if (oa !== ob) return oa - ob;
-    if (activeSort === "ban-chay") return b.salesCount - a.salesCount;
-    if (activeSort === "moi-nhat") return b.createdAt.getTime() - a.createdAt.getTime();
-    if (activeSort === "gia-cao")  return b.price - a.price;
-    if (activeSort === "gia-thap") return a.price - b.price;
-    if (a.isHot !== b.isHot) return a.isHot ? -1 : 1;
-    return b.salesCount - a.salesCount;
-  });
-
-  const totalCount = sortedProducts.length;
+  const stripHtml = (html: string | null) => (html ? html.replace(/<[^>]*>/g, "").trim() || null : null);
+  const totalCount = filteredProducts.length;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-  const pagedProducts = sortedProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pagedProducts = filteredProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const paginationParams: Record<string, string> = {};
-  if (category)         paginationParams["category"]    = category;
-  if (sortParam)        paginationParams["sort"]        = sortParam;
-  if (rawQ)             paginationParams["q"]           = rawQ;
-  if (priceParam)       paginationParams["price"]       = priceParam;
-  if (subcategoryParam) paginationParams["subcategory"] = subcategoryParam;
+  if (categoryParam) paginationParams["category"]    = categoryParam;
+  if (sortParam)     paginationParams["sort"]        = sortParam;
+  if (rawQ)          paginationParams["q"]           = rawQ;
+  if (priceParam)    paginationParams["price"]       = priceParam;
+  if (subcatParam)   paginationParams["subcategory"] = subcatParam;
+
+  const totalSellers = new Set(allStatProducts.map((p) => p.sellerId)).size;
+  const AVATAR_GRADIENTS = [
+    "from-[#3b82f6] to-[#6366f1]",
+    "from-[#f59e0b] to-[#ef4444]",
+    "from-[#10b981] to-[#06b6d4]",
+    "from-[#8b5cf6] to-[#ec4899]",
+    "from-[#14b8a6] to-[#22c55e]",
+  ] as const;
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9]">
+    <div className="min-h-screen bg-[#f0f4f8]">
+      <div className="mx-auto max-w-[1380px] px-3 py-4 flex items-start gap-4">
 
-      {/* ── BANNER ── */}
-      <div className="w-full bg-linear-to-r from-[#1e293b] via-[#0f172a] to-[#1e293b] py-10 px-4">
-        <div className="mx-auto max-w-7xl flex flex-col items-center text-center gap-3">
-          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#f59e0b]/10 border border-[#f59e0b]/30">
-            <FolderOpen size={28} strokeWidth={1.5} className="text-[#f59e0b]" />
-          </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">
-            Kho Tài Nguyên
-          </h1>
-          <p className="text-sm text-slate-400 max-w-xl">
-            Kho tài nguyên số MMO chất lượng cao từ các nhà bán hàng uy tín — giao tự động, bảo hành đầy đủ.
-          </p>
-          <div className="flex items-center gap-6 mt-1 text-xs text-slate-400">
-            <span className="flex flex-col items-center gap-0.5">
-              <span className="text-lg font-bold text-white">{totalCount.toLocaleString("vi-VN")}</span>
-              Sản phẩm
-            </span>
-            <span className="w-px h-8 bg-slate-700" />
-            <span className="flex flex-col items-center gap-0.5">
-              <span className="text-lg font-bold text-white">100%</span>
-              Tự động
-            </span>
-            <span className="w-px h-8 bg-slate-700" />
-            <span className="flex flex-col items-center gap-0.5">
-              <span className="text-lg font-bold text-white">24/7</span>
-              Hỗ trợ
-            </span>
-          </div>
-        </div>
-      </div>
+        {/* ── LEFT FILTER SIDEBAR ── */}
+        <Suspense fallback={<div className="w-[210px] shrink-0 bg-white rounded-2xl h-96 animate-pulse" />}>
+          <KhoFilterSidebar platforms={platformsForFilter} resourceTypes={resourceTypesForFilter} />
+        </Suspense>
 
-      {/* ── MAIN LAYOUT ── */}
-      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-6">
+        {/* ── MAIN CONTENT ── */}
+        <div className="flex-1 min-w-0 flex flex-col gap-4">
 
-        {/* View tabs + sort */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
-          <div className="flex items-center gap-0.5 bg-white rounded-xl border border-border p-1 w-fit">
-            <span className="px-4 py-2 text-sm font-bold text-white bg-primary rounded-lg whitespace-nowrap">
-              Tất cả sản phẩm
-            </span>
-            <Link href="/kho-tai-nguyen/gian-hang" scroll={false} className="px-4 py-2 text-sm font-semibold text-text-muted hover:text-primary hover:bg-[#f1f5f9] rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap">
-              <Store size={14} strokeWidth={2} />
-              Gian hàng Kho
-            </Link>
-          </div>
-          <div className="overflow-x-auto">
-            <SortSelect basePath={BASE_PATH} />
-          </div>
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-5">
-
-          {/* Filter sidebar */}
-          <Suspense
-            fallback={
-              <aside className="w-full lg:w-70">
-                <div className="bg-white rounded-xl border border-border h-40 lg:h-120 animate-pulse" />
-              </aside>
-            }
-          >
-            <FilterSidebar categories={categoryItems} totalCount={totalCount} basePath={BASE_PATH} />
-          </Suspense>
-
-          {/* Right: Product grid */}
-          <div className="flex-1 min-w-0">
-            <div className="mb-4 px-1">
-              <p className="text-sm text-text-muted">
-                <span className="font-semibold text-text-dark">{totalCount.toLocaleString("vi-VN")}</span>{" "}
-                sản phẩm
-                {category && (
-                  <span className="ml-1">
-                    trong <span className="font-semibold text-text-dark">&quot;{category}&quot;</span>
-                  </span>
-                )}
-                {subcategoryParam && (
-                  <span className="ml-1">
-                    › <span className="font-semibold text-text-dark">&quot;{subcategoryParam}&quot;</span>
-                  </span>
-                )}
-                {q && (
-                  <span className="ml-1">
-                    — tìm <span className="font-semibold text-text-dark">&quot;{q}&quot;</span>
-                  </span>
-                )}
-              </p>
-            </div>
-
-            {totalCount === 0 ? (
-              <div className="text-center py-24 bg-white rounded-xl border border-border">
-                <div className="flex justify-center mb-4">
-                  <Package size={52} strokeWidth={1.25} className="text-[#cbd5e1]" />
+          {/* Banner */}
+          <div className="rounded-2xl overflow-hidden relative bg-gradient-to-br from-[#0f2460] via-[#1a3a8f] to-[#0d1f5e]">
+            <div className="px-6 py-6 relative z-10">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                  <FolderOpen size={22} className="text-[#7dd3fc]" />
                 </div>
-                <p className="font-semibold text-text-dark text-base">Chưa có sản phẩm nào</p>
-                <p className="text-sm text-text-muted mt-1">Thử điều chỉnh bộ lọc.</p>
+                <div>
+                  <h1 className="text-xl font-extrabold text-white leading-tight">Kho Tài Nguyên MMO</h1>
+                  <p className="text-[#93c5fd] text-xs mt-0.5">Tài nguyên chất lượng cao — giao tự động sau thanh toán</p>
+                </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                {pagedProducts.map((p) => (
-                  <div
-                    key={p.id}
-                    className="bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-primary/40 transition-all flex flex-col"
-                  >
-                    {/* IMAGE */}
-                    <Link href={p.href} className="block relative shrink-0">
-                      <div className="aspect-video bg-[#f1f5f9] overflow-hidden relative">
-                        {p.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={r2Url(p.imageUrl)}
-                            alt={p.name}
-                            loading="lazy"
-                            decoding="async"
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <ShoppingBag size={36} strokeWidth={1.25} className="text-[#94a3b8]" />
-                          </div>
-                        )}
 
-                        <div className="absolute top-2 left-2">
-                          {p.isHot ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-danger text-white uppercase tracking-wide shadow">
-                              HOT
-                            </span>
-                          ) : p.isNew ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-[#22c55e] text-white uppercase tracking-wide shadow">
-                              NEW
-                            </span>
-                          ) : null}
-                        </div>
+              {/* Search */}
+              <form action={BASE_PATH} className="flex gap-2 mt-4 max-w-lg">
+                {categoryParam && <input type="hidden" name="category" value={categoryParam} />}
+                {subcatParam   && <input type="hidden" name="subcategory" value={subcatParam} />}
+                {priceParam    && <input type="hidden" name="price" value={priceParam} />}
+                <div className="flex-1 relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                  <input
+                    name="q"
+                    defaultValue={q}
+                    type="text"
+                    placeholder="Tìm kiếm tài nguyên, seller..."
+                    className="w-full pl-8 pr-3 py-2 rounded-xl bg-white/10 border border-white/15 text-white placeholder-white/35 text-sm focus:outline-none focus:bg-white/20 focus:border-white/30 transition-colors"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold text-sm px-5 rounded-xl transition-colors whitespace-nowrap"
+                >
+                  Tìm kiếm
+                </button>
+              </form>
 
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/65 to-transparent px-2.5 pt-5 pb-2">
-                          {p.reviewCount > 0 ? (
-                            <div className="flex items-center gap-1">
-                              <StarBar rating={p.rating} size="xs" />
-                              <span className="text-[11px] font-bold text-white leading-none">
-                                {p.rating.toFixed(1)}
-                              </span>
-                              <span className="text-[11px] text-white/60">({p.reviewCount})</span>
-                            </div>
-                          ) : (
-                            <span className="text-[10px] text-white/50 italic">Chưa có đánh giá</span>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-
-                    {/* INFO */}
-                    <div className="p-3 flex flex-col gap-1.5 flex-1">
-                      <Link href={p.href}>
-                        <h3 className="text-sm font-bold text-text-dark hover:text-[#2563eb] transition-colors line-clamp-2 leading-snug">
-                          {p.name}
-                        </h3>
-                      </Link>
-
-                      {p.description && (
-                        <p className="text-[11px] text-text-muted line-clamp-2 leading-relaxed">
-                          {p.description}
-                        </p>
-                      )}
-
-                      <div className="flex items-center gap-1.5 text-[10px] text-text-muted mt-0.5">
-                        <span className="flex items-center gap-0.5">
-                          <ShoppingCart size={9} strokeWidth={2} />
-                          <span>Đã bán <strong className="text-[#374151]">{p.salesCount}</strong></span>
-                        </span>
-                        <span className="text-[#d1d5db]">·</span>
-                        <span>Còn <strong className="text-[#374151]">{p.available}</strong></span>
-                      </div>
-
-                      {p.purchasedByMe && !p.reviewedByMe && (
-                        <Link
-                          href={p.href}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors w-fit"
-                        >
-                          <Pencil size={9} strokeWidth={2} /> Đánh giá
-                        </Link>
-                      )}
-                      {p.purchasedByMe && p.reviewedByMe && (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] w-fit">
-                          <CheckCircle size={9} strokeWidth={2} /> Đã đánh giá
-                        </span>
-                      )}
-
-                      <div className="mt-auto pt-2 grid grid-cols-[2fr_3fr] gap-2 items-stretch">
-                        <div className="flex items-center justify-center bg-[#fff1f2] border border-[#fca5a5] rounded-lg px-1 py-2">
-                          <span className="text-xs font-extrabold text-[#e11d48] whitespace-nowrap leading-none">
-                            {formatVnd(p.price)}
-                          </span>
-                        </div>
-                        <ProductBuyButton
-                          orderType="SELLER_PRODUCT"
-                          itemId={p.id}
-                          itemName={p.name}
-                          price={p.price}
-                          isLoggedIn={isLoggedIn}
-                          avgRating={p.rating}
-                          reviewCount={p.reviewCount}
-                          available={p.available}
-                          totalSold={p.salesCount}
-                          sellerName={p.sellerName}
-                          compact
-                        />
-                      </div>
+              {/* Stats row */}
+              <div className="flex items-center gap-5 mt-5 flex-wrap">
+                {[
+                  { icon: Package, value: `${allStatProducts.length.toLocaleString("vi-VN")}+`, label: "Tài nguyên" },
+                  { icon: Users,   value: `${totalSellers}+`,                                    label: "Nhà bán hàng" },
+                  { icon: Shield,  value: "99.9%",                                               label: "Thành công" },
+                  { icon: Clock,   value: "24/7",                                                label: "Hỗ trợ" },
+                ].map(({ icon: Icon, value, label }) => (
+                  <div key={label} className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                      <Icon size={14} className="text-[#93c5fd]" />
+                    </div>
+                    <div>
+                      <p className="font-extrabold text-white text-sm leading-tight">{value}</p>
+                      <p className="text-[#93c5fd] text-[10px]">{label}</p>
                     </div>
                   </div>
                 ))}
               </div>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-l from-[#1e40af]/20 to-transparent pointer-events-none" />
+          </div>
+
+          {/* Danh mục nổi bật */}
+          {platformCards.length > 0 && (
+            <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-bold text-[#1e293b] text-[15px]">Danh mục nổi bật</h2>
+                <Link href={BASE_PATH} className="text-xs text-[#3b82f6] font-bold hover:underline flex items-center gap-0.5">
+                  Xem tất cả <ChevronRight size={12} />
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+                {platformCards.map((card) => (
+                  <Link
+                    key={card.name}
+                    href={`${BASE_PATH}?category=${encodeURIComponent(card.name)}`}
+                    className="flex items-start gap-2.5 p-2.5 rounded-xl border border-[#f1f5f9] hover:border-[#3b82f6]/40 hover:bg-[#eff6ff]/50 transition-all group"
+                  >
+                    <div className="w-9 h-9 rounded-lg overflow-hidden bg-[#f1f5f9] shrink-0 flex items-center justify-center">
+                      {card.iconUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={r2Url(card.iconUrl)} alt={card.name} className="w-full h-full object-contain" />
+                      ) : (
+                        <FolderOpen size={16} className="text-[#94a3b8]" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-[13px] text-[#1e293b] group-hover:text-[#2563eb] transition-colors truncate">
+                        {card.name}
+                      </p>
+                      <p className="text-[11px] text-[#64748b]">
+                        {card.count.toLocaleString("vi-VN")} · {card.sellerCount} seller
+                      </p>
+                      {card.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {card.tags.map((tag) => (
+                            <span key={tag} className="px-1.5 py-px rounded text-[9px] font-bold bg-[#dbeafe] text-[#1d4ed8]">
+                              {tag}
+                            </span>
+                          ))}
+                          {card.extraTags > 0 && (
+                            <span className="px-1.5 py-px rounded text-[9px] font-bold bg-[#f1f5f9] text-[#64748b]">
+                              +{card.extraTags}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Loại tài nguyên theo platform */}
+          {featuredPlatformSubcats.length > 0 && (
+            <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-bold text-[#1e293b] text-[15px]">
+                  Loại tài nguyên{featuredPlatformName ? ` ${featuredPlatformName}` : ""}
+                </h2>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {featuredPlatformSubcats.map((sub) => (
+                  <Link
+                    key={sub.id}
+                    href={`${BASE_PATH}?${selectedCategories.length > 0 ? `category=${encodeURIComponent(selectedCategories[0] ?? "")}&` : ""}subcategory=${encodeURIComponent(sub.name)}`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[13px] font-semibold transition-all hover:shadow-sm ${
+                      selectedSubcatNames.includes(sub.name)
+                        ? "border-[#3b82f6] bg-[#eff6ff] text-[#1d4ed8]"
+                        : "border-[#e2e8f0] bg-[#f8fafc] text-[#374151] hover:border-[#3b82f6]/40 hover:bg-[#eff6ff]/40"
+                    }`}
+                  >
+                    <span>{sub.name}</span>
+                    {sub.count > 0 && (
+                      <span className="text-[10px] text-[#94a3b8] font-normal">{sub.count}</span>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Sản phẩm nổi bật */}
+          <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <h2 className="font-bold text-[#1e293b] text-[15px]">Sản phẩm nổi bật</h2>
+                {totalCount > 0 && (
+                  <span className="text-[11px] text-[#94a3b8]">
+                    ({totalCount.toLocaleString("vi-VN")} sản phẩm)
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/kho-tai-nguyen/gian-hang"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e2e8f0] text-xs font-semibold text-[#475569] hover:bg-[#f8fafc] transition-colors whitespace-nowrap"
+                >
+                  <Store size={12} />
+                  Gian hàng
+                </Link>
+                <SortSelect basePath={BASE_PATH} />
+              </div>
+            </div>
+
+            {totalCount === 0 ? (
+              <div className="text-center py-20">
+                <Package size={44} strokeWidth={1.25} className="text-[#cbd5e1] mx-auto mb-3" />
+                <p className="font-semibold text-[#475569]">Chưa có sản phẩm nào</p>
+                <p className="text-xs text-[#94a3b8] mt-1">Thử điều chỉnh bộ lọc</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
+                {pagedProducts.map((sp) => {
+                  const review  = reviewMap.get(sp.id);
+                  const price   = Number(sp.price);
+                  const avail   = sp._count.stockItems;
+                  const isNew   = sp.createdAt > fourteenDaysAgo;
+                  const isHot   = sp.salesCount >= 15;
+                  const seller  = `#${sp.seller.uidPrefix}`;
+                  const bought  = purchasedIds.has(sp.id);
+                  const rated   = reviewedIds.has(sp.id);
+                  const desc    = stripHtml(sp.description ?? null);
+                  const href    = `/tai-nguyen-mmo/san-pham/${sp.id}`;
+
+                  return (
+                    <div
+                      key={sp.id}
+                      className="bg-white rounded-xl border border-[#e2e8f0] overflow-hidden hover:shadow-md hover:border-[#3b82f6]/40 transition-all flex flex-col"
+                    >
+                      <Link href={href} className="block relative shrink-0">
+                        <div className="aspect-video bg-[#f8fafc] overflow-hidden relative">
+                          {sp.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={r2Url(sp.imageUrl)}
+                              alt={sp.name}
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ShoppingBag size={32} strokeWidth={1.25} className="text-[#94a3b8]" />
+                            </div>
+                          )}
+                          <div className="absolute top-2 left-2 flex gap-1">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide bg-[#1d4ed8]/85 text-white">
+                              {sp.sellerCategory}
+                            </span>
+                            {isHot && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-danger text-white uppercase">
+                                HOT
+                              </span>
+                            )}
+                            {!isHot && isNew && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-[#22c55e] text-white uppercase">
+                                NEW
+                              </span>
+                            )}
+                          </div>
+                          {review && review.count > 0 && (
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/65 to-transparent px-2.5 pt-5 pb-2">
+                              <div className="flex items-center gap-1">
+                                <StarBar rating={review.avg} size="xs" />
+                                <span className="text-[11px] font-bold text-white leading-none">{review.avg.toFixed(1)}</span>
+                                <span className="text-[10px] text-white/60">({review.count})</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+
+                      <div className="p-3 flex flex-col gap-1.5 flex-1">
+                        <Link href={href}>
+                          <h3 className="text-sm font-bold text-[#1e293b] hover:text-[#2563eb] transition-colors line-clamp-2 leading-snug">
+                            {sp.name}
+                          </h3>
+                        </Link>
+                        {desc && (
+                          <p className="text-[11px] text-[#64748b] line-clamp-2 leading-relaxed">{desc}</p>
+                        )}
+                        <div className="flex items-center gap-1.5 text-[10px] text-[#94a3b8]">
+                          <span>Seller: <strong className="text-[#475569]">{seller}</strong></span>
+                          <span>·</span>
+                          <span>Còn <strong className="text-[#374151]">{avail}</strong></span>
+                          <span>·</span>
+                          <span className="flex items-center gap-0.5">
+                            <ShoppingCart size={8} strokeWidth={2} />
+                            <strong className="text-[#374151]">{sp.salesCount}</strong>
+                          </span>
+                        </div>
+                        {bought && !rated && (
+                          <Link
+                            href={href}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors w-fit"
+                          >
+                            <Pencil size={9} strokeWidth={2} /> Đánh giá
+                          </Link>
+                        )}
+                        {bought && rated && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] w-fit">
+                            <CheckCircle size={9} strokeWidth={2} /> Đã đánh giá
+                          </span>
+                        )}
+                        <div className="mt-auto pt-2 grid grid-cols-[2fr_3fr] gap-2 items-stretch">
+                          <div className="flex items-center justify-center bg-[#fff1f2] border border-[#fca5a5] rounded-lg px-1 py-2">
+                            <span className="text-xs font-extrabold text-[#e11d48] whitespace-nowrap leading-none">
+                              {formatVnd(price)}
+                            </span>
+                          </div>
+                          <ProductBuyButton
+                            orderType="SELLER_PRODUCT"
+                            itemId={sp.id}
+                            itemName={sp.name}
+                            price={price}
+                            isLoggedIn={isLoggedIn}
+                            avgRating={review?.avg ?? 0}
+                            reviewCount={review?.count ?? 0}
+                            available={avail}
+                            totalSold={sp.salesCount}
+                            sellerName={seller}
+                            compact
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
 
             {totalPages > 1 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                basePath={BASE_PATH}
-                searchParams={paginationParams}
-                scrollToTop
-              />
+              <div className="mt-5">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  basePath={BASE_PATH}
+                  searchParams={paginationParams}
+                  scrollToTop
+                />
+              </div>
             )}
           </div>
+
+        </div>
+
+        {/* ── RIGHT SIDEBAR ── */}
+        <div className="w-[216px] shrink-0 flex flex-col gap-4 self-start sticky top-24">
+
+          {/* Thống kê hệ thống */}
+          <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm">
+            <h3 className="font-bold text-[#1e293b] text-[13px] mb-3">Thống kê hệ thống</h3>
+            <div className="space-y-3">
+              {([
+                { Icon: Package,    bg: "#dbeafe", fg: "#2563eb", label: "Tài nguyên",     value: `${allStatProducts.length.toLocaleString("vi-VN")}+` },
+                { Icon: Users,      bg: "#d1fae5", fg: "#059669", label: "Khách hàng",     value: "10.000+"                                             },
+                { Icon: TrendingUp, bg: "#fef3c7", fg: "#d97706", label: "Tỷ lệ thành công", value: "99.9%"                                             },
+                { Icon: Clock,      bg: "#ede9fe", fg: "#7c3aed", label: "Hỗ trợ",         value: "24/7"                                                },
+              ] as const).map(({ Icon, bg, fg, label, value }) => (
+                <div key={label} className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: bg }}>
+                    <Icon size={14} style={{ color: fg }} />
+                  </div>
+                  <div>
+                    <p className="font-extrabold text-[#1e293b] text-[13px] leading-tight">{value}</p>
+                    <p className="text-[10px] text-[#64748b]">{label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Top nhà bán hàng */}
+          {topSellers.length > 0 && (
+            <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm">
+              <h3 className="font-bold text-[#1e293b] text-[13px] mb-3">Top nhà bán hàng</h3>
+              <div className="space-y-3">
+                {topSellers.map((seller, idx) => {
+                  const initials = seller.uidPrefix.slice(0, 2).toUpperCase();
+                  const badge    = tierBadge(seller.tier);
+                  const grad     = AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length] ?? "from-[#3b82f6] to-[#6366f1]";
+                  return (
+                    <div key={seller.id} className="flex items-center gap-2.5">
+                      <div className={`w-8 h-8 rounded-full shrink-0 overflow-hidden bg-gradient-to-br ${grad} flex items-center justify-center`}>
+                        {seller.avatarUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={r2Url(seller.avatarUrl)} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[10px] font-extrabold text-white">{initials}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                          <span className="text-[13px] font-bold text-[#1e293b] truncate">#{seller.uidPrefix}</span>
+                          {badge && (
+                            <span
+                              className="px-1 py-px rounded text-[9px] font-bold shrink-0"
+                              style={{ background: badge.bg, color: badge.fg }}
+                            >
+                              {badge.label}
+                            </span>
+                          )}
+                        </div>
+                        {seller.avgRating > 0 && (
+                          <div className="flex items-center gap-1">
+                            <Star size={9} fill="#f59e0b" strokeWidth={0} className="text-[#f59e0b]" />
+                            <span className="text-[11px] font-bold text-[#374151]">{seller.avgRating.toFixed(1)}</span>
+                            <span className="text-[10px] text-[#94a3b8]">({seller.reviewCount})</span>
+                          </div>
+                        )}
+                        <p className="text-[10px] text-[#64748b]">
+                          {seller.orderCount.toLocaleString("vi-VN")} đơn hàng
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </div>
