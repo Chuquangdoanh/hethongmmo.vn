@@ -8,6 +8,7 @@ import { formatVnd } from "@/lib/utils/format";
 import { CheckCircle, Plus, Store, Wallet, Package, TicketCheck, Send, Settings } from "lucide-react";
 import { NAV_LINKS, NAV_ICONS } from "./nav-links";
 import SidebarNav, { type SidebarNavGroup, type SidebarNavItem } from "./SidebarNav";
+import SidebarServiceAccordion from "./SidebarServiceAccordion";
 import SidebarCollapseToggle from "./SidebarCollapseToggle";
 import "./sidebar.css";
 
@@ -36,11 +37,19 @@ export default async function Sidebar() {
     openTicketCount = ticketCount;
   }
 
-  const serviceCategories = await prisma.serviceCategory.findMany({
-    orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
-    select: { name: true, iconUrl: true },
-    take: 6,
-  });
+  const [serviceCategories, activeServiceCats] = await Promise.all([
+    prisma.serviceCategory.findMany({
+      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+      select: { name: true, iconUrl: true },
+    }),
+    prisma.service.findMany({
+      where: { isActive: true, deletedAt: null },
+      select: { category: true },
+      distinct: ["category"],
+    }),
+  ]);
+  const activeCatNames = new Set(activeServiceCats.map((s) => s.category).filter(Boolean));
+  const filteredServiceCategories = serviceCategories.filter((c) => activeCatNames.has(c.name));
 
   const isSeller = !!sessionUser && (
     (sessionUser.role === "SELLER" && sessionUser.sellerStatus === "APPROVED")
@@ -59,19 +68,6 @@ export default async function Sidebar() {
     );
   };
 
-  const serviceItems: SidebarNavItem[] = [
-    ...(isPageVisible("dich-vu") ? [{ href: "/dich-vu", label: navLabel("/dich-vu"), icon: iconBadge("/dich-vu") }] : []),
-    ...serviceCategories.map((c) => ({
-      href: `/dich-vu?category=${encodeURIComponent(c.name)}`,
-      label: c.name,
-      icon: c.iconUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={r2Url(c.iconUrl)} alt="" className="sb-cat-icon" width={18} height={18} loading="lazy" />
-      ) : undefined,
-    })),
-    ...(isPageVisible("dich-vu") ? [{ href: "/dich-vu", label: "Xem tất cả dịch vụ" }] : []),
-  ];
-
   const systemItems: SidebarNavItem[] = [
     ...(isPageVisible("khoa-hoc")       ? [{ href: "/khoa-hoc",       label: navLabel("/khoa-hoc"),       icon: iconBadge("/khoa-hoc") }] : []),
     ...(isPageVisible("tut-tricks")     ? [{ href: "/tut-tricks",     label: navLabel("/tut-tricks"),     icon: iconBadge("/tut-tricks") }] : []),
@@ -87,7 +83,6 @@ export default async function Sidebar() {
   ];
 
   const groups: SidebarNavGroup[] = [
-    { title: "DỊCH VỤ MẠNG XÃ HỘI", items: serviceItems },
     { title: "HỆ THỐNG", items: systemItems },
   ];
 
@@ -163,7 +158,15 @@ export default async function Sidebar() {
         )}
 
         <nav className="sb-nav" aria-label="Điều hướng chính">
-          <SidebarNav homeItem={homeItem} groups={groups} />
+          <SidebarNav
+            homeItem={homeItem}
+            groups={groups}
+            serviceAccordion={
+              isPageVisible("dich-vu") ? (
+                <SidebarServiceAccordion categories={filteredServiceCategories} />
+              ) : undefined
+            }
+          />
         </nav>
       </div>
 

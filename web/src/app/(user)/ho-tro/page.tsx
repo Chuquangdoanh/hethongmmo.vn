@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatVnd, formatDate } from "@/lib/utils/format";
-import { Search, Clock, CheckCircle, TicketCheck, MessageCircle, ShieldAlert } from "lucide-react";
+import { Search, Clock, CheckCircle, TicketCheck, ShieldAlert } from "lucide-react";
 import TicketChatPanel from "./_components/TicketChatPanel";
 import SlaTimer from "./_components/SlaTimer";
 import "./ho-tro.css";
@@ -14,16 +14,18 @@ export const metadata: Metadata = { title: "Ticket hỗ trợ" };
 
 /* ─── Status display ──────────────────────────────────────────── */
 const STATUS_LABEL: Record<string, string> = {
+  OPEN:          "Chờ xử lý",
   IN_REVIEW:     "Đang xử lý",
-  PENDING_ADMIN: "Chờ Admin",
+  PENDING_ADMIN: "Đã phản hồi",
   RESOLVED:      "Đã hoàn thành",
-  REJECTED:      "Đã hoàn tiền",
+  REJECTED:      "Đã đóng",
 };
 const STATUS_STYLE: Record<string, { bg: string; color: string; border: string }> = {
-  IN_REVIEW:     { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
-  PENDING_ADMIN: { bg: "#fdf4ff", color: "#7c3aed", border: "#e9d5ff" },
-  RESOLVED:      { bg: "#f0fdf4", color: "#15803d", border: "#bbf7d0" },
-  REJECTED:      { bg: "#fef2f2", color: "#dc2626", border: "#fecaca" },
+  OPEN:          { bg: "#fffbeb", color: "#b45309",  border: "#fde68a" },
+  IN_REVIEW:     { bg: "#eff6ff", color: "#1d4ed8",  border: "#bfdbfe" },
+  PENDING_ADMIN: { bg: "#fdf4ff", color: "#7c3aed",  border: "#e9d5ff" },
+  RESOLVED:      { bg: "#f0fdf4", color: "#15803d",  border: "#bbf7d0" },
+  REJECTED:      { bg: "#f8fafc", color: "#64748b",  border: "#e2e8f0" },
 };
 const defaultStyle = { bg: "#f8fafc", color: "#64748b", border: "#e2e8f0" };
 
@@ -200,9 +202,9 @@ export default async function HoTroPage({
 
   const STATUS_TABS = [
     { key: "IN_REVIEW",     label: "Đang xử lý" },
-    { key: "PENDING_ADMIN", label: "Chờ Admin phán quyết" },
-    { key: "RESOLVED",      label: "Đã xử lý thành công" },
-    { key: "REJECTED",      label: "Đã hoàn tiền" },
+    { key: "PENDING_ADMIN", label: "Đã phản hồi" },
+    { key: "RESOLVED",      label: "Đã hoàn thành" },
+    { key: "REJECTED",      label: "Đã đóng" },
   ];
 
   return (
@@ -231,7 +233,7 @@ export default async function HoTroPage({
         <div className="ht-sidebar-list">
           {complaints.length === 0 ? (
             <div style={{ padding: "40px 16px", textAlign: "center" }}>
-              <MessageCircle size={28} style={{ color: "#cbd5e1", margin: "0 auto 8px", display: "block" }} />
+              <TicketCheck size={28} style={{ color: "#cbd5e1", margin: "0 auto 8px", display: "block" }} />
               <p style={{ fontSize: "12px", color: "#94a3b8" }}>Chưa có ticket nào</p>
               <p style={{ fontSize: "11px", color: "#cbd5e1", marginTop: "4px" }}>
                 Khiếu nại đơn hàng để tạo ticket hỗ trợ

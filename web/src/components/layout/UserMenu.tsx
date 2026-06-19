@@ -5,7 +5,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { formatVnd } from "@/lib/utils/format";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
-import { User, CreditCard, Package, Store, LayoutDashboard, LogOut, TicketCheck, Bell, ShieldCheck } from "lucide-react";
+import { User, CreditCard, Package, Store, LayoutDashboard, LogOut, TicketCheck, Bell, ShieldCheck, ShieldAlert } from "lucide-react";
 
 interface UserMenuProps {
   user: AuthenticatedUser;
@@ -154,10 +154,11 @@ export default function UserMenu({ user, balance, avatarUrl }: UserMenuProps) {
 
           <MenuItem href="/thong-tin-ca-nhan" Icon={User}          iconBg="#f1f5f9" iconColor="#475569" label="Hồ sơ cá nhân" onClick={() => setOpen(false)} />
           <MenuItem href="/don-hang"          Icon={Package}      iconBg="#fef3c7" iconColor="#b45309" label="Đơn hàng"      onClick={() => setOpen(false)} />
+          <MenuItem href="/ho-tro"             Icon={ShieldAlert}  iconBg="#fff7ed" iconColor="#ea580c" label="Khiếu nại"     onClick={() => setOpen(false)} />
           <MenuItem href="/ho-tro"             Icon={TicketCheck}  iconBg="#eff6ff" iconColor="#2563eb" label="Ticket hỗ trợ" onClick={() => setOpen(false)} />
           <MenuItem href="/thong-bao"         Icon={Bell}         iconBg="#f0fdf4" iconColor="#16a34a" label="Thông báo"     onClick={() => setOpen(false)} />
-          <MenuItem href="/nap-tien"          Icon={CreditCard}   iconBg="#dbeafe" iconColor="#0891b2" label="Nạp tiền"      onClick={() => setOpen(false)} />
           <MenuItem href="/thong-tin-ca-nhan#bao-mat" Icon={ShieldCheck} iconBg="#fdf4ff" iconColor="#9333ea" label="Bảo mật" onClick={() => setOpen(false)} />
+          <MenuItem href="/nap-tien"          Icon={CreditCard}   iconBg="#dbeafe" iconColor="#0891b2" label="Nạp tiền"      onClick={() => setOpen(false)} />
 
           {isSeller ? (
             <MenuItem href="/ban-hang" Icon={Store} iconBg="#f0fdf4" iconColor="#16a34a" label="Bán Hàng" onClick={() => setOpen(false)} />

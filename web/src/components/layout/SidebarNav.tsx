@@ -21,9 +21,10 @@ export interface SidebarNavGroup {
 interface Props {
   homeItem: SidebarNavItem;
   groups: SidebarNavGroup[];
+  serviceAccordion?: ReactNode;
 }
 
-export default function SidebarNav({ homeItem, groups }: Props) {
+export default function SidebarNav({ homeItem, groups, serviceAccordion }: Props) {
   const pathname = usePathname();
   // Defer active-path until after hydration để tránh hydration mismatch
   const [activePath, setActivePath] = useState("");
@@ -48,6 +49,7 @@ export default function SidebarNav({ homeItem, groups }: Props) {
       </Link>
 
       <div className="sb-groups">
+        {serviceAccordion}
         {groups.map((group) => (
           <div key={group.title} className="sb-group">
             <p className="sb-group-title sb-label">{group.title}</p>

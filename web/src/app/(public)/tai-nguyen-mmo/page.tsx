@@ -10,11 +10,12 @@ import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ProductBuyButton from "./_components/ProductBuyButton";
 import { FilterSidebar } from "./_components/FilterSidebar";
 import type { CategoryItem } from "./_components/FilterSidebar";
+import { BannerSearchInput } from "./_components/BannerSearchInput";
 import Pagination from "@/components/shared/Pagination";
 import {
   Package, ShoppingBag, ShoppingCart, Store,
   Pencil, CheckCircle,
-  FolderOpen, Search, Shield, X,
+  FolderOpen, Shield, X,
 } from "lucide-react";
 import { SortSelect } from "./_components/SortSelect";
 import { buildMeta } from "@/lib/utils/seo";
@@ -380,63 +381,42 @@ export default async function TaiNguyenMmoPage({
             <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />
             <div className="absolute top-6 right-24 w-16 h-16 rounded-full bg-white/5 pointer-events-none" />
 
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-5">
-              <div className="flex-1">
-                {/* Icon + Title */}
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                    <FolderOpen size={20} strokeWidth={1.75} className="text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl md:text-2xl font-extrabold leading-tight tracking-tight">
-                      Nguyên Liệu MMO
-                    </h1>
-                    <p className="text-white/60 text-xs mt-0.5">Tài khoản &amp; công cụ số — Giao tự động, Bảo hành uy tín</p>
-                  </div>
+            <div className="relative z-10">
+              {/* Icon + Title */}
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                  <FolderOpen size={20} strokeWidth={1.75} className="text-white" />
                 </div>
-
-                {/* Stats row */}
-                <div className="flex items-center gap-4 mt-3 flex-wrap">
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <Package size={13} strokeWidth={2} className="text-white/70" />
-                    <span className="text-white/70">Sản phẩm</span>
-                    <span className="font-extrabold">{totalCount.toLocaleString("vi-VN")}</span>
-                  </div>
-                  <div className="w-px h-3 bg-white/20" />
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <Store size={13} strokeWidth={2} className="text-white/70" />
-                    <span className="text-white/70">Nhà bán</span>
-                    <span className="font-extrabold">{totalSellers}</span>
-                  </div>
-                  <div className="w-px h-3 bg-white/20" />
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <Shield size={13} strokeWidth={2} className="text-white/70" />
-                    <span className="font-extrabold">Giao tự động 24/7</span>
-                  </div>
+                <div>
+                  <h1 className="text-xl md:text-2xl font-extrabold leading-tight tracking-tight">
+                    Nguyên Liệu MMO
+                  </h1>
+                  <p className="text-white/60 text-xs mt-0.5">Tài khoản &amp; công cụ số — Giao tự động, Bảo hành uy tín</p>
                 </div>
               </div>
 
-              {/* Search form */}
-              <form method="get" action={BASE_PATH} className="flex items-center gap-2 w-full md:w-72 shrink-0">
-                {category && <input type="hidden" name="category" value={category} />}
-                {subcategoryParam && <input type="hidden" name="subcategory" value={subcategoryParam} />}
-                {sortParam && <input type="hidden" name="sort" value={sortParam} />}
-                <div className="flex-1 relative">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 pointer-events-none" />
-                  <input
-                    name="q"
-                    defaultValue={q ?? ""}
-                    placeholder="Tìm tên sản phẩm..."
-                    className="w-full pl-8 pr-3 py-2.5 rounded-xl bg-white/10 border border-white/20 text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-white/50 focus:bg-white/15 transition-all"
-                  />
+              {/* Search realtime */}
+              <BannerSearchInput defaultValue={q ?? ""} basePath={BASE_PATH} />
+
+              {/* Stats row */}
+              <div className="flex items-center gap-4 mt-4 flex-wrap">
+                <div className="flex items-center gap-1.5 text-xs">
+                  <Package size={13} strokeWidth={2} className="text-white/70" />
+                  <span className="text-white/70">Sản phẩm</span>
+                  <span className="font-extrabold">{totalCount.toLocaleString("vi-VN")}</span>
                 </div>
-                <button
-                  type="submit"
-                  className="px-4 py-2.5 rounded-xl bg-white text-[#1a3a8f] text-sm font-bold hover:bg-white/90 transition-colors shrink-0"
-                >
-                  Tìm
-                </button>
-              </form>
+                <div className="w-px h-3 bg-white/20" />
+                <div className="flex items-center gap-1.5 text-xs">
+                  <Store size={13} strokeWidth={2} className="text-white/70" />
+                  <span className="text-white/70">Nhà bán</span>
+                  <span className="font-extrabold">{totalSellers}</span>
+                </div>
+                <div className="w-px h-3 bg-white/20" />
+                <div className="flex items-center gap-1.5 text-xs">
+                  <Shield size={13} strokeWidth={2} className="text-white/70" />
+                  <span className="font-extrabold">Giao tự động 24/7</span>
+                </div>
+              </div>
             </div>
           </div>
 

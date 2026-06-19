@@ -14,8 +14,8 @@ const TABS = [
   { key: "profile",      label: "Thông tin hồ sơ",  href: "/thong-tin-ca-nhan" },
   { key: "deposit",      label: "Nạp tiền",          href: "/nap-tien" },
   { key: "orders",       label: "Lịch sử mua hàng",  href: "/don-hang" },
-  { key: "transactions", label: "Lịch sử giao dịch", href: "/lich-su-giao-dich" },
-  { key: "chat",         label: "Ticket hỗ trợ",      href: "/ho-tro" },
+  // { key: "transactions", label: "Lịch sử giao dịch", href: "/lich-su-giao-dich" },
+  // { key: "support",      label: "Ticket hỗ trợ",      href: "/ho-tro" },
 ];
 
 interface Props {
@@ -27,7 +27,7 @@ interface Props {
   totalDeposited: number;
   totalSpent: number;
   lastDepositAt: Date | null;
-  activeTab: "profile" | "deposit" | "orders" | "transactions" | "chat";
+  activeTab: "profile" | "deposit" | "orders" | "transactions" | "support";
   avatarUrl?: string | null;
 }
 

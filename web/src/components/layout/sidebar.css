@@ -207,6 +207,26 @@ html.sb-collapsed .sb-collapse-btn { justify-content: center; }
   justify-content: center;
 }
 
+/* ── Service accordion toggle ─────────────────────────────────── */
+.sb-svc-toggle {
+  border: none;
+  background: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+/* Sub-items: indent + fade-in */
+.sb-svc-items {
+  animation: sb-svc-fadein 0.15s ease;
+}
+@keyframes sb-svc-fadein {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.sb-svc-sub { padding-left: 20px; }
+.sb-svc-all .sb-link-text { color: #7c3aed; font-weight: 600; }
+
 /* ── Collapse: ẩn toàn bộ text/label, chỉ giữ icon ───────────── */
 html.sb-collapsed .sb-label { display: none; }
 

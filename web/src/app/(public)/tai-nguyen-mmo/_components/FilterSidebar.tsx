@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
-import { Search, X, SlidersHorizontal } from "lucide-react";
+import { useRef, useState, useTransition } from "react";
+import { SlidersHorizontal } from "lucide-react";
 import { r2Url } from "@/lib/utils/image-url";
 
 const PRICE_RANGES = [
@@ -43,28 +43,6 @@ export function FilterSidebar({ categories, totalCount, basePath = "/tai-nguyen-
   const activeCategory    = searchParams.get("category")    ?? "";
   const activeSubcategory = searchParams.get("subcategory") ?? "";
   const priceParam        = searchParams.get("price")       ?? "";
-  const qParam            = searchParams.get("q")           ?? "";
-
-  const [searchValue, setSearchValue] = useState(qParam);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { setSearchValue(qParam); }, [qParam]);
-
-  useEffect(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      const params = new URLSearchParams(searchParamsRef.current.toString());
-      const trimmed = searchValue.trim();
-      if (trimmed) params.set("q", trimmed); else params.delete("q");
-      params.delete("page");
-      startTransition(() => {
-        router.replace(`${basePath}?${params.toString()}`, { scroll: false });
-      });
-    }, 400);
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchValue, basePath]);
 
   function setParam(key: string, value: string) {
     const params = new URLSearchParams(searchParamsRef.current.toString());
@@ -90,30 +68,6 @@ export function FilterSidebar({ categories, totalCount, basePath = "/tai-nguyen-
         </div>
 
         <div className="divide-y divide-[#f1f5f9]">
-
-          {/* Search */}
-          <div className="px-4 py-4">
-            <p className="text-[13px] font-bold text-[#94a3b8] uppercase tracking-widest mb-2">Tìm kiếm</p>
-            <div className="relative">
-              <Search size={17} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#94a3b8] pointer-events-none" />
-              <input
-                type="text"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                placeholder="Nhập tên sản phẩm..."
-                className="w-full pl-9 pr-6 py-2 text-sm rounded-lg border border-border bg-light text-text-dark placeholder-[#94a3b8] focus:border-[#3b82f6] focus:bg-white focus:outline-none transition-all"
-              />
-              {searchValue && (
-                <button
-                  type="button"
-                  onClick={() => setSearchValue("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#475569]"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          </div>
 
           {/* Categories */}
           <div className="px-4 py-4">
