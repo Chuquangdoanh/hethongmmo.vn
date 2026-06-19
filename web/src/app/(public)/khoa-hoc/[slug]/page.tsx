@@ -159,7 +159,6 @@ export default async function KhoaHocDetailPage({ params }: Props) {
     { label: "Thời lượng", value: course.duration ?? "—",                                        Icon: Clock },
     { label: "Hình thức",  value: FORMAT_LABELS[course.learningFormat] ?? course.learningFormat,  Icon: Monitor },
     { label: "Học viên",   value: `${course.studentCount.toLocaleString("vi-VN")}+`,              Icon: Users },
-    { label: "Nội dung",   value: `${contentList.length} bài học`,                                Icon: BookOpen },
     { label: "Cập nhật",   value: updatedLabel,                                                    Icon: RefreshCw },
   ] as const;
 
