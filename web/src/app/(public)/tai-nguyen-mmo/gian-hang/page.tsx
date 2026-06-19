@@ -7,7 +7,6 @@ import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import {
   Store, BadgeCheck, Star, ShoppingCart, Package, ChevronRight, Building2,
 } from "lucide-react";
-import { CommunityBanner } from "../_components/CommunityBanner";
 import { r2Url } from "@/lib/utils/image-url";
 import { SellerFilterSidebar } from "./_components/SellerFilterSidebar";
 import type { SellerCategoryItem } from "./_components/SellerFilterSidebar";
@@ -275,8 +274,7 @@ export default async function NhaBanHangPage({
   if (sp.rating)   sellerPageParams["rating"]   = sp.rating;
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9]">
-      <CommunityBanner />
+    <div className="min-h-screen bg-[#f0f4f8]">
 
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-6">
 
