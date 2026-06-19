@@ -10,16 +10,19 @@ import {
 } from "lucide-react";
 import UserProfileHero from "@/components/shared/UserProfileHero";
 
-export const metadata: Metadata = { title: "Trò chuyện khiếu nại" };
+export const metadata: Metadata = { title: "Ticket hỗ trợ" };
 
 const STATUS_LABEL: Record<string, string> = {
-  OPEN: "Mở", IN_REVIEW: "Đang xem xét", RESOLVED: "Từ chối", REJECTED: "Hoàn thành",
+  OPEN:      "Chờ xử lý",
+  IN_REVIEW: "Đang xử lý",
+  RESOLVED:  "Đã hoàn thành",
+  REJECTED:  "Đã đóng",
 };
 const STATUS_CLS: Record<string, string> = {
-  OPEN:      "bg-red-50 text-red-600 border-red-200",
-  IN_REVIEW: "bg-amber-50 text-amber-700 border-amber-200",
-  RESOLVED:  "bg-gray-50 text-gray-500 border-gray-200",
-  REJECTED:  "bg-emerald-50 text-emerald-700 border-emerald-200",
+  OPEN:      "bg-amber-50 text-amber-700 border-amber-200",
+  IN_REVIEW: "bg-blue-50 text-blue-600 border-blue-200",
+  RESOLVED:  "bg-emerald-50 text-emerald-700 border-emerald-200",
+  REJECTED:  "bg-gray-50 text-gray-500 border-gray-200",
 };
 
 export default async function TroChuyenPage() {
@@ -49,6 +52,11 @@ export default async function TroChuyenPage() {
               orderBy: { createdAt: "desc" },
               take: 1,
               select: { senderName: true, content: true, createdAt: true },
+            },
+            participants: {
+              where: { label: "Admin" },
+              select: { user: { select: { fullName: true } } },
+              take: 1,
             },
           },
         },
@@ -92,7 +100,7 @@ export default async function TroChuyenPage() {
                 <MessageCircle size={17} className="text-blue-600" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Trò chuyện khiếu nại</h1>
+                <h1 className="text-xl font-bold text-gray-900">Ticket hỗ trợ</h1>
                 <p className="text-sm text-gray-500 mt-0.5">Theo dõi và trao đổi về các đơn hàng đã khiếu nại</p>
               </div>
             </div>
@@ -103,11 +111,11 @@ export default async function TroChuyenPage() {
 
           {complaints.length === 0 ? (
             <div className="rounded-2xl border border-gray-100 bg-white shadow-sm text-center py-16">
-              <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                <MessageCircle size={24} className="text-gray-400" />
+              <div className="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3">
+                <MessageCircle size={24} className="text-blue-400" />
               </div>
-              <p className="text-sm font-medium text-gray-700">Chưa có cuộc trò chuyện nào</p>
-              <p className="text-xs text-gray-400 mt-1">Khiếu nại đơn hàng để bắt đầu trò chuyện với đội ngũ hỗ trợ</p>
+              <p className="text-sm font-medium text-gray-700">Chưa có ticket nào</p>
+              <p className="text-xs text-gray-400 mt-1">Khiếu nại đơn hàng để tạo ticket hỗ trợ với đội ngũ của chúng tôi</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -116,59 +124,73 @@ export default async function TroChuyenPage() {
                 const lastMsg = c.chatRoom?.messages[0];
                 const statusCls = STATUS_CLS[c.status] ?? STATUS_CLS["OPEN"]!;
                 const isClosed = c.status === "RESOLVED" || c.status === "REJECTED";
+                const adminHandler = c.chatRoom?.participants[0]?.user.fullName;
+                const ticketCode = `#TK-${c.id.slice(0, 8).toUpperCase()}`;
 
                 return (
                   <Link
                     key={c.id}
                     href={`/tro-chuyen/${c.id}`}
-                    className="block rounded-2xl border border-gray-100 bg-white p-5 hover:border-gray-300 hover:shadow-sm transition-all"
+                    className="block rounded-2xl border border-gray-100 bg-white p-5 hover:border-blue-200 hover:shadow-md transition-all duration-200"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        {/* Product name + badges */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-semibold text-gray-900 truncate">
-                            {order?.itemName ?? "Đơn hàng"}
-                          </p>
-                          <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium border ${statusCls}`}>
+                        {/* Ticket code + status badge */}
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="text-[11px] font-mono font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                            {ticketCode}
+                          </span>
+                          <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusCls}`}>
                             {STATUS_LABEL[c.status] ?? c.status}
                           </span>
                           {c.chatRoom && isClosed ? (
                             <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-500 border border-gray-200 flex items-center gap-1">
-                              <Lock size={9} /> Đã kết thúc
+                              <Lock size={9} /> Đã đóng
                             </span>
                           ) : c.chatRoom ? (
                             <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200 flex items-center gap-1">
-                              <MessageSquare size={9} /> Đang trò chuyện
+                              <MessageSquare size={9} /> Đang xử lý
                             </span>
                           ) : isClosed ? (
                             <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-500 border border-gray-200 flex items-center gap-1">
-                              <Lock size={9} /> Đã xử lý
+                              <Lock size={9} /> Đã hoàn tất
                             </span>
                           ) : (
                             <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
-                              <Clock size={9} /> Vui lòng chờ
+                              <Clock size={9} /> Chờ phản hồi
                             </span>
                           )}
                         </div>
 
-                        {/* Price + order code + time */}
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {/* Complaint subject (title) */}
+                        <p className="text-sm font-semibold text-gray-900 truncate">{c.subject}</p>
+
+                        {/* Price + order code + timestamps */}
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                           {order && (
-                            <span className="text-xs font-semibold text-emerald-600">
-                              {formatVnd(Number(order.finalPrice))}
-                            </span>
+                            <>
+                              <span className="text-xs font-semibold text-emerald-600">
+                                {formatVnd(Number(order.finalPrice))}
+                              </span>
+                              <span className="text-[11px] text-gray-400">Đơn #{order.orderCode}</span>
+                            </>
                           )}
-                          {order && (
-                            <span className="text-[11px] text-gray-400">#{order.orderCode}</span>
+                          <span className="text-[11px] text-gray-400">Tạo: {formatDate(c.createdAt)}</span>
+                          {c.updatedAt > c.createdAt && (
+                            <span className="text-[11px] text-gray-400">· Cập nhật: {formatDate(c.updatedAt)}</span>
                           )}
-                          <span className="text-[11px] text-gray-400">{formatDate(c.createdAt)}</span>
                         </div>
 
-                        {/* Complaint subject */}
-                        <p className="text-xs text-gray-600 mt-1">
-                          <span className="font-medium">Lý do:</span> {c.subject}
-                        </p>
+                        {/* Handler + last message */}
+                        <div className="mt-2 flex items-start justify-between gap-2 flex-wrap">
+                          {adminHandler ? (
+                            <p className="text-[11px] text-gray-500 flex items-center gap-1">
+                              <span className="font-medium text-gray-600">Phụ trách:</span> {adminHandler}
+                            </p>
+                          ) : (
+                            <span />
+                          )}
+                        </div>
 
                         {/* Last message preview */}
                         {lastMsg ? (
@@ -185,7 +207,7 @@ export default async function TroChuyenPage() {
                           </p>
                         )}
                       </div>
-                      <ChevronRight size={16} className="text-blue-500 shrink-0 mt-0.5" />
+                      <ChevronRight size={16} className="text-blue-400 shrink-0 mt-1" />
                     </div>
                   </Link>
                 );

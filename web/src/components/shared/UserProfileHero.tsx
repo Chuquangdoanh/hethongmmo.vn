@@ -15,7 +15,7 @@ const TABS = [
   { key: "deposit",      label: "Nạp tiền",          href: "/nap-tien" },
   { key: "orders",       label: "Lịch sử mua hàng",  href: "/don-hang" },
   { key: "transactions", label: "Lịch sử giao dịch", href: "/lich-su-giao-dich" },
-  { key: "chat",         label: "Trò chuyện",        href: "/tro-chuyen" },
+  { key: "chat",         label: "Ticket hỗ trợ",      href: "/tro-chuyen" },
 ];
 
 interface Props {
