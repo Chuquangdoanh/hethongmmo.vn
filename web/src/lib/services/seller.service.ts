@@ -109,10 +109,16 @@ export async function addSellerProduct(params: AddProductParams): Promise<string
   const { sellerId, name, price, description, imageUrl, sellerCategory, subCategoryId, stockItems } = params;
 
   const productCount = await checkProductLimit(sellerId);
-  const seller = await prisma.user.findUnique({
-    where: { id: sellerId },
-    select: { maxSellerProducts: true, sellerStatus: true },
-  });
+  const [seller, sellerRequest] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: sellerId },
+      select: { maxSellerProducts: true, sellerStatus: true },
+    }),
+    prisma.sellerRequest.findUnique({
+      where: { userId: sellerId },
+      select: { storeType: true },
+    }),
+  ]);
 
   if (!seller || seller.sellerStatus !== "APPROVED") {
     throw new ValidationError("Tài khoản chưa được duyệt làm seller");
@@ -131,11 +137,14 @@ export async function addSellerProduct(params: AddProductParams): Promise<string
     contentEnc: encrypt(item) as unknown as Uint8Array<ArrayBuffer>,
   }));
 
+  const storeType = sellerRequest?.storeType ?? "TAI_NGUYEN_MMO";
+
   const product = await prisma.sellerProduct.create({
     data: {
       sellerId,
       sellerCategory,
       subCategoryId: subCategoryId ?? null,
+      storeType,
       name,
       price: new Decimal(price).toFixed(2),
       description,
