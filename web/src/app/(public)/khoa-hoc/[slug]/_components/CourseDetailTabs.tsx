@@ -159,7 +159,10 @@ export default function CourseDetailTabs({
                 <h3 className="text-base font-bold text-[#0f172a]">Mô tả khóa học</h3>
               </div>
               <div className="text-sm text-[#64748b] leading-relaxed prose-sm max-w-none">
-                <SafeHtml html={description} />
+                {/<[a-zA-Z]/.test(description)
+                  ? <SafeHtml html={description} />
+                  : <p className="whitespace-pre-line">{description}</p>
+                }
               </div>
             </div>
           )}

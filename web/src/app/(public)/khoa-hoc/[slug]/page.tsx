@@ -207,11 +207,6 @@ export default async function KhoaHocDetailPage({ params }: Props) {
               <h1 className="text-2xl md:text-3xl font-extrabold text-[#0f172a] mb-3 leading-tight">
                 {course.name}
               </h1>
-              {course.description && (
-                <p className="text-sm text-[#64748b] mb-4 leading-relaxed">
-                  {course.description.replace(/<[^>]+>/g, "")}
-                </p>
-              )}
 
               {/* Badges + rating */}
               <div className="flex flex-wrap items-center gap-2">
