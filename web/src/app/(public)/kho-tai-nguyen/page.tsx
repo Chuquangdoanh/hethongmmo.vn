@@ -15,12 +15,12 @@ import { KhoFilterSidebar } from "./_components/KhoFilterSidebar";
 import {
   Package, ShoppingBag, ShoppingCart, Store,
   Pencil, CheckCircle, FolderOpen, Search,
-  Users, TrendingUp, Clock, Shield, Star, ChevronRight,
+  Users, TrendingUp, Clock, Shield, Star, ChevronRight, X,
 } from "lucide-react";
 
 export const metadata: Metadata = buildMeta({
-  title: "Kho Tài Nguyên | Hệ Thống MMO",
-  description: "Kho tài nguyên số chất lượng cao — tài khoản, công cụ MMO, giao hàng tự động sau thanh toán.",
+  title: "Kho Tài Nguyên MMO | Tài Khoản & Công Cụ Số Chất Lượng Cao",
+  description: "Kho tài nguyên số hàng đầu Việt Nam — tài khoản Facebook, TikTok, công cụ MMO chính hãng. Giao hàng tự động tức thì, bảo hành uy tín, hỗ trợ 24/7.",
   url: "/kho-tai-nguyen",
   image: "/images/hethongmmo.png",
 });
@@ -387,6 +387,27 @@ export default async function KhoTaiNguyenPage({
             <div className="absolute inset-0 bg-gradient-to-l from-[#1e40af]/20 to-transparent pointer-events-none" />
           </div>
 
+          {/* SEO Breadcrumb */}
+          <nav aria-label="Điều hướng" className="flex items-center gap-1.5 text-xs text-[#64748b] bg-white rounded-xl border border-[#e2e8f0] px-4 py-2.5 shadow-sm">
+            <Link href="/" className="hover:text-[#3b82f6] transition-colors">Trang chủ</Link>
+            <ChevronRight size={12} className="text-[#cbd5e1]" />
+            <Link href={BASE_PATH} className={selectedCategories.length === 0 ? "font-semibold text-[#1e293b]" : "hover:text-[#3b82f6] transition-colors"}>
+              Kho Tài Nguyên
+            </Link>
+            {selectedCategories.length > 0 && (
+              <>
+                <ChevronRight size={12} className="text-[#cbd5e1]" />
+                <span className="font-semibold text-[#1e293b] truncate max-w-[200px]">{selectedCategories.join(", ")}</span>
+              </>
+            )}
+            {selectedSubcatNames.length > 0 && (
+              <>
+                <ChevronRight size={12} className="text-[#cbd5e1]" />
+                <span className="font-semibold text-[#1e293b] truncate max-w-[160px]">{selectedSubcatNames.join(", ")}</span>
+              </>
+            )}
+          </nav>
+
           {/* Danh mục nổi bật */}
           {platformCards.length > 0 && (
             <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm">
@@ -468,21 +489,17 @@ export default async function KhoTaiNguyenPage({
             </div>
           )}
 
-          {/* Sản phẩm nổi bật */}
-          <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          {/* Sản phẩm */}
+          <div className="bg-white rounded-2xl border border-border p-4 shadow-sm">
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <div className="flex items-center gap-2">
-                <h2 className="font-bold text-[#1e293b] text-[15px]">Sản phẩm nổi bật</h2>
-                {totalCount > 0 && (
-                  <span className="text-[11px] text-[#94a3b8]">
-                    ({totalCount.toLocaleString("vi-VN")} sản phẩm)
-                  </span>
-                )}
+                <h2 className="font-bold text-[#1e293b] text-[15px]">Tài nguyên trong kho</h2>
               </div>
               <div className="flex items-center gap-2">
                 <Link
                   href="/kho-tai-nguyen/gian-hang"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e2e8f0] text-xs font-semibold text-[#475569] hover:bg-[#f8fafc] transition-colors whitespace-nowrap"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-[#475569] hover:bg-light transition-colors whitespace-nowrap"
                 >
                   <Store size={12} />
                   Gian hàng
@@ -491,14 +508,42 @@ export default async function KhoTaiNguyenPage({
               </div>
             </div>
 
+            {/* Result count + clear filters */}
+            <div className="flex items-center justify-between flex-wrap gap-1.5 mb-4 px-0.5">
+              <p className="text-sm text-text-muted">
+                <span className="font-semibold text-[#1e293b]">{totalCount.toLocaleString("vi-VN")}</span> sản phẩm
+                {selectedCategories.length > 0 && (
+                  <span className="ml-1">trong <span className="font-semibold text-[#1e293b]">&quot;{selectedCategories.join(", ")}&quot;</span></span>
+                )}
+                {selectedSubcatNames.length > 0 && (
+                  <span className="ml-1">› <span className="font-semibold text-[#1e293b]">&quot;{selectedSubcatNames.join(", ")}&quot;</span></span>
+                )}
+                {q && (
+                  <span className="ml-1">— tìm <span className="font-semibold text-[#1e293b]">&quot;{q}&quot;</span></span>
+                )}
+              </p>
+              {(selectedCategories.length > 0 || selectedSubcatNames.length > 0 || q || priceParam) && (
+                <Link
+                  href={BASE_PATH}
+                  className="inline-flex items-center gap-1 text-xs text-[#ef4444] hover:text-[#dc2626] font-semibold transition-colors"
+                >
+                  <X size={12} />
+                  Xoá bộ lọc
+                </Link>
+              )}
+            </div>
+
             {totalCount === 0 ? (
               <div className="text-center py-20">
                 <Package size={44} strokeWidth={1.25} className="text-[#cbd5e1] mx-auto mb-3" />
                 <p className="font-semibold text-[#475569]">Chưa có sản phẩm nào</p>
-                <p className="text-xs text-[#94a3b8] mt-1">Thử điều chỉnh bộ lọc</p>
+                <p className="text-xs text-[#94a3b8] mt-1">Thử điều chỉnh bộ lọc hoặc xoá bộ lọc hiện tại</p>
+                <Link href={BASE_PATH} className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-lg bg-[#3b82f6] text-white text-xs font-bold hover:bg-[#2563eb] transition-colors">
+                  Xem tất cả tài nguyên
+                </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 {pagedProducts.map((sp) => {
                   const review  = reviewMap.get(sp.id);
                   const price   = Number(sp.price);
@@ -514,10 +559,11 @@ export default async function KhoTaiNguyenPage({
                   return (
                     <div
                       key={sp.id}
-                      className="bg-white rounded-xl border border-[#e2e8f0] overflow-hidden hover:shadow-md hover:border-[#3b82f6]/40 transition-all flex flex-col"
+                      className="bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-[#3b82f6]/40 transition-all flex flex-col"
                     >
+                      {/* ── Ảnh sản phẩm ── */}
                       <Link href={href} className="block relative shrink-0">
-                        <div className="aspect-video bg-[#f8fafc] overflow-hidden relative">
+                        <div className="aspect-video bg-light overflow-hidden relative">
                           {sp.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -532,12 +578,14 @@ export default async function KhoTaiNguyenPage({
                               <ShoppingBag size={32} strokeWidth={1.25} className="text-[#94a3b8]" />
                             </div>
                           )}
+
+                          {/* Badges top-left: category + HOT/NEW */}
                           <div className="absolute top-2 left-2 flex gap-1">
                             <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide bg-[#1d4ed8]/85 text-white">
                               {sp.sellerCategory}
                             </span>
                             {isHot && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-danger text-white uppercase">
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-[#ef4444] text-white uppercase">
                                 HOT
                               </span>
                             )}
@@ -547,18 +595,23 @@ export default async function KhoTaiNguyenPage({
                               </span>
                             )}
                           </div>
-                          {review && review.count > 0 && (
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/65 to-transparent px-2.5 pt-5 pb-2">
+
+                          {/* Rating overlay — luôn hiển thị (match Tài Nguyên MMO) */}
+                          <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/65 to-transparent px-2.5 pt-5 pb-2">
+                            {review && review.count > 0 ? (
                               <div className="flex items-center gap-1">
                                 <StarBar rating={review.avg} size="xs" />
                                 <span className="text-[11px] font-bold text-white leading-none">{review.avg.toFixed(1)}</span>
                                 <span className="text-[10px] text-white/60">({review.count})</span>
                               </div>
-                            </div>
-                          )}
+                            ) : (
+                              <span className="text-[10px] text-white/50 italic">Chưa có đánh giá</span>
+                            )}
+                          </div>
                         </div>
                       </Link>
 
+                      {/* ── Thông tin sản phẩm ── */}
                       <div className="p-3 flex flex-col gap-1.5 flex-1">
                         <Link href={href}>
                           <h3 className="text-sm font-bold text-[#1e293b] hover:text-[#2563eb] transition-colors line-clamp-2 leading-snug">
@@ -566,18 +619,22 @@ export default async function KhoTaiNguyenPage({
                           </h3>
                         </Link>
                         {desc && (
-                          <p className="text-[11px] text-[#64748b] line-clamp-2 leading-relaxed">{desc}</p>
+                          <p className="text-[11px] text-text-muted line-clamp-2 leading-relaxed">{desc}</p>
                         )}
-                        <div className="flex items-center gap-1.5 text-[10px] text-[#94a3b8]">
-                          <span>Seller: <strong className="text-[#475569]">{seller}</strong></span>
-                          <span>·</span>
-                          <span>Còn <strong className="text-[#374151]">{avail}</strong></span>
-                          <span>·</span>
+
+                        {/* Stats: Đã bán · Còn · Seller */}
+                        <div className="flex items-center gap-1.5 text-[10px] text-[#94a3b8] flex-wrap">
                           <span className="flex items-center gap-0.5">
                             <ShoppingCart size={8} strokeWidth={2} />
-                            <strong className="text-[#374151]">{sp.salesCount}</strong>
+                            <span>Đã bán <strong className="text-[#374151]">{sp.salesCount}</strong></span>
                           </span>
+                          <span className="text-[#d1d5db]">·</span>
+                          <span>Còn <strong className="text-[#374151]">{avail}</strong></span>
+                          <span className="text-[#d1d5db]">·</span>
+                          <span>Seller <strong className="text-[#475569]">{seller}</strong></span>
                         </div>
+
+                        {/* Review actions */}
                         {bought && !rated && (
                           <Link
                             href={href}
@@ -591,6 +648,8 @@ export default async function KhoTaiNguyenPage({
                             <CheckCircle size={9} strokeWidth={2} /> Đã đánh giá
                           </span>
                         )}
+
+                        {/* Price + Buy button */}
                         <div className="mt-auto pt-2 grid grid-cols-[2fr_3fr] gap-2 items-stretch">
                           <div className="flex items-center justify-center bg-[#fff1f2] border border-[#fca5a5] rounded-lg px-1 py-2">
                             <span className="text-xs font-extrabold text-[#e11d48] whitespace-nowrap leading-none">
