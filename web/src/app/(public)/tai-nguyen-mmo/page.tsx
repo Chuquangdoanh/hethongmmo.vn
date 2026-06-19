@@ -196,6 +196,7 @@ export default async function TaiNguyenMmoPage({
       orderBy: { sellerCategory: "asc" },
     }),
     prisma.resourceCategory.findMany({
+      where: { showInTaiNguyenMmo: true },
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       select: {
         name: true, iconUrl: true,

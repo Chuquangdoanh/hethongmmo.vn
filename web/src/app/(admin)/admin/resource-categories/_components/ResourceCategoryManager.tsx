@@ -31,6 +31,8 @@ interface Category {
   name: string;
   iconUrl: string | null;
   displayOrder: number;
+  showInKhoTaiNguyen: boolean;
+  showInTaiNguyenMmo: boolean;
 }
 
 interface Props {
@@ -123,6 +125,19 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
       router.refresh();
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleToggleStoreType(id: string, field: "showInKhoTaiNguyen" | "showInTaiNguyenMmo", value: boolean) {
+    const res = await fetch(`/api/admin/resource-categories/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: value }),
+    });
+    if (res.ok) {
+      setCategories((prev) =>
+        prev.map((c) => c.id === id ? { ...c, [field]: value } : c)
+      );
     }
   }
 
@@ -374,6 +389,27 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900">{cat.name}</p>
                     <p className="text-[10px] text-gray-400 truncate">{cat.iconUrl ?? "Chưa có icon"}</p>
+                    {/* Store type toggles */}
+                    <div className="flex gap-3 mt-1.5">
+                      <label className="flex items-center gap-1 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={cat.showInKhoTaiNguyen}
+                          onChange={(e) => { void handleToggleStoreType(cat.id, "showInKhoTaiNguyen", e.target.checked); }}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                        <span className="text-[10px] font-medium text-blue-600 group-hover:text-blue-700">Kho TN</span>
+                      </label>
+                      <label className="flex items-center gap-1 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={cat.showInTaiNguyenMmo}
+                          onChange={(e) => { void handleToggleStoreType(cat.id, "showInTaiNguyenMmo", e.target.checked); }}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer"
+                        />
+                        <span className="text-[10px] font-medium text-violet-600 group-hover:text-violet-700">TN MMO</span>
+                      </label>
+                    </div>
                     <SubCategoryManager categoryName={cat.name} />
                   </div>
                   <div className="flex gap-3 shrink-0">

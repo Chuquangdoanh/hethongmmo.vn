@@ -154,6 +154,7 @@ export default async function KhoTaiNguyenPage({
       },
     }),
     prisma.resourceCategory.findMany({
+      where: { showInKhoTaiNguyen: true },
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       select: {
         name: true,

@@ -48,7 +48,12 @@ export async function PATCH(
     const category = await prisma.resourceCategory.findUnique({ where: { id } });
     if (!category) throw new NotFoundError("Danh mục");
 
-    const body = await req.json() as { iconUrl?: string; name?: string };
+    const body = await req.json() as {
+      iconUrl?: string;
+      name?: string;
+      showInKhoTaiNguyen?: boolean;
+      showInTaiNguyenMmo?: boolean;
+    };
 
     if (body.name !== undefined && body.name !== category.name) {
       const dup = await prisma.resourceCategory.findUnique({ where: { name: body.name } });
@@ -60,8 +65,10 @@ export async function PATCH(
       data: {
         ...(body.name !== undefined && { name: body.name.trim() }),
         ...(body.iconUrl !== undefined && { iconUrl: body.iconUrl || null }),
+        ...(body.showInKhoTaiNguyen !== undefined && { showInKhoTaiNguyen: body.showInKhoTaiNguyen }),
+        ...(body.showInTaiNguyenMmo !== undefined && { showInTaiNguyenMmo: body.showInTaiNguyenMmo }),
       },
-      select: { id: true, name: true, iconUrl: true },
+      select: { id: true, name: true, iconUrl: true, displayOrder: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
     });
 
     await writeAuditLog({

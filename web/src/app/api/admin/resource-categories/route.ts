@@ -14,7 +14,7 @@ export async function GET(): Promise<NextResponse> {
     requireAdmin(session);
     const categories = await prisma.resourceCategory.findMany({
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
-      select: { id: true, name: true, iconUrl: true, displayOrder: true },
+      select: { id: true, name: true, iconUrl: true, displayOrder: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
     });
     return apiOk(categories);
   } catch (err) {
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const category = await prisma.resourceCategory.create({
       data: { name, iconUrl: iconUrl || null, displayOrder: nextOrder },
-      select: { id: true, name: true, iconUrl: true, displayOrder: true },
+      select: { id: true, name: true, iconUrl: true, displayOrder: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
     });
 
     await writeAuditLog({
