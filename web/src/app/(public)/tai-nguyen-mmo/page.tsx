@@ -10,7 +10,6 @@ import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ProductBuyButton from "./_components/ProductBuyButton";
 import { FilterSidebar } from "./_components/FilterSidebar";
 import type { CategoryItem } from "./_components/FilterSidebar";
-import { BannerSearchInput } from "./_components/BannerSearchInput";
 import Pagination from "@/components/shared/Pagination";
 import {
   Package, ShoppingBag, ShoppingCart, Store,
@@ -397,15 +396,6 @@ export default async function TaiNguyenMmoPage({
                   <p className="text-white/60 text-xs mt-0.5">Tài khoản &amp; công cụ số — Giao tự động, Bảo hành uy tín</p>
                 </div>
               </div>
-
-              {/* Search realtime — Suspense bắt buộc vì BannerSearchInput dùng useSearchParams() */}
-              <Suspense fallback={
-                <div className="flex gap-2 mt-4 max-w-lg">
-                  <div className="flex-1 h-9 rounded-xl bg-white/10 border border-white/15 animate-pulse" />
-                </div>
-              }>
-                <BannerSearchInput defaultValue={q ?? ""} basePath={BASE_PATH} />
-              </Suspense>
 
               {/* Stats row */}
               <div className="flex items-center gap-4 mt-4 flex-wrap">

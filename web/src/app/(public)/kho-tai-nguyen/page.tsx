@@ -14,7 +14,7 @@ import { buildMeta } from "@/lib/utils/seo";
 import { KhoFilterSidebar } from "./_components/KhoFilterSidebar";
 import {
   Package, ShoppingBag, ShoppingCart,
-  Pencil, CheckCircle, FolderOpen, Search,
+  Pencil, CheckCircle, FolderOpen,
   Users, Clock, Shield, X,
 } from "lucide-react";
 
@@ -289,29 +289,6 @@ export default async function KhoTaiNguyenPage({
                   <p className="text-[#93c5fd] text-xs mt-0.5">Tài nguyên chất lượng cao — giao tự động sau thanh toán</p>
                 </div>
               </div>
-
-              {/* Search */}
-              <form action={BASE_PATH} className="flex gap-2 mt-4 max-w-lg">
-                {categoryParam && <input type="hidden" name="category" value={categoryParam} />}
-                {subcatParam   && <input type="hidden" name="subcategory" value={subcatParam} />}
-                {priceParam    && <input type="hidden" name="price" value={priceParam} />}
-                <div className="flex-1 relative">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-                  <input
-                    name="q"
-                    defaultValue={q}
-                    type="text"
-                    placeholder="Tìm kiếm tài nguyên, seller..."
-                    className="w-full pl-8 pr-3 py-2 rounded-xl bg-white/10 border border-white/15 text-white placeholder-white/35 text-sm focus:outline-none focus:bg-white/20 focus:border-white/30 transition-colors"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="bg-[#3b82f6] hover:bg-[#2563eb] text-white font-bold text-sm px-5 rounded-xl transition-colors whitespace-nowrap"
-                >
-                  Tìm kiếm
-                </button>
-              </form>
 
               {/* Stats row */}
               <div className="flex items-center gap-5 mt-5 flex-wrap">
