@@ -12,6 +12,7 @@ import {
   Inbox, Monitor,
   type LucideIcon,
 } from "lucide-react";
+import type { PermissionCode } from "@/lib/constants/modules";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -32,6 +33,8 @@ interface NavLink {
   color: string;
   badge?: BadgeKey;
   adminOnly?: boolean;
+  /** STAFF must have this permission to see the link. Absent = always visible. */
+  permission?: PermissionCode;
 }
 
 interface NavSection {
@@ -58,50 +61,50 @@ const SECTIONS: NavSection[] = [
   {
     key: "products", label: "Sản phẩm", Icon: Package, color: "#7c3aed", bg: "#ede9fe",
     links: [
-      { href: "/admin/services",     label: "Dịch vụ",      Icon: Zap,      color: "#7c3aed" },
-      { href: "/admin/courses",      label: "Khóa học",     Icon: BookOpen, color: "#0066ff" },
-      { href: "/admin/tut-tricks",   label: "Tut / Tricks", Icon: FileText, color: "#475569" },
-      { href: "/admin/mmo-products", label: "Tài nguyên",   Icon: Gamepad2, color: "#6366f1" },
+      { href: "/admin/services",     label: "Dịch vụ",      Icon: Zap,      color: "#7c3aed", permission: "products:read" },
+      { href: "/admin/courses",      label: "Khóa học",     Icon: BookOpen, color: "#0066ff", permission: "products:read" },
+      { href: "/admin/tut-tricks",   label: "Tut / Tricks", Icon: FileText, color: "#475569", permission: "products:read" },
+      { href: "/admin/mmo-products", label: "Tài nguyên",   Icon: Gamepad2, color: "#6366f1", permission: "products:read" },
     ],
   },
   {
     key: "categories", label: "Danh mục", Icon: Tags, color: "#0d9488", bg: "#ccfbf1",
     links: [
-      { href: "/admin/course-categories",      label: "DM Khóa học",     Icon: BookMarked, color: "#0d9488" },
-      { href: "/admin/service-categories",     label: "DM Dịch vụ",      Icon: Tag,        color: "#0d9488" },
-      { href: "/admin/resource-categories",    label: "DM Tài nguyên",   Icon: FolderOpen, color: "#0d9488" },
-      { href: "/admin/tut-trick-categories",   label: "DM Tut & Tricks", Icon: FileText,   color: "#0d9488" },
+      { href: "/admin/course-categories",    label: "DM Khóa học",     Icon: BookMarked, color: "#0d9488", permission: "categories:read" },
+      { href: "/admin/service-categories",   label: "DM Dịch vụ",      Icon: Tag,        color: "#0d9488", permission: "categories:read" },
+      { href: "/admin/resource-categories",  label: "DM Tài nguyên",   Icon: FolderOpen, color: "#0d9488", permission: "categories:read" },
+      { href: "/admin/tut-trick-categories", label: "DM Tut & Tricks", Icon: FileText,   color: "#0d9488", permission: "categories:read" },
     ],
   },
   {
     key: "quality", label: "Chất lượng", Icon: ShieldCheck, color: "#f59e0b", bg: "#fef3c7",
     links: [
-      { href: "/admin/complaints", label: "Khiếu nại", Icon: AlertTriangle, color: "#ef4444", badge: "complaints" },
-      { href: "/admin/danh-gia",   label: "Đánh giá",  Icon: Star,          color: "#f59e0b" },
-      { href: "/admin/tickers",    label: "Ticker",    Icon: Radio,         color: "#0066ff" },
+      { href: "/admin/complaints", label: "Khiếu nại", Icon: AlertTriangle, color: "#ef4444", badge: "complaints", permission: "complaints:read" },
+      { href: "/admin/danh-gia",   label: "Đánh giá",  Icon: Star,          color: "#f59e0b",                      permission: "products:read"    },
+      { href: "/admin/tickers",    label: "Ticker",    Icon: Radio,         color: "#0066ff",                      permission: "content:read"     },
     ],
   },
   {
     key: "finance", label: "Tài chính", Icon: Wallet, color: "#10b981", bg: "#d1fae5",
     links: [
-      { href: "/admin/deposits",    label: "Nạp tiền", Icon: ArrowDownCircle, color: "#10b981", badge: "deposits"    },
-      { href: "/admin/withdrawals", label: "Rút tiền", Icon: ArrowUpCircle,   color: "#ef4444", badge: "withdrawals" },
+      { href: "/admin/deposits",    label: "Nạp tiền", Icon: ArrowDownCircle, color: "#10b981", badge: "deposits",    permission: "finance:read" },
+      { href: "/admin/withdrawals", label: "Rút tiền", Icon: ArrowUpCircle,   color: "#ef4444", badge: "withdrawals", permission: "finance:read" },
     ],
   },
   {
     key: "selling", label: "Bán hàng", Icon: Store, color: "#ec4899", bg: "#fce7f3",
     links: [
-      { href: "/admin/sellers",          label: "Sellers",           Icon: Store,       color: "#ec4899" },
-      { href: "/admin/san-pham-ban",     label: "SP Nhà bán hàng",  Icon: ShoppingBag, color: "#f97316" },
-      { href: "/admin/cai-dat-ban-hang", label: "Cài đặt bán hàng", Icon: Settings,    color: "#64748b" },
+      { href: "/admin/sellers",          label: "Sellers",           Icon: Store,       color: "#ec4899", permission: "sellers:read"          },
+      { href: "/admin/san-pham-ban",     label: "SP Nhà bán hàng",  Icon: ShoppingBag, color: "#f97316", permission: "seller_products:read"  },
+      { href: "/admin/cai-dat-ban-hang", label: "Cài đặt bán hàng", Icon: Settings,    color: "#64748b", adminOnly: true                     },
     ],
   },
   {
     key: "system", label: "Hệ thống", Icon: Users, color: "#64748b", bg: "#f1f5f9",
     links: [
-      { href: "/admin/users",      label: "Người dùng", Icon: Users,  color: "#0066ff" },
-      { href: "/admin/audit-log",  label: "Audit Log",  Icon: Search, color: "#64748b" },
-      { href: "/admin/phan-quyen", label: "Phân quyền", Icon: Lock,   color: "#64748b", adminOnly: true },
+      { href: "/admin/users",      label: "Người dùng", Icon: Users,  color: "#0066ff", permission: "users:read"      },
+      { href: "/admin/audit-log",  label: "Audit Log",  Icon: Search, color: "#64748b", permission: "audit_logs:read" },
+      { href: "/admin/phan-quyen", label: "Phân quyền", Icon: Lock,   color: "#64748b", adminOnly: true               },
     ],
   },
 ];
@@ -115,14 +118,16 @@ const LS_DISMISSED = "admin-sidebar-dismissed";
 
 interface AdminSidebarProps {
   pendingOrderCount: number;
-  /** Null = ADMIN (no filtering). Array = STAFF disabled page keys. */
-  disabledPages: string[] | null;
+  /**
+   * Null = ADMIN (no filtering).
+   * Array = STAFF's individual PermissionCode list.
+   */
+  permissions: PermissionCode[] | null;
   isAdmin: boolean;
 }
 
-export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin }: AdminSidebarProps) {
-  // Page keys that this user cannot access
-  const disabledSet = disabledPages ? new Set(disabledPages) : null;
+export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }: AdminSidebarProps) {
+  const permSet = permissions ? new Set(permissions) : null;
   const pathname = usePathname();
 
   const [badges, setBadges] = useState<Badges>({
@@ -133,7 +138,6 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
   const [hydrated, setHydrated]   = useState(false);
   const [toasts, setToasts]       = useState<Toast[]>([]);
 
-  // Track previous badge counts — null = first load, skip diff check
   const prevBadgesRef = useRef<Badges | null>(null);
 
   // ── Hydrate localStorage ──
@@ -150,7 +154,7 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
   // ── Add toast + auto-dismiss ──
   const addToast = useCallback((key: BadgeKey, diff: number) => {
     const id = crypto.randomUUID();
-    setToasts((prev) => [...prev.slice(-4), { id, key, diff }]); // max 5 toasts
+    setToasts((prev) => [...prev.slice(-4), { id, key, diff }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 6000);
   }, []);
 
@@ -169,14 +173,12 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
         const next = json.data;
 
         if (prevBadgesRef.current) {
-          // Sau lần đầu: detect tăng → toast
           const prev = prevBadgesRef.current;
           (["orders", "complaints", "withdrawals", "deposits"] as BadgeKey[]).forEach((key) => {
             const diff = next[key] - prev[key];
             if (diff > 0) addToast(key, diff);
           });
         } else {
-          // Lần đầu load: khởi tạo dismissed = current để không hiện badge giả
           setDismissed((prev) => {
             const init: Dismissed = {
               orders:      prev.orders      === 0 ? next.orders      : prev.orders,
@@ -224,6 +226,13 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
     return badges[key] > (dismissed[key] ?? 0);
   }
 
+  /** Returns true when current user can see this link. */
+  function canSeeLink(link: NavLink): boolean {
+    if (link.adminOnly) return isAdmin;
+    if (!isAdmin && link.permission && permSet && !permSet.has(link.permission)) return false;
+    return true;
+  }
+
   function sectionHasBadge(section: NavSection) {
     return section.links.some((l) => l.badge && hasBadge(l.badge));
   }
@@ -231,10 +240,15 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
   const orderActive       = isActive("/admin/orders");
   const orderBadgeVisible = hasBadge("orders");
 
-  // Tổng tất cả unseen badges — hiển thị trên Dashboard link
   const totalUnread = (["orders", "complaints", "withdrawals", "deposits"] as BadgeKey[])
     .filter((k) => hasBadge(k))
     .reduce((sum, k) => sum + Math.max(0, badges[k] - (dismissed[k] ?? 0)), 0);
+
+  // Top-level link visibility
+  const canSeeDashboard   = isAdmin || !permSet || permSet.has("dashboard:read");
+  const canSeeOrders      = isAdmin || !permSet || permSet.has("orders:read");
+  const canSeeLeads       = isAdmin || !permSet || permSet.has("sellers:read");
+  const canSeeCmsSettings = isAdmin || !permSet || permSet.has("content:read");
 
   return (
     <>
@@ -296,7 +310,7 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
         <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
 
           {/* Dashboard + tổng badge */}
-          {(() => {
+          {canSeeDashboard && (() => {
             const active = isActive("/admin/dashboard");
             return (
               <Link
@@ -320,27 +334,29 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
           })()}
 
           {/* Orders */}
-          <Link
-            href="/admin/orders"
-            onClick={() => dismiss("orders")}
-            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-              orderActive
-                ? "bg-[#fef9c3] text-[#78350f]"
-                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-            }`}
-          >
-            <div
-              className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-              style={{ background: orderActive ? "#fef08a" : "#f1f5f9" }}
+          {canSeeOrders && (
+            <Link
+              href="/admin/orders"
+              onClick={() => dismiss("orders")}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                orderActive
+                  ? "bg-[#fef9c3] text-[#78350f]"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              }`}
             >
-              <ShoppingBag size={13} strokeWidth={1.75} style={{ color: orderActive ? "#92400e" : "#94a3b8" }} />
-            </div>
-            <span className="flex-1">Đơn hàng</span>
-            {orderBadgeVisible && <BadgeCount count={badges.orders} />}
-          </Link>
+              <div
+                className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                style={{ background: orderActive ? "#fef08a" : "#f1f5f9" }}
+              >
+                <ShoppingBag size={13} strokeWidth={1.75} style={{ color: orderActive ? "#92400e" : "#94a3b8" }} />
+              </div>
+              <span className="flex-1">Đơn hàng</span>
+              {orderBadgeVisible && <BadgeCount count={badges.orders} />}
+            </Link>
+          )}
 
           {/* Đăng ký dịch vụ */}
-          {(() => {
+          {canSeeLeads && (() => {
             const leadsActive = isActive("/admin/dang-ky-dich-vu");
             return (
               <Link
@@ -364,10 +380,15 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
 
           <div className="h-px bg-gray-100 my-1.5" />
 
-          {/* Collapsible sections — products, categories, quality, finance, selling, system */}
+          {/* Collapsible sections */}
           {SECTIONS.map((section) => {
+            // Filter links user can see
+            const visibleLinks = section.links.filter(canSeeLink);
+            // Hide entire section if no links visible
+            if (visibleLinks.length === 0) return null;
+
             const isOpen           = hydrated ? (open[section.key] ?? true) : true;
-            const hasActive        = section.links.some((l) => isActive(l.href));
+            const hasActive        = visibleLinks.some((l) => isActive(l.href));
             const showSectionBadge = sectionHasBadge(section) && !isOpen;
 
             return (
@@ -397,13 +418,7 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
 
                 {isOpen && (
                   <div className="ml-3 pl-3 border-l border-gray-100 mt-0.5 mb-1 space-y-0.5">
-                    {section.links.map((link) => {
-                      // Hide admin-only links from STAFF
-                      if (link.adminOnly && !isAdmin) return null;
-                      // Hide link if STAFF and page is disabled
-                      const pageKey = link.href.replace(/^\//, ""); // "/admin/users" → "admin/users"
-                      if (disabledSet?.has(pageKey)) return null;
-
+                    {visibleLinks.map((link) => {
                       const active    = isActive(link.href);
                       const linkBadge = link.badge ? hasBadge(link.badge) : false;
 
@@ -434,32 +449,37 @@ export default function AdminSidebar({ pendingOrderCount, disabledPages, isAdmin
               </div>
             );
           })}
+
           {/* ── Cài đặt group ── */}
-          <div className="h-px bg-gray-100 my-1.5" />
-          <p className="px-3 pt-1 pb-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-            Cài đặt
-          </p>
-          {(() => {
-            const cmsActive = isActive("/admin/cai-dat-giao-dien");
-            return (
-              <Link
-                href="/admin/cai-dat-giao-dien"
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  cmsActive
-                    ? "bg-[#fef9c3] text-[#78350f]"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                <div
-                  className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-                  style={{ background: cmsActive ? "#fef08a" : "#f5f3ff" }}
-                >
-                  <Monitor size={13} strokeWidth={1.75} style={{ color: cmsActive ? "#92400e" : "#8b5cf6" }} />
-                </div>
-                <span className="flex-1">Cài đặt giao diện</span>
-              </Link>
-            );
-          })()}
+          {canSeeCmsSettings && (
+            <>
+              <div className="h-px bg-gray-100 my-1.5" />
+              <p className="px-3 pt-1 pb-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                Cài đặt
+              </p>
+              {(() => {
+                const cmsActive = isActive("/admin/cai-dat-giao-dien");
+                return (
+                  <Link
+                    href="/admin/cai-dat-giao-dien"
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      cmsActive
+                        ? "bg-[#fef9c3] text-[#78350f]"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }`}
+                  >
+                    <div
+                      className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                      style={{ background: cmsActive ? "#fef08a" : "#f5f3ff" }}
+                    >
+                      <Monitor size={13} strokeWidth={1.75} style={{ color: cmsActive ? "#92400e" : "#8b5cf6" }} />
+                    </div>
+                    <span className="flex-1">Cài đặt giao diện</span>
+                  </Link>
+                );
+              })()}
+            </>
+          )}
         </nav>
 
         {/* Footer */}
@@ -483,4 +503,3 @@ function BadgeCount({ count }: { count: number }) {
     </span>
   );
 }
-

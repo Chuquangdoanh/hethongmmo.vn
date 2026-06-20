@@ -1,9 +1,6 @@
-export type StaffPermissionKey =
-  | "users:read"    | "users:create"    | "users:update"    | "users:delete"
-  | "orders:read"   | "orders:update"   | "orders:delete"
-  | "products:read" | "products:create" | "products:update" | "products:delete"
-  | "finance:read"  | "finance:approve" | "finance:reject"
-  | "content:read"  | "content:create"  | "content:update"  | "content:delete";
+// Backward compat: StaffPermissionKey → PermissionCode (superset)
+import type { PermissionCode } from "@/lib/constants/modules";
+export type StaffPermissionKey = PermissionCode;
 
 export interface StaffPermissionAction {
   key: StaffPermissionKey;

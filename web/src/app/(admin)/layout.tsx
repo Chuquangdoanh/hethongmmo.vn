@@ -2,9 +2,11 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
-import { getDisabledPageKeys } from "@/lib/services/page-permission.service";
+import { getUserPermissions } from "@/lib/services/permission.service";
+import { AdminPermissionProvider } from "@/components/admin/PermissionProvider";
 import AdminSidebar from "./_components/AdminSidebar";
 import PageTransitionWrapper from "@/components/layout/PageTransitionWrapper";
+import type { PermissionCode } from "@/lib/constants/modules";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -14,27 +16,32 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/");
   }
 
-  const [pendingOrderCount, staffDisabledPages] = await Promise.all([
+  const isAdmin = me.role === "ADMIN";
+
+  const [pendingOrderCount, staffPermissions] = await Promise.all([
     prisma.order.count({ where: { status: "PENDING" } }),
-    // For STAFF: fetch which pages are disabled so sidebar can hide them.
-    // ADMIN gets null (no restrictions).
-    me.role === "STAFF"
-      ? getDisabledPageKeys("STAFF")
-      : Promise.resolve(null),
+    // ADMIN: null (bypass). STAFF: fetch their individual permissions.
+    isAdmin
+      ? Promise.resolve(null)
+      : getUserPermissions(me.id),
   ]);
 
+  const permissionList: PermissionCode[] = staffPermissions ?? [];
+
   return (
-    <div className="min-h-screen flex bg-gray-50">
-      <AdminSidebar
-        pendingOrderCount={pendingOrderCount}
-        disabledPages={staffDisabledPages}
-        isAdmin={me.role === "ADMIN"}
-      />
-      <main className="flex-1 flex flex-col overflow-y-auto">
-        <div className="p-6 flex-1">
-          <PageTransitionWrapper>{children}</PageTransitionWrapper>
-        </div>
-      </main>
-    </div>
+    <AdminPermissionProvider isAdmin={isAdmin} permissions={permissionList}>
+      <div className="min-h-screen flex bg-gray-50">
+        <AdminSidebar
+          pendingOrderCount={pendingOrderCount}
+          permissions={staffPermissions}
+          isAdmin={isAdmin}
+        />
+        <main className="flex-1 flex flex-col overflow-y-auto">
+          <div className="p-6 flex-1">
+            <PageTransitionWrapper>{children}</PageTransitionWrapper>
+          </div>
+        </main>
+      </div>
+    </AdminPermissionProvider>
   );
 }

@@ -1174,15 +1174,62 @@ model AdsRegistration {
   @@map("ads_registrations")
 }
 
+// ====================================================================
+// 27B. MODULES & PERMISSIONS (Staff Permission System)
+// ====================================================================
+
+model Module {
+  id          String       @id @default(uuid()) @db.Uuid
+  code        String       @unique @db.VarChar(64)
+  label       String       @db.VarChar(255)
+  icon        String?      @db.VarChar(255)
+  description String?
+  sortOrder   Int          @default(0) @map("sort_order")
+  isActive    Boolean      @default(true) @map("is_active")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  permissions Permission[]
+
+  @@index([code])
+  @@index([sortOrder])
+  @@map("modules")
+}
+
+model Permission {
+  id               String            @id @default(uuid()) @db.Uuid
+  moduleId         String            @map("module_id") @db.Uuid
+  module           Module            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  code             String            @unique @db.VarChar(64)
+  action           String?           @db.VarChar(64)
+  label            String            @db.VarChar(255)
+  description      String?
+  sortOrder        Int               @default(0) @map("sort_order")
+  isActive         Boolean           @default(true) @map("is_active")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  staffPermissions StaffPermission[]
+
+  @@index([moduleId])
+  @@index([code])
+  @@index([isActive])
+  @@map("permissions")
+}
+
 model StaffPermission {
-  id         String @id @default(uuid()) @db.Uuid
-  userId     String @map("user_id") @db.Uuid
-  permission String @db.VarChar(64)
+  id           String     @id @default(uuid()) @db.Uuid
+  userId       String     @map("user_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, permission])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, permissionId])
   @@index([userId])
+  @@index([permissionId])
   @@map("staff_permissions")
 }
 

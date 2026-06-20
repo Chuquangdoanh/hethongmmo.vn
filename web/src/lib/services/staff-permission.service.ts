@@ -1,11 +1,23 @@
+/**
+ * @deprecated Dùng permission.service.ts và module.service.ts thay thế.
+ * File này được giữ lại để không break import cũ trong UI — sẽ xóa ở Phase 3D.
+ */
 import { prisma } from "@/lib/db/prisma";
-import { ALL_STAFF_PERMISSIONS, type StaffPermissionKey } from "@/lib/constants/staff-permissions";
+import { getUserPermissions, setUserPermissions } from "@/lib/services/permission.service";
+import { getStaffPermissionView } from "@/lib/services/module.service";
+import type { PermissionCode } from "@/lib/constants/modules";
+import { ALL_PERMISSION_CODES } from "@/lib/constants/modules";
+
+// Re-export type cho backward compat
+export type { PermissionCode as StaffPermissionKey };
 
 export interface StaffMember {
   id: string;
   fullName: string;
   email: string;
-  permissions: StaffPermissionKey[];
+  role: string;
+  status: string;
+  permissions: PermissionCode[];
 }
 
 export async function listStaffMembers(): Promise<StaffMember[]> {
@@ -15,7 +27,13 @@ export async function listStaffMembers(): Promise<StaffMember[]> {
       id: true,
       fullName: true,
       email: true,
-      staffPermissions: { select: { permission: true } },
+      role: true,
+      status: true,
+      staffPermissions: {
+        select: {
+          permission: { select: { code: true } },
+        },
+      },
     },
     orderBy: { fullName: "asc" },
   });
@@ -24,57 +42,31 @@ export async function listStaffMembers(): Promise<StaffMember[]> {
     id: r.id,
     fullName: r.fullName,
     email: r.email,
-    permissions: r.staffPermissions.map((p) => p.permission as StaffPermissionKey),
+    role: r.role,
+    status: r.status,
+    permissions: r.staffPermissions.map((sp) => sp.permission.code as PermissionCode),
   }));
 }
 
-export async function getStaffPermissions(userId: string): Promise<StaffPermissionKey[]> {
-  const rows = await prisma.staffPermission.findMany({
-    where: { userId },
-    select: { permission: true },
-  });
-  return rows.map((r) => r.permission as StaffPermissionKey);
+export async function getStaffPermissions(userId: string): Promise<PermissionCode[]> {
+  return getUserPermissions(userId);
 }
 
-export async function setStaffPermissions(
-  userId: string,
-  permissions: StaffPermissionKey[],
-  actorId: string,
-): Promise<void> {
-  const valid = permissions.filter((p) => (ALL_STAFF_PERMISSIONS as string[]).includes(p));
+export { setUserPermissions as setStaffPermissions };
+export { getStaffPermissionView };
+export { ALL_PERMISSION_CODES as ALL_STAFF_PERMISSIONS };
 
-  await prisma.$transaction(async (tx) => {
-    const before = await tx.staffPermission.findMany({
-      where: { userId },
-      select: { permission: true },
-    });
-
-    await tx.staffPermission.deleteMany({ where: { userId } });
-
-    if (valid.length > 0) {
-      await tx.staffPermission.createMany({
-        data: valid.map((permission) => ({ userId, permission })),
-      });
-    }
-
-    await tx.auditLog.create({
-      data: {
-        actorId,
-        action: "UPDATE_STAFF_PERMISSIONS",
-        targetType: "User",
-        targetId: userId,
-        before: { permissions: before.map((b) => b.permission) },
-        after:  { permissions: valid },
-      },
-    });
-  });
-}
-
-/** Dùng trong route handler để kiểm tra quyền cụ thể của staff */
+/** Kiểm tra nhanh 1 permission cụ thể (không cache, query DB trực tiếp) */
 export async function hasStaffPermission(userId: string, permission: string): Promise<boolean> {
-  const row = await prisma.staffPermission.findUnique({
-    where: { userId_permission: { userId, permission } },
+  const perm = await prisma.permission.findUnique({
+    where: { code: permission, isActive: true },
     select: { id: true },
   });
-  return !!row;
+  if (!perm) return false;
+
+  const sp = await prisma.staffPermission.findUnique({
+    where: { userId_permissionId: { userId, permissionId: perm.id } },
+    select: { userId: true },
+  });
+  return sp !== null;
 }
