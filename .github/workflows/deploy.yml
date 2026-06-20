@@ -8,7 +8,7 @@ on:
 jobs:
   # Phát hiện file nào thay đổi
   changes:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       app: ${{ steps.filter.outputs.app }}
       prisma: ${{ steps.filter.outputs.prisma }}
@@ -35,7 +35,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.app == 'true'
     name: Type check & Tests
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     defaults:
       run:
         working-directory: web
@@ -69,7 +69,7 @@ jobs:
     needs: [changes, test]
     if: needs.changes.outputs.app == 'true'
     name: Build & Push web image
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       packages: write
@@ -107,7 +107,7 @@ jobs:
     needs: [changes, test]
     if: needs.changes.outputs.prisma == 'true'
     name: Build & Push migrator image
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       packages: write
@@ -147,7 +147,7 @@ jobs:
       (needs.build-migrator.result == 'success' || needs.build-migrator.result == 'skipped') &&
       (needs.changes.outputs.app == 'true' || needs.changes.outputs.prisma == 'true' || needs.changes.outputs.infra == 'true')
     name: Deploy to VPS
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: production
     steps:
       - uses: actions/checkout@v4
