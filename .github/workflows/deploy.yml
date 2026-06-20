@@ -96,10 +96,9 @@ jobs:
           tags: ghcr.io/chuquangdoanh/hethongmmo:latest
           build-args: |
             NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '0x4AAAAAADdtPd4eBWk-jqZ6' }}
-          # mode=max: export tất cả layers kể cả cache mounts (pnpm store + .next/cache)
-          # → lần build sau dùng lại, next build chỉ compile phần thay đổi (~1-2 min)
-          cache-from: type=gha,scope=web
-          cache-to: type=gha,mode=max,scope=web
+          # Local cache trên VPS — persist giữa các lần build, nhanh từ lần 2 trở đi
+          cache-from: type=local,src=/tmp/docker-cache/web
+          cache-to: type=local,dest=/tmp/docker-cache/web,mode=max
 
   # Build migrator — CHỈ khi prisma schema hoặc Dockerfile thay đổi
   # Code-only push → skip hoàn toàn, tiết kiệm 1-2 phút
@@ -132,8 +131,8 @@ jobs:
           target: migrator
           push: true
           tags: ghcr.io/chuquangdoanh/hethongmmo-migrate:latest
-          cache-from: type=gha,scope=migrate
-          cache-to: type=gha,mode=max,scope=migrate
+          cache-from: type=local,src=/tmp/docker-cache/migrate
+          cache-to: type=local,dest=/tmp/docker-cache/migrate,mode=max
 
   # Deploy — chạy sau cả 2 build jobs (dù 1 trong 2 bị skip cũng không sao)
   # Điều kiện tường minh: chạy khi app, prisma, HOẶC infra thay đổi VÀ không có build nào fail
