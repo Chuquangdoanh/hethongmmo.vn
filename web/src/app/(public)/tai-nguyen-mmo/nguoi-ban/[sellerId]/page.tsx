@@ -178,7 +178,7 @@ export default async function SellerProfilePage({
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-6">
+    <div className="mx-auto max-w-370 px-4 md:px-5 py-6">
 
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-[#94a3b8] mb-5 flex-wrap">

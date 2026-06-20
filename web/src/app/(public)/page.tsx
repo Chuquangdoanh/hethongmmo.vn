@@ -194,7 +194,7 @@ export default async function HomePage() {
 
       {/* ── DJ MEDIA AGENCY INTRO ────────────────────── */}
       <section style={{ padding: "80px 0 72px", background: "#fff", overflow: "hidden" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
+        <div style={{ maxWidth: "1480px", margin: "0 auto", padding: "0 24px" }}>
           <div className="dj-media-grid">
 
             {/* ── 1: Title ── */}
@@ -313,7 +313,7 @@ export default async function HomePage() {
           animation: "floatAlt 15s ease-in-out infinite",
         }} />
 
-        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", position: "relative", zIndex: 2, width: "100%" }}>
+        <div style={{ maxWidth: "1480px", margin: "0 auto", padding: "0 24px", position: "relative", zIndex: 2, width: "100%" }}>
           <div className="hero-grid">
 
             {/* ── 1: Badge + Title ── */}
@@ -436,7 +436,7 @@ export default async function HomePage() {
 
       {/* ── ĐỘI NGŨ SÁNG LẬP ─────────────────────────── */}
       <section style={{ padding: "80px 0", background: "#fff", overflow: "hidden" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
+        <div style={{ maxWidth: "1480px", margin: "0 auto", padding: "0 24px" }}>
 
           {/* Section header */}
           <div style={{ textAlign: "center", marginBottom: "56px" }} className="anim-fade-up" data-d="1">
@@ -567,7 +567,7 @@ export default async function HomePage() {
 
       {/* ── BÁO CHÍ / TRUYỀN THÔNG ────────────────────── */}
       <section style={{ padding: "72px 0 64px", background: "#fff" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
+        <div style={{ maxWidth: "1480px", margin: "0 auto", padding: "0 24px" }}>
 
           {/* Header */}
           <div style={{ textAlign: "center", marginBottom: "48px" }}>
@@ -721,7 +721,7 @@ export default async function HomePage() {
 
       {/* ── DỊCH VỤ CHUYÊN NGHIỆP CỦA CHÚNG TÔI ─────── */}
       <section style={{ padding: "60px 0", background: "#fff" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
+        <div style={{ maxWidth: "1480px", margin: "0 auto", padding: "0 24px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
             <div>
               <div style={{
@@ -820,7 +820,7 @@ export default async function HomePage() {
           backgroundImage: "linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px)",
           backgroundSize: "48px 48px",
         }} />
-        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", position: "relative" }}>
+        <div style={{ maxWidth: "1480px", margin: "0 auto", padding: "0 24px", position: "relative" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: "0" }} className="stats-grid-responsive">
             {cmsStats.map(({ value, count, suffix, label }, i) => (
               <div
@@ -856,7 +856,7 @@ export default async function HomePage() {
 
       {/* ── TUT HOT NHẤT HÔM NAY ──────────────────────── */}
       {hotTuts.length > 0 && <section style={{ padding: "60px 0", background: "#fff" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
+        <div style={{ maxWidth: "1480px", margin: "0 auto", padding: "0 24px" }}>
           {/* Section header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
             <div>
@@ -1094,7 +1094,7 @@ export default async function HomePage() {
 
       {/* ── SẢN PHẨM MMO NỔI BẬT ─────────────────────── */}
       <section style={{ padding: "60px 0", background: "#fff" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
+        <div style={{ maxWidth: "1480px", margin: "0 auto", padding: "0 24px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
             <div>
               <div style={{
@@ -1252,7 +1252,7 @@ export default async function HomePage() {
 
       {/* ── FAQ ───────────────────────────────────────── */}
       <section style={{ padding: "100px 0", background: "#fff" }}>
-        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
+        <div style={{ maxWidth: "1480px", margin: "0 auto", padding: "0 24px" }}>
           <div style={{ display: "flex", gap: "60px", alignItems: "flex-start" }} className="faq-cta-flex">
 
             {/* FAQ */}

@@ -132,7 +132,7 @@ export default async function KhoaHocPage({
 
       {/* ══ HERO SECTION ══ */}
       <div className="relative overflow-hidden bg-[#f1f5f9] border-b border-border">
-        <div className="relative mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-14">
+        <div className="relative mx-auto max-w-370 px-4 md:px-5 py-14">
           {/*
             Mobile (flex-col): order-1 → order-2 → order-3
               1. Badge + Tiêu đề
@@ -241,7 +241,7 @@ export default async function KhoaHocPage({
       </div>
 
       {/* ══ COURSES SECTION ══ */}
-      <div id="khoa-hoc-grid" className="mx-auto max-w-6xl px-4 md:px-6 lg:px-8 py-12 scroll-mt-24">
+      <div id="khoa-hoc-grid" className="mx-auto max-w-370 px-4 md:px-5 py-12 scroll-mt-24">
 
         {/* Category filter — centered, scrollable on mobile */}
         {categoriesWithIcons.length > 0 && (

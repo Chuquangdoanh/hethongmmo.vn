@@ -94,7 +94,7 @@ export default async function QuangCaoAdsPage() {
           padding: "60px 24px 56px",
         }}
       >
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1480, margin: "0 auto" }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
             {/* Left */}
             <div>
@@ -171,7 +171,7 @@ export default async function QuangCaoAdsPage() {
 
       {/* ── SERVICES ─────────────────────────────────────────────── */}
       <section style={{ padding: "64px 24px", background: "#f8fafc" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1480, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 36 }}>
             <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#0066ff", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
               Dịch Vụ
@@ -191,7 +191,7 @@ export default async function QuangCaoAdsPage() {
 
       {/* ── WHY CHOOSE US ────────────────────────────────────────── */}
       <section style={{ padding: "64px 24px", background: "#fff" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1480, margin: "0 auto" }}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
             {/* Left */}
             <div>
@@ -276,7 +276,7 @@ export default async function QuangCaoAdsPage() {
           background: "linear-gradient(135deg, #eff6ff 0%, #f5f3ff 50%, #fff7ed 100%)",
         }}
       >
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1480, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 40 }}>
             <p style={{ fontSize: "0.72rem", fontWeight: 700, color: "#7c3aed", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>
               ★ Quy trình làm việc

@@ -135,7 +135,7 @@ export default async function TutTricksPage({
       </section>
 
       {/* ── Filters + Grid ── */}
-      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-370 px-4 md:px-5 py-8">
 
         {/* Danh mục filter — scroll đến grid khi click */}
         {dbCategories.length > 0 && (

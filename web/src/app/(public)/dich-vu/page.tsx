@@ -124,7 +124,7 @@ export default async function DichVuPage({
 
   return (
     <div className="min-h-screen bg-[#f4f6f9]">
-      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-10">
+      <div className="mx-auto max-w-370 px-4 md:px-5 py-10">
 
         {/* Header */}
         <div className="text-center mb-6">

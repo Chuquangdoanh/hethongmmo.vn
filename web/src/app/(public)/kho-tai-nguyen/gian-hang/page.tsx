@@ -228,7 +228,7 @@ export default async function KhoGianHangPage({
   return (
     <div className="min-h-screen bg-[#f1f5f9]">
 
-      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-6">
+      <div className="mx-auto max-w-370 px-4 md:px-5 py-6">
 
         {/* View tabs + sort */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">

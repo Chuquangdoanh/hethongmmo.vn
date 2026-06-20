@@ -272,7 +272,7 @@ export default async function KhoTaiNguyenPage({
 
   return (
     <div className="min-h-screen bg-[#f0f4f8]">
-      <div className="mx-auto max-w-[1380px] px-3 py-4 flex flex-col gap-4">
+      <div className="mx-auto max-w-370 px-3 py-4 flex flex-col gap-4">
 
 
           {/* Banner */}
