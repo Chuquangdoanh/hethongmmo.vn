@@ -1,32 +1,50 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, X, Save, AlertCircle, UserCheck, Shield, ChevronDown } from "lucide-react";
+import { Check, X, Save, AlertCircle, UserCheck, Shield } from "lucide-react";
 import {
   STAFF_PERMISSION_GROUPS,
   ACTION_TYPE_STYLE,
   type StaffPermissionKey,
 } from "@/lib/constants/staff-permissions";
+import { PERMISSION_DEPENDENCIES } from "@/lib/constants/modules";
 import type { StaffMember } from "@/lib/services/staff-permission.service";
+
+// ─── Dependency resolution ────────────────────────────────────────────────────
+
+/** Collect all permissions implied by the current set (transitive). */
+function resolveImplied(set: Set<StaffPermissionKey>): Set<StaffPermissionKey> {
+  const implied = new Set<StaffPermissionKey>();
+  for (const code of set) {
+    const deps = PERMISSION_DEPENDENCIES[code] ?? [];
+    deps.forEach((d) => implied.add(d as StaffPermissionKey));
+  }
+  return implied;
+}
+
+// ─── Props ───────────────────────────────────────────────────────────────────
 
 interface Props {
   initialMembers: StaffMember[];
 }
 
 export default function StaffActionPermissions({ initialMembers }: Props) {
-  const [members, setMembers]           = useState<StaffMember[]>(initialMembers);
-  const [selectedId, setSelectedId]     = useState<string>(initialMembers[0]?.id ?? "");
-  const [localPerms, setLocalPerms]     = useState<Record<string, Set<StaffPermissionKey>>>(() =>
+  const [members, setMembers]       = useState<StaffMember[]>(initialMembers);
+  const [selectedId, setSelectedId] = useState<string>(initialMembers[0]?.id ?? "");
+  const [localPerms, setLocalPerms] = useState<Record<string, Set<StaffPermissionKey>>>(() =>
     Object.fromEntries(initialMembers.map((m) => [m.id, new Set(m.permissions)]))
   );
-  const [saveStatus, setSaveStatus]     = useState<"idle" | "success" | "error">("idle");
-  const [errorMsg, setErrorMsg]         = useState("");
-  const [isPending, startTransition]    = useTransition();
+  const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg]     = useState("");
+  const [isPending, startTransition] = useTransition();
 
-  const selected    = members.find((m) => m.id === selectedId);
-  const currentSet  = localPerms[selectedId] ?? new Set<StaffPermissionKey>();
+  const selected   = members.find((m) => m.id === selectedId);
+  const currentSet = localPerms[selectedId] ?? new Set<StaffPermissionKey>();
+  const implied    = resolveImplied(currentSet); // keys that are auto-required
 
   function togglePerm(key: StaffPermissionKey) {
+    // If this key is auto-implied by another, it can't be toggled independently
+    if (implied.has(key)) return;
     setLocalPerms((prev) => {
       const next = new Set(prev[selectedId] ?? []);
       if (next.has(key)) next.delete(key); else next.add(key);
@@ -38,7 +56,10 @@ export default function StaffActionPermissions({ initialMembers }: Props) {
   function toggleGroup(keys: StaffPermissionKey[], value: boolean) {
     setLocalPerms((prev) => {
       const next = new Set(prev[selectedId] ?? []);
-      keys.forEach((k) => { if (value) next.add(k); else next.delete(k); });
+      // Only toggle keys not forced by dependencies
+      keys.filter((k) => !implied.has(k)).forEach((k) => {
+        if (value) next.add(k); else next.delete(k);
+      });
       return { ...prev, [selectedId]: next };
     });
     setSaveStatus("idle");
@@ -63,7 +84,6 @@ export default function StaffActionPermissions({ initialMembers }: Props) {
           setSaveStatus("error");
           return;
         }
-        // Sync back to members list for the badge count
         setMembers((prev) =>
           prev.map((m) =>
             m.id === selectedId
@@ -101,8 +121,8 @@ export default function StaffActionPermissions({ initialMembers }: Props) {
           Danh sách nhân viên
         </p>
         {members.map((m) => {
-          const active   = m.id === selectedId;
-          const count    = (localPerms[m.id] ?? new Set()).size;
+          const active = m.id === selectedId;
+          const count  = (localPerms[m.id] ?? new Set()).size;
           return (
             <button
               key={m.id}
@@ -174,12 +194,15 @@ export default function StaffActionPermissions({ initialMembers }: Props) {
         </div>
 
         {/* Groups */}
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 max-h-[calc(100vh-280px)] overflow-y-auto">
           {STAFF_PERMISSION_GROUPS.map((group) => {
             const groupKeys  = group.actions.map((a) => a.key);
-            const enabledCnt = groupKeys.filter((k) => currentSet.has(k)).length;
-            const allOn      = enabledCnt === groupKeys.length;
-            const allOff     = enabledCnt === 0;
+            // Count only directly-enabled keys (not auto-implied)
+            const directKeys  = groupKeys.filter((k) => !implied.has(k));
+            const enabledCnt  = groupKeys.filter((k) => currentSet.has(k) || implied.has(k)).length;
+            const directOn    = directKeys.filter((k) => currentSet.has(k)).length;
+            const allOn       = directKeys.length === 0 || directOn === directKeys.length;
+            const allOff      = directOn === 0;
 
             return (
               <div key={group.key} className="p-5">
@@ -221,22 +244,30 @@ export default function StaffActionPermissions({ initialMembers }: Props) {
                 {/* Action toggles */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {group.actions.map((action) => {
-                    const on    = currentSet.has(action.key);
-                    const style = ACTION_TYPE_STYLE[action.type] ?? ACTION_TYPE_STYLE["read"]!;
+                    const isImplied = implied.has(action.key);
+                    const on        = currentSet.has(action.key) || isImplied;
+                    const style     = ACTION_TYPE_STYLE[action.type] ?? ACTION_TYPE_STYLE["read"]!;
+
                     return (
                       <button
                         key={action.key}
                         type="button"
                         onClick={() => togglePerm(action.key)}
+                        disabled={isImplied}
+                        title={isImplied ? "Tự động bật do quyền khác phụ thuộc" : undefined}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all ${
                           on
-                            ? "border-green-200 bg-green-50 hover:bg-green-100"
+                            ? isImplied
+                              ? "border-blue-200 bg-blue-50 cursor-default"
+                              : "border-green-200 bg-green-50 hover:bg-green-100"
                             : "border-red-200 bg-red-50 hover:bg-red-100"
                         }`}
                       >
                         {/* On/off indicator */}
                         <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                          on ? "bg-green-500" : "bg-red-400"
+                          on
+                            ? isImplied ? "bg-blue-400" : "bg-green-500"
+                            : "bg-red-400"
                         }`}>
                           {on
                             ? <Check size={11} strokeWidth={3} className="text-white" />
@@ -246,8 +277,17 @@ export default function StaffActionPermissions({ initialMembers }: Props) {
 
                         {/* Label */}
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-medium truncate ${on ? "text-gray-800" : "text-gray-400 line-through"}`}>
+                          <p className={`text-sm font-medium truncate ${
+                            on
+                              ? isImplied ? "text-blue-700" : "text-gray-800"
+                              : "text-gray-400 line-through"
+                          }`}>
                             {action.label}
+                            {isImplied && (
+                              <span className="ml-1.5 text-[9px] font-bold bg-blue-100 text-blue-600 px-1 py-0.5 rounded uppercase tracking-wide">
+                                auto
+                              </span>
+                            )}
                           </p>
                           <p className="text-[10px] text-gray-400 font-mono">{action.key}</p>
                         </div>
@@ -268,8 +308,14 @@ export default function StaffActionPermissions({ initialMembers }: Props) {
           })}
         </div>
 
-        {/* Quick legend */}
-        <div className="px-5 py-3 border-t border-gray-100 flex flex-wrap gap-3">
+        {/* Legend */}
+        <div className="px-5 py-3 border-t border-gray-100 flex flex-wrap gap-3 items-center">
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-blue-600">
+            <span className="w-4 h-4 rounded-full bg-blue-400 flex items-center justify-center">
+              <Check size={8} strokeWidth={3} className="text-white" />
+            </span>
+            Auto (bắt buộc do phụ thuộc)
+          </span>
           {Object.entries(ACTION_TYPE_STYLE).map(([type, s]) => (
             <span key={type} className="flex items-center gap-1 text-[10px] font-semibold" style={{ color: s.text }}>
               <span
@@ -278,7 +324,7 @@ export default function StaffActionPermissions({ initialMembers }: Props) {
               >
                 {s.label}
               </span>
-              {type === "read" ? "Read" : type === "create" ? "Create" : type === "update" ? "Update" : type === "delete" ? "Delete" : type === "approve" ? "Approve" : "Reject"}
+              {type === "read" ? "Read" : type === "create" ? "Create" : type === "update" ? "Update" : type === "delete" ? "Delete" : type === "approve" ? "Approve" : type === "reject" ? "Reject" : type === "reply" ? "Reply" : "Close"}
             </span>
           ))}
         </div>

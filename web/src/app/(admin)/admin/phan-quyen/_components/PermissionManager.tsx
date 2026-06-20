@@ -19,11 +19,10 @@ interface Props {
 type Tab = RolePageGroup | "PUBLIC" | "STAFF_ACTIONS";
 
 const TAB_CONFIG: { key: Tab; label: string; Icon: typeof Users; color: string; bg: string }[] = [
-  { key: "PUBLIC",        label: "Trang công khai",    Icon: Globe,      color: "#0f9d58", bg: "#d4edda" },
-  { key: "STAFF",         label: "Nhân viên (trang)",  Icon: ShieldCheck, color: "#7c3aed", bg: "#ede9fe" },
-  { key: "STAFF_ACTIONS", label: "Nhân viên (CRUD)",   Icon: Lock,        color: "#dc2626", bg: "#fee2e2" },
-  { key: "USER",          label: "Người dùng",         Icon: Users,       color: "#0066ff", bg: "#dbeafe" },
-  { key: "SELLER",        label: "Nhà bán hàng",       Icon: Store,       color: "#ec4899", bg: "#fce7f3" },
+  { key: "STAFF_ACTIONS", label: "Phân quyền nhân viên", Icon: Lock,       color: "#7c3aed", bg: "#ede9fe" },
+  { key: "PUBLIC",        label: "Trang công khai",      Icon: Globe,      color: "#0f9d58", bg: "#d4edda" },
+  { key: "USER",          label: "Người dùng",           Icon: Users,      color: "#0066ff", bg: "#dbeafe" },
+  { key: "SELLER",        label: "Nhà bán hàng",         Icon: Store,      color: "#ec4899", bg: "#fce7f3" },
 ];
 
 const ROLE_LABELS: Record<RolePageGroup, string> = {
@@ -47,7 +46,7 @@ function initPublicState(configs: PublicPageConfigEntry[]): PublicState {
 export default function PermissionManager({
   registry, initialStaff, initialUser, initialSeller, initialPublicConfigs, staffMembers,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>("PUBLIC");
+  const [activeTab, setActiveTab] = useState<Tab>("STAFF_ACTIONS");
 
   // Role-based permission state
   const [perms, setPerms] = useState<Record<RolePageGroup, Record<string, boolean>>>({
