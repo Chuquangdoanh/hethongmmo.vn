@@ -74,10 +74,10 @@ function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }
 export default async function TaiNguyenMmoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; sort?: string; q?: string; tag?: string; price?: string; page?: string; subcategory?: string }>;
+  searchParams: Promise<{ category?: string; sort?: string; q?: string; tag?: string; price?: string; page?: string; subcategory?: string; rating?: string }>;
 }) {
   await guardPublicPage("tai-nguyen-mmo");
-  const [{ category, sort: sortParam, q: rawQ, tag: rawTag, price: priceParam, page: pageParam, subcategory: subcategoryParam }, session] = await Promise.all([
+  const [{ category, sort: sortParam, q: rawQ, tag: rawTag, price: priceParam, page: pageParam, subcategory: subcategoryParam, rating: ratingParam }, session] = await Promise.all([
     searchParams,
     auth(),
   ]);
@@ -346,9 +346,11 @@ export default async function TaiNguyenMmoPage({
     return b.salesCount - a.salesCount;
   });
 
-  const totalCount = sortedProducts.length;
+  const minRating = ratingParam ? Number(ratingParam) : 0;
+  const displayProducts = minRating > 0 ? sortedProducts.filter((p) => p.rating >= minRating) : sortedProducts;
+  const totalCount = displayProducts.length;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-  const pagedProducts = sortedProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pagedProducts = displayProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const paginationParams: Record<string, string> = {};
   if (category)         paginationParams["category"]    = category;
@@ -356,26 +358,16 @@ export default async function TaiNguyenMmoPage({
   if (rawQ)             paginationParams["q"]           = rawQ;
   if (priceParam)       paginationParams["price"]       = priceParam;
   if (subcategoryParam) paginationParams["subcategory"] = subcategoryParam;
+  if (ratingParam)      paginationParams["rating"]      = ratingParam;
 
-  const hasActiveFilter = !!(category || subcategoryParam || q || priceParam);
+  const hasActiveFilter = !!(category || subcategoryParam || q || priceParam || ratingParam);
   const selectedCategories = category ? [category] : [];
   const selectedSubcatNames = subcategoryParam ? [subcategoryParam] : [];
 
   return (
     <div className="min-h-screen bg-[#f0f4f8]">
-      <div className="mx-auto max-w-345 px-3 py-4 flex flex-col lg:flex-row items-start gap-4">
+      <div className="mx-auto max-w-345 px-3 py-4 flex flex-col gap-4">
 
-        {/* ── LEFT FILTER SIDEBAR ── */}
-        <Suspense fallback={
-          <aside className="w-72 shrink-0">
-            <div className="bg-white rounded-xl border border-border h-120 animate-pulse" />
-          </aside>
-        }>
-          <FilterSidebar categories={categoryItems} totalCount={totalCount} />
-        </Suspense>
-
-        {/* ── MAIN CONTENT ── */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
 
           {/* Dark blue banner */}
           <div className="rounded-2xl bg-linear-to-br from-[#0f2460] via-[#1a3a8f] to-[#0d1f5e] p-5 md:p-7 text-white overflow-hidden relative">
@@ -430,32 +422,29 @@ export default async function TaiNguyenMmoPage({
                   </Link>
                 )}
               </div>
-              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+              <div className="flex flex-wrap gap-2">
                 {platformCards.map((card) => {
                   const isActive = category === card.name;
                   return (
                     <Link
                       key={card.name}
                       href={isActive ? BASE_PATH : `${BASE_PATH}?category=${encodeURIComponent(card.name)}`}
-                      className={`flex flex-col items-center text-center p-3 rounded-xl border transition-all group ${
+                      className={`flex items-center gap-4 px-5 py-3 rounded-xl border transition-all group min-w-0 ${
                         isActive
                           ? "border-primary/60 bg-blue-50/40 shadow-sm"
                           : "border-border hover:border-primary/30 hover:shadow-sm"
                       }`}
                     >
-                      <div className={`w-13 h-13 rounded-xl overflow-hidden flex items-center justify-center mb-2 shrink-0 ${isActive ? "bg-[#dbeafe]" : "bg-[#f1f5f9]"}`}>
+                      <div className={`w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center shrink-0 ${isActive ? "bg-[#dbeafe]" : "bg-[#f1f5f9]"}`}>
                         {card.iconUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={r2Url(card.iconUrl)} alt={card.name} className="w-9 h-9 object-contain" />
+                          <img src={r2Url(card.iconUrl)} alt={card.name} className="w-8 h-8 object-contain" />
                         ) : (
-                          <FolderOpen size={22} className={isActive ? "text-primary" : "text-text-muted"} strokeWidth={2} />
+                          <FolderOpen size={24} className={isActive ? "text-primary" : "text-text-muted"} strokeWidth={2} />
                         )}
                       </div>
-                      <p className={`font-bold text-[12px] leading-tight truncate w-full ${isActive ? "text-primary" : "text-text-dark group-hover:text-primary"} transition-colors`}>
+                      <p className={`font-semibold text-[15px] leading-tight text-left ${isActive ? "text-primary" : "text-text-dark group-hover:text-primary"} transition-colors`}>
                         {card.name}
-                      </p>
-                      <p className="text-[10px] text-text-muted mt-0.5">
-                        {card.count} SP
                       </p>
                     </Link>
                   );
@@ -464,40 +453,70 @@ export default async function TaiNguyenMmoPage({
             </div>
           )}
 
-          {/* Subcategory chips */}
+          {/* Subcategory cards [ICON --- TÊN] */}
           {featuredPlatformSubcats.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-text-muted mb-2">
-                Loại tài nguyên{featuredPlatformName ? ` ${featuredPlatformName}` : ""}
-              </p>
+            <div className="bg-white rounded-2xl border border-border p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-bold text-text-dark">
+                  {featuredPlatformName ? `Danh mục ${featuredPlatformName}` : "Danh mục con"}
+                </p>
+                {subcategoryParam && (
+                  <Link
+                    href={category ? `${BASE_PATH}?category=${encodeURIComponent(category)}` : BASE_PATH}
+                    className="text-xs text-text-muted hover:text-primary transition-colors flex items-center gap-0.5"
+                  >
+                    <X size={11} /> Bỏ lọc
+                  </Link>
+                )}
+              </div>
               <div className="flex flex-wrap gap-1.5">
                 <Link
                   href={category ? `${BASE_PATH}?category=${encodeURIComponent(category)}` : BASE_PATH}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border transition-all group ${
                     !subcategoryParam
-                      ? "bg-primary text-white border-primary"
-                      : "bg-white text-text-muted border-border hover:border-primary/40 hover:text-primary"
+                      ? "border-primary/60 bg-blue-50/40 shadow-sm"
+                      : "border-border hover:border-primary/30 hover:shadow-sm"
                   }`}
                 >
-                  Tất cả
+                  <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${!subcategoryParam ? "bg-[#dbeafe]" : "bg-[#f1f5f9]"}`}>
+                    <FolderOpen size={12} className={!subcategoryParam ? "text-primary" : "text-text-muted"} strokeWidth={2} />
+                  </div>
+                  <span className={`text-[12px] font-semibold ${!subcategoryParam ? "text-primary" : "text-text-dark group-hover:text-primary"} transition-colors`}>
+                    Tất cả
+                  </span>
                 </Link>
                 {featuredPlatformSubcats.map((sub) => (
                   <Link
                     key={sub.id}
                     href={`${BASE_PATH}?${category ? `category=${encodeURIComponent(category)}&` : ""}subcategory=${encodeURIComponent(sub.name)}`}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border transition-all group ${
                       subcategoryParam === sub.name
-                        ? "bg-primary text-white border-primary"
-                        : "bg-white text-text-muted border-border hover:border-primary/40 hover:text-primary"
+                        ? "border-primary/60 bg-blue-50/40 shadow-sm"
+                        : "border-border hover:border-primary/30 hover:shadow-sm"
                     }`}
                   >
-                    {sub.name}
-                    <span className="ml-1 text-[10px] opacity-70">({sub.count})</span>
+                    <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${subcategoryParam === sub.name ? "bg-[#dbeafe]" : "bg-[#f1f5f9]"}`}>
+                      <FolderOpen size={12} className={subcategoryParam === sub.name ? "text-primary" : "text-text-muted"} strokeWidth={2} />
+                    </div>
+                    <span className={`text-[12px] font-semibold ${subcategoryParam === sub.name ? "text-primary" : "text-text-dark group-hover:text-primary"} transition-colors`}>
+                      {sub.name}
+                    </span>
                   </Link>
                 ))}
               </div>
             </div>
           )}
+
+        {/* ── FILTER + PRODUCTS ROW ── */}
+        <div className="flex flex-col lg:flex-row items-start gap-4">
+          <Suspense fallback={
+            <aside className="w-72 shrink-0">
+              <div className="bg-white rounded-xl border border-border h-120 animate-pulse" />
+            </aside>
+          }>
+            <FilterSidebar categories={categoryItems} totalCount={totalCount} />
+          </Suspense>
+          <div className="flex-1 min-w-0">
 
           {/* Product section */}
           <div>
@@ -673,6 +692,7 @@ export default async function TaiNguyenMmoPage({
                 scrollToTop
               />
             )}
+          </div>
           </div>
         </div>
 

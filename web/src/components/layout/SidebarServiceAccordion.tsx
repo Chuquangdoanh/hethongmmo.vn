@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { ChevronDown, Wrench } from "lucide-react";
 import { r2Url } from "@/lib/utils/image-url";
@@ -13,6 +13,8 @@ export interface SvcCategory {
 
 export default function SidebarServiceAccordion({ categories }: { categories: SvcCategory[] }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeCategory = searchParams.get("category");
   const [isOpen, setIsOpen] = useState(false);
 
   // Tự mở khi đang ở trang dịch vụ
@@ -21,8 +23,6 @@ export default function SidebarServiceAccordion({ categories }: { categories: Sv
     if (pathname.startsWith("/dich-vu")) setIsOpen(true);
   }, [pathname]);
 
-  const isActive = pathname.startsWith("/dich-vu");
-
   return (
     <div className="sb-group">
       <p className="sb-group-title sb-label">DỊCH VỤ MẠNG XÃ HỘI</p>
@@ -30,7 +30,7 @@ export default function SidebarServiceAccordion({ categories }: { categories: Sv
       <button
         type="button"
         onClick={() => setIsOpen((v) => !v)}
-        className={`sb-link sb-svc-toggle${isActive ? " sb-active" : ""}`}
+        className="sb-link sb-svc-toggle"
       >
         <span className="sb-link-icon">
           <span className="sb-icon-badge" style={{ background: "#ede9fe" }}>
@@ -60,7 +60,7 @@ export default function SidebarServiceAccordion({ categories }: { categories: Sv
               key={c.name}
               href={`/dich-vu?category=${encodeURIComponent(c.name)}`}
               prefetch={false}
-              className="sb-link sb-svc-sub"
+              className={`sb-link sb-svc-sub${activeCategory === c.name ? " sb-active" : ""}`}
             >
               {c.iconUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element

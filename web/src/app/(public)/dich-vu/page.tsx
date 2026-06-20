@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import ServiceListWithForm from "./_components/ServiceListWithForm";
@@ -8,7 +7,6 @@ import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.s
 import Pagination from "@/components/shared/Pagination";
 import { Users, TrendingUp, Star, CheckCircle, Headphones } from "lucide-react";
 import { getDiscountInfo } from "@/lib/utils/discount";
-import { r2Url } from "@/lib/utils/image-url";
 import { buildMeta } from "@/lib/utils/seo";
 import { ColoredTitle } from "@/components/shared/ColoredTitle";
 
@@ -47,7 +45,7 @@ export default async function DichVuPage({
   const page = Math.max(1, parseInt(pageParam ?? "1", 10));
   const userId = (session?.user as { id: string } | null | undefined)?.id;
 
-  const [rawServices, total, agg, distinctCategories, serviceCategoryDefs, testimonials, userRow] = await Promise.all([
+  const [rawServices, total, agg, serviceCategoryDefs, testimonials, userRow] = await Promise.all([
     prisma.service.findMany({
       where: {
         isActive: true,
@@ -73,12 +71,6 @@ export default async function DichVuPage({
       _sum: { customerCount: true, totalOrders: true },
       _avg: { rating: true, successRate: true },
     }),
-    prisma.service.findMany({
-      where: { isActive: true, deletedAt: null },
-      select: { category: true },
-      distinct: ["category"],
-      orderBy: { category: "asc" },
-    }),
     prisma.serviceCategory.findMany({
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       select: { name: true, iconUrl: true },
@@ -103,10 +95,6 @@ export default async function DichVuPage({
     : 0;
 
   const totalPages = Math.ceil(total / LIMIT);
-  const categoryIconMap = new Map(serviceCategoryDefs.map((c) => [c.name, c.iconUrl]));
-  // Dùng serviceCategoryDefs (đã sắp xếp theo displayOrder) thay vì alphabetical
-  const activeCatSet = new Set(distinctCategories.map((s) => s.category).filter(Boolean));
-  const availableCategories = serviceCategoryDefs.map((c) => c.name).filter((n) => activeCatSet.has(n));
 
   const services = rawServices.map((s) => ({
     ...s,
@@ -163,53 +151,6 @@ export default async function DichVuPage({
           ))}
         </div>
 
-        {/* Category filter */}
-        {availableCategories.length > 0 && (
-          <div className="flex items-center justify-center gap-2 flex-wrap mb-6">
-            <Link
-              href="/dich-vu"
-              scroll={false}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-                !category
-                  ? "bg-[#EF4444] text-white shadow-sm"
-                  : "bg-white border border-border text-[#475569] hover:border-[#EF4444] hover:text-[#EF4444]"
-              }`}
-            >
-              Tất cả
-            </Link>
-            {availableCategories.map((cat) => {
-              const iconUrl = categoryIconMap.get(cat);
-              return (
-                <Link
-                  key={cat}
-                  href={`/dich-vu?category=${encodeURIComponent(cat)}`}
-                  scroll={false}
-                  className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-                    category === cat
-                      ? "bg-[#EF4444] text-white shadow-sm"
-                      : "bg-white border border-border text-[#475569] hover:border-[#EF4444] hover:text-[#EF4444]"
-                  }`}
-                >
-                  {iconUrl && (
-                    <span className="flex items-center justify-center w-4 h-4 bg-white rounded-sm p-0.5 shrink-0">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={r2Url(iconUrl)} alt="" width={14} height={14} loading="lazy" decoding="async" className="w-full h-full object-contain" />
-                    </span>
-                  )}
-                  {cat}
-                </Link>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Count */}
-        {total > 0 && (
-          <p className="text-center text-xs text-[#94a3b8] mb-8">
-            Hiển thị <strong>{services.length}</strong> / <strong>{total}</strong> dịch vụ
-            {totalPages > 1 && <span> — trang {page}/{totalPages}</span>}
-          </p>
-        )}
 
         {/* Grid + inline form */}
         {services.length === 0 ? (

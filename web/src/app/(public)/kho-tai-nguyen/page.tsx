@@ -51,12 +51,12 @@ function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }
 export default async function KhoTaiNguyenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; sort?: string; q?: string; tag?: string; price?: string; page?: string; subcategory?: string }>;
+  searchParams: Promise<{ category?: string; sort?: string; q?: string; tag?: string; price?: string; page?: string; subcategory?: string; rating?: string }>;
 }) {
   await guardPublicPage("kho-tai-nguyen");
 
   const [
-    { category: categoryParam, sort: sortParam, q: rawQ, tag: rawTag, price: priceParam, page: pageParam, subcategory: subcatParam },
+    { category: categoryParam, sort: sortParam, q: rawQ, tag: rawTag, price: priceParam, page: pageParam, subcategory: subcatParam, rating: ratingParam },
     session,
   ] = await Promise.all([searchParams, auth()]);
 
@@ -245,9 +245,13 @@ export default async function KhoTaiNguyenPage({
   // Paginate
   const fourteenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const stripHtml = (html: string | null) => (html ? html.replace(/<[^>]*>/g, "").trim() || null : null);
-  const totalCount = filteredProducts.length;
+  const minRating = ratingParam ? Number(ratingParam) : 0;
+  const ratedProducts = minRating > 0
+    ? filteredProducts.filter((sp) => (reviewMap.get(sp.id)?.avg ?? 0) >= minRating)
+    : filteredProducts;
+  const totalCount = ratedProducts.length;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-  const pagedProducts = filteredProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pagedProducts = ratedProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const paginationParams: Record<string, string> = {};
   if (categoryParam) paginationParams["category"]    = categoryParam;
@@ -255,6 +259,7 @@ export default async function KhoTaiNguyenPage({
   if (rawQ)          paginationParams["q"]           = rawQ;
   if (priceParam)    paginationParams["price"]       = priceParam;
   if (subcatParam)   paginationParams["subcategory"] = subcatParam;
+  if (ratingParam)   paginationParams["rating"]      = ratingParam;
 
   const totalSellers = new Set(allStatProducts.map((p) => p.sellerId)).size;
   const AVATAR_GRADIENTS = [
@@ -267,15 +272,8 @@ export default async function KhoTaiNguyenPage({
 
   return (
     <div className="min-h-screen bg-[#f0f4f8]">
-      <div className="mx-auto max-w-[1380px] px-3 py-4 flex items-start gap-4">
+      <div className="mx-auto max-w-[1380px] px-3 py-4 flex flex-col gap-4">
 
-        {/* ── LEFT FILTER SIDEBAR ── */}
-        <Suspense fallback={<div className="w-72 shrink-0 bg-white rounded-xl border border-[#e5e7eb] h-120 animate-pulse" />}>
-          <KhoFilterSidebar platforms={platformsForFilter} resourceTypes={resourceTypesForFilter} />
-        </Suspense>
-
-        {/* ── MAIN CONTENT ── */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
 
           {/* Banner */}
           <div className="rounded-2xl overflow-hidden relative bg-gradient-to-br from-[#0f2460] via-[#1a3a8f] to-[#0d1f5e]">
@@ -324,32 +322,29 @@ export default async function KhoTaiNguyenPage({
                   </Link>
                 )}
               </div>
-              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+              <div className="flex flex-wrap gap-2">
                 {platformCards.map((card) => {
                   const isActive = selectedCategories.includes(card.name);
                   return (
                     <Link
                       key={card.name}
                       href={isActive ? BASE_PATH : `${BASE_PATH}?category=${encodeURIComponent(card.name)}`}
-                      className={`flex flex-col items-center text-center p-3 rounded-xl border transition-all group ${
+                      className={`flex items-center gap-4 px-5 py-3 rounded-xl border transition-all group min-w-0 ${
                         isActive
                           ? "border-[#3b82f6] bg-[#eff6ff] shadow-sm shadow-blue-100"
                           : "border-[#f1f5f9] hover:border-[#3b82f6]/40 hover:bg-[#eff6ff]/40 hover:shadow-sm"
                       }`}
                     >
-                      <div className={`w-13 h-13 rounded-xl overflow-hidden flex items-center justify-center mb-2 shrink-0 ${isActive ? "bg-[#dbeafe]" : "bg-[#f1f5f9]"}`}>
+                      <div className={`w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center shrink-0 ${isActive ? "bg-[#dbeafe]" : "bg-[#f1f5f9]"}`}>
                         {card.iconUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={r2Url(card.iconUrl)} alt={card.name} className="w-9 h-9 object-contain" />
+                          <img src={r2Url(card.iconUrl)} alt={card.name} className="w-8 h-8 object-contain" />
                         ) : (
-                          <FolderOpen size={22} className={isActive ? "text-[#3b82f6]" : "text-[#94a3b8]"} />
+                          <FolderOpen size={24} className={isActive ? "text-[#3b82f6]" : "text-[#94a3b8]"} />
                         )}
                       </div>
-                      <p className={`font-bold text-[12px] leading-tight truncate w-full ${isActive ? "text-[#1d4ed8]" : "text-[#1e293b] group-hover:text-[#2563eb]"} transition-colors`}>
+                      <p className={`font-semibold text-[15px] leading-tight text-left ${isActive ? "text-[#1d4ed8]" : "text-[#1e293b] group-hover:text-[#2563eb]"} transition-colors`}>
                         {card.name}
-                      </p>
-                      <p className="text-[10px] text-[#64748b] mt-0.5">
-                        {card.count.toLocaleString("vi-VN")} SP
                       </p>
                     </Link>
                   );
@@ -358,34 +353,51 @@ export default async function KhoTaiNguyenPage({
             </div>
           )}
 
-          {/* Loại tài nguyên theo platform */}
+          {/* Danh mục con [ICON --- TÊN] */}
           {featuredPlatformSubcats.length > 0 && (
             <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-bold text-[#1e293b] text-[15px]">
-                  Loại tài nguyên{featuredPlatformName ? ` ${featuredPlatformName}` : ""}
+                  {featuredPlatformName ? `Danh mục ${featuredPlatformName}` : "Danh mục con"}
                 </h2>
+                {selectedSubcatNames.length > 0 && (
+                  <Link
+                    href={selectedCategories.length > 0 ? `${BASE_PATH}?category=${encodeURIComponent(selectedCategories[0] ?? "")}` : BASE_PATH}
+                    className="text-xs text-[#64748b] hover:text-[#3b82f6] transition-colors flex items-center gap-0.5"
+                  >
+                    <X size={11} /> Bỏ lọc
+                  </Link>
+                )}
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {featuredPlatformSubcats.map((sub) => (
                   <Link
                     key={sub.id}
                     href={`${BASE_PATH}?${selectedCategories.length > 0 ? `category=${encodeURIComponent(selectedCategories[0] ?? "")}&` : ""}subcategory=${encodeURIComponent(sub.name)}`}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[13px] font-semibold transition-all hover:shadow-sm ${
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border transition-all group hover:shadow-sm ${
                       selectedSubcatNames.includes(sub.name)
-                        ? "border-[#3b82f6] bg-[#eff6ff] text-[#1d4ed8]"
-                        : "border-[#e2e8f0] bg-[#f8fafc] text-[#374151] hover:border-[#3b82f6]/40 hover:bg-[#eff6ff]/40"
+                        ? "border-[#3b82f6] bg-[#eff6ff] shadow-sm"
+                        : "border-[#e2e8f0] hover:border-[#3b82f6]/40 hover:bg-[#eff6ff]/40"
                     }`}
                   >
-                    <span>{sub.name}</span>
-                    {sub.count > 0 && (
-                      <span className="text-[10px] text-[#94a3b8] font-normal">{sub.count}</span>
-                    )}
+                    <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${selectedSubcatNames.includes(sub.name) ? "bg-[#dbeafe]" : "bg-[#f1f5f9]"}`}>
+                      <FolderOpen size={12} className={selectedSubcatNames.includes(sub.name) ? "text-[#3b82f6]" : "text-[#94a3b8]"} />
+                    </div>
+                    <span className={`text-[12px] font-semibold transition-colors ${selectedSubcatNames.includes(sub.name) ? "text-[#1d4ed8]" : "text-[#1e293b] group-hover:text-[#2563eb]"}`}>
+                      {sub.name}
+                    </span>
                   </Link>
                 ))}
               </div>
             </div>
           )}
+
+        {/* ── FILTER + PRODUCTS ROW ── */}
+        <div className="flex flex-col lg:flex-row items-start gap-4">
+          <Suspense fallback={<div className="w-72 shrink-0 bg-white rounded-xl border border-[#e5e7eb] h-120 animate-pulse" />}>
+            <KhoFilterSidebar platforms={platformsForFilter} resourceTypes={resourceTypesForFilter} />
+          </Suspense>
+          <div className="flex-1 min-w-0">
 
           {/* Sản phẩm */}
           <div className="bg-white rounded-2xl border border-border p-4 shadow-sm">
@@ -580,7 +592,7 @@ export default async function KhoTaiNguyenPage({
               </div>
             )}
           </div>
-
+          </div>
         </div>
 
       </div>

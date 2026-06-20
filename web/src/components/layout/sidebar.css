@@ -216,6 +216,9 @@ html.sb-collapsed .sb-collapse-btn { justify-content: center; }
   text-align: left;
   font-family: inherit;
 }
+/* Toggle button không đổi màu khi hover hay active — chỉ sub-link mới đổi */
+.sb-svc-toggle:hover { background: none !important; color: inherit !important; }
+.sb-svc-toggle.sb-active { background: none !important; color: inherit !important; font-weight: inherit !important; box-shadow: none !important; }
 /* Sub-items: indent + fade-in */
 .sb-svc-items {
   animation: sb-svc-fadein 0.15s ease;
