@@ -75,10 +75,10 @@ function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }
 export default async function TaiNguyenMmoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; sort?: string; q?: string; price?: string; page?: string; subcategory?: string }>;
+  searchParams: Promise<{ category?: string; sort?: string; q?: string; tag?: string; price?: string; page?: string; subcategory?: string }>;
 }) {
   await guardPublicPage("tai-nguyen-mmo");
-  const [{ category, sort: sortParam, q: rawQ, price: priceParam, page: pageParam, subcategory: subcategoryParam }, session] = await Promise.all([
+  const [{ category, sort: sortParam, q: rawQ, tag: rawTag, price: priceParam, page: pageParam, subcategory: subcategoryParam }, session] = await Promise.all([
     searchParams,
     auth(),
   ]);
@@ -86,6 +86,7 @@ export default async function TaiNguyenMmoPage({
   const currentPage = Math.max(1, Number(pageParam ?? 1) || 1);
   const activeSort = (sortParam as SortId | undefined) ?? "noi-bat";
   const q = rawQ?.trim() || undefined;
+  const tag = rawTag?.trim() || undefined;
   const me = session?.user as AuthenticatedUser | undefined;
   const isLoggedIn = !!me;
 
@@ -122,6 +123,7 @@ export default async function TaiNguyenMmoPage({
         ...(category ? { categoryGroup: category } : {}),
         ...(subcategoryParam ? { category: subcategoryParam } : {}),
         ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
+        ...(tag ? { categoryGroup: { contains: tag, mode: "insensitive" as const } } : {}),
         ...priceFilter,
       },
       orderBy: [{ isFeatured: "desc" }, { displayOrder: "asc" }],
@@ -153,6 +155,7 @@ export default async function TaiNguyenMmoPage({
         ...(category ? { sellerCategory: category } : {}),
         ...(subcategoryParam ? { seller: { subCategories: { some: { subCategory: { name: subcategoryParam, isActive: true, showInTaiNguyenMmo: true } } } } } : {}),
         ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
+        ...(tag ? { sellerCategory: { contains: tag, mode: "insensitive" as const } } : {}),
         ...priceFilter,
       },
       orderBy: [{ salesCount: "desc" }, { createdAt: "desc" }],
@@ -365,8 +368,8 @@ export default async function TaiNguyenMmoPage({
 
         {/* ── LEFT FILTER SIDEBAR ── */}
         <Suspense fallback={
-          <aside className="w-full lg:w-70">
-            <div className="bg-white rounded-xl border border-border h-40 lg:h-120 animate-pulse" />
+          <aside className="w-72 shrink-0">
+            <div className="bg-white rounded-xl border border-border h-120 animate-pulse" />
           </aside>
         }>
           <FilterSidebar categories={categoryItems} totalCount={totalCount} />

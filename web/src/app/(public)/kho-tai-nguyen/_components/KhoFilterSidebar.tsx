@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { RotateCcw, ChevronDown } from "lucide-react";
+import { Search, SlidersHorizontal, ChevronDown } from "lucide-react";
 
 export interface PlatformItem { name: string; count: number; }
 export interface TypeItem { id: string; name: string; count: number; }
@@ -12,168 +12,233 @@ interface Props {
   resourceTypes: TypeItem[];
 }
 
-const PRICE_RANGES = [
-  { label: "Dưới 100.000đ",         value: "0-100000"           },
-  { label: "100k – 500k",            value: "100000-500000"      },
-  { label: "500k – 1.000.000đ",      value: "500000-1000000"     },
-  { label: "Trên 1.000.000đ",        value: "1000000-9999999999" },
-] as const;
+const HOT_TAGS = [
+  "account", "license", "chatgpt", "proxy",
+  "email", "vps", "game", "social",
+];
 
 export function KhoFilterSidebar({ platforms, resourceTypes }: Props) {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const sp = useSearchParams();
   const [, startTransition] = useTransition();
-  const [showMorePlatforms, setShowMorePlatforms] = useState(false);
-  const [showMoreTypes, setShowMoreTypes] = useState(false);
 
-  const [selPlatforms, setSelPlatforms] = useState<Set<string>>(
-    () => new Set(searchParams.get("category")?.split(",").filter(Boolean) ?? [])
-  );
-  const [selTypes, setSelTypes] = useState<Set<string>>(
-    () => new Set(searchParams.get("subcategory")?.split(",").filter(Boolean) ?? [])
-  );
-  const [selPrice, setSelPrice] = useState(searchParams.get("price") ?? "");
+  const [q, setQ] = useState(sp.get("q") ?? "");
+  const [category, setCategory] = useState(() => {
+    const cats = sp.get("category")?.split(",").filter(Boolean) ?? [];
+    return cats[0] ?? "";
+  });
+  const [subcategory, setSubcategory] = useState(() => {
+    const subs = sp.get("subcategory")?.split(",").filter(Boolean) ?? [];
+    return subs[0] ?? "";
+  });
+  const [tag, setTag] = useState(sp.get("tag") ?? "");
+  const [minPrice, setMinPrice] = useState(() => {
+    const p = sp.get("price");
+    if (!p) return "";
+    return p.split("-")[0] ?? "";
+  });
+  const [maxPrice, setMaxPrice] = useState(() => {
+    const p = sp.get("price");
+    if (!p) return "";
+    const parts = p.split("-");
+    return (parts[1] && Number(parts[1]) < 9_999_999_999) ? parts[1] : "";
+  });
+  const [currency, setCurrency] = useState(sp.get("currency") ?? "");
 
   function apply() {
-    const p = new URLSearchParams();
-    if (selPlatforms.size) p.set("category", [...selPlatforms].join(","));
-    if (selTypes.size)     p.set("subcategory", [...selTypes].join(","));
-    if (selPrice)          p.set("price", selPrice);
-    const q = searchParams.get("q");
-    if (q) p.set("q", q);
-    p.delete("page");
-    startTransition(() => router.replace(`/kho-tai-nguyen?${p.toString()}`, { scroll: false }));
+    const params = new URLSearchParams();
+    if (q.trim()) params.set("q", q.trim());
+    if (tag.trim()) params.set("tag", tag.trim());
+    if (category) params.set("category", category);
+    if (subcategory) params.set("subcategory", subcategory);
+    if (minPrice || maxPrice) {
+      const min = Math.max(0, Number(minPrice) || 0);
+      const max = Number(maxPrice) || 9_999_999_999;
+      params.set("price", `${min}-${max}`);
+    }
+    if (currency) params.set("currency", currency);
+    startTransition(() => {
+      router.replace(`/kho-tai-nguyen?${params.toString()}`, { scroll: false });
+    });
   }
 
   function reset() {
-    setSelPlatforms(new Set());
-    setSelTypes(new Set());
-    setSelPrice("");
+    setQ(""); setTag(""); setCategory(""); setSubcategory(""); setMinPrice(""); setMaxPrice(""); setCurrency("");
     startTransition(() => router.replace("/kho-tai-nguyen", { scroll: false }));
   }
 
-  function togglePlatform(name: string) {
-    const s = new Set(selPlatforms);
-    s.has(name) ? s.delete(name) : s.add(name);
-    setSelPlatforms(s);
-  }
-  function toggleType(name: string) {
-    const s = new Set(selTypes);
-    s.has(name) ? s.delete(name) : s.add(name);
-    setSelTypes(s);
-  }
-
-  const dp = showMorePlatforms ? platforms : platforms.slice(0, 6);
-  const dt = showMoreTypes ? resourceTypes : resourceTypes.slice(0, 6);
+  const inputCls =
+    "w-full px-3 py-[9px] border border-[#e5e7eb] rounded-lg text-sm text-[#374151] placeholder-[#9ca3af] focus:outline-none focus:border-[#6366f1] focus:ring-2 focus:ring-[#6366f1]/10 transition-colors bg-[#f9fafb]";
 
   return (
-    <aside className="w-[210px] shrink-0 self-start sticky top-24">
-      <div className="bg-white rounded-2xl border border-[#e2e8f0] overflow-hidden shadow-sm">
+    <aside className="w-72 shrink-0 self-start sticky top-24">
+      <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm overflow-hidden">
+
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-[#f8fafc] border-b border-[#e2e8f0]">
-          <span className="text-[11px] font-bold text-[#64748b] tracking-widest uppercase">BỘ LỌC TÌM KIẾM</span>
-          <button onClick={reset} className="flex items-center gap-1 text-[11px] text-[#3b82f6] font-bold hover:text-[#1d4ed8] transition-colors">
-            <RotateCcw size={10} strokeWidth={2.5} />
-            Đặt lại
-          </button>
+        <div className="flex items-center gap-2 px-4 py-3.5 bg-[#f8fafc] border-b border-[#e5e7eb]">
+          <SlidersHorizontal size={15} className="text-[#64748b]" />
+          <span className="text-sm font-semibold text-[#0f172a]">Bộ lọc</span>
         </div>
 
-        <div className="divide-y divide-[#f1f5f9] max-h-[calc(100vh-200px)] overflow-y-auto">
+        <div className="px-4 py-4 space-y-4">
 
-          {/* Nền tảng */}
-          <div className="px-4 py-4">
-            <p className="text-[11px] font-bold text-[#94a3b8] uppercase tracking-widest mb-3">Nền tảng</p>
-            <div className="space-y-2.5">
-              {dp.map((p) => (
-                <label key={p.name} className="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={selPlatforms.has(p.name)}
-                    onChange={() => togglePlatform(p.name)}
-                    className="w-3.5 h-3.5 rounded border-[#d1d5db] accent-[#3b82f6] cursor-pointer shrink-0"
-                  />
-                  <span className={`flex-1 text-[13px] min-w-0 truncate transition-colors ${selPlatforms.has(p.name) ? "font-bold text-[#2563eb]" : "text-[#374151] group-hover:text-[#2563eb]"}`}>
-                    {p.name}
-                  </span>
-                  <span className="text-[11px] text-[#94a3b8] shrink-0">{p.count.toLocaleString("vi-VN")}</span>
-                </label>
-              ))}
+          {/* Tìm kiếm */}
+          <div>
+            <p className="text-sm font-medium text-[#374151] mb-1.5">Tìm kiếm</p>
+            <div className="relative">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af] pointer-events-none" />
+              <input
+                type="text"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && apply()}
+                placeholder="raspberry pi, account, boost"
+                className={`${inputCls} pl-8`}
+              />
             </div>
-            {platforms.length > 6 && (
-              <button
-                onClick={() => setShowMorePlatforms(!showMorePlatforms)}
-                className="mt-2.5 flex items-center gap-1 text-[11px] text-[#3b82f6] font-bold hover:underline"
-              >
-                {showMorePlatforms ? "Ẩn bớt" : "Xem thêm"}
-                <ChevronDown size={10} className={showMorePlatforms ? "rotate-180 transition-transform" : "transition-transform"} />
-              </button>
-            )}
           </div>
 
-          {/* Loại tài nguyên */}
-          {resourceTypes.length > 0 && (
-            <div className="px-4 py-4">
-              <p className="text-[11px] font-bold text-[#94a3b8] uppercase tracking-widest mb-3">Loại tài nguyên</p>
-              <div className="space-y-2.5">
-                {dt.map((t) => (
-                  <label key={t.id} className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={selTypes.has(t.name)}
-                      onChange={() => toggleType(t.name)}
-                      className="w-3.5 h-3.5 rounded border-[#d1d5db] accent-[#3b82f6] cursor-pointer shrink-0"
-                    />
-                    <span className={`flex-1 text-[13px] min-w-0 truncate transition-colors ${selTypes.has(t.name) ? "font-bold text-[#2563eb]" : "text-[#374151] group-hover:text-[#2563eb]"}`}>
-                      {t.name}
-                    </span>
-                    <span className="text-[11px] text-[#94a3b8] shrink-0">{t.count.toLocaleString("vi-VN")}</span>
-                  </label>
-                ))}
-              </div>
-              {resourceTypes.length > 6 && (
-                <button
-                  onClick={() => setShowMoreTypes(!showMoreTypes)}
-                  className="mt-2.5 flex items-center gap-1 text-[11px] text-[#3b82f6] font-bold hover:underline"
+          {/* Danh mục (Nền tảng) */}
+          {platforms.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-[#374151] mb-1.5">Danh mục</p>
+              <div className="relative">
+                <select
+                  value={category}
+                  onChange={(e) => { setCategory(e.target.value); setSubcategory(""); }}
+                  className={`${inputCls} pr-9 appearance-none cursor-pointer`}
                 >
-                  {showMoreTypes ? "Ẩn bớt" : "Xem thêm"}
-                  <ChevronDown size={10} className={showMoreTypes ? "rotate-180 transition-transform" : "transition-transform"} />
-                </button>
-              )}
+                  <option value="">Tất cả danh mục</option>
+                  {platforms.map((p) => (
+                    <option key={p.name} value={p.name}>{p.name}</option>
+                  ))}
+                </select>
+                <SlidersHorizontal size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] pointer-events-none" />
+              </div>
             </div>
           )}
 
-          {/* Giá */}
-          <div className="px-4 py-4">
-            <p className="text-[11px] font-bold text-[#94a3b8] uppercase tracking-widest mb-3">Giá</p>
-            <div className="space-y-2.5">
-              {PRICE_RANGES.map((r) => (
-                <label key={r.value} className="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="radio"
-                    name="kho-price"
-                    checked={selPrice === r.value}
-                    onChange={() => setSelPrice(selPrice === r.value ? "" : r.value)}
-                    className="w-3.5 h-3.5 border-[#d1d5db] accent-[#3b82f6] cursor-pointer shrink-0"
-                  />
-                  <span className={`text-[13px] transition-colors ${selPrice === r.value ? "font-bold text-[#2563eb]" : "text-[#374151] group-hover:text-[#2563eb]"}`}>
-                    {r.label}
-                  </span>
-                </label>
-              ))}
+          {/* Loại tài nguyên */}
+          {resourceTypes.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-[#374151] mb-1.5">Loại tài nguyên</p>
+              <div className="relative">
+                <select
+                  value={subcategory}
+                  onChange={(e) => setSubcategory(e.target.value)}
+                  className={`${inputCls} pr-9 appearance-none cursor-pointer`}
+                >
+                  <option value="">Tất cả loại</option>
+                  {resourceTypes.map((t) => (
+                    <option key={t.id} value={t.name}>{t.name}</option>
+                  ))}
+                </select>
+                <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] pointer-events-none" />
+              </div>
+            </div>
+          )}
+
+          {/* Thẻ */}
+          <div>
+            <p className="text-sm font-medium text-[#374151] mb-1.5">Thẻ</p>
+            <input
+              type="text"
+              value={tag}
+              onChange={(e) => setTag(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && apply()}
+              placeholder="raid"
+              className={inputCls}
+            />
+          </div>
+
+          {/* Số tiền tối thiểu */}
+          <div>
+            <p className="text-sm font-medium text-[#374151] mb-1.5">Số tiền tối thiểu</p>
+            <input
+              type="number"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              placeholder="0"
+              min="0"
+              className={inputCls}
+            />
+          </div>
+
+          {/* Số tiền tối đa */}
+          <div>
+            <p className="text-sm font-medium text-[#374151] mb-1.5">Số tiền tối đa</p>
+            <input
+              type="number"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              placeholder="Không giới hạn"
+              min="0"
+              className={inputCls}
+            />
+          </div>
+
+          {/* Tiền tệ */}
+          <div>
+            <p className="text-sm font-medium text-[#374151] mb-1.5">Tiền tệ</p>
+            <div className="relative">
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className={`${inputCls} pr-9 appearance-none cursor-pointer`}
+              >
+                <option value="">Tất cả tiền tệ</option>
+                <option value="VND">VNĐ (đ)</option>
+                <option value="USD">USD ($)</option>
+              </select>
+              <SlidersHorizontal size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] pointer-events-none" />
             </div>
           </div>
 
-        </div>
+          {/* Chỉ còn hàng */}
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              defaultChecked
+              className="w-4 h-4 rounded border-[#d1d5db] accent-[#6366f1] cursor-pointer"
+            />
+            <span className="text-sm text-[#374151]">Chỉ còn hàng</span>
+          </label>
 
-        {/* Apply button */}
-        <div className="px-4 py-3 border-t border-[#e2e8f0]">
+          {/* Tìm kiếm button */}
           <button
             onClick={apply}
-            className="w-full bg-[#3b82f6] hover:bg-[#2563eb] active:bg-[#1d4ed8] text-white text-[13px] font-bold py-2.5 rounded-xl transition-colors"
+            className="w-full flex items-center justify-center gap-2 bg-[#0f172a] hover:bg-[#1e293b] active:bg-[#0d1117] text-white text-sm font-semibold py-2.5 rounded-xl transition-colors"
           >
-            Áp dụng bộ lọc
+            <Search size={14} />
+            Tìm kiếm
           </button>
+
+          {/* Đặt lại */}
+          <button
+            onClick={reset}
+            className="w-full text-sm text-[#64748b] hover:text-[#374151] text-center transition-colors py-0.5"
+          >
+            Đặt lại bộ lọc
+          </button>
+
         </div>
+
+        {/* Thẻ đang hot */}
+        <div className="px-4 pb-4 border-t border-[#f1f5f9] pt-4">
+          <p className="text-sm font-semibold text-[#0f172a] mb-2.5">Thẻ đang hot</p>
+          <div className="flex flex-wrap gap-2">
+            {HOT_TAGS.map((t) => (
+              <button
+                key={t}
+                onClick={() => setTag(t)}
+                className="px-2.5 py-1 text-[13px] bg-[#f1f5f9] border border-[#e2e8f0] rounded-full text-[#334155] hover:bg-[#e2e8f0] transition-colors"
+              >
+                #{t}
+              </button>
+            ))}
+          </div>
+        </div>
+
       </div>
     </aside>
   );

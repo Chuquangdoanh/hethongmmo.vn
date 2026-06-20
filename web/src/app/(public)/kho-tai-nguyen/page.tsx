@@ -51,18 +51,19 @@ function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }
 export default async function KhoTaiNguyenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; sort?: string; q?: string; price?: string; page?: string; subcategory?: string }>;
+  searchParams: Promise<{ category?: string; sort?: string; q?: string; tag?: string; price?: string; page?: string; subcategory?: string }>;
 }) {
   await guardPublicPage("kho-tai-nguyen");
 
   const [
-    { category: categoryParam, sort: sortParam, q: rawQ, price: priceParam, page: pageParam, subcategory: subcatParam },
+    { category: categoryParam, sort: sortParam, q: rawQ, tag: rawTag, price: priceParam, page: pageParam, subcategory: subcatParam },
     session,
   ] = await Promise.all([searchParams, auth()]);
 
   const currentPage = Math.max(1, Number(pageParam ?? 1) || 1);
   const activeSort = (sortParam as SortId | undefined) ?? "noi-bat";
   const q = rawQ?.trim() || undefined;
+  const tag = rawTag?.trim() || undefined;
   const me = session?.user as AuthenticatedUser | undefined;
   const isLoggedIn = !!me;
 
@@ -113,6 +114,7 @@ export default async function KhoTaiNguyenPage({
     ...(selectedCategories.length > 0 ? { sellerCategory: { in: selectedCategories } } : {}),
     ...(subCatIds.length > 0 ? { subCategoryId: { in: subCatIds } } : {}),
     ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
+    ...(tag ? { sellerCategory: { contains: tag, mode: "insensitive" as const } } : {}),
     ...priceFilter,
   };
 
@@ -268,7 +270,7 @@ export default async function KhoTaiNguyenPage({
       <div className="mx-auto max-w-[1380px] px-3 py-4 flex items-start gap-4">
 
         {/* ── LEFT FILTER SIDEBAR ── */}
-        <Suspense fallback={<div className="w-[210px] shrink-0 bg-white rounded-2xl h-96 animate-pulse" />}>
+        <Suspense fallback={<div className="w-72 shrink-0 bg-white rounded-xl border border-[#e5e7eb] h-120 animate-pulse" />}>
           <KhoFilterSidebar platforms={platformsForFilter} resourceTypes={resourceTypesForFilter} />
         </Suspense>
 
