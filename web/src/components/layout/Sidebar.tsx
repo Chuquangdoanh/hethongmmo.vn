@@ -49,7 +49,14 @@ export default async function Sidebar() {
     }),
   ]);
   const activeCatNames = new Set(activeServiceCats.map((s) => s.category).filter(Boolean));
-  const filteredServiceCategories = serviceCategories.filter((c) => activeCatNames.has(c.name));
+  const svcCatMap = new Map(serviceCategories.map((c) => [c.name, c]));
+  const filteredServiceCategories = [
+    ...serviceCategories.filter((c) => activeCatNames.has(c.name)),
+    ...[...activeCatNames]
+      .filter((name) => !svcCatMap.has(name))
+      .sort()
+      .map((name) => ({ name, iconUrl: null as string | null })),
+  ];
 
   const isSeller = !!sessionUser && (
     (sessionUser.role === "SELLER" && sessionUser.sellerStatus === "APPROVED")
