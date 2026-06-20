@@ -5,9 +5,13 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatVnd, formatDate } from "@/lib/utils/format";
-import { Search, Clock, CheckCircle, TicketCheck, ShieldAlert } from "lucide-react";
+import {
+  Search, Clock, CheckCircle, TicketCheck, ShieldAlert,
+  ClipboardList, ShoppingBag, Banknote, Lock, ShieldCheck,
+} from "lucide-react";
 import TicketChatPanel from "./_components/TicketChatPanel";
 import SlaTimer from "./_components/SlaTimer";
+import TicketScrollLink from "./_components/TicketScrollLink";
 import "./ho-tro.css";
 
 export const metadata: Metadata = { title: "Ticket hỗ trợ" };
@@ -247,7 +251,7 @@ export default async function HoTroPage({
               const st       = STATUS_STYLE[c.status] ?? defaultStyle;
 
               return (
-                <Link
+                <TicketScrollLink
                   key={c.id}
                   href={`/ho-tro?id=${c.id}`}
                   className={`ht-ticket-item${isActive ? " ht-ticket-item--active" : ""}`}
@@ -295,7 +299,7 @@ export default async function HoTroPage({
                       </span>
                     </div>
                   </div>
-                </Link>
+                </TicketScrollLink>
               );
             })
           )}
@@ -484,20 +488,20 @@ export default async function HoTroPage({
             </div>
             {selectedOrder ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <InfoRow icon="📋" label="Mã đơn hàng">
+                <InfoRow icon={<ClipboardList size={14} />} label="Mã đơn hàng">
                   <span style={{ fontSize: "12px", fontWeight: "700", fontFamily: "monospace", color: "#1e293b" }}>
                     #{selectedOrder.orderCode}
                   </span>
                 </InfoRow>
-                <InfoRow icon="🛍️" label="Dịch vụ">
+                <InfoRow icon={<ShoppingBag size={14} />} label="Dịch vụ">
                   <span style={{ fontSize: "12px", color: "#1e293b", fontWeight: "500" }}>{selectedOrder.itemName}</span>
                 </InfoRow>
-                <InfoRow icon="💰" label="Số tiền">
+                <InfoRow icon={<Banknote size={14} />} label="Số tiền">
                   <span style={{ fontSize: "13px", fontWeight: "800", color: "#16a34a" }}>
                     {formatVnd(Number(selectedOrder.finalPrice))}
                   </span>
                 </InfoRow>
-                <InfoRow icon="🔒" label="Trạng thái tiền">
+                <InfoRow icon={<Lock size={14} />} label="Trạng thái tiền">
                   <span style={{
                     fontSize: "11px", padding: "2px 8px", borderRadius: "20px",
                     background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", fontWeight: "600",
@@ -505,7 +509,7 @@ export default async function HoTroPage({
                     Đang bị treo
                   </span>
                 </InfoRow>
-                <InfoRow icon="🕐" label="Thời gian mua">
+                <InfoRow icon={<Clock size={14} />} label="Thời gian mua">
                   <span style={{ fontSize: "11px", color: "#475569" }}>{formatDate(selectedOrder.createdAt)}</span>
                 </InfoRow>
               </div>
@@ -536,8 +540,9 @@ export default async function HoTroPage({
 
           <div className="ht-divider" />
           <div className="ht-right-section">
-            <h3 style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a", margin: "0 0 12px" }}>
-              ✅ Quyền lợi của bạn
+            <h3 style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a", margin: "0 0 12px", display: "flex", alignItems: "center", gap: "6px" }}>
+              <ShieldCheck size={14} style={{ color: "#16a34a" }} />
+              Quyền lợi của bạn
             </h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
               {[
@@ -564,10 +569,10 @@ export default async function HoTroPage({
   );
 }
 
-function InfoRow({ icon, label, children }: { icon: string; label: string; children: React.ReactNode }) {
+function InfoRow({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-      <span style={{ fontSize: "14px", flexShrink: 0, lineHeight: 1 }}>{icon}</span>
+      <span style={{ flexShrink: 0, lineHeight: 1, color: "#64748b", marginTop: "1px" }}>{icon}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: "10px", color: "#94a3b8", margin: "0 0 2px" }}>{label}</p>
         {children}
