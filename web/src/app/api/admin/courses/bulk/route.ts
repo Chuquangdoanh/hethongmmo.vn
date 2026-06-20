@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { AppAuthError } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
@@ -17,7 +18,8 @@ const bulkActionSchema = z.object({
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    const actor = requireAdmin(session);
+    const actor = requireStaff(session);
+ await requirePermission(session, "courses:update");
 
     const body: unknown = await req.json();
     const parsed = bulkActionSchema.safeParse(body);

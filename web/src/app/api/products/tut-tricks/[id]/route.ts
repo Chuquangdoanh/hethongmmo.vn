@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
-import { AppAuthError } from "@/lib/auth/rbac";
+import { requireStaff, AppAuthError } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { encrypt } from "@/lib/security/encryption";
 import { sanitizeHtml } from "@/lib/security/sanitize";
@@ -45,7 +45,8 @@ export async function PATCH(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    const actor = requireAdmin(session);
+    const actor = requireStaff(session);
+    await requirePermission(session, "tut_tricks:update");
     const { id } = await params;
 
     const body: unknown = await req.json();
@@ -125,7 +126,8 @@ export async function DELETE(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    const actor = requireAdmin(session);
+    const actor = requireStaff(session);
+    await requirePermission(session, "tut_tricks:delete");
     const { id } = await params;
 
     const existing = await prisma.tutTrick.findUnique({

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { updateCourseSupportSchema } from "@/lib/validation/course-support.schema";
 import { apiOk, apiSuccess, apiCatch, apiValidationError } from "@/lib/api-response";
@@ -14,7 +15,9 @@ export async function PATCH(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "courses:update");
     const { id: courseId, itemId } = await params;
 
     const body: unknown = await req.json();
@@ -41,7 +44,9 @@ export async function DELETE(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "courses:update");
     const { id: courseId, itemId } = await params;
 
     const existing = await prisma.courseSupportItem.findFirst({ where: { id: itemId, courseId } });

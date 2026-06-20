@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
-import { AppAuthError } from "@/lib/auth/rbac";
+import { requireStaff, AppAuthError } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { sanitizeHtml } from "@/lib/security/sanitize";
 import { writeAuditLog } from "@/lib/security/audit";
@@ -61,7 +61,8 @@ export async function PATCH(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    const actor = requireAdmin(session);
+    const actor = requireStaff(session);
+    await requirePermission(session, "courses:update");
     const { id } = await params;
 
     const body: unknown = await req.json();
@@ -136,7 +137,7 @@ export async function PATCH(
   }
 }
 
-// ── DELETE — Soft delete (Admin only) ────────────────────────────────────────
+// ── DELETE — Soft delete ──────────────────────────────────────────────────────
 
 export async function DELETE(
   _req: NextRequest,
@@ -144,7 +145,8 @@ export async function DELETE(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    const actor = requireAdmin(session);
+    const actor = requireStaff(session);
+    await requirePermission(session, "courses:delete");
     const { id } = await params;
 
     const existing = await prisma.course.findUnique({

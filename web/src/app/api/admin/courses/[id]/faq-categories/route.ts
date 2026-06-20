@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { createFaqCategorySchema } from "@/lib/validation/course-faq.schema";
 import { apiOk, apiList, apiCatch, apiValidationError } from "@/lib/api-response";
@@ -13,7 +14,9 @@ export async function GET(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "courses:read");
     const { id: courseId } = await params;
 
     const categories = await prisma.courseFaqCategory.findMany({
@@ -34,7 +37,9 @@ export async function POST(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "courses:update");
     const { id: courseId } = await params;
 
     const body: unknown = await req.json();

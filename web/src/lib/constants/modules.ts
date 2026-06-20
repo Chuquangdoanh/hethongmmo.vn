@@ -6,6 +6,10 @@ export type PermissionCode =
   | "users:read"       | "users:create"       | "users:update"       | "users:delete"
   | "orders:read"      | "orders:update"      | "orders:delete"
   | "products:read"    | "products:create"    | "products:update"    | "products:delete"
+  | "services:read"    | "services:create"    | "services:update"    | "services:delete"
+  | "courses:read"     | "courses:create"     | "courses:update"     | "courses:delete"
+  | "tut_tricks:read"  | "tut_tricks:create"  | "tut_tricks:update"  | "tut_tricks:delete"
+  | "resources:read"   | "resources:create"   | "resources:update"   | "resources:delete"
   | "categories:read"  | "categories:create"  | "categories:update"  | "categories:delete"
   | "finance:read"     | "finance:approve"    | "finance:reject"
   | "complaints:read"  | "complaints:reply"   | "complaints:update"  | "complaints:close"
@@ -37,14 +41,18 @@ export const MODULES: ModuleSeed[] = [
   { code: "users",            label: "Quản lý User",           icon: "users",              sortOrder: 1  },
   { code: "orders",           label: "Đơn hàng",               icon: "shopping-cart",      sortOrder: 2  },
   { code: "products",         label: "Sản phẩm / Dịch vụ",    icon: "package",            sortOrder: 3  },
-  { code: "categories",       label: "Danh mục",               icon: "folder",             sortOrder: 4  },
-  { code: "finance",          label: "Tài chính",              icon: "banknote",           sortOrder: 5  },
-  { code: "complaints",       label: "Khiếu nại",             icon: "alert-triangle",     sortOrder: 6  },
-  { code: "chat",             label: "Trò chuyện",             icon: "message-square",     sortOrder: 7  },
-  { code: "content",          label: "Nội dung & Thông báo",  icon: "file-text",          sortOrder: 8  },
-  { code: "sellers",          label: "Quản lý Seller",         icon: "store",              sortOrder: 9  },
-  { code: "seller_products",  label: "Sản phẩm Seller",        icon: "tag",                sortOrder: 10 },
-  { code: "transactions",     label: "Giao dịch & Logs",       icon: "activity",           sortOrder: 11 },
+  { code: "services",         label: "Dịch vụ",                icon: "briefcase",          sortOrder: 4  },
+  { code: "courses",          label: "Khóa học",               icon: "graduation-cap",     sortOrder: 5  },
+  { code: "tut_tricks",       label: "Tut Trick",              icon: "lightbulb",          sortOrder: 6  },
+  { code: "resources",        label: "Tài nguyên MMO",         icon: "database",           sortOrder: 7  },
+  { code: "categories",       label: "Danh mục",               icon: "folder",             sortOrder: 8  },
+  { code: "finance",          label: "Tài chính",              icon: "banknote",           sortOrder: 9  },
+  { code: "complaints",       label: "Khiếu nại",             icon: "alert-triangle",     sortOrder: 10 },
+  { code: "chat",             label: "Trò chuyện",             icon: "message-square",     sortOrder: 11 },
+  { code: "content",          label: "Nội dung & Thông báo",  icon: "file-text",          sortOrder: 12 },
+  { code: "sellers",          label: "Quản lý Seller",         icon: "store",              sortOrder: 13 },
+  { code: "seller_products",  label: "Sản phẩm Seller",        icon: "tag",                sortOrder: 14 },
+  { code: "transactions",     label: "Giao dịch & Logs",       icon: "activity",           sortOrder: 15 },
 ];
 
 export const PERMISSIONS: PermissionSeed[] = [
@@ -67,6 +75,30 @@ export const PERMISSIONS: PermissionSeed[] = [
   { code: "products:create",  module: "products",  action: "create", label: "Thêm sản phẩm mới",           sortOrder: 1 },
   { code: "products:update",  module: "products",  action: "update", label: "Sửa thông tin sản phẩm",      sortOrder: 2 },
   { code: "products:delete",  module: "products",  action: "delete", label: "Xóa sản phẩm",               sortOrder: 3 },
+
+  // Services (Dịch vụ)
+  { code: "services:read",    module: "services",   action: "read",   label: "Xem dịch vụ",                 sortOrder: 0 },
+  { code: "services:create",  module: "services",   action: "create", label: "Thêm dịch vụ mới",            sortOrder: 1 },
+  { code: "services:update",  module: "services",   action: "update", label: "Sửa thông tin dịch vụ",       sortOrder: 2 },
+  { code: "services:delete",  module: "services",   action: "delete", label: "Xóa dịch vụ",                 sortOrder: 3 },
+
+  // Courses (Khóa học)
+  { code: "courses:read",     module: "courses",    action: "read",   label: "Xem khóa học",                sortOrder: 0 },
+  { code: "courses:create",   module: "courses",    action: "create", label: "Thêm khóa học mới",           sortOrder: 1 },
+  { code: "courses:update",   module: "courses",    action: "update", label: "Sửa thông tin khóa học",      sortOrder: 2 },
+  { code: "courses:delete",   module: "courses",    action: "delete", label: "Xóa khóa học",                sortOrder: 3 },
+
+  // Tut Tricks
+  { code: "tut_tricks:read",   module: "tut_tricks", action: "read",   label: "Xem tut trick",              sortOrder: 0 },
+  { code: "tut_tricks:create", module: "tut_tricks", action: "create", label: "Thêm tut trick mới",         sortOrder: 1 },
+  { code: "tut_tricks:update", module: "tut_tricks", action: "update", label: "Sửa tut trick",              sortOrder: 2 },
+  { code: "tut_tricks:delete", module: "tut_tricks", action: "delete", label: "Xóa tut trick",              sortOrder: 3 },
+
+  // Resources (Tài nguyên MMO)
+  { code: "resources:read",   module: "resources",  action: "read",   label: "Xem tài nguyên MMO",          sortOrder: 0 },
+  { code: "resources:create", module: "resources",  action: "create", label: "Thêm tài nguyên mới",         sortOrder: 1 },
+  { code: "resources:update", module: "resources",  action: "update", label: "Sửa / Quản lý kho tài nguyên", sortOrder: 2 },
+  { code: "resources:delete", module: "resources",  action: "delete", label: "Xóa tài nguyên",              sortOrder: 3 },
 
   // Categories
   { code: "categories:read",   module: "categories", action: "read",   label: "Xem danh mục",               sortOrder: 0 },
@@ -138,6 +170,18 @@ export const PERMISSION_DEPENDENCIES: Record<string, PermissionCode[]> = {
   "products:create":        ["products:read"],
   "products:update":        ["products:read"],
   "products:delete":        ["products:read"],
+  "services:create":        ["services:read"],
+  "services:update":        ["services:read"],
+  "services:delete":        ["services:read"],
+  "courses:create":         ["courses:read"],
+  "courses:update":         ["courses:read"],
+  "courses:delete":         ["courses:read"],
+  "tut_tricks:create":      ["tut_tricks:read"],
+  "tut_tricks:update":      ["tut_tricks:read"],
+  "tut_tricks:delete":      ["tut_tricks:read"],
+  "resources:create":       ["resources:read"],
+  "resources:update":       ["resources:read"],
+  "resources:delete":       ["resources:read"],
   "categories:create":      ["categories:read"],
   "categories:update":      ["categories:read"],
   "categories:delete":      ["categories:read"],
