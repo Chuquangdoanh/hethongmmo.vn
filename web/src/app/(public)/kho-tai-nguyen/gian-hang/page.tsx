@@ -257,7 +257,7 @@ export default async function KhoGianHangPage({
               <div className="bg-white rounded-xl border border-border h-80 animate-pulse" />
             </aside>
           }>
-            <SellerFilterSidebar categories={categories} totalCount={totalSellerCount} />
+            <SellerFilterSidebar categories={categories} totalCount={totalSellerCount} basePath="/kho-tai-nguyen/gian-hang" />
           </Suspense>
 
           <div className="flex-1 min-w-0">

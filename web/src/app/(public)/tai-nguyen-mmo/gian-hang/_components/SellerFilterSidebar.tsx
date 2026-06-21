@@ -21,9 +21,10 @@ export interface SellerCategoryItem {
 interface Props {
   categories: SellerCategoryItem[];
   totalCount: number;
+  basePath?: string;
 }
 
-export function SellerFilterSidebar({ categories, totalCount }: Props) {
+export function SellerFilterSidebar({ categories, totalCount, basePath = "/tai-nguyen-mmo/gian-hang" }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const spRef = useRef(searchParams);
@@ -38,18 +39,20 @@ export function SellerFilterSidebar({ categories, totalCount }: Props) {
 
   const [searchValue, setSearchValue] = useState(qParam);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMounted = useRef(false);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setSearchValue(qParam); }, [qParam]);
 
   useEffect(() => {
+    if (!isMounted.current) { isMounted.current = true; return; }
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       const params = new URLSearchParams(spRef.current.toString());
       const trimmed = searchValue.trim();
       if (trimmed) params.set("q", trimmed); else params.delete("q");
       startTransition(() => {
-        router.replace(`/tai-nguyen-mmo/gian-hang?${params.toString()}`, { scroll: false });
+        router.replace(`${basePath}?${params.toString()}`, { scroll: false });
       });
     }, 400);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
@@ -60,7 +63,7 @@ export function SellerFilterSidebar({ categories, totalCount }: Props) {
     const params = new URLSearchParams(spRef.current.toString());
     if (value) params.set(key, value); else params.delete(key);
     startTransition(() => {
-      router.replace(`/tai-nguyen-mmo/gian-hang?${params.toString()}`, { scroll: false });
+      router.replace(`${basePath}?${params.toString()}`, { scroll: false });
     });
   }
 
