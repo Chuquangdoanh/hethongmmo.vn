@@ -5,7 +5,7 @@ import Pagination from "@/components/shared/Pagination";
 import { prisma } from "@/lib/db/prisma";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import {
-  Store, BadgeCheck, Star, ShoppingCart, Package, ChevronRight,
+  Store, BadgeCheck, Star, ShoppingCart, Package, ChevronRight, Building2,
 } from "lucide-react";
 import { r2Url } from "@/lib/utils/image-url";
 import { SellerFilterSidebar } from "@/app/(public)/tai-nguyen-mmo/gian-hang/_components/SellerFilterSidebar";
@@ -64,7 +64,8 @@ export default async function KhoGianHangPage({
   const minRating      = sp.rating ? Number(sp.rating) : 0;
   const currentPage    = Math.max(1, Number(sp.page ?? 1) || 1);
 
-  const allSellers = await prisma.user.findMany({
+  const [allSellers, systemProductCount, systemOrderCount, systemReviewStats] = await Promise.all([
+  prisma.user.findMany({
     where: {
       sellerStatus: "APPROVED",
       shopLocked: false,
@@ -99,7 +100,18 @@ export default async function KhoGianHangPage({
       },
     },
     orderBy: { createdAt: "asc" },
-  });
+  }),
+  prisma.mmoProduct.count({ where: { isActive: true, deletedAt: null } }),
+  prisma.order.count({ where: { NOT: { mmoProductId: null }, status: "DONE" } }),
+  prisma.review.aggregate({
+    where: { productType: "MMO_PRODUCT" },
+    _avg: { rating: true },
+    _count: { id: true },
+  }),
+  ]);
+
+  const systemAvgRating   = systemReviewStats._avg.rating ?? 0;
+  const systemReviewCount = systemReviewStats._count.id;
 
   const sellerIds = allSellers.map((s) => s.id);
 
@@ -212,11 +224,12 @@ export default async function KhoGianHangPage({
     enriched = [...enriched].sort((a, b) => b.totalSales - a.totalSales);
   }
 
-  const totalSellerCount = enriched.length;
+  const totalSellerCount = enriched.length + 1; // +1 for system card
   const totalSellerPages = Math.ceil(totalSellerCount / SELLER_PAGE_SIZE);
+  const showSystemOnThisPage = currentPage === 1;
   const pagedEnriched = enriched.slice(
-    (currentPage - 1) * SELLER_PAGE_SIZE,
-    currentPage * SELLER_PAGE_SIZE,
+    currentPage === 1 ? 0 : (currentPage - 1) * SELLER_PAGE_SIZE - 1,
+    currentPage === 1 ? SELLER_PAGE_SIZE - 1 : currentPage * SELLER_PAGE_SIZE - 1,
   );
 
   const sellerPageParams: Record<string, string> = {};
@@ -272,7 +285,7 @@ export default async function KhoGianHangPage({
               </p>
             </div>
 
-            {pagedEnriched.length === 0 ? (
+            {pagedEnriched.length === 0 && !showSystemOnThisPage ? (
               <div className="text-center py-24 bg-white rounded-xl border border-border">
                 <div className="flex justify-center mb-4">
                   <Store size={52} strokeWidth={1.25} className="text-[#cbd5e1]" />
@@ -282,6 +295,65 @@ export default async function KhoGianHangPage({
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+
+                {/* Hệ Thống MMO — pinned first on page 1 */}
+                {showSystemOnThisPage && (
+                  <div className="bg-white rounded-xl border border-[#6d28d9]/30 overflow-hidden hover:shadow-md hover:border-[#6d28d9]/60 transition-all flex flex-col relative">
+                    <span className="absolute top-2 right-2 z-10 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#6d28d9] text-white">
+                      Chính thức
+                    </span>
+                    <div className="h-14 bg-linear-to-br from-[#6d28d9] to-[#0066ff]" />
+                    <div className="px-4 pb-4 flex flex-col gap-2.5 flex-1 -mt-7">
+                      <div className="w-14 h-14 rounded-full bg-linear-to-br from-[#6d28d9] to-[#0066ff] ring-2 ring-white flex items-center justify-center shadow-md">
+                        <Building2 size={24} strokeWidth={1.5} className="text-white" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                          <h3 className="text-sm font-extrabold text-text-dark">Hệ Thống MMO</h3>
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#dbeafe] text-[#1d4ed8]">
+                            <BadgeCheck size={9} strokeWidth={2.5} /> Xác minh
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[11px] text-text-muted">Nền tảng</span>
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 text-violet-700">Nền tảng</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5 text-center">
+                        <div className="bg-light rounded-lg py-2 px-1">
+                          <p className="text-xs font-extrabold text-text-dark">
+                            {systemAvgRating > 0 ? systemAvgRating.toFixed(1) : "—"}
+                          </p>
+                          <div className="flex items-center justify-center gap-0.5 mt-0.5">
+                            <Star size={8} fill="#f59e0b" className="text-warning" />
+                            <span className="text-[9px] text-text-muted">({systemReviewCount})</span>
+                          </div>
+                        </div>
+                        <div className="bg-light rounded-lg py-2 px-1">
+                          <p className="text-xs font-extrabold text-text-dark">{systemProductCount}</p>
+                          <p className="text-[9px] text-text-muted mt-0.5 flex items-center justify-center gap-0.5">
+                            <Package size={7} strokeWidth={2} /> SP
+                          </p>
+                        </div>
+                        <div className="bg-light rounded-lg py-2 px-1">
+                          <p className="text-xs font-extrabold text-text-dark">
+                            {systemOrderCount > 999 ? `${(systemOrderCount / 1000).toFixed(1)}k` : systemOrderCount}
+                          </p>
+                          <p className="text-[9px] text-text-muted mt-0.5 flex items-center justify-center gap-0.5">
+                            <ShoppingCart size={7} strokeWidth={2} /> Bán
+                          </p>
+                        </div>
+                      </div>
+                      <Link
+                        href="/tai-nguyen-mmo/he-thong"
+                        className="mt-auto w-full py-2 rounded-lg border border-[#6d28d9] text-[#6d28d9] text-xs font-bold hover:bg-[#6d28d9] hover:text-white transition-all text-center flex items-center justify-center gap-1"
+                      >
+                        Xem gian hàng
+                        <ChevronRight size={12} strokeWidth={2.5} />
+                      </Link>
+                    </div>
+                  </div>
+                )}
                 {pagedEnriched.map((seller) => {
                   const gradient = AVATAR_GRADIENTS[idToGradientIndex(seller.id)]!;
                   const displayRating = seller.avgRating > 0 ? seller.avgRating.toFixed(1) : null;
