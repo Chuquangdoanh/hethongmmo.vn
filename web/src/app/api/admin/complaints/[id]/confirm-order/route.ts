@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
 import { apiOk, apiCatch, apiError } from "@/lib/api-response";
@@ -14,7 +15,8 @@ export async function POST(
   try {
     const { id } = await params;
     const session = await auth();
-    const me = requireAdmin(session);
+    const me = requireStaff(session);
+ await requirePermission(session, "complaints:close");
 
     const complaint = await prisma.complaint.findUnique({
       where: { id },
@@ -32,15 +34,38 @@ export async function POST(
           status: "RESOLVED",
           resolvedByUserId: me.id,
           resolvedAt: new Date(),
-          resolution: "Đơn hàng được xác nhận hợp lệ. Nhà bán hàng có thể rút tiền.",
+          resolution: "Đơn hàng được xác nhận hợp lệ. Admin đã thanh toán cho nhà bán hàng.",
         },
       });
 
       if (complaint.orderId) {
-        // Ensure order is DONE so seller can withdraw
+        const order = await tx.order.findUnique({
+          where: { id: complaint.orderId },
+          select: { finalPrice: true, sellerId: true },
+        });
+        if (order?.sellerId) {
+          const payAmt = Number(order.finalPrice);
+          const seller = await tx.user.findUnique({ where: { id: order.sellerId }, select: { balance: true } });
+          if (seller) {
+            const balanceBefore = Number(seller.balance);
+            const balanceAfter = balanceBefore + payAmt;
+            await tx.user.update({ where: { id: order.sellerId }, data: { balance: balanceAfter } });
+            await tx.transaction.create({
+              data: {
+                userId: order.sellerId,
+                orderId: complaint.orderId,
+                type: "SELLER_PAYOUT",
+                amount: payAmt,
+                description: "Thanh toán đơn hàng — admin xác nhận hợp lệ",
+                balanceBefore,
+                balanceAfter,
+              },
+            });
+          }
+        }
         await tx.order.update({
           where: { id: complaint.orderId },
-          data: { status: "DONE" },
+          data: { status: "DONE", withdrawn: true },
         });
       }
     });

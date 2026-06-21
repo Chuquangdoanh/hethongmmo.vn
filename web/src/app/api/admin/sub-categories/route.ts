@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
-import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
+import { apiOk, apiError, apiCatch, apiValidationError } from "@/lib/api-response";
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,9 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "categories:read");
 
     const categoryName = req.nextUrl.searchParams.get("category") ?? undefined;
 
@@ -39,7 +42,9 @@ const createSchema = z.object({
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "categories:create");
 
     const body: unknown = await req.json();
     const parsed = createSchema.safeParse(body);
@@ -49,7 +54,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Verify parent category exists
     const cat = await prisma.resourceCategory.findUnique({ where: { name: categoryName } });
-    if (!cat) return apiOk({ error: "Danh mục cha không tồn tại" });
+    if (!cat) return apiError("Danh mục cha không tồn tại", "NOT_FOUND", 404);
+
+    // RULE 3: con phải cùng kho với cha — không được vượt quá phạm vi kho của cha
+    if (showInKhoTaiNguyen && !cat.showInKhoTaiNguyen)
+      return apiError("Danh mục cha không thuộc Kho Tài Nguyên", "WAREHOUSE_MISMATCH", 400);
+    if (showInTaiNguyenMmo && !cat.showInTaiNguyenMmo)
+      return apiError("Danh mục cha không thuộc Nguyên Liệu", "WAREHOUSE_MISMATCH", 400);
+    if (!showInKhoTaiNguyen && !showInTaiNguyenMmo)
+      return apiError("Phải chọn ít nhất 1 kho hiển thị", "VALIDATION_ERROR", 400);
 
     const sub = await prisma.sellerSubCategory.create({
       data: { name, categoryName, displayOrder, showInKhoTaiNguyen, showInTaiNguyenMmo },

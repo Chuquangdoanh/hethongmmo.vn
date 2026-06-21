@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 
 const bulkActionSchema = z.object({
   action: z.enum(["delete", "hide", "show"]),
-  ids: z.array(z.string().cuid()).min(1).max(100),
+  ids: z.array(z.string().uuid()).min(1).max(100),
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse> {

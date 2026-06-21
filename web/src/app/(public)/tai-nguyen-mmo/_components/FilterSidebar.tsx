@@ -98,7 +98,11 @@ export function FilterSidebar({ basePath = "/tai-nguyen-mmo" }: FilterSidebarPro
     timerRef.current = setTimeout(() => {
       const params = new URLSearchParams();
       const sort = spRef.current.get("sort");
+      const category = spRef.current.get("category");
+      const subcategory = spRef.current.get("subcategory");
       if (sort) params.set("sort", sort);
+      if (category) params.set("category", category);
+      if (subcategory) params.set("subcategory", subcategory);
       if (q.trim()) params.set("q", q.trim());
       const isMinActive = minPrice > MIN_SLIDER_DEFAULT;
       const isMaxActive = maxPriceIdx < MAX_PRICE_LAST_IDX;
@@ -123,7 +127,7 @@ export function FilterSidebar({ basePath = "/tai-nguyen-mmo" }: FilterSidebarPro
     "w-full px-3 py-[9px] border border-[#e5e7eb] rounded-lg text-sm text-[#374151] placeholder-[#9ca3af] focus:outline-none focus:border-[#6366f1] focus:ring-2 focus:ring-[#6366f1]/10 transition-colors bg-[#f9fafb]";
 
   return (
-    <aside className="w-72 shrink-0 self-start sticky top-24">
+    <aside className="hidden lg:block lg:w-72 shrink-0 self-start lg:sticky lg:top-24">
       <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm overflow-hidden">
 
         {/* Header */}

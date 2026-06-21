@@ -7,16 +7,19 @@ interface Category {
   id: string;
   name: string;
   iconUrl: string | null;
+  showInKhoTaiNguyen: boolean;
+  showInTaiNguyenMmo: boolean;
 }
 
 interface Props {
   value: string;
   onChange: (value: string) => void;
+  section?: "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN";
   placeholder?: string;
   required?: boolean;
 }
 
-export default function CategoryCombobox({ value, onChange, placeholder, required }: Props) {
+export default function CategoryCombobox({ value, onChange, section, placeholder, required }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
@@ -41,10 +44,15 @@ export default function CategoryCombobox({ value, onChange, placeholder, require
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (open) void fetchCategories(); }, [open, fetchCategories]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  // Sync query khi value thay đổi từ bên ngoài
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+  // Sync query khi value thay đổi từ bên ngoài (edit mode hoặc reset từ form)
   useEffect(() => { setQuery(value); }, [value]);
+
+  // Reset selection khi đổi section — danh mục của kho khác không còn phù hợp
+  useEffect(() => {
+    onChange("");
+    setQuery("");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section]);
 
   // Đóng dropdown khi click ngoài
   useEffect(() => {
@@ -57,11 +65,18 @@ export default function CategoryCombobox({ value, onChange, placeholder, require
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const filtered = categories.filter((c) =>
+  // Lọc theo khu vực hiển thị trước, rồi mới lọc theo query
+  const sectionFiltered = categories.filter((c) => {
+    if (section === "KHO_TAI_NGUYEN") return c.showInKhoTaiNguyen;
+    if (section === "TAI_NGUYEN_MMO") return c.showInTaiNguyenMmo;
+    return true;
+  });
+
+  const filtered = sectionFiltered.filter((c) =>
     c.name.toLowerCase().includes(query.toLowerCase())
   );
 
-  const exactMatch = categories.some(
+  const exactMatch = sectionFiltered.some(
     (c) => c.name.toLowerCase() === query.trim().toLowerCase()
   );
 
@@ -74,7 +89,11 @@ export default function CategoryCombobox({ value, onChange, placeholder, require
       const res = await fetch("/api/admin/resource-categories", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({
+          name,
+          showInKhoTaiNguyen: section === "KHO_TAI_NGUYEN",
+          showInTaiNguyenMmo: section === "TAI_NGUYEN_MMO",
+        }),
       });
       const json = await res.json() as { data?: Category; error?: string };
       if (!res.ok) {
@@ -128,9 +147,13 @@ export default function CategoryCombobox({ value, onChange, placeholder, require
 
       {open && (
         <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden">
-          {categories.length === 0 && !query && (
+          {sectionFiltered.length === 0 && !query && (
             <p className="px-3 py-2.5 text-xs text-gray-400">
-              Chưa có danh mục tài nguyên. Nhập tên để tạo mới.
+              {section === "KHO_TAI_NGUYEN"
+                ? "Chưa có danh mục nào trong Kho Tài Nguyên. Nhập tên để tạo mới."
+                : section === "TAI_NGUYEN_MMO"
+                ? "Chưa có danh mục nào trong Nguyên Liệu. Nhập tên để tạo mới."
+                : "Chưa có danh mục tài nguyên. Nhập tên để tạo mới."}
             </p>
           )}
 

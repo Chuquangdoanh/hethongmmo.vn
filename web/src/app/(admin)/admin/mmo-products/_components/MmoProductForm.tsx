@@ -3,9 +3,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import CategoryCombobox from "./CategoryCombobox";
+import SubCategoryCombobox from "./SubCategoryCombobox";
 import { r2Url } from "@/lib/utils/image-url";
-
-interface SubCategoryItem { id: string; name: string; }
 
 interface MmoProductData {
   id?: string;
@@ -19,6 +18,7 @@ interface MmoProductData {
   isActive?: boolean;
   isFeatured?: boolean;
   displayOrder?: number;
+  section?: "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN";
 }
 
 export default function MmoProductForm({ initial }: { initial?: MmoProductData }) {
@@ -37,25 +37,9 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
     isActive: initial?.isActive ?? true,
     isFeatured: initial?.isFeatured ?? false,
     displayOrder: initial?.displayOrder?.toString() ?? "0",
+    section: initial?.section ?? "TAI_NGUYEN_MMO" as "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN",
   });
 
-  const [availableSubs, setAvailableSubs] = useState<SubCategoryItem[]>([]);
-
-  // Load sub-categories when categoryGroup changes
-  useEffect(() => {
-    const group = form.categoryGroup.trim();
-    if (!group) { setAvailableSubs([]); return; }
-    void (async () => {
-      try {
-        const res = await fetch(`/api/admin/sub-categories?category=${encodeURIComponent(group)}`, { credentials: "include" });
-        const json = await res.json() as { data?: SubCategoryItem[] };
-        setAvailableSubs(json.data ?? []);
-      } catch {
-        setAvailableSubs([]);
-      }
-    })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.categoryGroup]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -152,6 +136,7 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
       isActive: form.isActive,
       isFeatured: form.isFeatured,
       displayOrder: parseInt(form.displayOrder, 10) || 0,
+      section: form.section,
     };
 
     setLoading(true);
@@ -214,6 +199,39 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
         {/* ── LEFT column ── */}
         <div className="space-y-5">
 
+          {/* ── 0. Chọn khu vực hiển thị ── */}
+          <div className="rounded-xl border border-gray-200 bg-white p-4">
+            <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Hiển thị trong khu vực</p>
+            <div className="flex gap-2">
+              {(["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] as const).map((val) => {
+                const label = val === "TAI_NGUYEN_MMO" ? "Nguyên liệu MMO" : "Kho tài nguyên";
+                const icon  = val === "TAI_NGUYEN_MMO" ? "🛒" : "📦";
+                const active = form.section === val;
+                return (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => set("section", val)}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
+                      active
+                        ? "bg-[#7C3AED] border-[#7C3AED] text-white shadow-sm"
+                        : "bg-white border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-[#7C3AED]"
+                    }`}
+                  >
+                    <span>{icon}</span>
+                    {label}
+                    {active && <span className="ml-1 text-xs bg-white/20 px-1.5 py-0.5 rounded-full">✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-2">
+              {form.section === "TAI_NGUYEN_MMO"
+                ? "Sản phẩm sẽ hiển thị tại trang Nguyên liệu MMO (/tai-nguyen-mmo)"
+                : "Sản phẩm sẽ hiển thị tại trang Kho tài nguyên (/kho-tai-nguyen)"}
+            </p>
+          </div>
+
           {/* ── 1. Thông tin sản phẩm ── */}
           <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-4">
             <h2 className="text-sm font-semibold text-gray-900">Thông tin sản phẩm</h2>
@@ -235,7 +253,11 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
                 <label className="block text-xs text-gray-500 mb-1.5">Nhóm danh mục *</label>
                 <CategoryCombobox
                   value={form.categoryGroup}
-                  onChange={(v) => set("categoryGroup", v)}
+                  onChange={(v) => {
+                    set("categoryGroup", v);
+                    set("category", "");
+                  }}
+                  section={form.section}
                   placeholder="vd: Facebook, Game, Tiktok"
                   required
                 />
@@ -243,41 +265,13 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
 
               <div>
                 <label className="block text-xs text-gray-500 mb-1.5">Danh mục con *</label>
-                {availableSubs.length > 0 ? (
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap gap-2">
-                      {availableSubs.map((sub) => {
-                        const active = form.category === sub.name;
-                        return (
-                          <button
-                            key={sub.id}
-                            type="button"
-                            onClick={() => set("category", active ? "" : sub.name)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                              active
-                                ? "bg-[#7C3AED] border-[#7C3AED] text-white"
-                                : "bg-white border-gray-200 text-gray-600 hover:border-[#7C3AED] hover:text-[#7C3AED]"
-                            }`}
-                          >
-                            {active ? "✓ " : ""}{sub.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {/* Fallback: vẫn cho nhập tay nếu cần danh mục chưa có trong list */}
-                    <input
-                      type="text"
-                      value={form.category}
-                      onChange={(e) => set("category", e.target.value)}
-                      placeholder="Hoặc nhập tay..."
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 focus:border-[#7C3AED] focus:outline-none"
-                    />
-                  </div>
-                ) : (
-                  <input required type="text" value={form.category} onChange={(e) => set("category", e.target.value)}
-                    placeholder="vd: Face đã chạy ads"
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none" />
-                )}
+                <SubCategoryCombobox
+                  categoryGroup={form.categoryGroup}
+                  value={form.category}
+                  onChange={(v) => set("category", v)}
+                  section={form.section}
+                  required
+                />
               </div>
 
               <div>

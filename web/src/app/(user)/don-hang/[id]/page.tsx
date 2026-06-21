@@ -7,7 +7,8 @@ import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import DeliveredContentLoader from "./DeliveredContentLoader";
 import ReviewSection from "@/components/shared/ReviewSection";
-import ChatWidget, { type ChatRoomInfo } from "@/components/shared/ChatWidget";
+import { type ChatRoomInfo } from "@/components/shared/ChatWidget";
+import TicketChatPanel from "@/app/(user)/ho-tro/_components/TicketChatPanel";
 import UserProfileHero from "@/components/shared/UserProfileHero";
 
 export const metadata: Metadata = { title: "Chi tiết đơn hàng" };
@@ -17,9 +18,9 @@ const STATUS_STYLES: Record<string, { label: string; class: string }> = {
   PROCESSING: { label: "Đang xử lý", class: "bg-[#0066ff]/10 text-[#0066ff] border-[#0066ff]/30" },
   DONE:       { label: "Hoàn thành", class: "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30" },
   CANCELLED:  { label: "Đã hủy",     class: "bg-[#71717A]/10 text-[#64748b] border-[#71717A]/30" },
-  REFUNDED:   { label: "Hoàn tiền",  class: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30" },
-  DISPUTED:   { label: "Hoàn thành", class: "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30" },
-  FROZEN:     { label: "Hoàn thành", class: "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30" },
+  REFUNDED:   { label: "Hoàn tiền",       class: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30" },
+  DISPUTED:   { label: "Đang khiếu nại", class: "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30" },
+  FROZEN:     { label: "Đang xử lý",     class: "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30" },
 };
 
 export default async function DonHangDetailPage({
@@ -127,10 +128,33 @@ export default async function DonHangDetailPage({
   const totalDeposited = Number(userRow.totalDeposited);
   const totalSpent     = Number(userRow.totalSpent);
 
-  // Chat outcome labels from buyer perspective
-  const chatEndedLabel =
-    complaint?.status === "RESOLVED" ? "Từ chối" :
-    complaint?.status === "REJECTED" ? "Hoàn thành" : undefined;
+  const TOTAL_MSG_LIMIT = 20;
+  const USER_TURN_LIMIT = 3;
+
+  const initialQuota = complaint?.chatRoom ? {
+    total: TOTAL_MSG_LIMIT,
+    used: complaint.chatRoom.totalMsgCount,
+    remaining: Math.max(0, TOTAL_MSG_LIMIT - complaint.chatRoom.totalMsgCount),
+    warning: complaint.chatRoom.totalMsgCount >= 17,
+    locked: complaint.chatRoom.totalMsgCount >= TOTAL_MSG_LIMIT,
+    userTurnLimit: USER_TURN_LIMIT,
+    userTurnUsed: complaint.chatRoom.userTurnCount,
+  } : undefined;
+
+  let r2opened = false;
+  if (complaint?.chatRoom?.id) {
+    const rows = await prisma.$queryRaw<[{ round_two_opened: boolean }]>`
+      SELECT round_two_opened FROM chat_rooms WHERE id = ${complaint.chatRoom.id}::uuid
+    `;
+    r2opened = rows[0]?.round_two_opened ?? false;
+  }
+
+  const initialResolution = complaint?.chatRoom ? {
+    sellerConfirmed:  complaint.chatRoom.sellerConfirmed,
+    sellerConfirmedAt: complaint.chatRoom.sellerConfirmedAt?.toISOString() ?? null,
+    userDone:         complaint.chatRoom.userDone,
+    roundTwoOpened:   r2opened,
+  } : undefined;
 
   return (
     <>
@@ -222,12 +246,25 @@ export default async function DonHangDetailPage({
                 <span className="text-xs text-gray-500">{complaint.subject}</span>
               </div>
               {chatRoom ? (
-                <ChatWidget
-                  room={chatRoom}
-                  currentUserId={me.id}
-                  initialChatEnded={complaint.status === "RESOLVED" || complaint.status === "REJECTED"}
-                  endedLabel={chatEndedLabel}
-                />
+                <div style={{
+                  minHeight: "420px", maxHeight: "560px",
+                  display: "flex", flexDirection: "column",
+                  borderRadius: "12px", border: "1px solid #e2e8f0",
+                  background: "#fff", overflow: "hidden",
+                }}>
+                  <TicketChatPanel
+                    room={chatRoom}
+                    currentUserId={me.id}
+                    currentUserLabel="Người mua"
+                    initialChatEnded={
+                      complaint.status === "RESOLVED" ||
+                      complaint.status === "REJECTED"
+                    }
+                    initialComplaintStatus={complaint.status}
+                    initialQuota={initialQuota}
+                    initialResolution={initialResolution}
+                  />
+                </div>
               ) : (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-6 flex gap-2.5">
                   <span className="text-amber-500 shrink-0 mt-0.5 text-lg">⏳</span>

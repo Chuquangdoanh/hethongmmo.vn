@@ -1,8 +1,8 @@
 # Phase 3 — Cải tổ Hệ thống Phân quyền Nhân viên (STAFF PERMISSIONS)
 
-**Status:** 📋 Quy hoạch hoàn thành  
+**Status:** ✅ HOÀN THÀNH — 2026-06-20  
 **Created:** 2026-06-20  
-**Estimated Duration:** 2-3 tuần  
+**Completed:** 2026-06-20  
 **Owner:** Backend Team
 
 ---
@@ -35,34 +35,34 @@ Chuyển hệ thống phân quyền nhân viên từ **mô hình rời rạc** (
 
 ```
 Phase 3 — Staff Permissions
-├── Phase 3A — Database & Backend Foundation (Week 1-1.5)
-│   ├── Tạo Module + Permission tables
-│   ├── Tạo permission services
-│   ├── Tạo permission guards
-│   └── Seed data + Tests
+├── Phase 3A — Database & Backend Foundation        ✅ DONE 2026-06-20
+│   ├── Module + Permission + StaffPermission tables (Prisma + migration)
+│   ├── permission.service.ts + module.service.ts
+│   ├── permission-guard.ts (requirePermission + ADMIN bypass)
+│   ├── constants/modules.ts (12 modules, 38 PermissionCode)
+│   └── scripts/seed-permissions.ts
 │
-├── Phase 3B — Backend Route Protection (Week 1.5-2)
-│   ├── Audit & map routes → permissions
-│   ├── Update route handlers: add requirePermission()
-│   ├── Update services: permission checks
-│   └── Integration tests
+├── Phase 3B — Backend Route Protection             ✅ DONE 2026-06-20
+│   ├── 55 admin route handlers: requireStaff + requirePermission
+│   ├── GET /api/admin/my-permissions
+│   └── scripts/add-permissions.mjs (bulk updater)
 │
-├── Phase 3C — Frontend Navigation (Week 2-2.5)
-│   ├── API: GET /admin/my-permissions
-│   ├── Helpers: canAccessModule(), canRead(), etc.
-│   ├── Menu: chỉ hiển thị nếu có permission
-│   └── Next.js middleware: redirect nếu không có access
+├── Phase 3C — Frontend Navigation                  ✅ DONE 2026-06-20
+│   ├── AdminPermissionProvider + useAdminPermissions hook
+│   ├── PermissionGate component
+│   ├── AdminLayout: server-side permission fetch
+│   └── AdminSidebar: permission-based menu filtering
 │
-├── Phase 3D — Admin Staff Management UI (Week 2.5-3)
-│   ├── Trang /admin/staff
-│   ├── Quản lý permission form
-│   ├── Preset: Chỉ xem / Biên tập / Toàn quyền
-│   └── Permission dependencies
+├── Phase 3D — Admin Staff Management UI            ✅ DONE 2026-06-20
+│   ├── STAFF_PERMISSION_GROUPS: 4 → 12 groups, 38 permissions
+│   ├── StaffActionPermissions: dependency badge (AUTO), scroll
+│   └── PermissionManager: STAFF_ACTIONS tab mặc định
 │
-└── Phase 3E — Testing & Documentation (Week 3)
-    ├── E2E tests: 10 staff scenarios
-    ├── Permission matrix document
-    └── Migration guide
+└── Phase 3E — Cleanup                              ✅ DONE 2026-06-20
+    ├── Middleware: STAFF skips old page-perm Redis check
+    ├── phan-quyen/page.tsx: bỏ staffPerms fetch
+    ├── PermissionManager: bỏ STAFF role-based state/props
+    └── staff-permission.service.ts: bỏ @deprecated
 ```
 
 ---

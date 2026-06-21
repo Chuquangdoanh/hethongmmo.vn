@@ -8,6 +8,64 @@ import { sendComplaintCreatedToSellerEmail } from "@/lib/services/email.service"
 
 export const runtime = "nodejs";
 
+/* ── GET — danh sách complaint của user (dùng cho mobile menu) ── */
+export async function GET(): Promise<NextResponse> {
+  try {
+    const session = await auth();
+    const me = requireUser(session);
+
+    const complaints = await prisma.complaint.findMany({
+      where: { userId: me.id },
+      orderBy: { updatedAt: "desc" },
+      take: 30,
+      select: {
+        id: true,
+        subject: true,
+        status: true,
+        updatedAt: true,
+        orderId: true,
+        chatRoom: {
+          select: {
+            messages: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: { senderName: true, content: true },
+            },
+          },
+        },
+      },
+    });
+
+    const orderIds = complaints.map((c) => c.orderId).filter(Boolean) as string[];
+    const orders = orderIds.length > 0
+      ? await prisma.order.findMany({
+          where: { id: { in: orderIds }, userId: me.id },
+          select: { id: true, orderCode: true, itemName: true },
+        })
+      : [];
+    const orderMap = new Map(orders.map((o) => [o.id, o]));
+
+    const data = complaints.map((c) => {
+      const order  = c.orderId ? orderMap.get(c.orderId) : null;
+      const lastMsg = c.chatRoom?.messages[0];
+      return {
+        id:             c.id,
+        subject:        c.subject,
+        status:         c.status,
+        updatedAt:      c.updatedAt.toISOString(),
+        orderCode:      order?.orderCode ?? null,
+        itemName:       order?.itemName  ?? null,
+        lastMsgSender:  lastMsg?.senderName ?? null,
+        lastMsgContent: lastMsg?.content    ?? null,
+      };
+    });
+
+    return apiOk(data);
+  } catch (err) {
+    return apiCatch(err);
+  }
+}
+
 const createComplaintSchema = z.object({
   subject: z.string().min(1).max(200).trim(),
   content: z.string().min(1).max(2000).trim(),

@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
 import { AppAuthError } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { toApiError, DuplicateError } from "@/lib/errors";
 import { hashPassword } from "@/lib/auth/password";
@@ -38,7 +39,8 @@ const adminCreateUserSchema = z.object({
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    const me = requireAdmin(session);
+    const me = requireStaff(session);
+    await requirePermission(session, "users:create");
 
     const body: unknown = await req.json();
     const parsed = adminCreateUserSchema.safeParse(body);
@@ -91,7 +93,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+    await requirePermission(session, "users:read");
 
     const { searchParams } = req.nextUrl;
     const query = querySchema.safeParse(Object.fromEntries(searchParams));

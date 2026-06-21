@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { apiOk, apiCatch, apiValidationError, apiError } from "@/lib/api-response";
 import { savePublicPageConfigsSchema, createPublicPageConfigSchema } from "@/lib/validation/public-page-config.schema";
 import { getPublicPageConfigs, savePublicPageConfigs, createPublicPageConfig, deletePublicPageConfig } from "@/lib/services/public-page-config.service";
@@ -11,7 +12,9 @@ export const runtime = "nodejs";
 export async function GET(_req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "content:read");
     const configs = await getPublicPageConfigs();
     return apiOk(configs);
   } catch (err) {
@@ -22,7 +25,8 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    const me = requireAdmin(session);
+    const me = requireStaff(session);
+ await requirePermission(session, "content:update");
 
     const body: unknown = await req.json();
     const parsed = savePublicPageConfigsSchema.safeParse(body);

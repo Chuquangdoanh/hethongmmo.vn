@@ -284,7 +284,7 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     zaloLabel: "Chat Zalo ngay",
   },
   contact_support: {
-    buttonLabel: "Liên hệ hỗ trợ",
+    buttonLabel: "Liên Hệ",
     items: [
       { platform: "facebook", title: "Facebook Support", subtitle: "Fanpage hỗ trợ 24/7",       href: "https://facebook.com/chuquangdoanh", bgColor: "#1877F2" },
       { platform: "zalo",     title: "Zalo Community",  subtitle: "Kết nối cộng đồng Zalo",    href: "https://zalo.me/0000000000",         bgColor: "#0068FF" },

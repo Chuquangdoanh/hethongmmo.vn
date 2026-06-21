@@ -270,7 +270,7 @@ export default function CoursesTable({ courses, total, category, q, currentPage,
                 <td className="px-4 py-3.5">
                   {lastActors?.[course.id] ? (
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-gray-700 truncate max-w-30">{lastActors[course.id]!.name}</p>
+                      <p className="text-xs font-medium text-gray-700">{lastActors[course.id]!.name}</p>
                       <p className="text-[10px] text-gray-400 mt-0.5">{actionLabel(lastActors[course.id]!.action)} · {relativeTime(lastActors[course.id]!.at)}</p>
                     </div>
                   ) : (

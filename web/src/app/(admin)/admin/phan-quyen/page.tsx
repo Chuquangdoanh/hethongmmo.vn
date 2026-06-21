@@ -7,7 +7,7 @@ import { PAGE_REGISTRY } from "@/lib/page-registry";
 import { listStaffMembers } from "@/lib/services/staff-permission.service";
 import PermissionManager from "./_components/PermissionManager";
 
-export const metadata = { title: "Phân quyền trang | Admin" };
+export const metadata = { title: "Phân quyền | Admin" };
 
 export default async function PagePermissionsPage() {
   const session = await auth();
@@ -15,8 +15,10 @@ export default async function PagePermissionsPage() {
 
   if (!me || me.role !== "ADMIN") redirect("/admin/dashboard");
 
-  const [staffPerms, userPerms, sellerPerms, publicConfigs, staffMembers] = await Promise.all([
-    getPermissionsForRole("STAFF"),
+  // Note: STAFF page permissions (role-based) were replaced by per-user
+  // module:action permissions in Phase 3. Only USER and SELLER tabs remain
+  // using the old role-based system.
+  const [userPerms, sellerPerms, publicConfigs, staffMembers] = await Promise.all([
     getPermissionsForRole("USER"),
     getPermissionsForRole("SELLER"),
     getPublicPageConfigs(),
@@ -26,15 +28,14 @@ export default async function PagePermissionsPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Phân quyền truy cập trang</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Phân quyền</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Bật / tắt quyền truy cập từng trang và chức năng CRUD cho từng nhóm. Thay đổi có hiệu lực ngay lập tức.
+          Phân quyền tác vụ cho từng nhân viên và kiểm soát hiển thị trang cho người dùng / nhà bán hàng.
         </p>
       </div>
 
       <PermissionManager
         registry={PAGE_REGISTRY}
-        initialStaff={staffPerms}
         initialUser={userPerms}
         initialSeller={sellerPerms}
         initialPublicConfigs={publicConfigs}

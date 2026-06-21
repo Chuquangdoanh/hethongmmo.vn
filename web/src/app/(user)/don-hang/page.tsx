@@ -19,9 +19,9 @@ const STATUS_STYLES: Record<string, { label: string; cls: string }> = {
   PROCESSING: { label: "Đang xử lý",   cls: "bg-blue-50 text-blue-700 border-blue-200" },
   DONE:       { label: "Hoàn thành",   cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   CANCELLED:  { label: "Đã hủy",       cls: "bg-gray-50 text-gray-500 border-gray-200" },
-  REFUNDED:   { label: "Hoàn tiền",    cls: "bg-red-50 text-red-600 border-red-200" },
-  DISPUTED:   { label: "Đã khiếu nại", cls: "bg-blue-50 text-blue-700 border-blue-200" },
-  FROZEN:     { label: "Đóng băng",    cls: "bg-red-50 text-red-600 border-red-200" },
+  REFUNDED:   { label: "Đã hoàn tiền",    cls: "bg-red-50 text-red-600 border-red-200" },
+  DISPUTED:   { label: "Đang khiếu nại", cls: "bg-amber-50 text-amber-700 border-amber-200" },
+  FROZEN:     { label: "Đang xử lý",    cls: "bg-amber-50 text-amber-700 border-amber-200" },
 };
 
 const TAB_TYPES = {
@@ -201,52 +201,78 @@ export default async function DonHangPage({
                   const hasComplaint = complainedOrderIds.has(order.id);
 
                   return (
-                    <div
-                      key={order.id}
-                      className={`md:grid gap-3 items-center px-5 py-3.5 hover:bg-gray-50/80 transition-colors ${
-                        showActions ? "md:grid-cols-[1fr_140px_100px_110px_180px]" : "md:grid-cols-[1fr_140px_100px_110px]"
-                      }`}
-                    >
-                      {/* Name + badge */}
-                      <div className="flex items-start gap-2 min-w-0 mb-2 md:mb-0">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-medium text-gray-800 truncate">{order.itemName}</span>
-                            {isMMO && (
-                              <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">Hệ Thống MMO</span>
-                            )}
-                            {isSeller && (
-                              <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-700">Nhà bán hàng</span>
-                            )}
+                    <div key={order.id} className="hover:bg-gray-50/80 transition-colors">
+
+                      {/* ── Mobile card ── */}
+                      <div className="md:hidden px-4 py-3 space-y-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-800 leading-snug line-clamp-2">{order.itemName}</p>
+                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                              <p className="text-[10px] text-gray-400">#{order.orderCode}</p>
+                              {isMMO && <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-100 text-blue-700">Hệ Thống MMO</span>}
+                              {isSeller && <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700">Nhà bán hàng</span>}
+                            </div>
                           </div>
-                          <p className="text-[11px] text-gray-400 mt-0.5">#{order.orderCode}</p>
+                          <span className={`shrink-0 inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium border ${st.cls}`}>
+                            {st.label}
+                          </span>
                         </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[11px] text-gray-400">{formatDate(order.createdAt)}</p>
+                          <p className="text-sm font-semibold text-emerald-600">{formatVnd(Number(order.finalPrice))}</p>
+                        </div>
+                        {showActions && (
+                          <div className="pt-0.5">
+                            <OrderActions
+                              orderId={order.id}
+                              itemName={order.itemName}
+                              isDone={isDone}
+                              hasComplaint={hasComplaint}
+                              allowComplaint={activeTab === "tainguyen"}
+                              orderCreatedAt={order.createdAt.toISOString()}
+                            />
+                          </div>
+                        )}
                       </div>
 
-                      <p className="text-xs text-gray-500 mb-2 md:mb-0">{formatDate(order.createdAt)}</p>
-
-                      <div className="mb-2 md:mb-0">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium border ${st.cls}`}>
-                          {st.label}
-                        </span>
+                      {/* ── Desktop grid ── */}
+                      <div className={`hidden md:grid gap-3 items-center px-5 py-3.5 ${
+                        showActions ? "grid-cols-[1fr_140px_100px_110px_180px]" : "grid-cols-[1fr_140px_100px_110px]"
+                      }`}>
+                        <div className="flex items-start gap-2 min-w-0">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-medium text-gray-800 truncate">{order.itemName}</span>
+                              {isMMO && <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">Hệ Thống MMO</span>}
+                              {isSeller && <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-700">Nhà bán hàng</span>}
+                            </div>
+                            <p className="text-[11px] text-gray-400 mt-0.5">#{order.orderCode}</p>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500">{formatDate(order.createdAt)}</p>
+                        <div>
+                          <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium border ${st.cls}`}>
+                            {st.label}
+                          </span>
+                        </div>
+                        <p className="text-sm font-semibold text-emerald-600 text-right">
+                          {formatVnd(Number(order.finalPrice))}
+                        </p>
+                        {showActions && (
+                          <div className="flex justify-center">
+                            <OrderActions
+                              orderId={order.id}
+                              itemName={order.itemName}
+                              isDone={isDone}
+                              hasComplaint={hasComplaint}
+                              allowComplaint={activeTab === "tainguyen"}
+                              orderCreatedAt={order.createdAt.toISOString()}
+                            />
+                          </div>
+                        )}
                       </div>
 
-                      <p className="text-sm font-semibold text-emerald-600 md:text-right mb-2 md:mb-0">
-                        {formatVnd(Number(order.finalPrice))}
-                      </p>
-
-                      {showActions && (
-                        <div className="flex md:justify-center">
-                          <OrderActions
-                            orderId={order.id}
-                            itemName={order.itemName}
-                            isDone={isDone}
-                            hasComplaint={hasComplaint}
-                            allowComplaint={activeTab === "tainguyen"}
-                            orderCreatedAt={order.createdAt.toISOString()}
-                          />
-                        </div>
-                      )}
                     </div>
                   );
                 })}

@@ -45,6 +45,8 @@ export default function LoginForm() {
     return "";
   }
 
+  const captchaEnabled = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -52,7 +54,7 @@ export default function LoginForm() {
     if (err) { setEmailError(err); setEmailTouched(true); return; }
     const pwErr = validatePassword(password);
     if (pwErr) { setPasswordError(pwErr); setPasswordTouched(true); return; }
-    if (!captchaToken) { setError("Vui lòng xác minh captcha."); return; }
+    if (captchaEnabled && !captchaToken) { setError("Vui lòng xác minh captcha."); return; }
     setLoading(true);
     try {
       const result = await signIn("credentials", {
@@ -195,12 +197,12 @@ export default function LoginForm() {
       {/* Submit */}
       <button
         type="submit"
-        disabled={loading || !captchaToken}
+        disabled={loading || (captchaEnabled && !captchaToken)}
         style={{
           width: "100%", padding: "13px 0", borderRadius: 12, border: "none",
-          background: loading || !captchaToken ? "#93c5fd" : "linear-gradient(135deg,#0066ff 0%,#0047cc 100%)",
+          background: loading || (captchaEnabled && !captchaToken) ? "#93c5fd" : "linear-gradient(135deg,#0066ff 0%,#0047cc 100%)",
           color: "#fff", fontSize: 14, fontWeight: 700,
-          cursor: loading || !captchaToken ? "not-allowed" : "pointer",
+          cursor: loading || (captchaEnabled && !captchaToken) ? "not-allowed" : "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           transition: "background .2s",
           boxShadow: loading || !captchaToken ? "none" : "0 4px 16px rgba(0,102,255,.3)",

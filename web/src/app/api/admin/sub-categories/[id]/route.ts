@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { NotFoundError } from "@/lib/errors";
-import { apiOk, apiSuccess, apiCatch, apiValidationError } from "@/lib/api-response";
+import { apiOk, apiSuccess, apiError, apiCatch, apiValidationError } from "@/lib/api-response";
 
 export const runtime = "nodejs";
 
@@ -23,7 +24,9 @@ export async function PATCH(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "categories:update");
     const { id } = await params;
 
     const body: unknown = await req.json();
@@ -32,6 +35,22 @@ export async function PATCH(
 
     const sub = await prisma.sellerSubCategory.findUnique({ where: { id } });
     if (!sub) throw new NotFoundError("SubCategory");
+
+    // RULE 3: nếu update kho thì phải validate với cha
+    const isUpdatingWarehouse = parsed.data.showInKhoTaiNguyen !== undefined || parsed.data.showInTaiNguyenMmo !== undefined;
+    if (isUpdatingWarehouse) {
+      const parent = await prisma.resourceCategory.findUnique({ where: { name: sub.categoryName } });
+      if (parent) {
+        const willShowKho = parsed.data.showInKhoTaiNguyen ?? sub.showInKhoTaiNguyen;
+        const willShowMmo = parsed.data.showInTaiNguyenMmo ?? sub.showInTaiNguyenMmo;
+        if (willShowKho && !parent.showInKhoTaiNguyen)
+          return apiError("Danh mục cha không thuộc Kho Tài Nguyên", "WAREHOUSE_MISMATCH", 400);
+        if (willShowMmo && !parent.showInTaiNguyenMmo)
+          return apiError("Danh mục cha không thuộc Nguyên Liệu", "WAREHOUSE_MISMATCH", 400);
+        if (!willShowKho && !willShowMmo)
+          return apiError("Phải giữ ít nhất 1 kho hiển thị", "VALIDATION_ERROR", 400);
+      }
+    }
 
     const updated = await prisma.sellerSubCategory.update({
       where: { id },
@@ -52,7 +71,9 @@ export async function DELETE(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "categories:delete");
     const { id } = await params;
 
     const sub = await prisma.sellerSubCategory.findUnique({ where: { id } });

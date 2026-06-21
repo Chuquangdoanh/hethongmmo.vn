@@ -90,58 +90,7 @@ export default async function ThongTinCaNhanPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
           {/* ── Left: Profile sidebar ── */}
-          <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              {/* Avatar */}
-              <div className="flex flex-col items-center text-center mb-5">
-                {user.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={r2Url(user.avatarUrl)}
-                    alt={user.fullName}
-                    className="w-20 h-20 rounded-full object-cover ring-2 ring-white shadow-md mb-3"
-                  />
-                ) : (
-                  <div className="w-20 h-20 rounded-full bg-linear-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white text-2xl font-bold shadow-md mb-3">
-                    {initials}
-                  </div>
-                )}
-                <h2 className="text-base font-semibold text-gray-900">{user.fullName}</h2>
-                {user.emailVerifiedAt && (
-                  <p className="text-xs text-emerald-600 flex items-center gap-1 mt-0.5 font-medium">
-                    <CheckCircle size={11} /> Đã xác minh
-                  </p>
-                )}
-              </div>
-
-              {/* Contact info */}
-              <div className="space-y-2.5 mb-5">
-                {CONTACT_ROWS.map(({ Icon, value, color }, i) => (
-                  <div key={i} className="flex items-center gap-2.5">
-                    <div className={`w-7 h-7 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0 ${color}`}>
-                      <Icon size={13} />
-                    </div>
-                    <span className="text-xs text-gray-600 truncate">{value}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Balance box */}
-              <div className="bg-blue-600 rounded-xl p-4">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Wallet size={13} className="text-blue-200" />
-                  <p className="text-[11px] text-blue-200">Số dư tài khoản</p>
-                </div>
-                <p className="text-2xl font-bold text-white">{formatVnd(balance)}</p>
-                <Link
-                  href="/nap-tien"
-                  className="mt-3 flex items-center justify-center gap-1.5 w-full py-2 rounded-lg bg-white text-blue-600 text-xs font-semibold hover:bg-blue-50 transition-colors"
-                >
-                  <Plus size={13} /> Nạp tiền ngay
-                </Link>
-              </div>
-            </div>
-          </div>
+          
 
           {/* ── Right: Info cards ── */}
           <div className="lg:col-span-2 space-y-4">
@@ -154,7 +103,7 @@ export default async function ThongTinCaNhanPage() {
                 </div>
                 Thông tin cá nhân
               </h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Họ và tên</p>
                   <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800">
@@ -165,7 +114,7 @@ export default async function ThongTinCaNhanPage() {
                   <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">id </p>
                   <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-700 font-mono flex items-center justify-between gap-2">
                     <span className="font-semibold tracking-wider">{depositId.toUpperCase()}</span>
-                    <CopyButton text={depositId.toUpperCase()} className="shrink-0 px-1.5! py-0.5! text-[10px]!" />
+                    
                   </div>
                 </div>
                 <div className="col-span-2">
@@ -201,32 +150,7 @@ export default async function ThongTinCaNhanPage() {
               </div>
             </div>
 
-            {/* Bảo mật */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
-                  <ShieldCheck size={14} className="text-emerald-600" />
-                </div>
-                Bảo mật tài khoản
-              </h3>
-              <div className="flex items-center justify-between p-3.5 rounded-xl bg-emerald-50 border border-emerald-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-                    <ShieldCheck size={17} className="text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-emerald-800">Tài khoản được bảo vệ</p>
-                    <p className="text-[11px] text-emerald-600 mt-0.5">
-                      Đăng nhập bằng Email &amp; Mật khẩu
-                      {user.twoFactorEnabled
-                        ? " · Bảo mật 2 lớp đang bật."
-                        : " · Bảo mật 2 lớp khuyến nghị."}
-                    </p>
-                  </div>
-                </div>
-                <CheckCircle size={20} className="text-emerald-500 shrink-0" />
-              </div>
-            </div>
+            
 
             {/* Đăng ký bán hàng */}
             <div id="seller-register" className="scroll-mt-24 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { AppAuthError } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
@@ -21,7 +22,8 @@ export async function PATCH(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    const actor = requireAdmin(session);
+    const actor = requireStaff(session);
+ await requirePermission(session, "categories:update");
     const { id } = await params;
 
     const existing = await prisma.courseCategory.findUnique({ where: { id } });
@@ -75,7 +77,8 @@ export async function DELETE(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    const actor = requireAdmin(session);
+    const actor = requireStaff(session);
+ await requirePermission(session, "categories:delete");
     const { id } = await params;
 
     const existing = await prisma.courseCategory.findUnique({ where: { id } });

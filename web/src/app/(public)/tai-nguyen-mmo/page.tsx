@@ -7,7 +7,6 @@ import { formatVnd } from "@/lib/utils/format";
 import { r2Url } from "@/lib/utils/image-url";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
-import ProductBuyButton from "./_components/ProductBuyButton";
 import { FilterSidebar } from "./_components/FilterSidebar";
 import { CategoryFilter } from "@/components/shared/CategoryFilter";
 import type { CategoryItem } from "./_components/FilterSidebar";
@@ -27,7 +26,7 @@ export const metadata: Metadata = buildMeta({
   image: "/images/hethongmmo.png",
 });
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 30;
 const BASE_PATH = "/tai-nguyen-mmo";
 
 
@@ -89,7 +88,6 @@ export default async function TaiNguyenMmoPage({
   const q = rawQ?.trim() || undefined;
   const tag = rawTag?.trim() || undefined;
   const me = session?.user as AuthenticatedUser | undefined;
-  const isLoggedIn = !!me;
 
   // Parse price range param (format: "min-max")
   let minPrice: number | undefined;
@@ -122,7 +120,7 @@ export default async function TaiNguyenMmoPage({
   ] = await Promise.all([
     prisma.mmoProduct.findMany({
       where: {
-        isActive: true, deletedAt: null, items: { some: { status: "AVAILABLE" } },
+        isActive: true, deletedAt: null, section: "TAI_NGUYEN_MMO", items: { some: { status: "AVAILABLE" } },
         ...(category ? { categoryGroup: category } : {}),
         ...(selectedSubcatNames.length > 0 ? { category: { in: selectedSubcatNames } } : {}),
         ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
@@ -138,7 +136,7 @@ export default async function TaiNguyenMmoPage({
       },
     }),
     prisma.mmoProduct.findMany({
-      where: { isActive: true, deletedAt: null, items: { some: { status: "AVAILABLE" } } },
+      where: { isActive: true, deletedAt: null, section: "TAI_NGUYEN_MMO", items: { some: { status: "AVAILABLE" } } },
       select: { categoryGroup: true },
       distinct: ["categoryGroup"],
       orderBy: { categoryGroup: "asc" },
@@ -485,14 +483,17 @@ export default async function TaiNguyenMmoPage({
                 <p className="text-sm text-text-muted mt-1">Thử điều chỉnh bộ lọc.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
                 {pagedProducts.map((p) => (
                   <div
                     key={`${p.kind}-${p.id}`}
-                    className="bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-primary/40 transition-all flex flex-col"
+                    className="relative bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-primary/40 transition-all flex flex-col"
                   >
+                    {/* Full-card clickable overlay */}
+                    <Link href={p.href} className="absolute inset-0 z-1" aria-label={`Xem chi tiết ${p.name}`} />
+
                     {/* Image area */}
-                    <Link href={p.href} className="block relative shrink-0">
+                    <div className="block relative shrink-0">
                       <div className="aspect-video bg-[#f1f5f9] overflow-hidden relative">
                         {p.imageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -542,15 +543,13 @@ export default async function TaiNguyenMmoPage({
                           )}
                         </div>
                       </div>
-                    </Link>
+                    </div>
 
                     {/* Product info */}
                     <div className="p-2 sm:p-3 flex flex-col gap-1 sm:gap-1.5 flex-1">
-                      <Link href={p.href}>
-                        <h3 className="text-sm font-bold text-text-dark hover:text-[#2563eb] transition-colors line-clamp-2 leading-snug">
-                          {p.name}
-                        </h3>
-                      </Link>
+                      <h3 className="text-sm font-bold text-text-dark line-clamp-2 leading-snug">
+                        {p.name}
+                      </h3>
                       {p.description && (
                         <p className="text-[11px] text-text-muted line-clamp-2 leading-relaxed">
                           {p.description}
@@ -575,7 +574,7 @@ export default async function TaiNguyenMmoPage({
                       {p.purchasedByMe && !p.reviewedByMe && (
                         <Link
                           href={p.href}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors w-fit"
+                          className="relative z-2 inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors w-fit"
                         >
                           <Pencil size={9} strokeWidth={2} /> Đánh giá
                         </Link>
@@ -586,26 +585,11 @@ export default async function TaiNguyenMmoPage({
                         </span>
                       )}
 
-                      {/* Price + Buy */}
-                      <div className="mt-auto pt-1.5 sm:pt-2 grid grid-cols-[2fr_3fr] gap-1.5 sm:gap-2 items-stretch">
-                        <div className="flex items-center justify-center bg-[#fff1f2] border border-[#fca5a5] rounded-lg px-1 py-1.5 sm:py-2">
-                          <span className="text-xs font-extrabold text-[#e11d48] whitespace-nowrap leading-none">
-                            {formatVnd(p.price)}
-                          </span>
-                        </div>
-                        <ProductBuyButton
-                          orderType={p.kind === "mmo" ? "MMO_PRODUCT" : "SELLER_PRODUCT"}
-                          itemId={p.id}
-                          itemName={p.name}
-                          price={p.price}
-                          isLoggedIn={isLoggedIn}
-                          avgRating={p.rating}
-                          reviewCount={p.reviewCount}
-                          available={p.available}
-                          totalSold={p.salesCount}
-                          sellerName={p.kind === "seller" ? p.sellerName : undefined}
-                          compact
-                        />
+                      {/* Price */}
+                      <div className="mt-auto pt-1.5 sm:pt-2">
+                        <span className="text-xs font-extrabold text-[#e11d48] whitespace-nowrap leading-none">
+                          {formatVnd(p.price)}
+                        </span>
                       </div>
                     </div>
                   </div>

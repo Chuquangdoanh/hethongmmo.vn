@@ -51,6 +51,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return apiError("Quá nhiều yêu cầu đăng ký. Vui lòng thử lại sau 1 giờ.", "RATE_LIMITED", 429);
     }
 
+    // Kiểm tra profile bắt buộc trước khi cho phép đăng ký
+    const profileCheck = await prisma.user.findUnique({
+      where: { id: me.id },
+      select: { phone: true, facebookUrl: true, telegramUsername: true },
+    });
+    if (!profileCheck?.phone || !profileCheck.facebookUrl || !profileCheck.telegramUsername) {
+      return apiError(
+        "Vui lòng cập nhật đầy đủ Số điện thoại, Facebook và Telegram trong hồ sơ trước khi đăng ký bán hàng.",
+        "PROFILE_INCOMPLETE",
+        400,
+      );
+    }
+
     const body: unknown = await req.json();
     const parsed = registerSchema.safeParse(body);
     if (!parsed.success) return apiValidationError(parsed.error.issues);

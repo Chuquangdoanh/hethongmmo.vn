@@ -499,14 +499,15 @@ model MmoProduct {
   rating        Float     @default(0)
   totalOrders   Int       @default(0) @map("total_orders")
   totalViews    Int       @default(0) @map("total_views")
-  isActive            Boolean   @default(true) @map("is_active")
-  isFeatured          Boolean   @default(false) @map("is_featured")
-  displayOrder        Int       @default(0) @map("display_order")
-  requiresAccountType Boolean   @default(false) @map("requires_account_type")
-  requiresCccd        Boolean   @default(false) @map("requires_cccd")
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
-  deletedAt           DateTime? @map("deleted_at")
+  isActive            Boolean    @default(true) @map("is_active")
+  isFeatured          Boolean    @default(false) @map("is_featured")
+  displayOrder        Int        @default(0) @map("display_order")
+  requiresAccountType Boolean    @default(false) @map("requires_account_type")
+  requiresCccd        Boolean    @default(false) @map("requires_cccd")
+  section             StoreType  @default(TAI_NGUYEN_MMO)
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+  deletedAt           DateTime?  @map("deleted_at")
 
   items         MmoProductItem[]
   orders        Order[]
@@ -514,6 +515,7 @@ model MmoProduct {
   @@index([slug])
   @@index([category])
   @@index([isActive])
+  @@index([section])
   @@map("mmo_products")
 }
 
@@ -980,6 +982,7 @@ model ChatRoom {
   sellerConfirmed   Boolean   @default(false) @map("seller_confirmed")
   sellerConfirmedAt DateTime? @map("seller_confirmed_at")
   userDone          Boolean?  @map("user_done")
+  roundTwoOpened    Boolean   @default(false) @map("round_two_opened")
 
   participants ChatParticipant[]
   messages     ChatMessage[]

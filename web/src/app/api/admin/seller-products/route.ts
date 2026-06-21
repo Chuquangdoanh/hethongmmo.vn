@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { apiList, apiCatch } from "@/lib/api-response";
 
@@ -12,6 +13,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
     requireStaff(session);
+
+    await requirePermission(session, "seller_products:read");
 
     const sp = req.nextUrl.searchParams;
     const page = Math.max(1, parseInt(sp.get("page") ?? "1", 10));

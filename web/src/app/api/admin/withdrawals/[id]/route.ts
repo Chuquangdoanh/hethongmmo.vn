@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { processWithdrawal, completeWithdrawal } from "@/lib/services/withdrawal.service";
 import { sendWithdrawalEmail } from "@/lib/services/email.service";
 import { prisma } from "@/lib/db/prisma";
@@ -21,7 +22,8 @@ export async function PATCH(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    const admin = requireAdmin(session);
+    const admin = requireStaff(session);
+ await requirePermission(session, "finance:approve");
     const { id } = await params;
 
     const body: unknown = await req.json();

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { toApiError } from "@/lib/errors";
 
@@ -30,7 +31,9 @@ export async function PATCH(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "content:update");
     const { id } = await params;
 
     const body: unknown = await req.json();
@@ -71,7 +74,9 @@ export async function DELETE(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "content:delete");
     const { id } = await params;
 
     const existing = await prisma.testimonial.findUnique({ where: { id }, select: { id: true } });

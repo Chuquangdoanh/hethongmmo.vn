@@ -1,5 +1,5 @@
 import {
-  Home, Wrench, GraduationCap, Lightbulb, FolderOpen, Megaphone, Globe, Info,
+  Home, Wrench, GraduationCap, Lightbulb, FolderOpen, Package, Megaphone, Globe, Info,
   type LucideIcon,
 } from "lucide-react";
 
@@ -27,7 +27,7 @@ export const NAV_ICONS: Record<string, { Icon: LucideIcon; bg: string; color: st
   "/dich-vu":        { Icon: Wrench,        bg: "#ede9fe", color: "#7c3aed" },
   "/khoa-hoc":       { Icon: GraduationCap, bg: "#d1fae5", color: "#059669" },
   "/tut-tricks":     { Icon: Lightbulb,     bg: "#fee2e2", color: "#dc2626" },
-  "/kho-tai-nguyen": { Icon: FolderOpen,    bg: "#fef3c7", color: "#d97706" },
+  "/kho-tai-nguyen": { Icon: Package,        bg: "#fef3c7", color: "#d97706" },
   "/tai-nguyen-mmo": { Icon: FolderOpen,    bg: "#fef3c7", color: "#d97706" },
   "/quang-cao":      { Icon: Megaphone,     bg: "#e0f2fe", color: "#0891b2" },
   "/NetWorks":       { Icon: Globe,         bg: "#fee2e2", color: "#dc2626" },

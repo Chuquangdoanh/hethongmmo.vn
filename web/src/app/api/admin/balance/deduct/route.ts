@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import Decimal from "decimal.js";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { apiOk, apiCatch, apiValidationError, apiError } from "@/lib/api-response";
 import { NotFoundError } from "@/lib/errors";
@@ -18,7 +19,8 @@ const schema = z.object({
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    const me = requireAdmin(session);
+    const me = requireStaff(session);
+ await requirePermission(session, "finance:approve");
 
     const body: unknown = await req.json();
     const parsed = schema.safeParse(body);

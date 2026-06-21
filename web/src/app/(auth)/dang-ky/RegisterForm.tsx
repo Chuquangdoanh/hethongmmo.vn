@@ -23,10 +23,12 @@ export default function RegisterForm() {
       setForm((f) => ({ ...f, [field]: e.target.value }));
   }
 
+  const captchaEnabled = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!agreed) { setError("Bạn cần đồng ý với Điều khoản dịch vụ."); return; }
-    if (!captchaToken) { setError("Vui lòng xác minh captcha."); return; }
+    if (captchaEnabled && !captchaToken) { setError("Vui lòng xác minh captcha."); return; }
     if (form.password.length < 12)          { setError("Mật khẩu phải có ít nhất 12 ký tự."); return; }
     if (!/[A-Z]/.test(form.password))       { setError("Mật khẩu cần ít nhất 1 chữ hoa (A-Z)."); return; }
     if (!/[a-z]/.test(form.password))       { setError("Mật khẩu cần ít nhất 1 chữ thường (a-z)."); return; }
@@ -219,13 +221,13 @@ export default function RegisterForm() {
       {/* Submit */}
       <button
         type="submit"
-        disabled={loading || !captchaToken || !agreed}
+        disabled={loading || (captchaEnabled && !captchaToken) || !agreed}
         style={{
           width: "100%", padding: "13px 0", borderRadius: 12, border: "none",
-          background: loading || !captchaToken || !agreed
+          background: loading || (captchaEnabled && !captchaToken) || !agreed
             ? "#93c5fd"
             : "linear-gradient(135deg,#0066ff 0%,#0047cc 100%)",
-          color: "#fff", fontSize: 14, fontWeight: 700, cursor: loading || !captchaToken || !agreed ? "not-allowed" : "pointer",
+          color: "#fff", fontSize: 14, fontWeight: 700, cursor: loading || (captchaEnabled && !captchaToken) || !agreed ? "not-allowed" : "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
           transition: "background .2s",
           boxShadow: loading || !captchaToken || !agreed ? "none" : "0 4px 16px rgba(0,102,255,.3)",

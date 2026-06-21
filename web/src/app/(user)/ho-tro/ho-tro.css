@@ -5,19 +5,17 @@
 
 /* ── Outer wrapper ──────────────────────────────────────────── */
 /*
-  Breakout formula (phá vỡ max-w-7xl để fill full width khả dụng):
-    width         = 100vw − sidebar
-    margin-lr     = −(max(0, (100vw − sidebar − 1280px) / 2) + padding)
-  Sidebar: 312px expanded | 100px collapsed
-  User layout padding: 16px default | 24px md | 32px lg
+  Desktop: position:fixed — thoát khỏi normal flow, loại bỏ hoàn toàn window scroll.
+  top:64px = header height | left:312px = sidebar width (100px khi collapsed)
+  Mobile: static, single column, page scroll bình thường
 */
 
 .ht-wrapper {
   display: grid;
-  grid-template-columns: 280px 1fr 300px;
-  /* Mobile: no sidebar, px-4 = 16px */
+  grid-template-columns: 1fr;
   margin: -32px -16px -32px;
-  height: calc(100dvh - 64px);
+  height: auto;
+  min-height: calc(100dvh - 64px);
   overflow: hidden;
   background: #f8fafc;
 }
@@ -84,22 +82,30 @@
   gap: 8px;
   background: #f8fafc;
 }
-.ht-breadcrumb {
-  padding: 10px 20px;
-  background: #fff;
-  border-bottom: 1px solid #e2e8f0;
+.back-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
   flex-shrink: 0;
+}
+.back-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 .ht-title-bar {
   padding: 14px 20px;
   background: #fff;
   border-bottom: 1px solid #e2e8f0;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: 12px;
   flex-shrink: 0;
 }
@@ -294,64 +300,57 @@
   border-radius: 4px;
 }
 
-/* ── Responsive — breakout approach ──────────────────────── */
+/* ── Responsive ─────────────────────────────────────────────── */
 
-/* Mobile: 1 cột, không sidebar */
+/* Mobile ≤768px: 2 chế độ tuỳ URL */
 @media (max-width: 768px) {
-  .ht-wrapper {
-    grid-template-columns: 1fr;
-    margin: -32px -16px -32px;
+  /* LIST mode (không có ?id): chỉ hiện sidebar danh sách */
+  .ht-wrapper--list .ht-sidebar {
+    display: flex;
     height: auto;
-    min-height: calc(100dvh - 64px);
+    max-height: calc(100dvh - 64px - 65px);
+    border-right: none;
+    border-bottom: none;
   }
-  .ht-sidebar  { height: 260px; border-right: none; border-bottom: 1px solid #e2e8f0; }
-  .ht-middle   { min-height: 480px; border-right: none; border-bottom: 1px solid #e2e8f0; }
-  .ht-right    { min-height: 300px; }
+  .ht-wrapper--list .ht-sidebar-list {
+    max-height: calc(100dvh - 64px - 65px - 76px);
+    overflow-y: auto;
+  }
+  .ht-wrapper--list .ht-middle { display: none; }
+  .ht-wrapper--list .ht-right  { display: none; }
+
+  /* DETAIL mode (có ?id): chỉ hiện chat */
+  .ht-wrapper--detail .ht-sidebar { display: none; }
+  .ht-wrapper--detail .ht-right   { display: none; }
+  .ht-wrapper--detail .ht-middle {
+    min-height: calc(100dvh - 64px - 65px);
+    border-right: none;
+    border-bottom: none;
+  }
 }
 
-/*
-  769px–1023px: sidebar 312px hiện, md:px-6 = 24px
-  Breakout: width = 100vw − 312px
-            margin-lr = −(max(0, (100vw − 312px − 1280px) / 2) + 24px)
-*/
-@media (min-width: 769px) and (max-width: 1023px) {
+/* Desktop ≥769px: height-based fill — footer vẫn visible khi scroll */
+@media (min-width: 769px) {
+  /* Xóa padding/max-width của main để ht-wrapper fill đủ chiều ngang */
+  main:has(.ht-wrapper) {
+    padding: 0;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
   .ht-wrapper {
-    grid-template-columns: 260px 1fr;
-    width: calc(100vw - 312px);
-    margin-top: -32px;
-    margin-bottom: -32px;
-    margin-left: calc(-1 * (max(0px, (100vw - 312px - 1280px) / 2) + 24px));
-    margin-right: calc(-1 * (max(0px, (100vw - 312px - 1280px) / 2) + 24px));
     height: calc(100dvh - 64px);
+    min-height: 0;
+    margin: 0;
+    grid-template-columns: 260px 1fr;
   }
   .ht-right { display: none; }
-
-  html.sb-collapsed .ht-wrapper {
-    width: calc(100vw - 100px);
-    margin-left: calc(-1 * (max(0px, (100vw - 100px - 1280px) / 2) + 24px));
-    margin-right: calc(-1 * (max(0px, (100vw - 100px - 1280px) / 2) + 24px));
-  }
 }
 
-/*
-  1024px+: sidebar 312px, lg:px-8 = 32px, 3 cột
-  Breakout: width = 100vw − 312px
-            margin-lr = −(max(0, (100vw − 312px − 1280px) / 2) + 32px)
-*/
 @media (min-width: 1024px) {
   .ht-wrapper {
     grid-template-columns: 300px 1fr 320px;
-    width: calc(100vw - 312px);
-    margin-top: -32px;
-    margin-bottom: -32px;
-    margin-left: calc(-1 * (max(0px, (100vw - 312px - 1280px) / 2) + 32px));
-    margin-right: calc(-1 * (max(0px, (100vw - 312px - 1280px) / 2) + 32px));
   }
   .ht-right { display: flex; }
-
-  html.sb-collapsed .ht-wrapper {
-    width: calc(100vw - 100px);
-    margin-left: calc(-1 * (max(0px, (100vw - 100px - 1280px) / 2) + 32px));
-    margin-right: calc(-1 * (max(0px, (100vw - 100px - 1280px) / 2) + 32px));
-  }
 }

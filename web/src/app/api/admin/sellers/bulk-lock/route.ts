@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
 
@@ -16,6 +17,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
     requireStaff(session);
+
+    await requirePermission(session, "sellers:update");
 
     const body: unknown = await req.json();
     const parsed = schema.safeParse(body);

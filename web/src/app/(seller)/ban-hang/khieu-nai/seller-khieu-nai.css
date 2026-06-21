@@ -1,0 +1,249 @@
+/* ══════════════════════════════════════════════════════════════
+   SELLER KHIẾU NẠI — Layout 3 cột (namespace: .ht-*)
+   Giống ho-tro.css — breakout từ seller layout (cùng sidebar/padding)
+══════════════════════════════════════════════════════════════ */
+
+/* ── Outer wrapper ──────────────────────────────────────────── */
+.ht-wrapper {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin: -32px -16px -32px;
+  height: auto;
+  min-height: calc(100dvh - 64px);
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+/* ── LEFT: Sidebar danh sách khiếu nại ─────────────────────── */
+.ht-sidebar {
+  border-right: 1px solid #e2e8f0;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.ht-sidebar-head {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ht-search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: text;
+}
+.ht-sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ht-ticket-item {
+  display: block;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f8fafc;
+  border-left: 3px solid transparent;
+  text-decoration: none;
+  transition: background 0.12s;
+}
+.ht-ticket-item:hover {
+  background: #f8fafc;
+}
+.ht-ticket-item--active {
+  background: #fff7ed !important;
+  border-left-color: #ea580c;
+}
+
+/* ── MIDDLE: Chi tiết khiếu nại ────────────────────────────── */
+.ht-middle {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid #e2e8f0;
+  min-width: 0;
+}
+.ht-middle--empty {
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #f8fafc;
+}
+.back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.back-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+.ht-title-bar {
+  padding: 14px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.ht-status-tabs {
+  padding: 8px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+.ht-chat-area {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 20px;
+  min-height: 0;
+}
+.ht-chat-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: #475569;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.ht-state-box {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  max-height: 120px;
+}
+
+/* ── RIGHT: Thông tin đơn hàng ──────────────────────────────── */
+.ht-right {
+  background: #fff;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overscroll-behavior: contain;
+}
+.ht-right-section {
+  padding: 18px 20px;
+}
+.ht-divider {
+  height: 1px;
+  background: #e2e8f0;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+/* ── Chat messages (dùng trong TicketChatPanel) ─────────────── */
+.ht-chat-msgs {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 8px;
+  overscroll-behavior: contain;
+}
+
+/* ── Scrollbar styling ─────────────────────────────────────── */
+.ht-sidebar-list::-webkit-scrollbar,
+.ht-right::-webkit-scrollbar,
+.ht-chat-msgs::-webkit-scrollbar {
+  width: 4px;
+}
+.ht-sidebar-list::-webkit-scrollbar-track,
+.ht-right::-webkit-scrollbar-track,
+.ht-chat-msgs::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ht-sidebar-list::-webkit-scrollbar-thumb,
+.ht-right::-webkit-scrollbar-thumb,
+.ht-chat-msgs::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 4px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+/* Mobile ≤768px: 2 chế độ tuỳ URL */
+@media (max-width: 768px) {
+  /* LIST mode (không có ?id): chỉ hiện sidebar danh sách */
+  .ht-wrapper--list .ht-sidebar {
+    display: flex;
+    height: auto;
+    max-height: calc(100dvh - 64px - 65px);
+    border-right: none;
+    border-bottom: none;
+  }
+  .ht-wrapper--list .ht-sidebar-list {
+    max-height: calc(100dvh - 64px - 65px - 76px);
+    overflow-y: auto;
+  }
+  .ht-wrapper--list .ht-middle { display: none; }
+  .ht-wrapper--list .ht-right  { display: none; }
+
+  /* DETAIL mode (có ?id): chỉ hiện chat */
+  .ht-wrapper--detail .ht-sidebar { display: none; }
+  .ht-wrapper--detail .ht-right   { display: none; }
+  .ht-wrapper--detail .ht-middle {
+    min-height: calc(100dvh - 64px - 65px);
+    border-right: none;
+    border-bottom: none;
+  }
+}
+
+/* Desktop ≥769px: height-based fill — footer vẫn visible khi scroll */
+@media (min-width: 769px) {
+  /* Xóa padding/max-width của main để ht-wrapper fill đủ chiều ngang */
+  main:has(.ht-wrapper) {
+    padding: 0;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .ht-wrapper {
+    height: calc(100dvh - 64px);
+    min-height: 0;
+    margin: 0;
+    grid-template-columns: 260px 1fr;
+  }
+  .ht-right { display: none; }
+}
+
+@media (min-width: 1024px) {
+  .ht-wrapper {
+    grid-template-columns: 300px 1fr 320px;
+  }
+  .ht-right { display: flex; }
+}

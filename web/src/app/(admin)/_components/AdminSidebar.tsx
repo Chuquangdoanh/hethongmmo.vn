@@ -61,10 +61,10 @@ const SECTIONS: NavSection[] = [
   {
     key: "products", label: "Sản phẩm", Icon: Package, color: "#7c3aed", bg: "#ede9fe",
     links: [
-      { href: "/admin/services",     label: "Dịch vụ",      Icon: Zap,      color: "#7c3aed", permission: "products:read" },
-      { href: "/admin/courses",      label: "Khóa học",     Icon: BookOpen, color: "#0066ff", permission: "products:read" },
-      { href: "/admin/tut-tricks",   label: "Tut / Tricks", Icon: FileText, color: "#475569", permission: "products:read" },
-      { href: "/admin/mmo-products", label: "Tài nguyên",   Icon: Gamepad2, color: "#6366f1", permission: "products:read" },
+      { href: "/admin/services",     label: "Dịch vụ",      Icon: Zap,      color: "#7c3aed", permission: "services:read"   },
+      { href: "/admin/courses",      label: "Khóa học",     Icon: BookOpen, color: "#0066ff", permission: "courses:read"    },
+      { href: "/admin/tut-tricks",   label: "Tut / Tricks", Icon: FileText, color: "#475569", permission: "tut_tricks:read" },
+      { href: "/admin/mmo-products", label: "Tài nguyên",   Icon: Gamepad2, color: "#6366f1", permission: "resources:read"  },
     ],
   },
   {

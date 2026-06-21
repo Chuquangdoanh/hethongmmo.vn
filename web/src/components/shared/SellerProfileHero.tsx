@@ -13,13 +13,12 @@ const COLOR_MAP: Record<string, string> = {
   red:    "border-red-400/60 text-red-300",
 };
 
-export type SellerActiveTab = "overview" | "products" | "orders" | "complaints" | "revenue" | "withdrawal";
+export type SellerActiveTab = "overview" | "products" | "orders" | "revenue" | "withdrawal";
 
 const TABS: Array<{ key: SellerActiveTab; label: string; href: string }> = [
   { key: "overview",   label: "Tổng quan",  href: "/ban-hang" },
   { key: "products",   label: "Sản phẩm",   href: "/san-pham" },
   { key: "orders",     label: "Đơn hàng",   href: "/ban-hang/don-hang" },
-  { key: "complaints", label: "Khiếu nại",  href: "/ban-hang/khieu-nai" },
   { key: "revenue",    label: "Doanh thu",  href: "/ban-hang/doanh-thu" },
   { key: "withdrawal", label: "Rút tiền",   href: "/rut-tien" },
 ];

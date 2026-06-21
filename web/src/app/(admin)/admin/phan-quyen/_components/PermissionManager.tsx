@@ -1,22 +1,25 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Users, Store, ShieldCheck, Save, Check, X, AlertCircle, Globe, Star, Eye, EyeOff, Lock, Plus, Trash2 } from "lucide-react";
+import { Users, Store, Save, Check, X, AlertCircle, Globe, Star, Eye, EyeOff, Lock, Trash2 } from "lucide-react";
 import type { PageGroup, RolePageGroup } from "@/lib/page-registry";
 import type { PublicPageConfigEntry } from "@/lib/services/public-page-config.service";
 import type { StaffMember } from "@/lib/services/staff-permission.service";
 import StaffActionPermissions from "./StaffActionPermissions";
 
+// STAFF role no longer uses role-based page permissions (replaced by per-user
+// module:action system in Phase 3). Only USER and SELLER use role-based page perms.
+type RoleTab = Extract<RolePageGroup, "USER" | "SELLER">;
+
 interface Props {
   registry:             Record<RolePageGroup, PageGroup[]>;
-  initialStaff:         Record<string, boolean>;
   initialUser:          Record<string, boolean>;
   initialSeller:        Record<string, boolean>;
   initialPublicConfigs: PublicPageConfigEntry[];
   staffMembers:         StaffMember[];
 }
 
-type Tab = RolePageGroup | "PUBLIC" | "STAFF_ACTIONS";
+type Tab = RoleTab | "PUBLIC" | "STAFF_ACTIONS";
 
 const TAB_CONFIG: { key: Tab; label: string; Icon: typeof Users; color: string; bg: string }[] = [
   { key: "STAFF_ACTIONS", label: "Phân quyền nhân viên", Icon: Lock,       color: "#7c3aed", bg: "#ede9fe" },
@@ -25,8 +28,7 @@ const TAB_CONFIG: { key: Tab; label: string; Icon: typeof Users; color: string; 
   { key: "SELLER",        label: "Nhà bán hàng",         Icon: Store,      color: "#ec4899", bg: "#fce7f3" },
 ];
 
-const ROLE_LABELS: Record<RolePageGroup, string> = {
-  STAFF:  "nhân viên",
+const ROLE_LABELS: Record<RoleTab, string> = {
   USER:   "người dùng",
   SELLER: "nhà bán hàng",
 };
@@ -44,13 +46,12 @@ function initPublicState(configs: PublicPageConfigEntry[]): PublicState {
 }
 
 export default function PermissionManager({
-  registry, initialStaff, initialUser, initialSeller, initialPublicConfigs, staffMembers,
+  registry, initialUser, initialSeller, initialPublicConfigs, staffMembers,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("STAFF_ACTIONS");
 
-  // Role-based permission state
-  const [perms, setPerms] = useState<Record<RolePageGroup, Record<string, boolean>>>({
-    STAFF:  { ...initialStaff },
+  // Role-based permission state (USER and SELLER only; STAFF uses per-user system)
+  const [perms, setPerms] = useState<Record<RoleTab, Record<string, boolean>>>({
     USER:   { ...initialUser },
     SELLER: { ...initialSeller },
   });
@@ -66,14 +67,14 @@ export default function PermissionManager({
   const [addError,  setAddError]  = useState("");
 
   const [saveStatus, setSaveStatus] = useState<Record<Tab, "idle" | "success" | "error">>({
-    PUBLIC: "idle", STAFF: "idle", STAFF_ACTIONS: "idle", USER: "idle", SELLER: "idle",
+    PUBLIC: "idle", STAFF_ACTIONS: "idle", USER: "idle", SELLER: "idle",
   });
   const [errorMsg, setErrorMsg] = useState<Record<Tab, string>>({
-    PUBLIC: "", STAFF: "", STAFF_ACTIONS: "", USER: "", SELLER: "",
+    PUBLIC: "", STAFF_ACTIONS: "", USER: "", SELLER: "",
   });
   const [isPending, startTransition] = useTransition();
 
-  // ── Role tab helpers ──────────────────────────────────────────────────────
+  // ── Role tab helpers (USER / SELLER only) ────────────────────────────────
   function toggle(pageKey: string) {
     if (!isRoleTab(activeTab)) return;
     setPerms((prev) => ({
@@ -192,14 +193,14 @@ export default function PermissionManager({
   const currentStatus = saveStatus[activeTab];
 
   // ── Derived counts for role tabs ──────────────────────────────────────────
-  const roleCounts = (tab: RolePageGroup) => {
+  const roleCounts = (tab: RoleTab) => {
     const vals = Object.values(perms[tab]);
     const enabled = vals.filter(Boolean).length;
     return { enabled, total: vals.length, disabled: vals.length - enabled };
   };
 
-  const isRoleTab = (t: Tab): t is RolePageGroup =>
-    t === "STAFF" || t === "USER" || t === "SELLER";
+  const isRoleTab = (t: Tab): t is RoleTab =>
+    t === "USER" || t === "SELLER";
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
@@ -243,8 +244,8 @@ export default function PermissionManager({
           {activeTab === "PUBLIC"
             ? <>Quản lý hiển thị và tên <span className="font-semibold">trang công khai</span></>
             : (() => {
-                const { enabled, total } = roleCounts(activeTab as RolePageGroup);
-                return <>Đang bật <span className="font-bold text-green-600">{enabled}</span> / {total} trang cho <span className="font-semibold">{ROLE_LABELS[activeTab as RolePageGroup]}</span></>;
+                const { enabled, total } = roleCounts(activeTab as RoleTab);
+                return <>Đang bật <span className="font-bold text-green-600">{enabled}</span> / {total} trang cho <span className="font-semibold">{ROLE_LABELS[activeTab as RoleTab]}</span></>;
               })()
           }
         </p>
@@ -383,8 +384,8 @@ export default function PermissionManager({
       {/* ── STAFF / USER / SELLER tab content ── */}
       {isRoleTab(activeTab) && (
         <div className="divide-y divide-gray-100">
-          {registry[activeTab as RolePageGroup].map((group) => {
-            const currentPerms  = perms[activeTab as RolePageGroup];
+          {registry[activeTab as RoleTab].map((group) => {
+            const currentPerms  = perms[activeTab as RoleTab];
             const groupEnabled  = group.pages.filter((p) => currentPerms[p.key] !== false).length;
             const groupTotal    = group.pages.length;
             const allOn         = groupEnabled === groupTotal;
@@ -411,7 +412,7 @@ export default function PermissionManager({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {group.pages.map((page) => {
-                    const enabled = perms[activeTab as RolePageGroup][page.key] !== false;
+                    const enabled = perms[activeTab as RoleTab][page.key] !== false;
                     return (
                       <button key={page.key} type="button" onClick={() => toggle(page.key)}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all ${

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { createResourceCategorySchema } from "@/lib/validation/resource-category.schema";
 import { apiOk, apiError, apiCatch, apiValidationError } from "@/lib/api-response";
@@ -11,7 +12,9 @@ export const runtime = "nodejs";
 export async function GET(): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "categories:read");
     const categories = await prisma.resourceCategory.findMany({
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       select: { id: true, name: true, iconUrl: true, displayOrder: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
@@ -25,7 +28,8 @@ export async function GET(): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    const me = requireAdmin(session);
+    const me = requireStaff(session);
+ await requirePermission(session, "categories:create");
 
     const body: unknown = await req.json();
     const parsed = createResourceCategorySchema.safeParse(body);
@@ -34,7 +38,34 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { name, iconUrl, showInKhoTaiNguyen, showInTaiNguyenMmo } = parsed.data;
 
     const existing = await prisma.resourceCategory.findUnique({ where: { name } });
-    if (existing) return apiError("Danh mục đã tồn tại", "DUPLICATE", 409);
+    if (existing) {
+      // Đã tồn tại trong đúng kho đang thêm → block
+      const alreadyInThisStore =
+        (showInKhoTaiNguyen && existing.showInKhoTaiNguyen) ||
+        (showInTaiNguyenMmo && existing.showInTaiNguyenMmo);
+      if (alreadyInThisStore) {
+        return apiError("Danh mục đã tồn tại trong kho này", "DUPLICATE", 409);
+      }
+
+      // Tồn tại ở kho khác → thêm flag kho mới vào record cũ (không tạo mới)
+      const updated = await prisma.resourceCategory.update({
+        where: { id: existing.id },
+        data: {
+          showInKhoTaiNguyen: existing.showInKhoTaiNguyen || showInKhoTaiNguyen,
+          showInTaiNguyenMmo: existing.showInTaiNguyenMmo || showInTaiNguyenMmo,
+        },
+        select: { id: true, name: true, iconUrl: true, displayOrder: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
+      });
+      await writeAuditLog({
+        actorId: me.id,
+        action: "UPDATE_RESOURCE_CATEGORY",
+        targetType: "ResourceCategory",
+        targetId: updated.id,
+        before: { showInKhoTaiNguyen: existing.showInKhoTaiNguyen, showInTaiNguyenMmo: existing.showInTaiNguyenMmo },
+        after: { showInKhoTaiNguyen: updated.showInKhoTaiNguyen, showInTaiNguyenMmo: updated.showInTaiNguyenMmo },
+      });
+      return apiOk(updated);
+    }
 
     const maxOrder = await prisma.resourceCategory.aggregate({ _max: { displayOrder: true } });
     const nextOrder = (maxOrder._max.displayOrder ?? 0) + 1;

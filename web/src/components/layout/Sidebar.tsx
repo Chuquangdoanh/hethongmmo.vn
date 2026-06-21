@@ -5,7 +5,7 @@ import { getCachedPageVisibility } from "@/lib/services/public-page-config.servi
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { r2Url } from "@/lib/utils/image-url";
 import { formatVnd } from "@/lib/utils/format";
-import { CheckCircle, Plus, Store, Wallet, Package, TicketCheck, Send, Settings } from "lucide-react";
+import { CheckCircle, Plus, Store, Wallet, Package, TicketCheck, Send, Settings, MessageCircleWarning, Rocket } from "lucide-react";
 import { NAV_LINKS, NAV_ICONS } from "./nav-links";
 import SidebarNav, { type SidebarNavGroup, type SidebarNavItem } from "./SidebarNav";
 import SidebarServiceAccordion from "./SidebarServiceAccordion";
@@ -22,9 +22,16 @@ export default async function Sidebar() {
   const isPageVisible = (href: string) => !hiddenSet.has(href.replace(/^\//, ""));
   const navLabel = (href: string) => NAV_LINKS.find((l) => l.href === href)?.label ?? href;
 
+  const isSeller = !!sessionUser && (
+    (sessionUser.role === "SELLER" && sessionUser.sellerStatus === "APPROVED")
+    || sessionUser.role === "STAFF"
+    || sessionUser.role === "ADMIN"
+  );
+
   let balance: number | null = null;
   let avatarUrl: string | null = null;
   let openTicketCount = 0;
+  let sellerOpenComplaintCount = 0;
   if (sessionUser?.id) {
     const [row, ticketCount] = await Promise.all([
       prisma.user.findUnique({ where: { id: sessionUser.id }, select: { balance: true, avatarUrl: true } }),
@@ -35,6 +42,20 @@ export default async function Sidebar() {
       avatarUrl = row.avatarUrl ? r2Url(row.avatarUrl) : null;
     }
     openTicketCount = ticketCount;
+
+    if (isSeller) {
+      const sellerOrderIds = (
+        await prisma.order.findMany({
+          where: { sellerId: sessionUser.id },
+          select: { id: true },
+        })
+      ).map((o) => o.id);
+      if (sellerOrderIds.length > 0) {
+        sellerOpenComplaintCount = await prisma.complaint.count({
+          where: { orderId: { in: sellerOrderIds }, status: "IN_REVIEW" },
+        });
+      }
+    }
   }
 
   const [serviceCategories, activeServiceCats] = await Promise.all([
@@ -58,12 +79,6 @@ export default async function Sidebar() {
       .map((name) => ({ name, iconUrl: null as string | null })),
   ];
 
-  const isSeller = !!sessionUser && (
-    (sessionUser.role === "SELLER" && sessionUser.sellerStatus === "APPROVED")
-    || sessionUser.role === "STAFF"
-    || sessionUser.role === "ADMIN"
-  );
-
   const iconBadge = (href: string) => {
     const meta = NAV_ICONS[href];
     if (!meta) return undefined;
@@ -84,8 +99,11 @@ export default async function Sidebar() {
     ...(isPageVisible("NetWorks")       ? [{ href: "/NetWorks",       label: navLabel("/NetWorks"),       icon: iconBadge("/NetWorks") }] : []),
     ...(sessionUser ? [{
       href: isSeller ? "/ban-hang" : "/dang-ky-ban-hang",
-      label: "Seller Center",
-      icon: <span className="sb-icon-badge" style={{ background: "#f0fdf4" }}><Store size={15} strokeWidth={1.75} style={{ color: "#16a34a" }} /></span>,
+      label: "Mở Gian Hàng",
+      exact: true,
+      icon: isSeller
+        ? <span className="sb-icon-badge" style={{ background: "#f0fdf4" }}><Store size={15} strokeWidth={1.75} style={{ color: "#16a34a" }} /></span>
+        : <span className="sb-icon-badge" style={{ background: "#f5f3ff" }}><Rocket size={15} strokeWidth={1.75} style={{ color: "#7c3aed" }} /></span>,
     }] : []),
   ];
 
@@ -111,6 +129,12 @@ export default async function Sidebar() {
         label: "Ticket hỗ trợ",
         icon: <span className="sb-icon-badge" style={{ background: "#eff6ff" }}><TicketCheck size={15} strokeWidth={1.75} style={{ color: "#2563eb" }} /></span>,
         badge: openTicketCount || undefined,
+      }] : []),
+      ...(isSeller ? [{
+        href: "/ban-hang/khieu-nai",
+        label: "Khiếu nại từ khách",
+        icon: <span className="sb-icon-badge" style={{ background: "#fff7ed" }}><MessageCircleWarning size={15} strokeWidth={1.75} style={{ color: "#ea580c" }} /></span>,
+        badge: sellerOpenComplaintCount || undefined,
       }] : []),
       {
         href: TELEGRAM_COMMUNITY_URL,

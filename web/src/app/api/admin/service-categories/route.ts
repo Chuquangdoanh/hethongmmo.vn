@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { createServiceCategorySchema } from "@/lib/validation/service-category.schema";
 import { apiOk, apiError, apiCatch, apiValidationError } from "@/lib/api-response";
@@ -11,7 +12,9 @@ export const runtime = "nodejs";
 export async function GET(): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "categories:read");
     const categories = await prisma.serviceCategory.findMany({
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       select: { id: true, name: true, iconUrl: true, displayOrder: true },
@@ -25,7 +28,8 @@ export async function GET(): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    const me = requireAdmin(session);
+    const me = requireStaff(session);
+ await requirePermission(session, "categories:create");
 
     const body: unknown = await req.json();
     const parsed = createServiceCategorySchema.safeParse(body);

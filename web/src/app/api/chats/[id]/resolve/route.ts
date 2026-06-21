@@ -42,6 +42,7 @@ export async function POST(
       select: {
         id: true,
         totalMsgCount: true,
+        firstSellerMsgAt: true,
         sellerConfirmed: true,
         sellerConfirmedAt: true,
         userDone: true,
@@ -52,6 +53,12 @@ export async function POST(
     });
 
     if (!room) return apiError("Không tìm thấy phòng chat", "NOT_FOUND", 404);
+
+    // $queryRaw bypass Prisma client validation — đọc đúng kể cả khi client cũ chưa biết field
+    const r2rows = await prisma.$queryRaw<[{ round_two_opened: boolean }]>`
+      SELECT round_two_opened FROM chat_rooms WHERE id = ${roomId}::uuid
+    `;
+    const roundTwoOpened = r2rows[0]?.round_two_opened ?? false;
 
     const { complaint } = room;
     if (complaint.status === "RESOLVED" || complaint.status === "REJECTED") {
@@ -65,9 +72,9 @@ export async function POST(
         return apiError("Chỉ nhà bán hàng mới có thể xác nhận.", "FORBIDDEN", 403);
       }
 
-      // Phải hết 20 tin mới được bấm
-      if (room.totalMsgCount < 20) {
-        return apiError("Chưa đạt giới hạn tin nhắn, chưa thể xác nhận.", "NOT_READY", 400);
+      // Seller phải đã phản hồi ít nhất 1 tin trước khi xác nhận
+      if (!room.firstSellerMsgAt) {
+        return apiError("Bạn cần phản hồi người mua ít nhất 1 tin trước khi xác nhận.", "NOT_READY", 400);
       }
 
       if (room.sellerConfirmed) {
@@ -107,32 +114,97 @@ export async function POST(
       const { done } = parsed.data;
 
       if (done) {
-        // User đồng ý → RESOLVED (seller thắng)
-        await prisma.$transaction([
-          prisma.chatRoom.update({ where: { id: roomId }, data: { userDone: true } }),
-          prisma.complaint.update({
+        // User đồng ý → RESOLVED (seller thắng) + trả tiền seller
+        await prisma.$transaction(async (tx) => {
+          await tx.chatRoom.update({ where: { id: roomId }, data: { userDone: true } });
+          await tx.complaint.update({
             where: { id: complaint.id },
             data: { status: "RESOLVED", resolvedAt: new Date(), resolution: "Người mua xác nhận đã nhận hàng." },
-          }),
-          ...(complaint.orderId
-            ? [prisma.order.update({ where: { id: complaint.orderId }, data: { status: "DONE" } })]
-            : []),
-        ]);
+          });
+          if (complaint.orderId) {
+            const order = await tx.order.findUnique({
+              where: { id: complaint.orderId },
+              select: { finalPrice: true, sellerId: true },
+            });
+            if (order?.sellerId) {
+              const payAmt = Number(order.finalPrice);
+              const seller = await tx.user.findUnique({ where: { id: order.sellerId }, select: { balance: true } });
+              if (seller) {
+                const balanceBefore = Number(seller.balance);
+                const balanceAfter = balanceBefore + payAmt;
+                await tx.user.update({ where: { id: order.sellerId }, data: { balance: balanceAfter } });
+                await tx.transaction.create({
+                  data: {
+                    userId: order.sellerId,
+                    orderId: complaint.orderId,
+                    type: "SELLER_PAYOUT",
+                    amount: payAmt,
+                    description: "Thanh toán đơn hàng — người mua xác nhận nhận hàng",
+                    balanceBefore,
+                    balanceAfter,
+                  },
+                });
+              }
+            }
+            await tx.order.update({ where: { id: complaint.orderId }, data: { status: "DONE", withdrawn: true } });
+          }
+        });
 
         await writeAuditLog({ actorId: me.id, action: "RESOLVE_COMPLAINT_USER_DONE", targetType: "Complaint", targetId: complaint.id, after: { outcome: "seller_wins" } });
         return apiOk({ outcome: "RESOLVED" });
       } else {
-        // User chưa đồng ý → PENDING_ADMIN
-        await prisma.$transaction([
-          prisma.chatRoom.update({ where: { id: roomId }, data: { userDone: false } }),
-          prisma.complaint.update({
-            where: { id: complaint.id },
-            data: { status: "PENDING_ADMIN", resolution: "Người mua chưa xác nhận. Chờ admin phán quyết." },
-          }),
-        ]);
+        // User không đồng ý với kết quả của seller
 
-        await writeAuditLog({ actorId: me.id, action: "ESCALATE_COMPLAINT", targetType: "Complaint", targetId: complaint.id, after: { outcome: "pending_admin" } });
-        return apiOk({ outcome: "PENDING_ADMIN", message: "Khiếu nại đã được chuyển đến admin xem xét." });
+        if (complaint.status === "IN_REVIEW") {
+          // ── Vòng 1 tranh chấp → PENDING_ADMIN, đóng chat, chờ admin mở vòng 2 ──
+          await prisma.$transaction([
+            prisma.chatRoom.update({
+              where: { id: roomId },
+              data: { userDone: false }, // false = tranh chấp, chat đóng cho tới khi admin mở
+            }),
+            prisma.complaint.update({
+              where: { id: complaint.id },
+              data: {
+                status:     "PENDING_ADMIN",
+                resolution: "Người mua không đồng ý vòng 1. Chờ admin mở vòng 2 hoặc phán quyết.",
+              },
+            }),
+          ]);
+
+          await writeAuditLog({
+            actorId: me.id,
+            action: "DISPUTE_ROUND_1",
+            targetType: "Complaint",
+            targetId: complaint.id,
+            after: { outcome: "pending_admin_waiting" },
+          });
+          return apiOk({ outcome: "PENDING_ADMIN_WAIT" });
+
+        } else if (complaint.status === "PENDING_ADMIN" && roundTwoOpened) {
+          // ── Vòng 2 tranh chấp cuối → đóng chat, admin phán quyết cuối ──
+          await prisma.$transaction([
+            prisma.chatRoom.update({
+              where: { id: roomId },
+              data: { userDone: false },
+            }),
+            prisma.complaint.update({
+              where: { id: complaint.id },
+              data: { resolution: "Người mua tiếp tục không đồng ý vòng 2. Chờ admin phán quyết cuối." },
+            }),
+          ]);
+
+          await writeAuditLog({
+            actorId: me.id,
+            action: "DISPUTE_ROUND_2_FINAL",
+            targetType: "Complaint",
+            targetId: complaint.id,
+            after: { outcome: "final_dispute_admin_decides" },
+          });
+          return apiOk({ outcome: "FINAL_DISPUTE" });
+
+        } else {
+          return apiError("Trạng thái khiếu nại không cho phép tranh chấp.", "INVALID_STATE", 400);
+        }
       }
     }
 
@@ -143,13 +215,37 @@ export async function POST(
 }
 
 async function resolveComplaint(complaintId: string, orderId: string | null) {
-  await prisma.$transaction([
-    prisma.complaint.update({
+  await prisma.$transaction(async (tx) => {
+    await tx.complaint.update({
       where: { id: complaintId },
       data: { status: "RESOLVED", resolvedAt: new Date(), resolution: "Cả hai bên đã xác nhận hoàn thành." },
-    }),
-    ...(orderId
-      ? [prisma.order.update({ where: { id: orderId }, data: { status: "DONE" } })]
-      : []),
-  ]);
+    });
+    if (orderId) {
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        select: { finalPrice: true, sellerId: true },
+      });
+      if (order?.sellerId) {
+        const payAmt = Number(order.finalPrice);
+        const seller = await tx.user.findUnique({ where: { id: order.sellerId }, select: { balance: true } });
+        if (seller) {
+          const balanceBefore = Number(seller.balance);
+          const balanceAfter = balanceBefore + payAmt;
+          await tx.user.update({ where: { id: order.sellerId }, data: { balance: balanceAfter } });
+          await tx.transaction.create({
+            data: {
+              userId: order.sellerId,
+              orderId,
+              type: "SELLER_PAYOUT",
+              amount: payAmt,
+              description: "Thanh toán đơn hàng — cả hai bên xác nhận hoàn thành",
+              balanceBefore,
+              balanceAfter,
+            },
+          });
+        }
+      }
+      await tx.order.update({ where: { id: orderId }, data: { status: "DONE", withdrawn: true } });
+    }
+  });
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { apiOk, apiCatch } from "@/lib/api-response";
 
@@ -9,7 +10,9 @@ export const runtime = "nodejs";
 export async function GET(_req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "chat:read");
 
     const rooms = await prisma.chatRoom.findMany({
       orderBy: { createdAt: "desc" },

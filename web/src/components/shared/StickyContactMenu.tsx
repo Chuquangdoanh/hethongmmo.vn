@@ -57,7 +57,7 @@ export interface ContactSupportData {
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function StickyContactMenu({ cmsData }: { cmsData?: ContactSupportData }) {
   const items       = cmsData?.items?.length ? cmsData.items : FALLBACK_ITEMS;
-  const buttonLabel = cmsData?.buttonLabel ?? "Liên hệ hỗ trợ";
+  const buttonLabel = cmsData?.buttonLabel ?? "Liên Hệ";
 
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -78,7 +78,7 @@ export default function StickyContactMenu({ cmsData }: { cmsData?: ContactSuppor
       className="scm-wrapper"
       style={{
         position: "fixed",
-        bottom: 24,
+        bottom: 80,
         right: 20,
         zIndex: 9999,
         display: "flex",

@@ -1,6 +1,6 @@
 /**
- * @deprecated Dùng permission.service.ts và module.service.ts thay thế.
- * File này được giữ lại để không break import cũ trong UI — sẽ xóa ở Phase 3D.
+ * Thin compatibility layer over permission.service.ts and module.service.ts.
+ * Used by /admin/phan-quyen UI. Do not add new logic here — add to permission.service.ts.
  */
 import { prisma } from "@/lib/db/prisma";
 import { getUserPermissions, setUserPermissions } from "@/lib/services/permission.service";

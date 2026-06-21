@@ -307,18 +307,19 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
 
   // ── 8. Page permission check (Redis) ─────────────────────────────────────
   // Skip for RSC prefetch (speculative, guarded on actual navigation),
-  // API routes, admin (always full access), and the permission page itself.
+  // API routes, admin (always full access), STAFF (per-user permissions via
+  // requirePermission() at API level), and the permission page itself.
   if (
     !isRscPrefetch &&
     isAuthenticated &&
     userRole !== "ADMIN" &&
+    userRole !== "STAFF" &&
     !pathname.startsWith("/api/") &&
     pathname !== "/admin/phan-quyen"
   ) {
     const disabledPages = await fetchDisabledPages(userRole ?? "USER");
     if (disabledPages.length > 0 && isDisabledPage(pathname, disabledPages)) {
-      const redirectTo = userRole === "STAFF" ? "/admin/dashboard" : "/";
-      return NextResponse.redirect(new URL(redirectTo, req.url));
+      return NextResponse.redirect(new URL("/", req.url));
     }
   }
 

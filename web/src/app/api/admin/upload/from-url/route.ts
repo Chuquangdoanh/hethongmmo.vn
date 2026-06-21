@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as dns } from "dns";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { uploadToR2, isAllowedMimeType } from "@/lib/storage/r2-upload";
 import { apiOk, apiError, apiCatch } from "@/lib/api-response";
 
@@ -58,7 +59,8 @@ function isPrivateHostname(h: string): boolean {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    const actor = requireAdmin(session);
+    const actor = requireStaff(session);
+ await requirePermission(session, "content:create");
 
     const body = await req.json() as { url?: string; uploadType?: string };
     const { url, uploadType = "mmo-thumbnail" } = body;

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { formatVnd } from "@/lib/utils/format";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
-import { User, CreditCard, Package, Store, LayoutDashboard, LogOut, TicketCheck, Bell, ShieldCheck, ShieldAlert } from "lucide-react";
+import { User, CreditCard, Package, Store, LayoutDashboard, LogOut, TicketCheck, Bell, ShieldCheck, ShieldAlert, Rocket } from "lucide-react";
 
 interface UserMenuProps {
   user: AuthenticatedUser;
@@ -163,7 +163,7 @@ export default function UserMenu({ user, balance, avatarUrl }: UserMenuProps) {
           {isSeller ? (
             <MenuItem href="/ban-hang" Icon={Store} iconBg="#f0fdf4" iconColor="#16a34a" label="Bán Hàng" onClick={() => setOpen(false)} />
           ) : (
-            <MenuItem href="/thong-tin-ca-nhan#seller-register" Icon={Store} iconBg="#f5f3ff" iconColor="#7c3aed" label="Đăng Ký Bán Hàng" onClick={() => setOpen(false)} />
+            <MenuItem href="/thong-tin-ca-nhan#seller-register" Icon={Rocket} iconBg="#f5f3ff" iconColor="#7c3aed" label="Đăng Ký Bán Hàng" onClick={() => setOpen(false)} />
           )}
           {isAdmin && (
             <MenuItem href="/admin/dashboard" Icon={LayoutDashboard} iconBg="#ede9fe" iconColor="#7c3aed" label="Admin Panel" onClick={() => setOpen(false)} />

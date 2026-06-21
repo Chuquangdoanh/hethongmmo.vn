@@ -316,7 +316,7 @@ export default function TutTricksTable({ items, total, platform, category, tier,
                 <td className="px-4 py-3.5">
                   {lastActors?.[item.id] ? (
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-gray-700 truncate max-w-30">{lastActors[item.id]!.name}</p>
+                      <p className="text-xs font-medium text-gray-700">{lastActors[item.id]!.name}</p>
                       <p className="text-[10px] text-gray-400 mt-0.5">{actionLabel(lastActors[item.id]!.action)} · {relativeTime(lastActors[item.id]!.at)}</p>
                     </div>
                   ) : (

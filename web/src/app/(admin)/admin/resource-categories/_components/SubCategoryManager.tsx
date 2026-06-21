@@ -15,34 +15,84 @@ interface SubCategory {
 
 interface Props {
   categoryName: string;
+  parentStore: "kho" | "mmo";
+  initialCount?: number;
+  initialSubs?: SubCategory[];
+  expanded?: boolean;
+  onToggle?: () => void;
 }
 
-export default function SubCategoryManager({ categoryName }: Props) {
-  const [open, setOpen] = useState(false);
-  const [subs, setSubs] = useState<SubCategory[]>([]);
+function SubStoreBadge({ sub }: { sub: SubCategory }) {
+  if (sub.showInKhoTaiNguyen && sub.showInTaiNguyenMmo) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1 py-0.5 rounded bg-gray-100 text-gray-500">
+        <Warehouse size={8} /><Package size={8} />
+      </span>
+    );
+  }
+  if (sub.showInKhoTaiNguyen) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1 py-0.5 rounded bg-blue-100 text-blue-600">
+        <Warehouse size={8} /> KhoTN
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1 py-0.5 rounded bg-violet-100 text-violet-600">
+      <Package size={8} /> NL
+    </span>
+  );
+}
+
+export default function SubCategoryManager({
+  categoryName,
+  parentStore,
+  initialCount,
+  initialSubs,
+  expanded,
+  onToggle,
+}: Props) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = expanded !== undefined && onToggle !== undefined;
+  const open = isControlled ? expanded : internalOpen;
+
+  function handleToggle() {
+    if (isControlled) onToggle?.();
+    else setInternalOpen((v) => !v);
+  }
+
+  const [subs, setSubs] = useState<SubCategory[]>(initialSubs ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [synced, setSynced] = useState(initialSubs !== undefined);
 
-  // Add form state
   const [addName, setAddName] = useState("");
   const [addOrder, setAddOrder] = useState(0);
-  const [addKho, setAddKho] = useState(true);
-  const [addMmo, setAddMmo] = useState(true);
   const [adding, setAdding] = useState(false);
 
-  // Edit state
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editOrder, setEditOrder] = useState(0);
   const [saving, setSaving] = useState(false);
 
+  const [deletingSubId, setDeletingSubId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Chỉ hiển thị sub thuộc kho đang xem — tránh sub KhoTN lọt vào tab NL và ngược lại
+  const visibleSubs = subs.filter((s) =>
+    parentStore === "kho" ? s.showInKhoTaiNguyen : s.showInTaiNguyenMmo
+  );
+
   const fetchSubs = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/admin/sub-categories?category=${encodeURIComponent(categoryName)}`, { credentials: "include" });
+      const res = await fetch(
+        `/api/admin/sub-categories?category=${encodeURIComponent(categoryName)}`,
+        { credentials: "include" },
+      );
       const json = await res.json() as { data?: SubCategory[]; error?: string };
-      if (json.data) setSubs(json.data);
+      if (json.data) { setSubs(json.data); setSynced(true); }
     } catch {
       setError("Không tải được danh mục con");
     } finally {
@@ -51,8 +101,8 @@ export default function SubCategoryManager({ categoryName }: Props) {
   }, [categoryName]);
 
   useEffect(() => {
-    if (open) void fetchSubs();
-  }, [open, fetchSubs]);
+    if (open && !synced) void fetchSubs();
+  }, [open, synced, fetchSubs]);
 
   async function handleAdd() {
     if (!addName.trim()) return;
@@ -67,17 +117,20 @@ export default function SubCategoryManager({ categoryName }: Props) {
           name: addName.trim(),
           categoryName,
           displayOrder: addOrder,
-          showInKhoTaiNguyen: addKho,
-          showInTaiNguyenMmo: addMmo,
+          // Kho của con tự động khớp với cha
+          showInKhoTaiNguyen: parentStore === "kho",
+          showInTaiNguyenMmo: parentStore === "mmo",
         }),
       });
       const json = await res.json() as { data?: SubCategory; error?: string };
       if (!res.ok || !json.data) { setError(json.error ?? "Thêm thất bại"); return; }
-      setSubs((prev) => [...prev, json.data!].sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name)));
+      setSubs((prev) =>
+        [...prev, json.data!].sort(
+          (a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name),
+        )
+      );
       setAddName("");
-      setAddOrder(subs.length);
-      setAddKho(true);
-      setAddMmo(true);
+      setAddOrder(visibleSubs.length);
     } catch {
       setError("Có lỗi xảy ra");
     } finally {
@@ -107,40 +160,47 @@ export default function SubCategoryManager({ categoryName }: Props) {
     }
   }
 
-  async function handleToggleField(sub: SubCategory, field: "isActive" | "showInKhoTaiNguyen" | "showInTaiNguyenMmo") {
-    const newVal = !sub[field];
+  async function handleToggleActive(sub: SubCategory) {
+    const newVal = !sub.isActive;
     try {
       const res = await fetch(`/api/admin/sub-categories/${sub.id}`, {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [field]: newVal }),
+        body: JSON.stringify({ isActive: newVal }),
       });
       if (res.ok) {
-        setSubs((prev) => prev.map((s) => s.id === sub.id ? { ...s, [field]: newVal } : s));
+        setSubs((prev) => prev.map((s) => s.id === sub.id ? { ...s, isActive: newVal } : s));
       }
     } catch { /* silent */ }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Xoá danh mục con này? Seller đã đăng ký sẽ mất liên kết.")) return;
+  async function confirmDelete(id: string) {
+    setDeleteLoading(true);
     try {
       await fetch(`/api/admin/sub-categories/${id}`, { method: "DELETE", credentials: "include" });
       setSubs((prev) => prev.filter((s) => s.id !== id));
-    } catch { /* silent */ }
+      setDeletingSubId(null);
+    } catch { /* silent */ } finally {
+      setDeleteLoading(false);
+    }
   }
 
   return (
     <div className="mt-2">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
         className="flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-800 transition-colors"
       >
         {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
         {open ? "Ẩn danh mục con" : "Quản lý danh mục con"}
-        {!loading && !open && (
-          <span className="ml-1 text-gray-400">— {subs.length > 0 ? `${subs.length} mục` : "chưa có"}</span>
+        {!open && (
+          <span className="ml-1 text-gray-400">
+            — {visibleSubs.length > 0
+              ? `${visibleSubs.length} mục`
+              : synced ? "chưa có" : (initialCount ?? 0) > 0 ? "..." : "chưa có"}
+          </span>
         )}
       </button>
 
@@ -148,23 +208,26 @@ export default function SubCategoryManager({ categoryName }: Props) {
         <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50/40 p-4 space-y-3">
           {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
 
-          {/* Existing subs */}
           {loading ? (
             <p className="text-xs text-gray-400">Đang tải...</p>
-          ) : subs.length === 0 ? (
-            <p className="text-xs text-gray-400 italic">Chưa có danh mục con.</p>
+          ) : visibleSubs.length === 0 ? (
+            <p className="text-xs text-gray-400 italic">Chưa có danh mục con trong kho này.</p>
           ) : (
             <div className="space-y-1.5">
-              {subs.map((sub) => (
-                <div key={sub.id} className="bg-white rounded-lg border border-gray-200 px-3 py-2 space-y-1.5">
+              {visibleSubs.map((sub) => (
+                <div key={sub.id} className="bg-white rounded-lg border border-gray-200 px-3 py-2">
                   {editId === sub.id ? (
+                    /* ── Edit row ── */
                     <div className="flex items-center gap-2">
                       <input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                         className="flex-1 text-sm border border-violet-300 rounded px-2 py-1 focus:outline-none"
                         autoFocus
-                        onKeyDown={(e) => { if (e.key === "Enter") void handleSaveEdit(sub.id); if (e.key === "Escape") setEditId(null); }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") void handleSaveEdit(sub.id);
+                          if (e.key === "Escape") setEditId(null);
+                        }}
                       />
                       <input
                         type="number"
@@ -180,64 +243,72 @@ export default function SubCategoryManager({ categoryName }: Props) {
                         <X size={14} />
                       </button>
                     </div>
-                  ) : (
+                  ) : deletingSubId === sub.id ? (
+                    /* ── Inline delete confirm ── */
                     <div className="flex items-center gap-2">
-                      <span className={`flex-1 text-sm font-medium ${sub.isActive ? "text-gray-800" : "text-gray-400 line-through"}`}>
+                      <p className="flex-1 text-xs text-red-700 font-medium truncate">
+                        Xóa &ldquo;{sub.name}&rdquo;?
+                      </p>
+                      <button
+                        onClick={() => setDeletingSubId(null)}
+                        disabled={deleteLoading}
+                        className="text-xs px-2 py-0.5 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        onClick={() => void confirmDelete(sub.id)}
+                        disabled={deleteLoading}
+                        className="text-xs px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
+                      >
+                        {deleteLoading ? "..." : "Xóa"}
+                      </button>
+                    </div>
+                  ) : (
+                    /* ── Normal row ── */
+                    <div className="flex items-center gap-2">
+                      <SubStoreBadge sub={sub} />
+                      <span className={`flex-1 text-sm font-medium truncate ${sub.isActive ? "text-gray-800" : "text-gray-400 line-through"}`}>
                         {sub.name}
                       </span>
-                      <span className="text-xs text-gray-400 w-8 text-center">{sub.displayOrder}</span>
+                      <span className="text-xs text-gray-400 w-6 text-center shrink-0">{sub.displayOrder}</span>
                       <button
                         title={sub.isActive ? "Ẩn" : "Hiện"}
-                        onClick={() => void handleToggleField(sub, "isActive")}
-                        className={`text-xs px-1.5 py-0.5 rounded font-medium transition-colors ${sub.isActive ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+                        onClick={() => void handleToggleActive(sub)}
+                        className={`text-xs px-1.5 py-0.5 rounded font-medium transition-colors shrink-0 ${
+                          sub.isActive
+                            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                        }`}
                       >
                         {sub.isActive ? "Hiện" : "Ẩn"}
                       </button>
                       <button
                         onClick={() => { setEditId(sub.id); setEditName(sub.name); setEditOrder(sub.displayOrder); }}
-                        className="text-gray-400 hover:text-violet-600"
+                        className="text-gray-400 hover:text-violet-600 shrink-0"
                       >
                         <Pencil size={13} />
                       </button>
-                      <button onClick={() => void handleDelete(sub.id)} className="text-gray-400 hover:text-red-600">
+                      <button onClick={() => setDeletingSubId(sub.id)} className="text-gray-400 hover:text-red-600 shrink-0">
                         <Trash2 size={13} />
                       </button>
                     </div>
                   )}
-
-                  {/* Store type toggles — always visible */}
-                  <div className="flex gap-3 pl-0.5">
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={sub.showInKhoTaiNguyen}
-                        onChange={() => void handleToggleField(sub, "showInKhoTaiNguyen")}
-                        className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      />
-                      <span className="flex items-center gap-0.5 text-[10px] font-medium text-blue-600">
-                        <Warehouse size={9} /> Kho TN
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={sub.showInTaiNguyenMmo}
-                        onChange={() => void handleToggleField(sub, "showInTaiNguyenMmo")}
-                        className="w-3 h-3 rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer"
-                      />
-                      <span className="flex items-center gap-0.5 text-[10px] font-medium text-violet-600">
-                        <Package size={9} /> TN MMO
-                      </span>
-                    </label>
-                  </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Add new */}
+          {/* Thêm mới — kho tự động khớp cha */}
           <div className="space-y-2 pt-1 border-t border-violet-100">
-            <p className="text-[10px] text-gray-500 font-medium">Thêm danh mục con mới:</p>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] text-gray-500 font-medium">Thêm danh mục con mới:</p>
+              <span className={`inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded ${
+                parentStore === "kho" ? "bg-blue-100 text-blue-600" : "bg-violet-100 text-violet-600"
+              }`}>
+                {parentStore === "kho" ? <><Warehouse size={8} /> Kho Tài Nguyên</> : <><Package size={8} /> Nguyên Liệu</>}
+              </span>
+            </div>
             <div className="flex items-center gap-2">
               <input
                 value={addName}
@@ -254,31 +325,6 @@ export default function SubCategoryManager({ categoryName }: Props) {
                 min={0}
                 title="Thứ tự hiển thị"
               />
-            </div>
-            {/* Store type checkboxes for new sub */}
-            <div className="flex gap-4">
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={addKho}
-                  onChange={(e) => setAddKho(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                />
-                <span className="flex items-center gap-1 text-[11px] font-medium text-blue-600">
-                  <Warehouse size={11} /> Kho Tài Nguyên
-                </span>
-              </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={addMmo}
-                  onChange={(e) => setAddMmo(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded border-gray-300 text-violet-600 focus:ring-violet-500 cursor-pointer"
-                />
-                <span className="flex items-center gap-1 text-[11px] font-medium text-violet-600">
-                  <Package size={11} /> Tài Nguyên MMO
-                </span>
-              </label>
             </div>
             <button
               type="button"

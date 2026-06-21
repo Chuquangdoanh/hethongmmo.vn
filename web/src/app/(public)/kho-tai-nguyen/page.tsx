@@ -7,7 +7,6 @@ import { formatVnd } from "@/lib/utils/format";
 import { r2Url } from "@/lib/utils/image-url";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
-import ProductBuyButton from "@/app/(public)/tai-nguyen-mmo/_components/ProductBuyButton";
 import Pagination from "@/components/shared/Pagination";
 import { SortSelect } from "@/app/(public)/tai-nguyen-mmo/_components/SortSelect";
 import { buildMeta } from "@/lib/utils/seo";
@@ -26,7 +25,7 @@ export const metadata: Metadata = buildMeta({
   image: "/images/hethongmmo.png",
 });
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 30;
 const BASE_PATH = "/kho-tai-nguyen";
 type SortId = "noi-bat" | "ban-chay" | "moi-nhat" | "gia-cao" | "gia-thap";
 
@@ -126,7 +125,20 @@ export default async function KhoTaiNguyenPage({
     : activeSort === "gia-thap" ? [{ price: "asc" as const }]
     : [{ salesCount: "desc" as const }, { createdAt: "desc" as const }];
 
-  const [allStatProducts, filteredProducts, resourceCategories, reviewStats] = await Promise.all([
+  const mmoBaseWhere = {
+    isActive: true, deletedAt: null, section: "KHO_TAI_NGUYEN" as const,
+    items: { some: { status: "AVAILABLE" as const } },
+  };
+  const mmoFilteredWhere = {
+    ...mmoBaseWhere,
+    ...(selectedCategories.length > 0 ? { categoryGroup: { in: selectedCategories } } : {}),
+    ...(selectedSubcatNames.length > 0 ? { category: { in: selectedSubcatNames } } : {}),
+    ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
+    ...(tag ? { categoryGroup: { contains: tag, mode: "insensitive" as const } } : {}),
+    ...priceFilter,
+  };
+
+  const [allStatProducts, filteredProducts, resourceCategories, reviewStats, allMmoStat, filteredMmoProducts, mmoReviewStats] = await Promise.all([
     prisma.sellerProduct.findMany({
       where: baseWhere,
       select: { id: true, sellerCategory: true, sellerId: true, subCategoryId: true },
@@ -166,9 +178,29 @@ export default async function KhoTaiNguyenPage({
       _count: { id: true },
       _avg: { rating: true },
     }),
+    prisma.mmoProduct.findMany({
+      where: mmoBaseWhere,
+      select: { id: true, categoryGroup: true, category: true },
+    }),
+    prisma.mmoProduct.findMany({
+      where: mmoFilteredWhere,
+      orderBy: [{ isFeatured: "desc" }, { totalOrders: "desc" }, { displayOrder: "asc" }],
+      select: {
+        id: true, slug: true, name: true, thumbnail: true,
+        categoryGroup: true, category: true, description: true,
+        price: true, totalOrders: true, isFeatured: true, rating: true, createdAt: true,
+        _count: { select: { items: { where: { status: "AVAILABLE" } } } },
+      },
+    }),
+    prisma.review.groupBy({
+      by: ["productId"],
+      where: { productType: "MMO_PRODUCT" },
+      _count: { id: true },
+      _avg: { rating: true },
+    }),
   ]);
 
-  const [purchasedIds, reviewedIds] = await Promise.all([
+  const [purchasedIds, reviewedIds, purchasedMmoIds, reviewedMmoIds] = await Promise.all([
     me
       ? prisma.order
           .findMany({
@@ -177,7 +209,7 @@ export default async function KhoTaiNguyenPage({
             distinct: ["sellerProductId"],
           })
           .then((rows) => new Set(rows.map((r) => r.sellerProductId!).filter(Boolean)))
-      : new Set<string>(),
+      : Promise.resolve(new Set<string>()),
     me
       ? prisma.review
           .findMany({
@@ -185,16 +217,38 @@ export default async function KhoTaiNguyenPage({
             select: { productId: true },
           })
           .then((rows) => new Set(rows.map((r) => r.productId)))
-      : new Set<string>(),
+      : Promise.resolve(new Set<string>()),
+    me
+      ? prisma.order
+          .findMany({
+            where: { userId: me.id, orderType: "MMO_PRODUCT", status: "DONE" },
+            select: { mmoProductId: true },
+            distinct: ["mmoProductId"],
+          })
+          .then((rows) => new Set(rows.map((r) => r.mmoProductId!).filter(Boolean)))
+      : Promise.resolve(new Set<string>()),
+    me
+      ? prisma.review
+          .findMany({
+            where: { userId: me.id, productType: "MMO_PRODUCT" },
+            select: { productId: true },
+          })
+          .then((rows) => new Set(rows.map((r) => r.productId)))
+      : Promise.resolve(new Set<string>()),
   ]);
 
-  // Build platform stats
+  const mmoReviewMap = new Map(mmoReviewStats.map((r) => [r.productId, { count: r._count.id, avg: r._avg.rating ?? 0 }]));
+
+  // Build platform stats (seller + mmo)
   const platformProductCount = new Map<string, number>();
   const platformSellerSet = new Map<string, Set<string>>();
   for (const p of allStatProducts) {
     platformProductCount.set(p.sellerCategory, (platformProductCount.get(p.sellerCategory) ?? 0) + 1);
     if (!platformSellerSet.has(p.sellerCategory)) platformSellerSet.set(p.sellerCategory, new Set());
     platformSellerSet.get(p.sellerCategory)!.add(p.sellerId);
+  }
+  for (const p of allMmoStat) {
+    platformProductCount.set(p.categoryGroup, (platformProductCount.get(p.categoryGroup) ?? 0) + 1);
   }
 
   // Subcategory count map
@@ -207,6 +261,9 @@ export default async function KhoTaiNguyenPage({
       const name = allSubCatById.get(p.subCategoryId);
       if (name) subCatCountMap.set(name, (subCatCountMap.get(name) ?? 0) + 1);
     }
+  }
+  for (const p of allMmoStat) {
+    if (p.category) subCatCountMap.set(p.category, (subCatCountMap.get(p.category) ?? 0) + 1);
   }
 
   // Filter sidebar props
@@ -240,19 +297,55 @@ export default async function KhoTaiNguyenPage({
       .map((s) => ({ id: s.id, name: s.name, count: subCatCountMap.get(s.name) ?? 0 })),
   }));
 
-  // Review map
+  // Review map (seller)
   const reviewMap = new Map(reviewStats.map((r) => [r.productId, { count: r._count.id, avg: r._avg.rating ?? 0 }]));
 
-  // Paginate
   const fourteenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const stripHtml = (html: string | null) => (html ? html.replace(/<[^>]*>/g, "").trim() || null : null);
+
+  // Build unified product list
+  type KhoProduct =
+    | { kind: "seller"; id: string; name: string; imageUrl: string | null; category: string; description: string | null; price: number; salesCount: number; createdAt: Date; sellerPrefix: string; available: number; isNew: boolean; isHot: boolean; href: string; bought: boolean; rated: boolean; review: { count: number; avg: number } | undefined; orderType: "SELLER_PRODUCT" }
+    | { kind: "mmo"; id: string; name: string; imageUrl: string | null; category: string; description: string | null; price: number; salesCount: number; createdAt: Date; sellerPrefix: string; available: number; isNew: boolean; isHot: boolean; href: string; bought: boolean; rated: boolean; review: { count: number; avg: number } | undefined; orderType: "MMO_PRODUCT"; slug: string };
+
   const minRating = ratingParam ? Number(ratingParam) : 0;
-  const ratedProducts = minRating > 0
-    ? filteredProducts.filter((sp) => (reviewMap.get(sp.id)?.avg ?? 0) >= minRating)
-    : filteredProducts;
-  const totalCount = ratedProducts.length;
+
+  const allUnified: KhoProduct[] = [
+    ...filteredProducts
+      .filter((sp) => minRating === 0 || (reviewMap.get(sp.id)?.avg ?? 0) >= minRating)
+      .map((sp): KhoProduct => ({
+        kind: "seller", id: sp.id, name: sp.name, imageUrl: sp.imageUrl,
+        category: sp.sellerCategory, description: stripHtml(sp.description ?? null),
+        price: Number(sp.price), salesCount: sp.salesCount, createdAt: sp.createdAt,
+        sellerPrefix: `#${sp.seller.uidPrefix}`, available: sp._count.stockItems,
+        isNew: sp.createdAt > fourteenDaysAgo, isHot: sp.salesCount >= 15,
+        href: `/tai-nguyen-mmo/san-pham/${sp.id}`,
+        bought: purchasedIds.has(sp.id), rated: reviewedIds.has(sp.id),
+        review: reviewMap.get(sp.id), orderType: "SELLER_PRODUCT",
+      })),
+    ...filteredMmoProducts
+      .filter((p) => minRating === 0 || (mmoReviewMap.get(p.id)?.avg ?? p.rating) >= minRating)
+      .map((p): KhoProduct => ({
+        kind: "mmo", id: p.id, slug: p.slug, name: p.name, imageUrl: p.thumbnail ?? null,
+        category: p.categoryGroup, description: stripHtml(p.description ?? null),
+        price: Number(p.price), salesCount: p.totalOrders, createdAt: p.createdAt,
+        sellerPrefix: "Hệ Thống", available: p._count.items,
+        isNew: p.createdAt > fourteenDaysAgo, isHot: p.isFeatured,
+        href: `/tai-nguyen-mmo/${p.slug}`,
+        bought: purchasedMmoIds.has(p.id), rated: reviewedMmoIds.has(p.id),
+        review: mmoReviewMap.get(p.id), orderType: "MMO_PRODUCT",
+      })),
+  ].sort((a, b) => {
+    if (activeSort === "ban-chay") return b.salesCount - a.salesCount;
+    if (activeSort === "moi-nhat") return b.createdAt.getTime() - a.createdAt.getTime();
+    if (activeSort === "gia-cao") return b.price - a.price;
+    if (activeSort === "gia-thap") return a.price - b.price;
+    return b.salesCount - a.salesCount;
+  });
+
+  const totalCount = allUnified.length;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-  const pagedProducts = ratedProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const pagedProducts = allUnified.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const paginationParams: Record<string, string> = {};
   if (categoryParam) paginationParams["category"]    = categoryParam;
@@ -382,32 +475,26 @@ export default async function KhoTaiNguyenPage({
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-                {pagedProducts.map((sp) => {
-                  const review  = reviewMap.get(sp.id);
-                  const price   = Number(sp.price);
-                  const avail   = sp._count.stockItems;
-                  const isNew   = sp.createdAt > fourteenDaysAgo;
-                  const isHot   = sp.salesCount >= 15;
-                  const seller  = `#${sp.seller.uidPrefix}`;
-                  const bought  = purchasedIds.has(sp.id);
-                  const rated   = reviewedIds.has(sp.id);
-                  const desc    = stripHtml(sp.description ?? null);
-                  const href    = `/tai-nguyen-mmo/san-pham/${sp.id}`;
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
+                {pagedProducts.map((item) => {
+                  const { id, name, imageUrl, category, description: desc, price, salesCount, isNew, isHot, href, bought, rated, review, available: avail, sellerPrefix: seller } = item;
 
                   return (
                     <div
-                      key={sp.id}
-                      className="bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-[#3b82f6]/40 transition-all flex flex-col"
+                      key={id}
+                      className="relative bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-[#3b82f6]/40 transition-all flex flex-col"
                     >
+                      {/* Full-card clickable overlay */}
+                      <Link href={href} className="absolute inset-0 z-1" aria-label={`Xem chi tiết ${name}`} />
+
                       {/* ── Ảnh sản phẩm ── */}
-                      <Link href={href} className="block relative shrink-0">
+                      <div className="block relative shrink-0">
                         <div className="aspect-video bg-light overflow-hidden relative">
-                          {sp.imageUrl ? (
+                          {imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={r2Url(sp.imageUrl)}
-                              alt={sp.name}
+                              src={r2Url(imageUrl)}
+                              alt={name}
                               loading="lazy"
                               decoding="async"
                               className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
@@ -421,7 +508,7 @@ export default async function KhoTaiNguyenPage({
                           {/* Badges top-left: category + HOT/NEW */}
                           <div className="absolute top-2 left-2 flex gap-1">
                             <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide bg-[#1d4ed8]/85 text-white">
-                              {sp.sellerCategory}
+                              {category}
                             </span>
                             {isHot && (
                               <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-[#ef4444] text-white uppercase">
@@ -448,15 +535,13 @@ export default async function KhoTaiNguyenPage({
                             )}
                           </div>
                         </div>
-                      </Link>
+                      </div>
 
                       {/* ── Thông tin sản phẩm ── */}
                       <div className="p-2 sm:p-3 flex flex-col gap-1 sm:gap-1.5 flex-1">
-                        <Link href={href}>
-                          <h3 className="text-sm font-bold text-[#1e293b] hover:text-[#2563eb] transition-colors line-clamp-2 leading-snug">
-                            {sp.name}
-                          </h3>
-                        </Link>
+                        <h3 className="text-sm font-bold text-[#1e293b] line-clamp-2 leading-snug">
+                          {name}
+                        </h3>
                         {desc && (
                           <p className="text-[11px] text-text-muted line-clamp-2 leading-relaxed">{desc}</p>
                         )}
@@ -465,7 +550,7 @@ export default async function KhoTaiNguyenPage({
                         <div className="flex items-center gap-1.5 text-[10px] text-[#94a3b8] flex-wrap">
                           <span className="flex items-center gap-0.5">
                             <ShoppingCart size={8} strokeWidth={2} />
-                            <span>Đã bán <strong className="text-[#374151]">{sp.salesCount}</strong></span>
+                            <span>Đã bán <strong className="text-[#374151]">{salesCount}</strong></span>
                           </span>
                           <span className="text-[#d1d5db]">·</span>
                           <span>Còn <strong className="text-[#374151]">{avail}</strong></span>
@@ -477,7 +562,7 @@ export default async function KhoTaiNguyenPage({
                         {bought && !rated && (
                           <Link
                             href={href}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors w-fit"
+                            className="relative z-2 inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors w-fit"
                           >
                             <Pencil size={9} strokeWidth={2} /> Đánh giá
                           </Link>
@@ -488,26 +573,11 @@ export default async function KhoTaiNguyenPage({
                           </span>
                         )}
 
-                        {/* Price + Buy button */}
-                        <div className="mt-auto pt-1.5 sm:pt-2 grid grid-cols-[2fr_3fr] gap-1.5 sm:gap-2 items-stretch">
-                          <div className="flex items-center justify-center bg-[#fff1f2] border border-[#fca5a5] rounded-lg px-1 py-1.5 sm:py-2">
-                            <span className="text-xs font-extrabold text-[#e11d48] whitespace-nowrap leading-none">
-                              {formatVnd(price)}
-                            </span>
-                          </div>
-                          <ProductBuyButton
-                            orderType="SELLER_PRODUCT"
-                            itemId={sp.id}
-                            itemName={sp.name}
-                            price={price}
-                            isLoggedIn={isLoggedIn}
-                            avgRating={review?.avg ?? 0}
-                            reviewCount={review?.count ?? 0}
-                            available={avail}
-                            totalSold={sp.salesCount}
-                            sellerName={seller}
-                            compact
-                          />
+                        {/* Price */}
+                        <div className="mt-auto pt-1.5 sm:pt-2">
+                          <span className="text-xs font-extrabold text-[#e11d48] whitespace-nowrap leading-none">
+                            {formatVnd(price)}
+                          </span>
                         </div>
                       </div>
                     </div>

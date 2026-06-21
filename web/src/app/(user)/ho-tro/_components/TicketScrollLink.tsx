@@ -11,6 +11,7 @@ export default function TicketScrollLink({ children, ...props }: Props) {
   return (
     <Link
       {...props}
+      scroll={false}
       onClick={() => window.scrollTo({ top: 0, behavior: "instant" })}
     >
       {children}

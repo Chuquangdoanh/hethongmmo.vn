@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { apiOk, apiCatch } from "@/lib/api-response";
 import { writeAuditLog } from "@/lib/security/audit";
@@ -13,7 +14,8 @@ export async function POST(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    const me = requireAdmin(session);
+    const me = requireStaff(session);
+ await requirePermission(session, "complaints:reply");
     const { id: complaintId } = await params;
 
     const complaint = await prisma.complaint.findUnique({

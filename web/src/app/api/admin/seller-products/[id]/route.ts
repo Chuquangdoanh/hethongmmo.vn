@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
 import { apiSuccess, apiCatch, apiValidationError, apiError } from "@/lib/api-response";
@@ -20,6 +21,7 @@ export async function PATCH(
   try {
     const session = await auth();
     const me = requireStaff(session);
+ await requirePermission(session, "seller_products:update");
     const { id } = await params;
 
     const body: unknown = await req.json();

@@ -11,6 +11,7 @@ export interface SidebarNavItem {
   icon?: ReactNode;
   badge?: number;
   external?: boolean;
+  exact?: boolean;
 }
 
 export interface SidebarNavGroup {
@@ -31,9 +32,10 @@ export default function SidebarNav({ homeItem, groups, serviceAccordion }: Props
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setActivePath(pathname); }, [pathname]);
 
-  function isActive(href: string): boolean {
+  function isActive(href: string, exact?: boolean): boolean {
     const path = href.split("?")[0]!;
     if (path === "/") return activePath === "/";
+    if (exact) return activePath === path;
     return activePath === path || activePath.startsWith(`${path}/`);
   }
 
@@ -60,7 +62,7 @@ export default function SidebarNav({ homeItem, groups, serviceAccordion }: Props
                 prefetch={false}
                 target={item.external ? "_blank" : undefined}
                 rel={item.external ? "noopener noreferrer" : undefined}
-                className={`sb-link${!item.external && isActive(item.href) ? " sb-active" : ""}`}
+                className={`sb-link${!item.external && isActive(item.href, item.exact) ? " sb-active" : ""}`}
               >
                 {item.icon && <span className="sb-link-icon">{item.icon}</span>}
                 <span className="sb-label sb-link-text">{item.label}</span>

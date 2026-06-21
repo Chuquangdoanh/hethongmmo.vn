@@ -267,7 +267,7 @@ export default function ServicesTable({ services, total, category, q, currentPag
                 <td className="px-4 py-3.5">
                   {lastActors?.[svc.id] ? (
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-gray-700 truncate max-w-30">{lastActors[svc.id]!.name}</p>
+                      <p className="text-xs font-medium text-gray-700">{lastActors[svc.id]!.name}</p>
                       <p className="text-[10px] text-gray-400 mt-0.5">{actionLabel(lastActors[svc.id]!.action)} · {relativeTime(lastActors[svc.id]!.at)}</p>
                     </div>
                   ) : (

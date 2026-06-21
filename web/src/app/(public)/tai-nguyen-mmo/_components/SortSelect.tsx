@@ -28,13 +28,13 @@ export function SortSelect({ basePath = "/tai-nguyen-mmo" }: { basePath?: string
   }
 
   return (
-    <div className="flex items-center gap-0.5 bg-white rounded-xl border border-border p-1 w-max">
+    <div className="flex items-center gap-0.5 bg-white rounded-xl border border-border p-0.5 sm:p-1 w-full sm:w-max overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none">
       {SORT_OPTIONS.map(({ id, label }) => (
         <button
           key={id}
           type="button"
           onClick={() => setSort(id)}
-          className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap ${
+          className={`flex-1 sm:flex-none px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-sm font-semibold transition-colors whitespace-nowrap ${
             activeSort === id
               ? "bg-primary text-white"
               : "text-text-muted hover:text-primary hover:bg-[#f1f5f9]"

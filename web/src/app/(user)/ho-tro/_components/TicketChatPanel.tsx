@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { Send, CheckCircle2, XCircle, Clock } from "lucide-react";
 import type { ChatMsg, ChatRoomInfo } from "@/components/shared/ChatWidget";
 
@@ -15,9 +15,10 @@ interface Quota {
 }
 
 interface Resolution {
-  sellerConfirmed: boolean;
+  sellerConfirmed:  boolean;
   sellerConfirmedAt: string | null;
-  userDone: boolean | null;
+  userDone:         boolean | null;
+  roundTwoOpened:   boolean;
 }
 
 interface Props {
@@ -58,15 +59,17 @@ export default function TicketChatPanel({
     userTurnLimit: 3, userTurnUsed: 0,
   });
   const [resolution, setResolution]   = useState<Resolution>(initialResolution ?? {
-    sellerConfirmed: false, sellerConfirmedAt: null, userDone: null,
+    sellerConfirmed: false, sellerConfirmedAt: null, userDone: null, roundTwoOpened: false,
   });
   const [resolving, setResolving]     = useState(false);
   const [countdown, setCountdown]     = useState<number | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const msgsRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  // useLayoutEffect: scroll chat xuống bottom trước paint để tránh flash nội dung cũ
+  useLayoutEffect(() => {
+    const el = msgsRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
   }, [messages]);
 
   // Countdown timer sau khi seller confirm (60')
@@ -85,12 +88,15 @@ export default function TicketChatPanel({
     return () => clearInterval(id);
   }, [resolution.sellerConfirmed, resolution.sellerConfirmedAt, resolution.userDone]);
 
-  // Polling messages
+  // Polling messages + resolution state
   const poll = useCallback(async () => {
     const last   = messages[messages.length - 1];
     const cursor = last?.createdAt ?? new Date(0).toISOString();
     try {
-      const res  = await fetch(`/api/chats/${room.id}/messages?after=${encodeURIComponent(cursor)}`);
+      const res  = await fetch(
+        `/api/chats/${room.id}/messages?after=${encodeURIComponent(cursor)}`,
+        { credentials: "include", cache: "no-store" },
+      );
       if (!res.ok) return;
       const json = (await res.json()) as {
         data: {
@@ -102,11 +108,18 @@ export default function TicketChatPanel({
         };
       };
       const d = json.data;
-      if (d?.messages?.length)  setMessages(prev => [...prev, ...d.messages]);
-      if (d?.chatEnded)         setChatEnded(true);
-      if (d?.complaintStatus)   setStatus(d.complaintStatus);
-      if (d?.quota)             setQuota(d.quota);
-      if (d?.resolution)        setResolution(d.resolution);
+      if (d?.messages?.length) {
+        // Dedup để tránh trùng key khi poll trùng cursor với tin vừa gửi
+        setMessages(prev => {
+          const existingIds = new Set(prev.map(m => m.id));
+          const fresh = d.messages.filter((m: ChatMsg) => !existingIds.has(m.id));
+          return fresh.length > 0 ? [...prev, ...fresh] : prev;
+        });
+      }
+      if (d?.chatEnded)       setChatEnded(true);
+      if (d?.complaintStatus) setStatus(d.complaintStatus);
+      if (d?.quota)           setQuota(d.quota);
+      if (d?.resolution)      setResolution(d.resolution);
     } catch { /* ignore polling errors */ }
   }, [room.id, messages]);
 
@@ -142,7 +155,9 @@ export default function TicketChatPanel({
       }
       if (json.data) {
         const { quota: newQuota, ...msg } = json.data;
-        setMessages(prev => [...prev, msg as ChatMsg]);
+        const newMsg = msg as ChatMsg;
+        // Dedup: poll kế tiếp có thể fetch lại message này nếu cursor chưa kịp cập nhật
+        setMessages(prev => prev.some(m => m.id === newMsg.id) ? prev : [...prev, newMsg]);
         if (newQuota) setQuota(newQuota);
       }
       setInput("");
@@ -169,8 +184,17 @@ export default function TicketChatPanel({
       if (!res.ok) { setError(json.error ?? "Thao tác thất bại"); return; }
 
       const outcome = json.data?.outcome;
-      if (outcome === "RESOLVED") { setChatEnded(true); setStatus("RESOLVED"); }
-      if (outcome === "PENDING_ADMIN") { setChatEnded(true); setStatus("PENDING_ADMIN"); }
+      if (outcome === "RESOLVED")      { setChatEnded(true); setStatus("RESOLVED"); }
+      if (outcome === "REJECTED")      { setChatEnded(true); setStatus("REJECTED"); }
+      if (outcome === "PENDING_ADMIN_WAIT") {
+        // Vòng 1 tranh chấp → chat đóng, chờ admin mở vòng 2
+        setStatus("PENDING_ADMIN");
+        setResolution(prev => ({ ...prev, userDone: false }));
+      }
+      if (outcome === "FINAL_DISPUTE") {
+        // Vòng 2 tranh chấp cuối → đánh dấu userDone=false, không reset, admin phán quyết
+        setResolution(prev => ({ ...prev, userDone: false }));
+      }
       if (outcome === "WAITING_USER") {
         setResolution(prev => ({ ...prev, sellerConfirmed: true, sellerConfirmedAt: new Date().toISOString() }));
       }
@@ -183,7 +207,17 @@ export default function TicketChatPanel({
 
   const isBuyer  = currentUserLabel === "Người mua";
   const isSeller = currentUserLabel === "Nhà bán hàng";
-  const turnBlocked = isBuyer && (quota.userTurnUsed ?? 0) >= quota.userTurnLimit;
+
+  // Trạng thái PENDING_ADMIN được chia làm 3 giai đoạn:
+  // waitingAdmin   : vòng 1 tranh chấp, chat đóng, chờ admin mở vòng 2 (roundTwoOpened=false)
+  // roundTwoActive : admin đã mở vòng 2 (roundTwoOpened=true, userDone=null) — chat mở
+  // finalDispute   : vòng 2 tranh chấp (roundTwoOpened=true, userDone=false) — chat đóng, admin phán quyết
+  const waitingAdmin   = status === "PENDING_ADMIN" && !resolution.roundTwoOpened;
+  const roundTwoActive = status === "PENDING_ADMIN" && resolution.roundTwoOpened && resolution.userDone === null;
+  const finalDispute   = status === "PENDING_ADMIN" && resolution.roundTwoOpened && resolution.userDone === false;
+
+  const chatActive    = status === "IN_REVIEW" || roundTwoActive; // finalDispute = chat đóng
+  const turnBlocked   = isBuyer && (quota.userTurnUsed ?? 0) >= quota.userTurnLimit;
   const inputDisabled = chatEnded || quota.locked || turnBlocked || sending;
 
   return (
@@ -202,7 +236,7 @@ export default function TicketChatPanel({
       )}
 
       {/* Messages */}
-      <div className="ht-chat-msgs" style={{ flex: 1, overflowY: "auto", paddingBottom: "8px" }}>
+      <div ref={msgsRef} className="ht-chat-msgs" style={{ flex: 1, overflowY: "auto", paddingBottom: "8px" }}>
         {messages.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 16px" }}>
             <p style={{ fontSize: "13px", color: "#94a3b8" }}>Chưa có tin nhắn nào.</p>
@@ -275,30 +309,122 @@ export default function TicketChatPanel({
             </div>
           );
         })}
-        <div ref={bottomRef} />
       </div>
 
       {/* ── Bottom zone ── */}
       <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "10px", flexShrink: 0 }}>
         {error && <p style={{ fontSize: "11px", color: "#dc2626", marginBottom: "6px" }}>{error}</p>}
 
-        {/* RESOLVED */}
+        {/* Status banners */}
         {status === "RESOLVED" && (
           <EndedBanner color="#16a34a" text="Khiếu nại đã được giải quyết. Cảm ơn bạn!" />
         )}
-
-        {/* REJECTED (auto hoặc admin quyết) */}
         {status === "REJECTED" && (
           <EndedBanner color="#dc2626" text="Khiếu nại kết thúc. Tiền đã được hoàn về ví của bạn." />
         )}
-
-        {/* PENDING_ADMIN */}
-        {status === "PENDING_ADMIN" && (
-          <EndedBanner color="#7c3aed" text="Admin đang xem xét khiếu nại. Vui lòng chờ phán quyết." />
+        {/* Vòng 1 tranh chấp: chat đóng, chờ admin mở vòng 2 */}
+        {waitingAdmin && (
+          <EndedBanner color="#f59e0b" text="Đã gửi lên Admin. Chat đã đóng — chờ Admin mở vòng 2 hoặc phán quyết." />
+        )}
+        {/* Vòng 2 đang chạy: admin mở, hai bên tiếp tục đàm phán */}
+        {roundTwoActive && (
+          <EndedBanner color="#7c3aed" text="Admin đã mở vòng 2 — Tiếp tục cung cấp bằng chứng, seller có thể xác nhận lại." />
+        )}
+        {/* Vòng 2 tranh chấp cuối: chat đóng, admin phán quyết */}
+        {finalDispute && (
+          <EndedBanner color="#dc2626" text="Tranh chấp vòng 2 — Chat đã đóng. Admin đang phán quyết cuối cùng." />
         )}
 
-        {/* Chờ seller reply (user đã gửi 3 tin) */}
-        {!chatEnded && turnBlocked && status === "IN_REVIEW" && (
+        {/* ── Seller: nút xác nhận (vòng 1 hoặc vòng 2 đang chạy, chưa tranh chấp cuối) ── */}
+        {!chatEnded && isSeller && (status === "IN_REVIEW" || roundTwoActive) && !resolution.sellerConfirmed && (
+          <div style={{ marginBottom: "8px" }}>
+            <button
+              onClick={() => { void handleResolve("seller"); }}
+              disabled={resolving}
+              style={{
+                width: "100%", padding: "9px 14px", borderRadius: "10px",
+                background: "#16a34a", color: "#fff", border: "none",
+                fontSize: "13px", fontWeight: "700",
+                cursor: resolving ? "not-allowed" : "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: "7px",
+                opacity: resolving ? 0.7 : 1,
+              }}
+            >
+              <CheckCircle2 size={15} />
+              Xác nhận đơn hàng đã hoàn thành
+            </button>
+          </div>
+        )}
+
+        {/* Seller đã xác nhận — chờ user phản hồi (ẩn khi tranh chấp cuối vì finalDispute banner đã hiện) */}
+        {!chatEnded && isSeller && resolution.sellerConfirmed && !finalDispute && (
+          <div style={{
+            padding: "8px 12px", background: "#f0fdf4", borderRadius: "8px",
+            border: "1px solid #bbf7d0", marginBottom: "8px", textAlign: "center",
+          }}>
+            <p style={{ fontSize: "12px", color: "#16a34a", fontWeight: "600" }}>
+              ✓ Bạn đã xác nhận đơn hàng hoàn thành. Đang chờ người mua phản hồi...
+            </p>
+          </div>
+        )}
+
+        {/* ── User: panel xác nhận xuất hiện ngay khi seller confirm ── */}
+        {!chatEnded && isBuyer && resolution.sellerConfirmed && resolution.userDone === null && (
+          <div style={{
+            background: "#eff6ff", borderRadius: "12px", padding: "12px 14px",
+            border: "1px solid #bfdbfe", marginBottom: "8px",
+          }}>
+            <p style={{ fontSize: "12px", color: "#1d4ed8", fontWeight: "700", marginBottom: "8px", textAlign: "center" }}>
+              Nhà bán hàng đã xác nhận đơn hoàn thành. Bạn có đồng ý không?
+            </p>
+            {countdown !== null && (
+              <div style={{
+                textAlign: "center", marginBottom: "8px", padding: "5px 10px",
+                background: countdown < 300000 ? "#fef2f2" : "#f0fdf4",
+                borderRadius: "6px",
+                border: `1px solid ${countdown < 300000 ? "#fecaca" : "#bbf7d0"}`,
+              }}>
+                <span style={{ fontSize: "11px", color: countdown < 300000 ? "#dc2626" : "#16a34a" }}>
+                  ⏱ Tự động xác nhận sau: <strong>{fmtCountdown(countdown)}</strong>
+                </span>
+              </div>
+            )}
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                onClick={() => { void handleResolve("user", true); }}
+                disabled={resolving}
+                style={{
+                  flex: 1, padding: "9px", borderRadius: "9px",
+                  background: "#16a34a", color: "#fff", border: "none",
+                  fontSize: "13px", fontWeight: "700",
+                  cursor: resolving ? "not-allowed" : "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                  opacity: resolving ? 0.7 : 1,
+                }}
+              >
+                <CheckCircle2 size={14} /> Đã nhận được
+              </button>
+              <button
+                onClick={() => { void handleResolve("user", false); }}
+                disabled={resolving}
+                style={{
+                  flex: 1, padding: "9px", borderRadius: "9px",
+                  background: "#fff", color: "#dc2626",
+                  border: "1.5px solid #fca5a5",
+                  fontSize: "13px", fontWeight: "700",
+                  cursor: resolving ? "not-allowed" : "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                  opacity: resolving ? 0.7 : 1,
+                }}
+              >
+                <XCircle size={14} /> Chưa hoàn thành
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Chờ seller reply (user đã gửi đủ lượt) */}
+        {!chatEnded && turnBlocked && chatActive && (
           <div style={{ textAlign: "center", padding: "8px 0" }}>
             <p style={{ fontSize: "12px", color: "#64748b" }}>
               ⏳ Đang chờ nhà bán hàng phản hồi...
@@ -306,21 +432,17 @@ export default function TicketChatPanel({
           </div>
         )}
 
-        {/* Quota hết — Resolution buttons */}
-        {!chatEnded && quota.locked && status === "IN_REVIEW" && (
-          <ResolutionButtons
-            isSeller={isSeller}
-            isBuyer={isBuyer}
-            resolution={resolution}
-            countdown={countdown}
-            resolving={resolving}
-            onSellerConfirm={() => { void handleResolve("seller"); }}
-            onUserDone={(done) => { void handleResolve("user", done); }}
-          />
+        {/* Quota đầy */}
+        {!chatEnded && quota.locked && chatActive && !resolution.sellerConfirmed && isBuyer && (
+          <div style={{ textAlign: "center", padding: "8px 0" }}>
+            <p style={{ fontSize: "12px", color: "#64748b" }}>
+              ⏳ Đã đạt 20 tin nhắn. Đang chờ nhà bán hàng xác nhận...
+            </p>
+          </div>
         )}
 
         {/* Input bình thường */}
-        {!chatEnded && !quota.locked && !turnBlocked && status === "IN_REVIEW" && (
+        {!chatEnded && !quota.locked && !turnBlocked && chatActive && (
           <>
             <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
               <textarea
@@ -378,112 +500,11 @@ export default function TicketChatPanel({
   );
 }
 
-// ── Resolution buttons (sau 20 tin) ──
-function ResolutionButtons({
-  isSeller, isBuyer, resolution, countdown, resolving,
-  onSellerConfirm, onUserDone,
-}: {
-  isSeller: boolean; isBuyer: boolean;
-  resolution: Resolution; countdown: number | null; resolving: boolean;
-  onSellerConfirm: () => void; onUserDone: (done: boolean) => void;
-}) {
-  const fmtCountdown = (ms: number) => {
-    const s = Math.floor(ms / 1000);
-    const m = Math.floor(s / 60);
-    const h = Math.floor(m / 60);
-    return `${String(h).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-  };
-
-  return (
-    <div style={{
-      background: "#f8fafc", borderRadius: "12px", padding: "14px",
-      border: "1px solid #e2e8f0", marginBottom: "2px",
-    }}>
-      <p style={{ fontSize: "12px", color: "#475569", marginBottom: "10px", textAlign: "center" }}>
-        Đã đạt giới hạn <strong>20 tin nhắn</strong>. Vui lòng xác nhận kết quả.
-      </p>
-
-      {/* Seller chưa confirm */}
-      {isSeller && !resolution.sellerConfirmed && (
-        <button
-          onClick={onSellerConfirm}
-          disabled={resolving}
-          style={{
-            width: "100%", padding: "10px", borderRadius: "10px",
-            background: "#16a34a", color: "#fff", border: "none",
-            fontSize: "13px", fontWeight: "700", cursor: resolving ? "not-allowed" : "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: "7px",
-            opacity: resolving ? 0.7 : 1,
-          }}
-        >
-          <CheckCircle2 size={15} />
-          Xác nhận đơn hàng đã hoàn thành
-        </button>
-      )}
-
-      {/* Seller đã confirm — thông báo */}
-      {isSeller && resolution.sellerConfirmed && (
-        <p style={{ textAlign: "center", fontSize: "12px", color: "#16a34a", fontWeight: "600" }}>
-          ✓ Bạn đã xác nhận. Đang chờ người mua phản hồi...
-        </p>
-      )}
-
-      {/* User: chờ seller xác nhận trước */}
-      {isBuyer && !resolution.sellerConfirmed && (
-        <p style={{ textAlign: "center", fontSize: "12px", color: "#64748b" }}>
-          ⏳ Đang chờ nhà bán hàng xác nhận hoàn thành...
-        </p>
-      )}
-
-      {/* User: seller đã confirm → user có 60' để bấm */}
-      {isBuyer && resolution.sellerConfirmed && resolution.userDone === null && (
-        <>
-          {countdown !== null && (
-            <div style={{
-              textAlign: "center", marginBottom: "10px",
-              padding: "6px", background: countdown < 300000 ? "#fef2f2" : "#f0fdf4",
-              borderRadius: "8px", border: `1px solid ${countdown < 300000 ? "#fecaca" : "#bbf7d0"}`,
-            }}>
-              <span style={{ fontSize: "11px", color: countdown < 300000 ? "#dc2626" : "#16a34a" }}>
-                ⏱ Tự động xác nhận sau: <strong>{fmtCountdown(countdown)}</strong>
-              </span>
-            </div>
-          )}
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              onClick={() => onUserDone(true)}
-              disabled={resolving}
-              style={{
-                flex: 1, padding: "10px", borderRadius: "10px",
-                background: "#16a34a", color: "#fff", border: "none",
-                fontSize: "13px", fontWeight: "700",
-                cursor: resolving ? "not-allowed" : "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                opacity: resolving ? 0.7 : 1,
-              }}
-            >
-              <CheckCircle2 size={14} /> Đã nhận được
-            </button>
-            <button
-              onClick={() => onUserDone(false)}
-              disabled={resolving}
-              style={{
-                flex: 1, padding: "10px", borderRadius: "10px",
-                background: "#fff", color: "#dc2626",
-                border: "1.5px solid #fca5a5",
-                fontSize: "13px", fontWeight: "700",
-                cursor: resolving ? "not-allowed" : "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                opacity: resolving ? 0.7 : 1,
-              }}
-            >
-              <XCircle size={14} /> Chưa hoàn thành
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
+function fmtCountdown(ms: number): string {
+  const s = Math.floor(ms / 1000);
+  const m = Math.floor(s / 60);
+  const h = Math.floor(m / 60);
+  return `${String(h).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
 // ── Banner trạng thái kết thúc ──

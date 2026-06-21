@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { z } from "zod";
 import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
 import {
@@ -25,7 +26,9 @@ const patchSchema = z.object({
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "content:read");
 
     const key = req.nextUrl.searchParams.get("key") as SiteContentKey | null;
 
@@ -47,7 +50,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    const me = requireAdmin(session);
+    const me = requireStaff(session);
+ await requirePermission(session, "content:update");
 
     const body: unknown = await req.json();
     const parsed = patchSchema.safeParse(body);

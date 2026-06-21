@@ -132,7 +132,7 @@ export default async function HomePage() {
       where: { isActive: true, deletedAt: null },
       orderBy: [{ isFeatured: "desc" }, { displayOrder: "asc" }],
       take: 8,
-      select: { id: true, slug: true, name: true, thumbnail: true, price: true, platform: true },
+      select: { id: true, slug: true, name: true, thumbnail: true, price: true, platform: true, category: true },
     }),
     prisma.course.findMany({
       where: { isActive: true, deletedAt: null },
@@ -193,7 +193,7 @@ export default async function HomePage() {
       <HomeDriftObserver />
 
       {/* ── DJ MEDIA AGENCY INTRO ────────────────────── */}
-      <section style={{ padding: "80px 0 72px", background: "#fff", overflow: "hidden" }}>
+      <section className="dj-media-section" style={{ padding: "80px 0 72px", background: "#fff", overflow: "hidden" }}>
         <div style={{ maxWidth: "1480px", margin: "0 auto", padding: "0 24px" }}>
           <div className="dj-media-grid">
 
@@ -204,7 +204,7 @@ export default async function HomePage() {
                 color: "#0f172a", lineHeight: "1.2", marginBottom: "0",
               }}>
                 {djContent.companyTitle.split("\n").map((line, i) => (
-                  <span key={i} style={{ display: "block", whiteSpace: "nowrap" }}>{line.replace("&", "& ")}</span>
+                  <span key={i} className="dj-title-line" style={{ display: "block", whiteSpace: "nowrap" }}>{line.replace("&", "& ")}</span>
                 ))}
               </h2>
             </div>
@@ -268,6 +268,7 @@ export default async function HomePage() {
       {/* ── HERO ─────────────────────────────────────── */}
       <section
         id="hero"
+        className="hero-section"
         style={{
           position: "relative",
           zIndex: 0,
@@ -353,7 +354,7 @@ export default async function HomePage() {
 
             {/* ── 2: Portrait ── */}
             <div className="hero-img-block anim-scale-in" data-d="2">
-              <div style={{ position: "relative", width: "380px", margin: "0 auto" }}>
+              <div className="hero-portrait-wrap" style={{ position: "relative", width: "380px", margin: "0 auto" }}>
                 {/* Orbit halo */}
                 <div style={{
                   position: "absolute", inset: "-30px",
@@ -383,7 +384,7 @@ export default async function HomePage() {
                 </div>
 
                 {/* Floating chips */}
-                <div style={{
+                <div className="hero-chip hero-chip-left" style={{
                   position: "absolute", background: "rgba(255,255,255,.96)",
                   backdropFilter: "blur(8px)", borderRadius: "14px", padding: "10px 16px",
                   boxShadow: "0 8px 24px rgba(0,0,0,.15)", zIndex: 3,
@@ -393,7 +394,7 @@ export default async function HomePage() {
                   <div style={{ fontSize: "1.3rem", fontWeight: "800", color: "#0066ff", lineHeight: 1 }}>{heroContent.chip1Value}</div>
                   <div style={{ fontSize: ".7rem", color: "#64748b", fontWeight: "600", marginTop: "2px" }}>{heroContent.chip1Label}</div>
                 </div>
-                <div style={{
+                <div className="hero-chip hero-chip-right" style={{
                   position: "absolute", background: "rgba(255,255,255,.96)",
                   backdropFilter: "blur(8px)", borderRadius: "14px", padding: "10px 16px",
                   boxShadow: "0 8px 24px rgba(0,0,0,.15)", zIndex: 3,
@@ -750,7 +751,7 @@ export default async function HomePage() {
 
           {(() => {
             const cards = featuredServices.length > 0
-              ? featuredServices.map((s) => ({ href: `/dich-vu/${s.slug}`, name: s.name, price: Number(s.price), thumb: s.thumbnail, emoji: "⚙️" }))
+              ? featuredServices.map((s) => ({ href: `/dich-vu?category=${encodeURIComponent(s.category)}`, name: s.name, price: Number(s.price), thumb: s.thumbnail, emoji: "⚙️" }))
               : POPULAR_SERVICES.slice(0, 8).map((s) => ({ href: s.href, name: s.title, price: 0, thumb: null as string | null, emoji: s.emoji }));
             return (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "16px" }} className="grid-4-responsive">
@@ -911,7 +912,7 @@ export default async function HomePage() {
                 return (
                   <Link
                     key={tut.id}
-                    href={`/tut-tricks/${tut.slug}`}
+                    href="/tut-tricks"
                     className="tut-card anim-card-in"
                     data-d={String(i + 1)}
                     style={{
@@ -1532,6 +1533,7 @@ export default async function HomePage() {
           .press-grid     { grid-template-columns: repeat(2, 1fr); }
           .dj-media-grid  { grid-template-columns: 1fr 380px; column-gap: 40px; }
           .hero-grid      { grid-template-columns: 1fr 320px; column-gap: 40px; }
+          .hero-portrait-wrap { width: 320px !important; }
           .founders-grid  { gap: 36px; }
           .stats-grid-responsive { grid-template-columns: repeat(3,1fr) !important; }
           .cat-icons-grid    { grid-template-columns: repeat(4,1fr) !important; }
@@ -1545,6 +1547,9 @@ export default async function HomePage() {
         @media (max-width: 768px) {
           .press-grid { grid-template-columns: 1fr; gap: 16px; }
 
+          /* Section 1 padding & title */
+          .dj-media-section { padding: 52px 0 44px !important; }
+
           /* Section 1 mobile: title → image → desc → button */
           .dj-media-grid {
             grid-template-columns: 1fr;
@@ -1555,6 +1560,9 @@ export default async function HomePage() {
           .dj-media-img   { grid-column: 1; grid-row: 2; }
           .dj-media-desc  { grid-column: 1; grid-row: 3; }
           .dj-media-btn   { grid-column: 1; grid-row: 4; }
+
+          /* Section 2 padding */
+          .hero-section { padding: 64px 0 52px !important; }
 
           /* Section 2 mobile: title → image → desc → button */
           .hero-grid {
@@ -1568,6 +1576,12 @@ export default async function HomePage() {
           .hero-desc-block  { grid-column: 1; grid-row: 3; }
           .hero-btn-block   { grid-column: 1; grid-row: 4; }
           .hero-btn-block > div { justify-content: center; }
+
+          /* Portrait sizing — chips nằm ngoài portrait nên giới hạn chiều rộng có padding */
+          .hero-portrait-wrap { width: 280px !important; max-width: calc(100% - 80px) !important; }
+          /* Chips vẫn hiển thị, chỉ căn lại padding */
+          .hero-chip-left  { left: -24px !important; }
+          .hero-chip-right { right: -24px !important; }
 
           /* Founders grid mobile: stack vertically */
           .founders-grid { grid-template-columns: 1fr; gap: 48px; }
@@ -1586,6 +1600,17 @@ export default async function HomePage() {
           .stats-grid-responsive { grid-template-columns: repeat(2,1fr) !important; }
           .product-grid      { grid-template-columns: 1fr !important; }
           .tut-grid          { grid-template-columns: 1fr !important; }
+
+          /* Section 1 & 2 padding mobile nhỏ */
+          .dj-media-section { padding: 36px 0 28px !important; }
+          .hero-section     { padding: 44px 0 36px !important; }
+
+          /* Portrait full width, hide chips để tránh tràn */
+          .hero-portrait-wrap { width: 100% !important; max-width: 100% !important; }
+          .hero-chip          { display: none !important; }
+
+          /* DJ Media title: cho phép wrap trên màn hình rất nhỏ */
+          .dj-title-line { white-space: normal !important; }
         }
       `}</style>
     </>

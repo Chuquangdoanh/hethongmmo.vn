@@ -12,6 +12,8 @@ import {
 import TicketChatPanel from "./_components/TicketChatPanel";
 import SlaTimer from "./_components/SlaTimer";
 import TicketScrollLink from "./_components/TicketScrollLink";
+import ScrollToTop from "@/components/shared/ScrollToTop";
+import BackBtn from "@/components/shared/BackBtn";
 import "./ho-tro.css";
 
 export const metadata: Metadata = { title: "Ticket hỗ trợ" };
@@ -22,7 +24,7 @@ const STATUS_LABEL: Record<string, string> = {
   IN_REVIEW:     "Đang xử lý",
   PENDING_ADMIN: "Đã phản hồi",
   RESOLVED:      "Đã hoàn thành",
-  REJECTED:      "Đã đóng",
+  REJECTED:      "Đã hoàn tiền ",
 };
 const STATUS_STYLE: Record<string, { bg: string; color: string; border: string }> = {
   OPEN:          { bg: "#fffbeb", color: "#b45309",  border: "#fde68a" },
@@ -98,14 +100,6 @@ export default async function HoTroPage({
     },
   });
 
-  /* Auto-redirect đến ticket đang hoạt động */
-  if (!activeId && complaints.length > 0) {
-    const first =
-      complaints.find(c => c.status === "IN_REVIEW" || c.status === "PENDING_ADMIN") ??
-      complaints[0]!;
-    redirect(`/ho-tro?id=${first.id}`);
-  }
-
   /* Order info cho list */
   const listOrderIds = complaints.map(c => c.orderId).filter(Boolean) as string[];
   const listOrders   = listOrderIds.length > 0
@@ -170,11 +164,21 @@ export default async function HoTroPage({
       }
     : undefined;
 
+  // $queryRaw bypass Prisma client cũ — đọc round_two_opened đúng kể cả trước khi restart server
+  let r2opened = false;
+  if (chatRoom?.id) {
+    const rows = await prisma.$queryRaw<[{ round_two_opened: boolean }]>`
+      SELECT round_two_opened FROM chat_rooms WHERE id = ${chatRoom.id}::uuid
+    `;
+    r2opened = rows[0]?.round_two_opened ?? false;
+  }
+
   const initialResolution = chatRoom
     ? {
-        sellerConfirmed: chatRoom.sellerConfirmed,
+        sellerConfirmed:  chatRoom.sellerConfirmed,
         sellerConfirmedAt: chatRoom.sellerConfirmedAt?.toISOString() ?? null,
-        userDone: chatRoom.userDone,
+        userDone:         chatRoom.userDone,
+        roundTwoOpened:   r2opened,
       }
     : undefined;
 
@@ -199,7 +203,7 @@ export default async function HoTroPage({
       }
     : null;
 
-  const chatEnded     = selected?.status === "RESOLVED" || selected?.status === "REJECTED" || selected?.status === "PENDING_ADMIN";
+  const chatEnded     = selected?.status === "RESOLVED" || selected?.status === "REJECTED";
   const progressSteps = selected
     ? buildSteps(selected.status, selected.createdAt, selected.resolvedAt ?? null)
     : null;
@@ -212,7 +216,8 @@ export default async function HoTroPage({
   ];
 
   return (
-    <div className="ht-wrapper">
+    <div className={`ht-wrapper${activeId ? " ht-wrapper--detail" : " ht-wrapper--list"}`}>
+      <ScrollToTop />
 
       {/* ══ LEFT — Danh sách ticket ═══════════════════════════════ */}
       <div className="ht-sidebar">
@@ -288,7 +293,7 @@ export default async function HoTroPage({
                     </div>
                     <div style={{ flexShrink: 0, textAlign: "right" }}>
                       <p style={{ fontSize: "10px", color: "#94a3b8", marginBottom: "5px" }}>
-                        {new Date(c.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}
+                        {new Date(c.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}
                       </p>
                       <span style={{
                         display: "inline-block", fontSize: "9px", padding: "2px 7px",
@@ -309,17 +314,9 @@ export default async function HoTroPage({
       {/* ══ MIDDLE — Chi tiết ticket ══════════════════════════════ */}
       {selected ? (
         <div className="ht-middle">
-          {/* Breadcrumb */}
-          <div className="ht-breadcrumb">
-            <Link href="/" style={{ fontSize: "12px", color: "#64748b", textDecoration: "none" }}>Trang chủ</Link>
-            <span style={{ color: "#cbd5e1", fontSize: "12px" }}>›</span>
-            <Link href="/ho-tro" style={{ fontSize: "12px", color: "#64748b", textDecoration: "none" }}>Ticket hỗ trợ</Link>
-            <span style={{ color: "#cbd5e1", fontSize: "12px" }}>›</span>
-            <span style={{ fontSize: "12px", color: "#1e293b", fontWeight: "500" }}>Chi tiết khiếu nại</span>
-          </div>
-
           {/* Title bar */}
           <div className="ht-title-bar">
+            <BackBtn href="/ho-tro" />
             <div style={{ flex: 1, minWidth: 0 }}>
               <h1 style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a", margin: 0 }}>
                 Chi tiết khiếu nại {ticketCode(selected.id)}
@@ -423,6 +420,7 @@ export default async function HoTroPage({
 
             {chatRoomForPanel ? (
               <TicketChatPanel
+                key={chatRoomForPanel.id}
                 room={chatRoomForPanel}
                 currentUserId={me.id}
                 currentUserLabel={currentUserLabel}

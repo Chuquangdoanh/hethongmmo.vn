@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { toApiError } from "@/lib/errors";
 
@@ -29,7 +30,9 @@ const createSchema = z.object({
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "content:read");
 
     const { searchParams } = req.nextUrl;
     const type     = searchParams.get("type") as "COURSE" | "SERVICE" | null;
@@ -67,7 +70,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+
+    await requirePermission(session, "content:create");
 
     const body: unknown = await req.json();
     const parsed = createSchema.safeParse(body);

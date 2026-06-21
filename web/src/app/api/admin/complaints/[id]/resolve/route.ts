@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
 import { apiOk, apiCatch, apiError } from "@/lib/api-response";
@@ -14,7 +15,8 @@ export async function POST(
   try {
     const { id } = await params;
     const session = await auth();
-    const me = requireAdmin(session);
+    const me = requireStaff(session);
+ await requirePermission(session, "complaints:close");
 
     const complaint = await prisma.complaint.findUnique({
       where: { id },
@@ -25,19 +27,16 @@ export async function POST(
       return apiError("Khiếu nại đã được xử lý", "ALREADY_RESOLVED", 400);
     }
 
-    let frozenOrderId: string | null = null;
-    let sellerDeducted = false;
-    let deductedAmount = 0;
+    let refundedAmount = 0;
 
     await prisma.$transaction(async (tx) => {
-      // Mark complaint resolved
       await tx.complaint.update({
         where: { id },
         data: {
           status: "REJECTED",
           resolvedByUserId: me.id,
           resolvedAt: new Date(),
-          resolution: "Đơn hàng bị đóng băng do khiếu nại được giải quyết.",
+          resolution: "Admin phán quyết: người mua thắng khiếu nại. Tiền hoàn về ví người mua.",
         },
       });
 
@@ -45,41 +44,49 @@ export async function POST(
 
       const order = await tx.order.findUnique({
         where: { id: complaint.orderId },
-        select: { id: true, status: true, finalPrice: true, sellerId: true, withdrawn: true },
+        select: { id: true, finalPrice: true, sellerId: true, withdrawn: true },
       });
       if (!order) return;
 
-      frozenOrderId = order.id;
+      const refundAmt = Number(order.finalPrice);
+      refundedAmount = refundAmt;
 
-      // Freeze the order
-      await tx.order.update({
-        where: { id: order.id },
-        data: { status: "FROZEN" },
-      });
+      // Đặt order về REFUNDED
+      await tx.order.update({ where: { id: order.id }, data: { status: "REFUNDED" } });
 
-      // If seller already cashed out (withdrawn=true), deduct from their user balance
-      if (order.withdrawn && order.sellerId) {
-        const seller = await tx.user.findUnique({
-          where: { id: order.sellerId },
-          select: { id: true, balance: true },
+      // Hoàn tiền về ví người mua
+      const buyer = await tx.user.findUnique({ where: { id: complaint.userId }, select: { balance: true } });
+      if (buyer) {
+        const balanceBefore = Number(buyer.balance);
+        const balanceAfter  = balanceBefore + refundAmt;
+        await tx.user.update({ where: { id: complaint.userId }, data: { balance: balanceAfter } });
+        await tx.transaction.create({
+          data: {
+            userId:        complaint.userId,
+            orderId:       complaint.orderId,
+            type:          "REFUND",
+            amount:        refundAmt,
+            description:   "Hoàn tiền khiếu nại — admin phán quyết người mua thắng",
+            balanceBefore,
+            balanceAfter,
+          },
         });
+      }
+
+      // Nếu seller đã rút tiền trước đó → trừ lại từ ví seller
+      if (order.withdrawn && order.sellerId) {
+        const seller = await tx.user.findUnique({ where: { id: order.sellerId }, select: { balance: true } });
         if (seller) {
-          const amt = Number(order.finalPrice);
           const balanceBefore = Number(seller.balance);
-          const balanceAfter = balanceBefore - amt; // allow negative to reflect debt
-          deductedAmount = amt;
-          sellerDeducted = true;
-          await tx.user.update({
-            where: { id: order.sellerId },
-            data: { balance: balanceAfter },
-          });
+          const balanceAfter  = balanceBefore - refundAmt;
+          await tx.user.update({ where: { id: order.sellerId }, data: { balance: balanceAfter } });
           await tx.transaction.create({
             data: {
-              userId: order.sellerId,
-              orderId: order.id,
-              type: "COMPLAINT_DEDUCTION",
-              amount: -amt,
-              description: `Trừ tiền do khiếu nại đơn hàng #${order.id} được giải quyết`,
+              userId:      order.sellerId,
+              orderId:     order.id,
+              type:        "COMPLAINT_DEDUCTION",
+              amount:      -refundAmt,
+              description: "Trừ tiền do admin phán quyết khiếu nại — người mua thắng",
               balanceBefore,
               balanceAfter,
             },
@@ -90,13 +97,13 @@ export async function POST(
 
     await writeAuditLog({
       actorId: me.id,
-      action: "RESOLVE_COMPLAINT_FREEZE",
+      action: "ADMIN_REJECT_COMPLAINT",
       targetType: "Complaint",
       targetId: id,
-      after: { frozenOrderId, sellerDeducted, deductedAmount },
+      after: { outcome: "user_wins", refundedAmount },
     });
 
-    return apiOk({ resolved: true, frozenOrderId, sellerDeducted, deductedAmount });
+    return apiOk({ resolved: true, outcome: "user_wins", refundedAmount });
   } catch (err) {
     return apiCatch(err);
   }

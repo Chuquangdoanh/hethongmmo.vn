@@ -45,8 +45,8 @@ export async function GET(
 
     const senderLabel = await assertAccess(roomId, me.id, me.role);
 
-    // Lazy auto-resolution check
-    await checkAutoResolution(roomId);
+    // Lazy auto-resolution check — lỗi bên trong không được làm hỏng response
+    try { await checkAutoResolution(roomId); } catch { /* silent — không block user */ }
 
     const afterStr = req.nextUrl.searchParams.get("after");
     const after = afterStr ? new Date(afterStr) : null;
@@ -73,6 +73,12 @@ export async function GET(
 
     if (!chatRoom) return NextResponse.json({ error: "Không tìm thấy phòng chat", code: "NOT_FOUND" }, { status: 404 });
 
+    // $queryRaw bypass Prisma client validation — đọc đúng kể cả khi client cũ chưa biết field
+    const r2rows = await prisma.$queryRaw<[{ round_two_opened: boolean }]>`
+      SELECT round_two_opened FROM chat_rooms WHERE id = ${roomId}::uuid
+    `;
+    const roundTwoOpened = r2rows[0]?.round_two_opened ?? false;
+
     const status = chatRoom.complaint?.status;
     const chatEnded = status === "RESOLVED" || status === "REJECTED";
 
@@ -82,9 +88,10 @@ export async function GET(
       complaintStatus: status,
       quota: makeQuota(chatRoom.totalMsgCount, chatRoom.userTurnCount, senderLabel),
       resolution: {
-        sellerConfirmed: chatRoom.sellerConfirmed,
+        sellerConfirmed:  chatRoom.sellerConfirmed,
         sellerConfirmedAt: chatRoom.sellerConfirmedAt?.toISOString() ?? null,
-        userDone: chatRoom.userDone,
+        userDone:         chatRoom.userDone,
+        roundTwoOpened,
       },
     });
   } catch (err: unknown) {
@@ -106,8 +113,8 @@ export async function POST(
 
     const senderLabel = await assertAccess(roomId, me.id, me.role);
 
-    // Lazy auto-resolution check
-    await checkAutoResolution(roomId);
+    // Lazy auto-resolution check — lỗi bên trong không được làm hỏng response
+    try { await checkAutoResolution(roomId); } catch { /* silent — không block user */ }
 
     const room = await prisma.chatRoom.findUnique({
       where: { id: roomId },
@@ -116,6 +123,7 @@ export async function POST(
         userTurnCount: true,
         firstSellerMsgAt: true,
         sellerConfirmed: true,
+        userDone: true,
         complaint: { select: { status: true } },
       },
     });
@@ -123,8 +131,14 @@ export async function POST(
     if (!room) return NextResponse.json({ error: "Không tìm thấy phòng chat", code: "NOT_FOUND" }, { status: 404 });
 
     const status = room.complaint?.status;
-    if (status === "RESOLVED" || status === "REJECTED" || status === "PENDING_ADMIN") {
-      return NextResponse.json({ error: "Khiếu nại đã kết thúc.", code: "CHAT_ENDED" }, { status: 400 });
+
+    // Chat đóng khi:
+    // - Kết thúc hoàn toàn (RESOLVED/REJECTED)
+    // - PENDING_ADMIN + userDone=false (cả vòng 1 chờ admin lẫn vòng 2 tranh chấp cuối)
+    const chatClosed = status === "RESOLVED" || status === "REJECTED" ||
+      (status === "PENDING_ADMIN" && room.userDone === false);
+    if (chatClosed) {
+      return NextResponse.json({ error: "Chat hiện đang đóng.", code: "CHAT_ENDED" }, { status: 400 });
     }
 
     // Hết tổng quota → block

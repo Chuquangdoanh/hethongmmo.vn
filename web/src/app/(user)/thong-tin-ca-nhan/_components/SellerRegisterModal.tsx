@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { FolderOpen, Package } from "lucide-react";
 import { formatVnd } from "@/lib/utils/format";
 
 const REGISTRATION_FEE = 50_000;
@@ -268,7 +269,7 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
                       {(["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] as StoreType[]).map((type) => {
                         const isActive = storeType === type;
                         const label = type === "TAI_NGUYEN_MMO" ? "Nguyên Liệu MMO" : "Kho Tài Nguyên";
-                        const icon = type === "TAI_NGUYEN_MMO" ? "🗂️" : "📦";
+                        const Icon  = type === "TAI_NGUYEN_MMO" ? FolderOpen : Package;
                         return (
                           <button
                             key={type}
@@ -280,7 +281,9 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
                                 : "border-gray-200 bg-white hover:border-blue-300"
                             }`}
                           >
-                            <span className="text-2xl">{icon}</span>
+                            <span className={`flex items-center justify-center w-9 h-9 rounded-xl ${isActive ? "bg-blue-100" : "bg-gray-100"}`}>
+                              <Icon size={20} strokeWidth={1.75} className={isActive ? "text-blue-600" : "text-gray-500"} />
+                            </span>
                             <span className={`text-xs font-semibold text-center leading-tight ${isActive ? "text-blue-700" : "text-gray-600"}`}>
                               {label}
                             </span>

@@ -7,7 +7,27 @@ export const metadata: Metadata = { title: "Admin — Danh mục tài nguyên" }
 export default async function AdminResourceCategoriesPage() {
   const categories = await prisma.resourceCategory.findMany({
     orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
-    select: { id: true, name: true, iconUrl: true, displayOrder: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
+    select: {
+      id: true,
+      name: true,
+      iconUrl: true,
+      displayOrder: true,
+      showInKhoTaiNguyen: true,
+      showInTaiNguyenMmo: true,
+      _count: { select: { subCategories: true } },
+      subCategories: {
+        orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+        select: {
+          id: true,
+          name: true,
+          categoryName: true,
+          displayOrder: true,
+          isActive: true,
+          showInKhoTaiNguyen: true,
+          showInTaiNguyenMmo: true,
+        },
+      },
+    },
   });
 
   return (

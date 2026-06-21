@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { apiOk, apiCatch } from "@/lib/api-response";
 
@@ -13,6 +14,8 @@ export async function DELETE(
   try {
     const session = await auth();
     requireStaff(session);
+
+    await requirePermission(session, "sellers:update");
 
     const { id, subId } = await params;
     const request = await prisma.sellerRequest.findUnique({

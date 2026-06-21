@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, ChevronDown } from "lucide-react";
 
 export interface PlatformItem { name: string; count: number; }
 export interface TypeItem { id: string; name: string; count: number; }
@@ -60,6 +60,7 @@ export function KhoFilterSidebar(_props: Props) {
   const router = useRouter();
   const sp = useSearchParams();
   const [, startTransition] = useTransition();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const isMounted = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -96,7 +97,11 @@ export function KhoFilterSidebar(_props: Props) {
     timerRef.current = setTimeout(() => {
       const params = new URLSearchParams();
       const sort = spRef.current.get("sort");
+      const category = spRef.current.get("category");
+      const subcategory = spRef.current.get("subcategory");
       if (sort) params.set("sort", sort);
+      if (category) params.set("category", category);
+      if (subcategory) params.set("subcategory", subcategory);
       if (q.trim()) params.set("q", q.trim());
       const isMinActive = minPrice > MIN_SLIDER_DEFAULT;
       const isMaxActive = maxPriceIdx < MAX_PRICE_LAST_IDX;
@@ -121,15 +126,27 @@ export function KhoFilterSidebar(_props: Props) {
     "w-full px-3 py-[9px] border border-[#e5e7eb] rounded-lg text-sm text-[#374151] placeholder-[#9ca3af] focus:outline-none focus:border-[#6366f1] focus:ring-2 focus:ring-[#6366f1]/10 transition-colors bg-[#f9fafb]";
 
   return (
-    <aside className="w-72 shrink-0 self-start sticky top-24">
+    <aside className="hidden lg:block lg:w-72 shrink-0 self-start lg:sticky lg:top-24">
       <div className="bg-white rounded-xl border border-[#e5e7eb] shadow-sm overflow-hidden">
 
-        {/* Header */}
-        <div className="flex items-center gap-2 px-4 py-3.5 bg-[#f8fafc] border-b border-[#e5e7eb]">
-          <SlidersHorizontal size={15} className="text-[#64748b]" />
-          <span className="text-sm font-semibold text-[#0f172a]">Bộ lọc</span>
-        </div>
+        {/* Header — tappable on mobile to toggle */}
+        <button
+          type="button"
+          className="w-full flex items-center justify-between px-4 py-3.5 bg-[#f8fafc] border-b border-[#e5e7eb] lg:cursor-default"
+          onClick={() => setMobileOpen((v) => !v)}
+        >
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal size={15} className="text-[#64748b]" />
+            <span className="text-sm font-semibold text-[#0f172a]">Bộ lọc</span>
+          </div>
+          <ChevronDown
+            size={16}
+            className={`text-[#64748b] transition-transform duration-200 lg:hidden ${mobileOpen ? "rotate-180" : ""}`}
+          />
+        </button>
 
+        {/* Body — ẩn trên mobile khi chưa mở, luôn hiện trên lg */}
+        <div className={`${mobileOpen ? "block" : "hidden"} lg:block`}>
         <div className="px-4 py-4 space-y-5">
 
           {/* Tìm kiếm realtime */}
@@ -228,6 +245,7 @@ export function KhoFilterSidebar(_props: Props) {
           </button>
 
         </div>
+        </div>{/* end collapsible body */}
       </div>
     </aside>
   );

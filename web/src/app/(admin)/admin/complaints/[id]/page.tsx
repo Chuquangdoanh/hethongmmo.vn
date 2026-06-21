@@ -11,10 +11,11 @@ import ComplaintChatPanel, { type ChatRoomData } from "./_components/ComplaintCh
 export const metadata: Metadata = { title: "Admin — Chi tiết khiếu nại" };
 
 const STATUS_BADGES: Record<string, { label: string; cls: string }> = {
-  OPEN:      { label: "Mở",           cls: "bg-red-50 text-red-600 border-red-200" },
-  IN_REVIEW: { label: "Đang xem xét", cls: "bg-amber-50 text-amber-700 border-amber-200" },
-  RESOLVED:  { label: "Hoàn thành",   cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  REJECTED:  { label: "Đóng băng",     cls: "bg-red-50 text-red-600 border-red-200" },
+  OPEN:          { label: "Chờ xử lý",    cls: "bg-amber-50 text-amber-700 border-amber-200" },
+  IN_REVIEW:     { label: "Đang xem xét", cls: "bg-blue-50 text-blue-700 border-blue-200" },
+  PENDING_ADMIN: { label: "Chờ phán quyết", cls: "bg-violet-50 text-violet-700 border-violet-200" },
+  RESOLVED:      { label: "Hoàn thành",   cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  REJECTED:      { label: "Đã hoàn tiền", cls: "bg-red-50 text-red-600 border-red-200" },
 };
 
 export default async function AdminComplaintDetailPage({
@@ -82,7 +83,7 @@ export default async function AdminComplaintDetailPage({
             });
             if (item?.contentEnc) deliveredContent = decrypt(Buffer.from(item.contentEnc));
           }
-        } catch { /* decryption failed — leave null */ }
+        } catch { /* decryption failed */ }
       }
 
       orderInfo = {
@@ -98,7 +99,7 @@ export default async function AdminComplaintDetailPage({
     }
   }
 
-  // Fetch chat room if exists
+  // Fetch chat room
   let rawRoom = null;
   try {
     rawRoom = await prisma.chatRoom.findUnique({
@@ -108,8 +109,15 @@ export default async function AdminComplaintDetailPage({
         messages: { orderBy: { createdAt: "asc" }, take: 50 },
       },
     });
-  } catch {
-    /* prisma.chatRoom unavailable on stale client — restart dev server */
+  } catch { /* prisma stale client */ }
+
+  // $queryRaw đọc round_two_opened đúng kể cả khi Prisma client cũ
+  let adminR2opened = false;
+  if (rawRoom?.id) {
+    const rows = await prisma.$queryRaw<[{ round_two_opened: boolean }]>`
+      SELECT round_two_opened FROM chat_rooms WHERE id = ${rawRoom.id}::uuid
+    `;
+    adminR2opened = rows[0]?.round_two_opened ?? false;
   }
 
   const chatRoom: ChatRoomData | null = rawRoom
@@ -134,111 +142,133 @@ export default async function AdminComplaintDetailPage({
   const badge = STATUS_BADGES[complaint.status] ?? STATUS_BADGES["OPEN"]!;
 
   return (
-    <div className="max-w-6xl">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-3 mb-4">
-        <Link href="/admin/complaints" className="text-xs text-gray-500 hover:text-gray-700">
-          ← Khiếu nại
-        </Link>
+    <div className="max-w-6xl space-y-5">
+      {/* Breadcrumb + title */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Link href="/admin/complaints" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+            ← Danh sách khiếu nại
+          </Link>
+          <span className="text-gray-200">/</span>
+          <span className="text-xs text-gray-500 font-mono">#{id.slice(0, 8).toUpperCase()}</span>
+        </div>
+        <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${badge.cls}`}>
+          {badge.label}
+        </span>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
-        {/* Left column */}
-        <div className="space-y-6">
-          <div className="flex items-start justify-between gap-4">
-            <h1 className="text-2xl font-bold text-gray-900">Chi tiết khiếu nại</h1>
-            <span className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold border ${badge.cls}`}>
-              {badge.label}
-            </span>
+      {/* ── Row 1: 5:5 — Thông tin khiếu nại | Thông tin đơn hàng ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        {/* Thông tin khiếu nại */}
+        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+          <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex items-center gap-2">
+            <span className="text-base">📋</span>
+            <h2 className="text-sm font-bold text-gray-800">Thông tin khiếu nại</h2>
+          </div>
+          <div className="px-5 py-4 space-y-3">
+            <Row label="Người khiếu nại">
+              <span className="text-sm font-semibold text-gray-900">
+                {complaint.user.fullName ?? complaint.user.email}
+              </span>
+              <span className="text-xs text-gray-400 ml-2">{complaint.user.email}</span>
+            </Row>
+            <Row label="Lý do">
+              <span className="text-sm text-gray-800">{complaint.subject}</span>
+            </Row>
+            <Row label="Mô tả">
+              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                {complaint.content}
+              </p>
+            </Row>
+            <Row label="Ngày gửi">
+              <span className="text-sm text-gray-500">{formatDate(complaint.createdAt)}</span>
+            </Row>
+            {complaint.resolvedAt && (
+              <Row label="Giải quyết lúc">
+                <span className="text-sm text-gray-500">{formatDate(complaint.resolvedAt)}</span>
+              </Row>
+            )}
+            {complaint.resolution && (
+              <Row label="Kết quả">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                  {complaint.resolution}
+                </p>
+              </Row>
+            )}
+          </div>
+        </div>
+
+        {/* Thông tin đơn hàng */}
+        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+          <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🛍️</span>
+              <h2 className="text-sm font-bold text-gray-800">Thông tin đơn hàng</h2>
+            </div>
+            {orderInfo && (
+              <Link
+                href={`/admin/orders/${orderInfo.id}`}
+                className="text-xs text-violet-600 hover:text-violet-800 font-medium transition-colors"
+              >
+                Xem chi tiết →
+              </Link>
+            )}
           </div>
 
-          {/* Complaint info */}
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-            <div className="px-5 py-3 bg-gray-50 border-b border-gray-200">
-              <h2 className="text-sm font-semibold text-gray-700">Thông tin khiếu nại</h2>
-            </div>
+          {orderInfo ? (
             <div className="px-5 py-4 space-y-3">
-              <Row label="Người khiếu nại">
-                <span className="text-sm font-medium text-gray-900">
-                  {complaint.user.fullName ?? complaint.user.email}
-                </span>
-                <span className="text-xs text-gray-400 ml-2">{complaint.user.email}</span>
-              </Row>
-              <Row label="Lý do">
-                <span className="text-sm text-gray-900">{complaint.subject}</span>
-              </Row>
-              <Row label="Mô tả chi tiết">
-                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{complaint.content}</p>
-              </Row>
-              <Row label="Ngày gửi">
-                <span className="text-sm text-gray-600">{formatDate(complaint.createdAt)}</span>
-              </Row>
-              {complaint.resolution && (
-                <Row label="Phản hồi xử lý">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{complaint.resolution}</p>
-                </Row>
-              )}
-            </div>
-          </div>
-
-          {/* Order info */}
-          {orderInfo && (
-            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-              <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-700">Thông tin đơn hàng</h2>
-                <Link
-                  href={`/admin/orders/${orderInfo.id}`}
-                  className="text-xs text-[#7C3AED] hover:text-[#A855F7]"
-                >
-                  Xem chi tiết →
-                </Link>
-              </div>
-              <div className="px-5 py-4 space-y-3">
-                <Row label="Tên sản phẩm">
-                  <span className="text-sm font-medium text-gray-900">{orderInfo.itemName}</span>
-                  <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">
+              <Row label="Sản phẩm">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-semibold text-gray-900">{orderInfo.itemName}</span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
                     {orderInfo.orderType === "MMO_PRODUCT" ? "MMO" : "Nhà bán"}
                   </span>
-                </Row>
-                <Row label="Mã đơn hàng">
-                  <span className="text-sm text-gray-600 font-mono">#{orderInfo.orderCode}</span>
-                </Row>
-                <Row label="Ngày mua">
-                  <span className="text-sm text-gray-600">{formatDate(orderInfo.createdAt)}</span>
-                </Row>
-                <Row label="Giá">
-                  <span className="text-sm font-semibold text-emerald-600">{formatVnd(orderInfo.finalPrice)}</span>
-                </Row>
-                <Row label="Người bán">
-                  <span className="text-sm text-gray-900">
-                    {orderInfo.sellerName ?? <span className="text-gray-400">Hệ thống</span>}
-                  </span>
-                </Row>
-                {orderInfo.deliveredContent && (
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 mb-1.5">Nội dung sản phẩm đã giao</p>
-                    <div className="rounded-xl bg-gray-900 px-4 py-3">
-                      <p className="text-sm font-mono text-white break-all leading-relaxed whitespace-pre-wrap">
-                        {orderInfo.deliveredContent}
-                      </p>
-                    </div>
+                </div>
+              </Row>
+              <Row label="Mã đơn">
+                <span className="text-sm text-gray-600 font-mono">#{orderInfo.orderCode}</span>
+              </Row>
+              <Row label="Ngày mua">
+                <span className="text-sm text-gray-500">{formatDate(orderInfo.createdAt)}</span>
+              </Row>
+              <Row label="Giá trị">
+                <span className="text-sm font-bold text-emerald-600">{formatVnd(orderInfo.finalPrice)}</span>
+              </Row>
+              <Row label="Người bán">
+                <span className="text-sm text-gray-900">
+                  {orderInfo.sellerName ?? <span className="text-gray-400 italic">Hệ thống</span>}
+                </span>
+              </Row>
+              {orderInfo.deliveredContent && (
+                <div className="pt-1">
+                  <p className="text-xs font-semibold text-gray-500 mb-2">Nội dung đã giao</p>
+                  <div className="rounded-xl bg-gray-900 px-4 py-3 max-h-32 overflow-y-auto">
+                    <p className="text-sm font-mono text-white break-all leading-relaxed whitespace-pre-wrap">
+                      {orderInfo.deliveredContent}
+                    </p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="px-5 py-10 text-center">
+              <p className="text-sm text-gray-400">Không có đơn hàng liên kết</p>
             </div>
           )}
         </div>
-
-        {/* Right column — chat */}
-        <ComplaintChatPanel
-          complaintId={id}
-          chatRoom={chatRoom}
-          currentUserId={me.id}
-          currentUserName={me.fullName}
-          complaintStatus={complaint.status}
-          orderId={complaint.orderId}
-        />
       </div>
+
+      {/* ── Row 2: Full width — Trò chuyện khiếu nại ── */}
+      <ComplaintChatPanel
+        complaintId={id}
+        chatRoom={chatRoom}
+        currentUserId={me.id}
+        currentUserName={me.fullName}
+        complaintStatus={complaint.status}
+        orderId={complaint.orderId}
+        initialRoundTwoOpened={adminR2opened}
+      />
     </div>
   );
 }
@@ -246,7 +276,7 @@ export default async function AdminComplaintDetailPage({
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex gap-3">
-      <span className="w-40 shrink-0 text-xs text-gray-500 pt-0.5">{label}</span>
+      <span className="w-36 shrink-0 text-xs text-gray-400 pt-0.5 font-medium">{label}</span>
       <div className="flex-1 min-w-0">{children}</div>
     </div>
   );

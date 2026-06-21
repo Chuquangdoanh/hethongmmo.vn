@@ -26,16 +26,31 @@ export default async function Header() {
 
   let balance: number | null = null;
   let avatarUrl: string | null = null;
-  if (sessionUser?.id) {
-    const row = await prisma.user.findUnique({
-      where: { id: sessionUser.id },
-      select: { balance: true, avatarUrl: true },
-    });
-    if (row) {
-      balance   = Number(row.balance);
-      avatarUrl = r2Url(row.avatarUrl);
-    }
-  }
+  const [tutCategories, rawSvcCategories] = await Promise.all([
+    prisma.tutTrickCategory.findMany({
+      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+      select: { name: true },
+    }),
+    prisma.serviceCategory.findMany({
+      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+      select: { name: true, iconUrl: true },
+    }),
+    sessionUser?.id
+      ? prisma.user.findUnique({
+          where: { id: sessionUser.id },
+          select: { balance: true, avatarUrl: true },
+        }).then((row) => {
+          if (row) {
+            balance   = Number(row.balance);
+            avatarUrl = r2Url(row.avatarUrl);
+          }
+        })
+      : Promise.resolve(),
+  ]);
+  const serviceCategories = rawSvcCategories.map((c) => ({
+    name: c.name,
+    iconUrl: r2Url(c.iconUrl),
+  }));
 
   return (
     <header className="hdr-bar" role="banner">
@@ -62,11 +77,7 @@ export default async function Header() {
             <button type="button" className="hdr-icon-btn" aria-label="Thông báo">
               <Bell size={18} strokeWidth={1.75} />
             </button>
-            {sessionUser && (
-              <Link href="/ho-tro" className="hdr-icon-btn" aria-label="Ticket hỗ trợ" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <TicketCheck size={18} strokeWidth={1.75} />
-              </Link>
-            )}
+          
           </div>
           <div className="hdr-desktop-auth">
             {sessionUser ? (
@@ -84,6 +95,8 @@ export default async function Header() {
             user={sessionUser}
             balance={balance}
             avatarUrl={avatarUrl}
+            tutCategories={tutCategories}
+            serviceCategories={serviceCategories}
           />
         </div>
 

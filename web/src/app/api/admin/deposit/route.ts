@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { AppAuthError } from "@/lib/auth/rbac";
 import { processDeposit } from "@/lib/services/deposit.service";
 import { toApiError } from "@/lib/errors";

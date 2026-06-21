@@ -7,6 +7,7 @@ import { formatVnd, formatDate } from "@/lib/utils/format";
 import {
   CheckCircle, Clock, XCircle, Store, Package, ChevronRight,
   AlertCircle, Boxes, Tag, CalendarDays, ShoppingBag, ArrowRight,
+  Phone, Globe, Send,
 } from "lucide-react";
 import SellerRegisterModal from "../thong-tin-ca-nhan/_components/SellerRegisterModal";
 
@@ -40,6 +41,7 @@ export default async function DangKyBanHangPage() {
       where: { id: me.id },
       select: {
         id: true, email: true, fullName: true, phone: true,
+        facebookUrl: true, telegramUsername: true,
         balance: true, sellerStatus: true, sellerCategory: true,
         maxSellerProducts: true,
       },
@@ -65,7 +67,13 @@ export default async function DangKyBanHangPage() {
   const statusCfg      = STATUS_CONFIG[sellerStatus] ?? STATUS_CONFIG["NONE"]!;
   const StatusIcon     = statusCfg.icon;
   const subCats        = subCategoryRows.map((r) => r.subCategory);
-  const canReRegister  = sellerStatus === "REJECTED" || sellerStatus === "REVOKED";
+  const canReRegister      = sellerStatus === "REJECTED" || sellerStatus === "REVOKED";
+  const missingProfileFields = [
+    !user.phone            && { key: "phone",    label: "Số điện thoại", Icon: Phone    },
+    !user.facebookUrl      && { key: "facebook", label: "Facebook",      Icon: Globe    },
+    !user.telegramUsername && { key: "telegram", label: "Telegram",      Icon: Send     },
+  ].filter(Boolean) as { key: string; label: string; Icon: typeof Phone }[];
+  const hasRequiredProfile = missingProfileFields.length === 0;
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
@@ -139,13 +147,36 @@ export default async function DangKyBanHangPage() {
         {/* Re-register button */}
         {(sellerStatus === "NONE" || canReRegister) && (
           <div className="mt-4 pt-4 border-t border-current/10">
-            <SellerRegisterModal
-              fullName={user.fullName}
-              phone={user.phone ?? null}
-              email={user.email}
-              balance={balance}
-              isReRegister={canReRegister}
-            />
+            {hasRequiredProfile ? (
+              <SellerRegisterModal
+                fullName={user.fullName}
+                phone={user.phone ?? null}
+                email={user.email}
+                balance={balance}
+                isReRegister={canReRegister}
+              />
+            ) : (
+              <div className="rounded-xl bg-amber-50 border border-amber-200 p-4">
+                <p className="text-sm font-semibold text-amber-800 mb-2">
+                  ⚠️ Vui lòng điền đầy đủ thông tin cá nhân trước khi đăng ký bán hàng
+                </p>
+                <p className="text-xs text-amber-700 mb-3">Cần bổ sung các thông tin sau:</p>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {missingProfileFields.map(({ key, label, Icon }) => (
+                    <span key={key} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100 border border-amber-300 text-xs font-semibold text-amber-800">
+                      <Icon size={12} strokeWidth={2} />
+                      {label}
+                    </span>
+                  ))}
+                </div>
+                <Link
+                  href="/thong-tin-ca-nhan"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold transition-colors"
+                >
+                  Cập nhật hồ sơ <ArrowRight size={13} />
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </div>

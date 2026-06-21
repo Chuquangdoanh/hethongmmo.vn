@@ -18,7 +18,7 @@ export default async function AdminMmoProductEditPage({
     select: {
       id: true, name: true, slug: true, category: true, categoryGroup: true,
       price: true, description: true, thumbnail: true,
-      isActive: true, isFeatured: true, displayOrder: true,
+      isActive: true, isFeatured: true, displayOrder: true, section: true,
     },
   });
 
@@ -45,6 +45,7 @@ export default async function AdminMmoProductEditPage({
           isActive: product.isActive,
           isFeatured: product.isFeatured,
           displayOrder: product.displayOrder,
+          section: product.section,
         }}
       />
     </div>

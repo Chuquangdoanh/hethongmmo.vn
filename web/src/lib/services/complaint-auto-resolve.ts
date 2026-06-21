@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
 
-const SELLER_REPLY_DEADLINE_MS = 12 * 60 * 60 * 1000; // 12 giờ
-const USER_CONFIRM_DEADLINE_MS = 60 * 60 * 1000;       // 60 phút
+const SELLER_REPLY_DEADLINE_MS  = 12 * 60 * 60 * 1000; // 12 giờ
+const USER_CONFIRM_DEADLINE_MS  = 60 * 60 * 1000;      // 60 phút
+const BUYER_REPLY_DEADLINE_MS   = 2 * 60 * 60 * 1000; // 2 giờ
 
 export async function checkAutoResolution(roomId: string): Promise<void> {
   const room = await prisma.chatRoom.findUnique({
@@ -14,6 +15,7 @@ export async function checkAutoResolution(roomId: string): Promise<void> {
       sellerConfirmed: true,
       sellerConfirmedAt: true,
       userDone: true,
+      userTurnCount: true,
       createdAt: true,
       complaint: {
         select: { id: true, status: true, orderId: true, userId: true },
@@ -24,14 +26,43 @@ export async function checkAutoResolution(roomId: string): Promise<void> {
   if (!room) return;
   const { complaint } = room;
 
-  // Chỉ chạy khi complaint đang active
-  if (complaint.status !== "IN_REVIEW" && complaint.status !== "PENDING_ADMIN") return;
+  // Bỏ qua khi đã xong
+  if (complaint.status === "RESOLVED" || complaint.status === "REJECTED") return;
+
+  // PENDING_ADMIN: chỉ chạy auto-resolve khi admin đã mở vòng 2 (roundTwoOpened=true)
+  // Nếu chưa mở vòng 2 → admin đang xem xét, không auto-resolve
+  if (complaint.status === "PENDING_ADMIN") {
+    const r2rows = await prisma.$queryRaw<[{ round_two_opened: boolean }]>`
+      SELECT round_two_opened FROM chat_rooms WHERE id = ${room.id}::uuid
+    `;
+    const roundTwoOpened = r2rows[0]?.round_two_opened ?? false;
+    if (!roundTwoOpened) return;
+  } else if (complaint.status !== "IN_REVIEW") {
+    return; // OPEN hoặc trạng thái khác — không auto-resolve
+  }
 
   const now = Date.now();
 
   // ── Case 1: Seller không reply trong 12h → hoàn tiền user (REJECTED) ──
   if (!room.firstSellerMsgAt && now - room.createdAt.getTime() > SELLER_REPLY_DEADLINE_MS) {
     await autoReject(complaint.id, complaint.orderId, complaint.userId, "Nhà bán hàng không phản hồi trong 12 giờ. Hệ thống tự động hoàn tiền.");
+    return;
+  }
+
+  // ── Case 3: Seller đã reply, user không phản hồi trong 24h → seller thắng (RESOLVED) ──
+  // userTurnCount = 0 nghĩa là buyer chưa gửi tin nào kể từ lần seller reply cuối
+  if (
+    room.firstSellerMsgAt &&
+    !room.sellerConfirmed &&
+    room.userTurnCount === 0 &&
+    room.userDone === null &&
+    now - room.firstSellerMsgAt.getTime() > BUYER_REPLY_DEADLINE_MS
+  ) {
+    await autoResolve(
+      complaint.id,
+      complaint.orderId,
+      "Người mua không phản hồi trong 24 giờ sau khi nhà bán hàng trả lời. Hệ thống tự động xác nhận đơn hàng.",
+    );
     return;
   }
 
@@ -54,7 +85,32 @@ async function autoResolve(complaintId: string, orderId: string | null, resoluti
       data: { status: "RESOLVED", resolution, resolvedAt: new Date() },
     });
     if (orderId) {
-      await tx.order.update({ where: { id: orderId }, data: { status: "DONE" } });
+      // Trả tiền cho seller khi khiếu nại kết thúc có lợi cho seller
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        select: { finalPrice: true, sellerId: true },
+      });
+      if (order?.sellerId) {
+        const payAmt = Number(order.finalPrice);
+        const seller = await tx.user.findUnique({ where: { id: order.sellerId }, select: { balance: true } });
+        if (seller) {
+          const balanceBefore = Number(seller.balance);
+          const balanceAfter = balanceBefore + payAmt;
+          await tx.user.update({ where: { id: order.sellerId }, data: { balance: balanceAfter } });
+          await tx.transaction.create({
+            data: {
+              userId: order.sellerId,
+              orderId,
+              type: "SELLER_PAYOUT",
+              amount: payAmt,
+              description: "Thanh toán đơn hàng — người mua không xác nhận trong 60 phút",
+              balanceBefore,
+              balanceAfter,
+            },
+          });
+        }
+      }
+      await tx.order.update({ where: { id: orderId }, data: { status: "DONE", withdrawn: true } });
     }
   });
 
@@ -82,7 +138,8 @@ async function autoReject(complaintId: string, orderId: string | null, userId: s
     });
     if (!order) return;
 
-    await tx.order.update({ where: { id: orderId }, data: { status: "DONE" } });
+    // Giữ order ở REFUNDED — seller không thể rút tiền từ đơn này
+    await tx.order.update({ where: { id: orderId }, data: { status: "REFUNDED" } });
 
     // Hoàn tiền về ví user
     const refundAmt = Number(order.finalPrice);

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
 import { AppAuthError } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { toApiError } from "@/lib/errors";
 
@@ -20,7 +21,8 @@ const querySchema = z.object({
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
-    requireAdmin(session);
+    requireStaff(session);
+    await requirePermission(session, "audit_logs:read");
 
     const { searchParams } = req.nextUrl;
     const query = querySchema.safeParse(Object.fromEntries(searchParams));

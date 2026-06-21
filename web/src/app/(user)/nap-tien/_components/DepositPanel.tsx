@@ -53,12 +53,12 @@ export default function DepositPanel({ bankName, accountNumber, accountHolder, b
       {/* Amount selector */}
       <div>
         <p className="text-xs font-medium text-gray-500 mb-2.5">Chọn số tiền nạp</p>
-        <div className="grid grid-cols-4 gap-2 mb-3">
+        <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mb-3">
           {PRESET_AMOUNTS.map((amt) => (
             <button
               key={amt}
               onClick={() => { setSelected(amt); setCustom(""); }}
-              className={`py-2 rounded-lg text-xs font-semibold transition-colors border ${
+              className={`py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-colors border ${
                 selected === amt && !custom
                   ? "bg-blue-600 text-white border-blue-600"
                   : "bg-gray-50 text-gray-700 border-gray-200 hover:border-blue-400 hover:text-blue-600"

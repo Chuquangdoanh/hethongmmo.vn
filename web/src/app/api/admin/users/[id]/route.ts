@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { NotFoundError } from "@/lib/errors";
 import { apiOk, apiSuccess, apiCatch, apiValidationError, apiError } from "@/lib/api-response";
@@ -38,6 +39,7 @@ export async function GET(
   try {
     const session = await auth();
     requireStaff(session);
+    await requirePermission(session, "users:read");
     const { id } = await params;
 
     const user = await prisma.user.findUnique({
@@ -67,7 +69,8 @@ export async function PATCH(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    const admin = requireAdmin(session);
+    const admin = requireStaff(session);
+    await requirePermission(session, "users:update");
     const { id } = await params;
 
     const body: unknown = await req.json();
@@ -242,7 +245,8 @@ export async function DELETE(
 ): Promise<NextResponse> {
   try {
     const session = await auth();
-    const admin = requireAdmin(session);
+    const admin = requireStaff(session);
+    await requirePermission(session, "users:delete");
     const { id } = await params;
 
     if (id === admin.id) {

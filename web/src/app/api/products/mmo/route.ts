@@ -80,6 +80,7 @@ const mmoCreateSchema = z.object({
   isActive: z.boolean().default(true),
   requiresAccountType: z.boolean().default(false),
   requiresCccd: z.boolean().default(false),
+  section: z.enum(["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"]).default("TAI_NGUYEN_MMO"),
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -121,6 +122,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         isActive: data.isActive,
         requiresAccountType: data.requiresAccountType,
         requiresCccd: data.requiresCccd,
+        section: data.section,
       },
       select: { id: true, slug: true, name: true },
     });
