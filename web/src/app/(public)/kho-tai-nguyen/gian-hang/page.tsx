@@ -246,7 +246,7 @@ export default async function KhoGianHangPage({
             </span>
           </div>
           <div className="overflow-x-auto">
-            <SellerSortSelect />
+            <SellerSortSelect basePath="/kho-tai-nguyen/gian-hang" />
           </div>
         </div>
 

@@ -10,7 +10,7 @@ const SORT_OPTIONS = [
   { id: "moi-nhat",  label: "Mới Nhất"     },
 ] as const;
 
-export function SellerSortSelect() {
+export function SellerSortSelect({ basePath = "/tai-nguyen-mmo/gian-hang" }: { basePath?: string }) {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const activeSort   = searchParams.get("sort") ?? "pho-bien";
@@ -21,7 +21,7 @@ export function SellerSortSelect() {
     if (value && value !== "pho-bien") params.set("sort", value);
     else params.delete("sort");
     startTransition(() => {
-      router.replace(`/tai-nguyen-mmo/gian-hang?${params.toString()}`, { scroll: false });
+      router.replace(`${basePath}?${params.toString()}`, { scroll: false });
     });
   }
 
