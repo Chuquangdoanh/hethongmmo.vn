@@ -87,13 +87,10 @@ export default async function ThongTinCaNhanPage() {
       />
 
       <div className="bg-gray-50 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-6 min-h-[60vh]">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-          {/* ── Left: Profile sidebar ── */}
-          
-
-          {/* ── Right: Info cards ── */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* ── Cột trái: Thông tin hiển thị + Đăng ký bán hàng ── */}
+          <div className="space-y-4">
 
             {/* Thông tin cá nhân (display) */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
@@ -111,13 +108,12 @@ export default async function ThongTinCaNhanPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">id </p>
+                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Mã người dùng</p>
                   <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-700 font-mono flex items-center justify-between gap-2">
                     <span className="font-semibold tracking-wider">{depositId.toUpperCase()}</span>
-                    
                   </div>
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Địa chỉ email</p>
                   <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800">
                     {user.email}
@@ -135,22 +131,26 @@ export default async function ThongTinCaNhanPage() {
                     {roleLabel}
                   </div>
                 </div>
-                <div>
-                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Facebook</p>
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 truncate">
-                    {facebookUrl ?? <span className="text-gray-400">—</span>}
+                {facebookUrl && (
+                  <div className="sm:col-span-2">
+                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Facebook</p>
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-blue-600 truncate">
+                      <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                        {facebookUrl}
+                      </a>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Telegram</p>
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800">
-                    {telegramUsername ?? <span className="text-gray-400">—</span>}
+                )}
+                {telegramUsername && (
+                  <div>
+                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1.5">Telegram</p>
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-sky-600 font-medium">
+                      @{telegramUsername}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
-
-            
 
             {/* Đăng ký bán hàng */}
             <div id="seller-register" className="scroll-mt-24 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
@@ -221,7 +221,12 @@ export default async function ThongTinCaNhanPage() {
               )}
             </div>
 
-            {/* Edit forms */}
+           {/* ──  Đổi mật khẩu ── */}
+            <ChangePasswordForm />
+          </div>
+
+          {/* ── Cột phải: Form chỉnh sửa + Đổi mật khẩu ── */}
+          <div className="space-y-4">
             <ProfileForm
               id={user.id}
               email={user.email}
@@ -231,7 +236,6 @@ export default async function ThongTinCaNhanPage() {
               telegramUsername={telegramUsername ?? ""}
               avatarUrl={user.avatarUrl ?? null}
             />
-            <ChangePasswordForm />
           </div>
         </div>
       </div>

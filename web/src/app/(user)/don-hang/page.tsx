@@ -210,8 +210,7 @@ export default async function DonHangPage({
                             <p className="text-sm font-medium text-gray-800 leading-snug line-clamp-2">{order.itemName}</p>
                             <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                               <p className="text-[10px] text-gray-400">#{order.orderCode}</p>
-                              {isMMO && <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-100 text-blue-700">Hệ Thống MMO</span>}
-                              {isSeller && <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-100 text-amber-700">Nhà bán hàng</span>}
+                             
                             </div>
                           </div>
                           <span className={`shrink-0 inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium border ${st.cls}`}>
@@ -244,8 +243,7 @@ export default async function DonHangPage({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-sm font-medium text-gray-800 truncate">{order.itemName}</span>
-                              {isMMO && <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">Hệ Thống MMO</span>}
-                              {isSeller && <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-700">Nhà bán hàng</span>}
+                              
                             </div>
                             <p className="text-[11px] text-gray-400 mt-0.5">#{order.orderCode}</p>
                           </div>

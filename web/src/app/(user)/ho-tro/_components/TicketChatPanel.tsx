@@ -320,19 +320,19 @@ export default function TicketChatPanel({
           <EndedBanner color="#16a34a" text="Khiếu nại đã được giải quyết. Cảm ơn bạn!" />
         )}
         {status === "REJECTED" && (
-          <EndedBanner color="#dc2626" text="Khiếu nại kết thúc. Tiền đã được hoàn về ví của bạn." />
+          <EndedBanner color="#dc2626" text="Khiếu nại kết thúc. " />
         )}
         {/* Vòng 1 tranh chấp: chat đóng, chờ admin mở vòng 2 */}
         {waitingAdmin && (
-          <EndedBanner color="#f59e0b" text="Đã gửi lên Admin. Chat đã đóng — chờ Admin mở vòng 2 hoặc phán quyết." />
+          <EndedBanner color="#f59e0b" text="Hệ Thống đang xử lý." />
         )}
         {/* Vòng 2 đang chạy: admin mở, hai bên tiếp tục đàm phán */}
         {roundTwoActive && (
-          <EndedBanner color="#7c3aed" text="Admin đã mở vòng 2 — Tiếp tục cung cấp bằng chứng, seller có thể xác nhận lại." />
+          <EndedBanner color="#7c3aed" text="Hệ Thống đang xử lý." />
         )}
         {/* Vòng 2 tranh chấp cuối: chat đóng, admin phán quyết */}
         {finalDispute && (
-          <EndedBanner color="#dc2626" text="Tranh chấp vòng 2 — Chat đã đóng. Admin đang phán quyết cuối cùng." />
+          <EndedBanner color="#dc2626" text="Hệ thống đang xử lý." />
         )}
 
         {/* ── Seller: nút xác nhận (vòng 1 hoặc vòng 2 đang chạy, chưa tranh chấp cuối) ── */}
@@ -436,7 +436,7 @@ export default function TicketChatPanel({
         {!chatEnded && quota.locked && chatActive && !resolution.sellerConfirmed && isBuyer && (
           <div style={{ textAlign: "center", padding: "8px 0" }}>
             <p style={{ fontSize: "12px", color: "#64748b" }}>
-              ⏳ Đã đạt 20 tin nhắn. Đang chờ nhà bán hàng xác nhận...
+              ⏳ Đang chờ nhà bán hàng xác nhận...
             </p>
           </div>
         )}

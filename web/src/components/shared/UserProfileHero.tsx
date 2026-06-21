@@ -82,7 +82,7 @@ export default function UserProfileHero({
           )}
           <div>
             <h1 className="text-xl font-bold text-white leading-tight">{fullName}</h1>
-            <p className="text-[11px] text-slate-400 font-mono mt-0.5">id : {uidPrefix.toUpperCase()}</p>
+            
             <span className="mt-1.5 inline-flex px-2.5 py-0.5 rounded-full border border-slate-500/60 text-slate-300 text-[11px] font-medium">
               {roleLabel}
             </span>
