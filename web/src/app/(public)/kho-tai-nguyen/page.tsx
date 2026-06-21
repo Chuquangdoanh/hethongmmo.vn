@@ -12,10 +12,11 @@ import Pagination from "@/components/shared/Pagination";
 import { SortSelect } from "@/app/(public)/tai-nguyen-mmo/_components/SortSelect";
 import { buildMeta } from "@/lib/utils/seo";
 import { KhoFilterSidebar } from "./_components/KhoFilterSidebar";
+import { CategoryFilter } from "@/components/shared/CategoryFilter";
 import {
   Package, ShoppingBag, ShoppingCart,
   Pencil, CheckCircle, FolderOpen,
-  Users, Clock, Shield, X,
+  Users, Clock, Shield, X, Store,
 } from "lucide-react";
 
 export const metadata: Metadata = buildMeta({
@@ -229,15 +230,15 @@ export default async function KhoTaiNguyenPage({
       extraTags: Math.max(0, rc.subCategories.length - 3),
     }));
 
-  // Featured platform subcategory cards
-  const featuredPlatformName = selectedCategories[0] ?? platformCards[0]?.name;
-  const featuredPlatformSubcats = featuredPlatformName
-    ? (resourceCategories.find((rc) => rc.name === featuredPlatformName)?.subCategories ?? []).map((s) => ({
-        id: s.id,
-        name: s.name,
-        count: subCatCountMap.get(s.name) ?? 0,
-      }))
-    : [];
+  // Category data for client-side filter component
+  const allCategoryData = platformCards.map((card) => ({
+    name: card.name,
+    iconUrl: card.iconUrl,
+    count: card.count,
+    subCategories: (resourceCategories.find((rc) => rc.name === card.name)?.subCategories ?? [])
+      .filter((s) => (subCatCountMap.get(s.name) ?? 0) > 0)
+      .map((s) => ({ id: s.id, name: s.name, count: subCatCountMap.get(s.name) ?? 0 })),
+  }));
 
   // Review map
   const reviewMap = new Map(reviewStats.map((r) => [r.productId, { count: r._count.id, avg: r._avg.rating ?? 0 }]));
@@ -277,19 +278,28 @@ export default async function KhoTaiNguyenPage({
 
           {/* Banner */}
           <div className="rounded-2xl overflow-hidden relative bg-gradient-to-br from-[#0f2460] via-[#1a3a8f] to-[#0d1f5e]">
-            <div className="px-6 py-6 relative z-10">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-11 h-11 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
-                  <FolderOpen size={22} className="text-[#7dd3fc]" />
+            <div className="px-4 py-4 sm:px-6 sm:py-6 relative z-10">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
+                    <FolderOpen size={20} className="text-[#7dd3fc]" />
+                  </div>
+                  <div className="min-w-0">
+                    <h1 className="text-base sm:text-xl font-extrabold text-white leading-tight">Kho Tài Nguyên MMO</h1>
+                    <p className="text-[#93c5fd] text-[11px] sm:text-xs mt-0.5">Tài nguyên chất lượng cao — giao tự động sau thanh toán</p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-xl font-extrabold text-white leading-tight">Kho Tài Nguyên MMO</h1>
-                  <p className="text-[#93c5fd] text-xs mt-0.5">Tài nguyên chất lượng cao — giao tự động sau thanh toán</p>
-                </div>
+                <Link
+                  href="/kho-tai-nguyen/gian-hang"
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-white/15 border border-white/25 text-white text-[11px] sm:text-xs font-bold hover:bg-white/25 transition-colors backdrop-blur-sm whitespace-nowrap"
+                >
+                  <Store size={13} strokeWidth={2} />
+                  Gian hàng
+                </Link>
               </div>
 
               {/* Stats row */}
-              <div className="flex items-center gap-5 mt-5 flex-wrap">
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-3 sm:gap-5 mt-4 sm:mt-5">
                 {[
                   { icon: Package, value: `${allStatProducts.length.toLocaleString("vi-VN")}+`, label: "Tài nguyên" },
                   { icon: Users,   value: `${totalSellers}+`,                                    label: "Nhà bán hàng" },
@@ -311,90 +321,16 @@ export default async function KhoTaiNguyenPage({
             <div className="absolute inset-0 bg-gradient-to-l from-[#1e40af]/20 to-transparent pointer-events-none" />
           </div>
 
-          {/* Danh mục — grid card lớn */}
-          {platformCards.length > 0 && (
-            <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-bold text-[#1e293b] text-[15px]">Danh mục</h2>
-                {selectedCategories.length > 0 && (
-                  <Link href={BASE_PATH} className="text-xs text-[#64748b] hover:text-[#3b82f6] transition-colors flex items-center gap-0.5">
-                    <X size={11} /> Bỏ lọc
-                  </Link>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {platformCards.map((card) => {
-                  const isActive = selectedCategories.includes(card.name);
-                  return (
-                    <Link
-                      key={card.name}
-                      href={isActive ? BASE_PATH : `${BASE_PATH}?category=${encodeURIComponent(card.name)}`}
-                      className={`flex items-center gap-4 px-5 py-3 rounded-xl border transition-all group min-w-0 ${
-                        isActive
-                          ? "border-[#3b82f6] bg-[#eff6ff] shadow-sm shadow-blue-100"
-                          : "border-[#f1f5f9] hover:border-[#3b82f6]/40 hover:bg-[#eff6ff]/40 hover:shadow-sm"
-                      }`}
-                    >
-                      <div className={`w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center shrink-0 ${isActive ? "bg-[#dbeafe]" : "bg-[#f1f5f9]"}`}>
-                        {card.iconUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={r2Url(card.iconUrl)} alt={card.name} className="w-8 h-8 object-contain" />
-                        ) : (
-                          <FolderOpen size={24} className={isActive ? "text-[#3b82f6]" : "text-[#94a3b8]"} />
-                        )}
-                      </div>
-                      <p className={`font-semibold text-[15px] leading-tight text-left ${isActive ? "text-[#1d4ed8]" : "text-[#1e293b] group-hover:text-[#2563eb]"} transition-colors`}>
-                        {card.name}
-                      </p>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Danh mục con [ICON --- TÊN] */}
-          {featuredPlatformSubcats.length > 0 && (
-            <div className="bg-white rounded-2xl border border-[#e2e8f0] p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-bold text-[#1e293b] text-[15px]">
-                  {featuredPlatformName ? `Danh mục ${featuredPlatformName}` : "Danh mục con"}
-                </h2>
-                {selectedSubcatNames.length > 0 && (
-                  <Link
-                    href={selectedCategories.length > 0 ? `${BASE_PATH}?category=${encodeURIComponent(selectedCategories[0] ?? "")}` : BASE_PATH}
-                    className="text-xs text-[#64748b] hover:text-[#3b82f6] transition-colors flex items-center gap-0.5"
-                  >
-                    <X size={11} /> Bỏ lọc
-                  </Link>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {featuredPlatformSubcats.map((sub) => (
-                  <Link
-                    key={sub.id}
-                    href={`${BASE_PATH}?${selectedCategories.length > 0 ? `category=${encodeURIComponent(selectedCategories[0] ?? "")}&` : ""}subcategory=${encodeURIComponent(sub.name)}`}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border transition-all group hover:shadow-sm ${
-                      selectedSubcatNames.includes(sub.name)
-                        ? "border-[#3b82f6] bg-[#eff6ff] shadow-sm"
-                        : "border-[#e2e8f0] hover:border-[#3b82f6]/40 hover:bg-[#eff6ff]/40"
-                    }`}
-                  >
-                    <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${selectedSubcatNames.includes(sub.name) ? "bg-[#dbeafe]" : "bg-[#f1f5f9]"}`}>
-                      <FolderOpen size={12} className={selectedSubcatNames.includes(sub.name) ? "text-[#3b82f6]" : "text-[#94a3b8]"} />
-                    </div>
-                    <span className={`text-[12px] font-semibold transition-colors ${selectedSubcatNames.includes(sub.name) ? "text-[#1d4ed8]" : "text-[#1e293b] group-hover:text-[#2563eb]"}`}>
-                      {sub.name}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
+          {/* Danh mục + Danh mục con — client component, luôn hiển thị, không reload */}
+          {allCategoryData.length > 0 && (
+            <Suspense fallback={<div className="h-16 rounded-2xl bg-white border border-[#e2e8f0] animate-pulse" />}>
+              <CategoryFilter categories={allCategoryData} basePath={BASE_PATH} />
+            </Suspense>
           )}
 
         {/* ── FILTER + PRODUCTS ROW ── */}
-        <div className="flex flex-col lg:flex-row items-start gap-4">
-          <Suspense fallback={<div className="w-72 shrink-0 bg-white rounded-xl border border-[#e5e7eb] h-120 animate-pulse" />}>
+        <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+          <Suspense fallback={<div className="hidden lg:block lg:w-72 shrink-0 bg-white rounded-xl border border-[#e5e7eb] h-120 animate-pulse" />}>
             <KhoFilterSidebar platforms={platformsForFilter} resourceTypes={resourceTypesForFilter} />
           </Suspense>
           <div className="flex-1 min-w-0">
@@ -446,7 +382,7 @@ export default async function KhoTaiNguyenPage({
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                 {pagedProducts.map((sp) => {
                   const review  = reviewMap.get(sp.id);
                   const price   = Number(sp.price);
@@ -515,7 +451,7 @@ export default async function KhoTaiNguyenPage({
                       </Link>
 
                       {/* ── Thông tin sản phẩm ── */}
-                      <div className="p-3 flex flex-col gap-1.5 flex-1">
+                      <div className="p-2 sm:p-3 flex flex-col gap-1 sm:gap-1.5 flex-1">
                         <Link href={href}>
                           <h3 className="text-sm font-bold text-[#1e293b] hover:text-[#2563eb] transition-colors line-clamp-2 leading-snug">
                             {sp.name}
@@ -553,8 +489,8 @@ export default async function KhoTaiNguyenPage({
                         )}
 
                         {/* Price + Buy button */}
-                        <div className="mt-auto pt-2 grid grid-cols-[2fr_3fr] gap-2 items-stretch">
-                          <div className="flex items-center justify-center bg-[#fff1f2] border border-[#fca5a5] rounded-lg px-1 py-2">
+                        <div className="mt-auto pt-1.5 sm:pt-2 grid grid-cols-[2fr_3fr] gap-1.5 sm:gap-2 items-stretch">
+                          <div className="flex items-center justify-center bg-[#fff1f2] border border-[#fca5a5] rounded-lg px-1 py-1.5 sm:py-2">
                             <span className="text-xs font-extrabold text-[#e11d48] whitespace-nowrap leading-none">
                               {formatVnd(price)}
                             </span>

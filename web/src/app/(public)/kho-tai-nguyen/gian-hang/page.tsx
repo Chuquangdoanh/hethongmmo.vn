@@ -347,7 +347,7 @@ export default async function KhoGianHangPage({
                         </div>
 
                         <Link
-                          href={`/tai-nguyen-mmo/nguoi-ban/${seller.id}`}
+                          href={`/kho-tai-nguyen/nguoi-ban/${seller.id}`}
                           className="mt-auto w-full py-2 rounded-lg border border-primary text-primary text-xs font-bold hover:bg-primary hover:text-white transition-all text-center flex items-center justify-center gap-1"
                         >
                           Xem gian hàng

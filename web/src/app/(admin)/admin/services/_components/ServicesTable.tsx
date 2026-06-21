@@ -18,15 +18,39 @@ interface ServiceRow {
   processingTime: string | null;
 }
 
+type LastActorInfo = { name: string; action: string; at: string };
+
 interface Props {
   services: ServiceRow[];
   total: number;
   category?: string;
   q?: string;
   currentPage: number;
+  canUpdate?: boolean;
+  canDelete?: boolean;
+  lastActors?: Record<string, LastActorInfo>;
 }
 
-export default function ServicesTable({ services, total, category, q, currentPage }: Props) {
+function actionLabel(action: string) {
+  if (action.endsWith("_CREATE")) return "Thêm mới";
+  if (action.endsWith("_UPDATE")) return "Cập nhật";
+  if (action.endsWith("_BULK_HIDE")) return "Đã ẩn";
+  if (action.endsWith("_BULK_SHOW")) return "Đã hiện";
+  if (action.includes("DELETE")) return "Đã xóa";
+  return "Cập nhật";
+}
+
+function relativeTime(iso: string) {
+  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return "Vừa xong";
+  if (mins < 60) return `${mins} phút trước`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} giờ trước`;
+  return `${Math.floor(hours / 24)} ngày trước`;
+}
+
+export default function ServicesTable({ services, total, category, q, currentPage, canUpdate = true, canDelete = true, lastActors }: Props) {
+  const canBulk = canUpdate || canDelete;
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
@@ -98,30 +122,36 @@ export default function ServicesTable({ services, total, category, q, currentPag
         </span>
 
         {/* Bulk action toolbar */}
-        {selected.size > 0 && (
+        {canBulk && selected.size > 0 && (
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500">Đã chọn {selected.size}</span>
-            <button
-              onClick={() => bulkAction("hide")}
-              disabled={isPending}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#F59E0B] bg-[#F59E0B]/10 hover:bg-[#F59E0B]/20 transition-colors disabled:opacity-50"
-            >
-              Ẩn
-            </button>
-            <button
-              onClick={() => bulkAction("show")}
-              disabled={isPending}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#10B981] bg-[#10B981]/10 hover:bg-[#10B981]/20 transition-colors disabled:opacity-50"
-            >
-              Hiện
-            </button>
-            <button
-              onClick={() => bulkAction("delete")}
-              disabled={isPending}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#EF4444] bg-[#EF4444]/10 hover:bg-[#EF4444]/20 transition-colors disabled:opacity-50"
-            >
-              Xóa
-            </button>
+            {canUpdate && (
+              <>
+                <button
+                  onClick={() => bulkAction("hide")}
+                  disabled={isPending}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#F59E0B] bg-[#F59E0B]/10 hover:bg-[#F59E0B]/20 transition-colors disabled:opacity-50"
+                >
+                  Ẩn
+                </button>
+                <button
+                  onClick={() => bulkAction("show")}
+                  disabled={isPending}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#10B981] bg-[#10B981]/10 hover:bg-[#10B981]/20 transition-colors disabled:opacity-50"
+                >
+                  Hiện
+                </button>
+              </>
+            )}
+            {canDelete && (
+              <button
+                onClick={() => bulkAction("delete")}
+                disabled={isPending}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#EF4444] bg-[#EF4444]/10 hover:bg-[#EF4444]/20 transition-colors disabled:opacity-50"
+              >
+                Xóa
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -158,13 +188,14 @@ export default function ServicesTable({ services, total, category, q, currentPag
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Giá</th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Tỷ lệ</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Trạng thái</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Người c.nhật</th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Hành động</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {services.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-16 text-center">
+                <td colSpan={9} className="px-4 py-16 text-center">
                   <p className="text-4xl mb-3">🔍</p>
                   <p className="text-sm font-medium text-gray-600">Không tìm thấy dịch vụ</p>
                   <p className="text-xs text-gray-400 mt-1">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
@@ -233,14 +264,26 @@ export default function ServicesTable({ services, total, category, q, currentPag
                     )}
                   </div>
                 </td>
+                <td className="px-4 py-3.5">
+                  {lastActors?.[svc.id] ? (
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-gray-700 truncate max-w-30">{lastActors[svc.id]!.name}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5">{actionLabel(lastActors[svc.id]!.action)} · {relativeTime(lastActors[svc.id]!.at)}</p>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-300">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-3.5 text-right">
-                  <Link
-                    prefetch={false}
-                    href={`/admin/services/${svc.id}/sua`}
-                    className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-[#7C3AED] bg-[#7C3AED]/8 hover:bg-[#7C3AED]/15 transition-colors"
-                  >
-                    Sửa
-                  </Link>
+                  {canUpdate && (
+                    <Link
+                      prefetch={false}
+                      href={`/admin/services/${svc.id}/sua`}
+                      className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-[#7C3AED] bg-[#7C3AED]/8 hover:bg-[#7C3AED]/15 transition-colors"
+                    >
+                      Sửa
+                    </Link>
+                  )}
                 </td>
               </tr>
             ))}

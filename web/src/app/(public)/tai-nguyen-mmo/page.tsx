@@ -9,6 +9,7 @@ import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ProductBuyButton from "./_components/ProductBuyButton";
 import { FilterSidebar } from "./_components/FilterSidebar";
+import { CategoryFilter } from "@/components/shared/CategoryFilter";
 import type { CategoryItem } from "./_components/FilterSidebar";
 import Pagination from "@/components/shared/Pagination";
 import {
@@ -46,6 +47,7 @@ type UnifiedProduct = {
   isNew: boolean;
   isHot: boolean;
   href: string;
+  shopHref: string;
   createdAt: Date;
   sellerName: string;
   purchasedByMe: boolean;
@@ -103,6 +105,8 @@ export default async function TaiNguyenMmoPage({
     ? { price: { ...(minPrice !== undefined ? { gte: minPrice } : {}), ...(maxPrice !== undefined ? { lte: maxPrice } : {}) } }
     : {};
 
+  const selectedSubcatNames = subcategoryParam ? subcategoryParam.split(",").filter(Boolean) : [];
+
   type LockedRow = { id: string };
   const lockedSellerRows = await prisma.$queryRaw<LockedRow[]>`SELECT id FROM users WHERE shop_locked = true`;
   const lockedSellerIds = lockedSellerRows.map((r) => r.id);
@@ -120,7 +124,7 @@ export default async function TaiNguyenMmoPage({
       where: {
         isActive: true, deletedAt: null, items: { some: { status: "AVAILABLE" } },
         ...(category ? { categoryGroup: category } : {}),
-        ...(subcategoryParam ? { category: subcategoryParam } : {}),
+        ...(selectedSubcatNames.length > 0 ? { category: { in: selectedSubcatNames } } : {}),
         ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
         ...(tag ? { categoryGroup: { contains: tag, mode: "insensitive" as const } } : {}),
         ...priceFilter,
@@ -152,7 +156,7 @@ export default async function TaiNguyenMmoPage({
         stockItems: { some: { status: "AVAILABLE" } },
         ...(lockedSellerIds.length > 0 ? { NOT: { sellerId: { in: lockedSellerIds } } } : {}),
         ...(category ? { sellerCategory: category } : {}),
-        ...(subcategoryParam ? { seller: { subCategories: { some: { subCategory: { name: subcategoryParam, isActive: true, showInTaiNguyenMmo: true } } } } } : {}),
+        ...(selectedSubcatNames.length > 0 ? { seller: { subCategories: { some: { subCategory: { name: { in: selectedSubcatNames }, isActive: true, showInTaiNguyenMmo: true } } } } } : {}),
         ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
         ...(tag ? { sellerCategory: { contains: tag, mode: "insensitive" as const } } : {}),
         ...priceFilter,
@@ -291,11 +295,17 @@ export default async function TaiNguyenMmoPage({
       extraTags: Math.max(0, c.subCategories.filter((s) => (s.count ?? 0) > 0).length - 3),
     }));
 
-  // Subcategory chips for the selected (or first) platform
-  const featuredPlatformName = category ?? platformCards[0]?.name;
-  const featuredPlatformSubcats = featuredPlatformName
-    ? (categoryItems.find((c) => c.name === featuredPlatformName)?.subCategories ?? []).filter((s) => (s.count ?? 0) > 0)
-    : [];
+  // Category data cho CategoryFilter — PHẢI dùng nguồn UNFILTERED (resourceCategories + allCategoryNames)
+  // KHÔNG được dùng platformCards/categoryItems vì chúng tính count từ mmoProducts/sellerProducts đã bị filter
+  // → khi đang chọn Facebook, Tiktok count=0 → bị loại → mất button Tiktok/Instagram/Game
+  const allCategoryData = resourceCategories
+    .filter((rc) => allCategoryNames.has(rc.name))
+    .map((rc) => ({
+      name: rc.name,
+      iconUrl: rc.iconUrl,
+      count: 0,
+      subCategories: rc.subCategories.map((s) => ({ id: s.id, name: s.name, count: 0 })),
+    }));
 
   // eslint-disable-next-line react-hooks/purity
   const fourteenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
@@ -312,8 +322,8 @@ export default async function TaiNguyenMmoPage({
         reviewCount: review?.count ?? 0, salesCount: p.totalOrders,
         available: p._count.items, category: p.categoryGroup,
         isNew: p.createdAt > fourteenDaysAgo, isHot: p.isFeatured,
-        href: `${BASE_PATH}/${p.slug}`, createdAt: p.createdAt,
-        sellerName: "Hệ thống MMO",
+        href: `${BASE_PATH}/${p.slug}`, shopHref: `${BASE_PATH}/he-thong`,
+        createdAt: p.createdAt, sellerName: "Hệ thống MMO",
         purchasedByMe: purchasedMmoIds.has(p.id), reviewedByMe: reviewedMmoIds.has(p.id),
       };
     }),
@@ -326,6 +336,7 @@ export default async function TaiNguyenMmoPage({
         reviewCount: review?.count ?? 0, salesCount: sp.salesCount,
         available: sp._count.stockItems, isNew: sp.createdAt > fourteenDaysAgo,
         isHot: sp.salesCount >= 15, href: `${BASE_PATH}/san-pham/${sp.id}`,
+        shopHref: `${BASE_PATH}/nguoi-ban/${sp.seller.id}`,
         createdAt: sp.createdAt, sellerName: `#${sp.seller.uidPrefix}`,
         purchasedByMe: purchasedSellerIds.has(sp.id), reviewedByMe: reviewedSellerIds.has(sp.id),
         category: sp.sellerCategory,
@@ -362,7 +373,6 @@ export default async function TaiNguyenMmoPage({
 
   const hasActiveFilter = !!(category || subcategoryParam || q || priceParam || ratingParam);
   const selectedCategories = category ? [category] : [];
-  const selectedSubcatNames = subcategoryParam ? [subcategoryParam] : [];
 
   return (
     <div className="min-h-screen bg-[#f0f4f8]">
@@ -376,17 +386,26 @@ export default async function TaiNguyenMmoPage({
             <div className="absolute top-6 right-24 w-16 h-16 rounded-full bg-white/5 pointer-events-none" />
 
             <div className="relative z-10">
-              {/* Icon + Title */}
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-                  <FolderOpen size={20} strokeWidth={1.75} className="text-white" />
+              {/* Icon + Title + Gian hàng */}
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                    <FolderOpen size={20} strokeWidth={1.75} className="text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <h1 className="text-xl md:text-2xl font-extrabold leading-tight tracking-tight">
+                      Nguyên Liệu MMO
+                    </h1>
+                    <p className="text-white/60 text-xs mt-0.5">Tài khoản &amp; công cụ số — Giao tự động, Bảo hành uy tín</p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-xl md:text-2xl font-extrabold leading-tight tracking-tight">
-                    Nguyên Liệu MMO
-                  </h1>
-                  <p className="text-white/60 text-xs mt-0.5">Tài khoản &amp; công cụ số — Giao tự động, Bảo hành uy tín</p>
-                </div>
+                <Link
+                  href="/tai-nguyen-mmo/gian-hang"
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-white/15 border border-white/25 text-white text-[11px] md:text-xs font-bold hover:bg-white/25 transition-colors backdrop-blur-sm whitespace-nowrap"
+                >
+                  <Store size={13} strokeWidth={2} />
+                  Gian hàng
+                </Link>
               </div>
 
               {/* Stats row */}
@@ -411,106 +430,17 @@ export default async function TaiNguyenMmoPage({
             </div>
           </div>
 
-          {/* Danh mục — grid card lớn */}
-          {platformCards.length > 0 && (
-            <div className="bg-white rounded-2xl border border-border p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-bold text-text-dark">Danh mục</p>
-                {category && (
-                  <Link href={BASE_PATH} className="text-xs text-text-muted hover:text-primary transition-colors flex items-center gap-0.5">
-                    <X size={11} /> Bỏ lọc
-                  </Link>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {platformCards.map((card) => {
-                  const isActive = category === card.name;
-                  return (
-                    <Link
-                      key={card.name}
-                      href={isActive ? BASE_PATH : `${BASE_PATH}?category=${encodeURIComponent(card.name)}`}
-                      className={`flex items-center gap-4 px-5 py-3 rounded-xl border transition-all group min-w-0 ${
-                        isActive
-                          ? "border-primary/60 bg-blue-50/40 shadow-sm"
-                          : "border-border hover:border-primary/30 hover:shadow-sm"
-                      }`}
-                    >
-                      <div className={`w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center shrink-0 ${isActive ? "bg-[#dbeafe]" : "bg-[#f1f5f9]"}`}>
-                        {card.iconUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={r2Url(card.iconUrl)} alt={card.name} className="w-8 h-8 object-contain" />
-                        ) : (
-                          <FolderOpen size={24} className={isActive ? "text-primary" : "text-text-muted"} strokeWidth={2} />
-                        )}
-                      </div>
-                      <p className={`font-semibold text-[15px] leading-tight text-left ${isActive ? "text-primary" : "text-text-dark group-hover:text-primary"} transition-colors`}>
-                        {card.name}
-                      </p>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Subcategory cards [ICON --- TÊN] */}
-          {featuredPlatformSubcats.length > 0 && (
-            <div className="bg-white rounded-2xl border border-border p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-bold text-text-dark">
-                  {featuredPlatformName ? `Danh mục ${featuredPlatformName}` : "Danh mục con"}
-                </p>
-                {subcategoryParam && (
-                  <Link
-                    href={category ? `${BASE_PATH}?category=${encodeURIComponent(category)}` : BASE_PATH}
-                    className="text-xs text-text-muted hover:text-primary transition-colors flex items-center gap-0.5"
-                  >
-                    <X size={11} /> Bỏ lọc
-                  </Link>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                <Link
-                  href={category ? `${BASE_PATH}?category=${encodeURIComponent(category)}` : BASE_PATH}
-                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border transition-all group ${
-                    !subcategoryParam
-                      ? "border-primary/60 bg-blue-50/40 shadow-sm"
-                      : "border-border hover:border-primary/30 hover:shadow-sm"
-                  }`}
-                >
-                  <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${!subcategoryParam ? "bg-[#dbeafe]" : "bg-[#f1f5f9]"}`}>
-                    <FolderOpen size={12} className={!subcategoryParam ? "text-primary" : "text-text-muted"} strokeWidth={2} />
-                  </div>
-                  <span className={`text-[12px] font-semibold ${!subcategoryParam ? "text-primary" : "text-text-dark group-hover:text-primary"} transition-colors`}>
-                    Tất cả
-                  </span>
-                </Link>
-                {featuredPlatformSubcats.map((sub) => (
-                  <Link
-                    key={sub.id}
-                    href={`${BASE_PATH}?${category ? `category=${encodeURIComponent(category)}&` : ""}subcategory=${encodeURIComponent(sub.name)}`}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border transition-all group ${
-                      subcategoryParam === sub.name
-                        ? "border-primary/60 bg-blue-50/40 shadow-sm"
-                        : "border-border hover:border-primary/30 hover:shadow-sm"
-                    }`}
-                  >
-                    <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${subcategoryParam === sub.name ? "bg-[#dbeafe]" : "bg-[#f1f5f9]"}`}>
-                      <FolderOpen size={12} className={subcategoryParam === sub.name ? "text-primary" : "text-text-muted"} strokeWidth={2} />
-                    </div>
-                    <span className={`text-[12px] font-semibold ${subcategoryParam === sub.name ? "text-primary" : "text-text-dark group-hover:text-primary"} transition-colors`}>
-                      {sub.name}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
+          {/* Danh mục + Danh mục con — client component, luôn hiển thị, không reload */}
+          {allCategoryData.length > 0 && (
+            <Suspense fallback={<div className="h-16 rounded-2xl bg-white border border-border animate-pulse" />}>
+              <CategoryFilter categories={allCategoryData} basePath={BASE_PATH} />
+            </Suspense>
           )}
 
         {/* ── FILTER + PRODUCTS ROW ── */}
-        <div className="flex flex-col lg:flex-row items-start gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-start gap-4">
           <Suspense fallback={
-            <aside className="w-72 shrink-0">
+            <aside className="hidden lg:block lg:w-72 shrink-0">
               <div className="bg-white rounded-xl border border-border h-120 animate-pulse" />
             </aside>
           }>
@@ -528,7 +458,7 @@ export default async function TaiNguyenMmoPage({
                 </p>
                 <p className="text-xs text-text-muted">
                   {totalCount.toLocaleString("vi-VN")} sản phẩm
-                  {subcategoryParam && <> › <span className="font-semibold">{subcategoryParam}</span></>}
+                  {selectedSubcatNames.length > 0 && <> › <span className="font-semibold">{selectedSubcatNames.join(", ")}</span></>}
                   {q && <> — &ldquo;{q}&rdquo;</>}
                 </p>
               </div>
@@ -555,7 +485,7 @@ export default async function TaiNguyenMmoPage({
                 <p className="text-sm text-text-muted mt-1">Thử điều chỉnh bộ lọc.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                 {pagedProducts.map((p) => (
                   <div
                     key={`${p.kind}-${p.id}`}
@@ -615,7 +545,7 @@ export default async function TaiNguyenMmoPage({
                     </Link>
 
                     {/* Product info */}
-                    <div className="p-3 flex flex-col gap-1.5 flex-1">
+                    <div className="p-2 sm:p-3 flex flex-col gap-1 sm:gap-1.5 flex-1">
                       <Link href={p.href}>
                         <h3 className="text-sm font-bold text-text-dark hover:text-[#2563eb] transition-colors line-clamp-2 leading-snug">
                           {p.name}
@@ -657,8 +587,8 @@ export default async function TaiNguyenMmoPage({
                       )}
 
                       {/* Price + Buy */}
-                      <div className="mt-auto pt-2 grid grid-cols-[2fr_3fr] gap-2 items-stretch">
-                        <div className="flex items-center justify-center bg-[#fff1f2] border border-[#fca5a5] rounded-lg px-1 py-2">
+                      <div className="mt-auto pt-1.5 sm:pt-2 grid grid-cols-[2fr_3fr] gap-1.5 sm:gap-2 items-stretch">
+                        <div className="flex items-center justify-center bg-[#fff1f2] border border-[#fca5a5] rounded-lg px-1 py-1.5 sm:py-2">
                           <span className="text-xs font-extrabold text-[#e11d48] whitespace-nowrap leading-none">
                             {formatVnd(p.price)}
                           </span>

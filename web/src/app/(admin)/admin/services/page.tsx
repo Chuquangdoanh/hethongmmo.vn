@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import type { AuthenticatedUser } from "@/lib/auth/rbac";
+import { getUserPermissions } from "@/lib/services/permission.service";
 import { prisma } from "@/lib/db/prisma";
 import Pagination from "@/components/shared/Pagination";
 import ServicesTable from "./_components/ServicesTable";
@@ -13,6 +17,23 @@ export default async function AdminServicesPage({
 }: {
   searchParams: Promise<{ page?: string; category?: string; q?: string }>;
 }) {
+  const session = await auth();
+  const me = session?.user as AuthenticatedUser | undefined;
+  if (!me || (me.role !== "ADMIN" && me.role !== "STAFF")) redirect("/");
+
+  const isAdmin = me.role === "ADMIN";
+  let canCreate = isAdmin;
+  let canUpdate = isAdmin;
+  let canDelete = isAdmin;
+
+  if (!isAdmin) {
+    const perms = await getUserPermissions(me.id);
+    if (!perms.includes("services:read")) redirect("/admin/dashboard");
+    canCreate = perms.includes("services:create");
+    canUpdate = perms.includes("services:update");
+    canDelete = perms.includes("services:delete");
+  }
+
   const { page, category, q } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
 
@@ -50,6 +71,23 @@ export default async function AdminServicesPage({
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const categories = distinctCategories.map((s) => s.category).filter(Boolean);
 
+  const productIds = services.map((s) => s.id);
+  const auditEntries = productIds.length > 0
+    ? await prisma.auditLog.findMany({
+        where: { targetType: "Service", targetId: { in: productIds } },
+        orderBy: { createdAt: "desc" },
+        take: productIds.length * 5,
+        select: { targetId: true, action: true, createdAt: true, actor: { select: { fullName: true } } },
+      })
+    : [];
+
+  const lastActors: Record<string, { name: string; action: string; at: string }> = {};
+  for (const e of auditEntries) {
+    if (e.targetId && !lastActors[e.targetId]) {
+      lastActors[e.targetId] = { name: e.actor?.fullName ?? "Hệ thống", action: e.action, at: e.createdAt.toISOString() };
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -58,12 +96,14 @@ export default async function AdminServicesPage({
           <h1 className="text-2xl font-bold text-gray-900">Quản lý Dịch vụ</h1>
           <p className="text-sm text-gray-500 mt-1">Tăng follow, like, view trên các nền tảng MXH</p>
         </div>
-        <Link
-          href="/admin/services/tao-moi"
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#7C3AED] text-white text-sm font-semibold hover:bg-[#A855F7] transition-colors whitespace-nowrap shrink-0"
-        >
-          + Thêm dịch vụ
-        </Link>
+        {canCreate && (
+          <Link
+            href="/admin/services/tao-moi"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#7C3AED] text-white text-sm font-semibold hover:bg-[#A855F7] transition-colors whitespace-nowrap shrink-0"
+          >
+            + Thêm dịch vụ
+          </Link>
+        )}
       </div>
 
       {/* Stats */}
@@ -138,6 +178,9 @@ export default async function AdminServicesPage({
         category={category}
         q={q}
         currentPage={currentPage}
+        canUpdate={canUpdate}
+        canDelete={canDelete}
+        lastActors={lastActors}
       />
 
       {totalPages > 1 && (

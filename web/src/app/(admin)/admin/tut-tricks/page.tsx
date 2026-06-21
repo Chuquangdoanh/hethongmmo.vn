@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import type { AuthenticatedUser } from "@/lib/auth/rbac";
+import { getUserPermissions } from "@/lib/services/permission.service";
 import { prisma } from "@/lib/db/prisma";
 import Pagination from "@/components/shared/Pagination";
 import TutTricksTable from "./_components/TutTricksTable";
@@ -24,6 +28,23 @@ export default async function AdminTutTricksPage({
 }: {
   searchParams: Promise<{ page?: string; category?: string; tier?: string; q?: string }>;
 }) {
+  const session = await auth();
+  const me = session?.user as AuthenticatedUser | undefined;
+  if (!me || (me.role !== "ADMIN" && me.role !== "STAFF")) redirect("/");
+
+  const isAdmin = me.role === "ADMIN";
+  let canCreate = isAdmin;
+  let canUpdate = isAdmin;
+  let canDelete = isAdmin;
+
+  if (!isAdmin) {
+    const perms = await getUserPermissions(me.id);
+    if (!perms.includes("tut_tricks:read")) redirect("/admin/dashboard");
+    canCreate = perms.includes("tut_tricks:create");
+    canUpdate = perms.includes("tut_tricks:update");
+    canDelete = perms.includes("tut_tricks:delete");
+  }
+
   const { page, category, tier, q } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
 
@@ -55,6 +76,23 @@ export default async function AdminTutTricksPage({
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const BASE = "/admin/tut-tricks";
 
+  const tutIds = items.map((i) => i.id);
+  const tutAuditEntries = tutIds.length > 0
+    ? await prisma.auditLog.findMany({
+        where: { targetType: "TutTrick", targetId: { in: tutIds } },
+        orderBy: { createdAt: "desc" },
+        take: tutIds.length * 5,
+        select: { targetId: true, action: true, createdAt: true, actor: { select: { fullName: true } } },
+      })
+    : [];
+
+  const lastActors: Record<string, { name: string; action: string; at: string }> = {};
+  for (const e of tutAuditEntries) {
+    if (e.targetId && !lastActors[e.targetId]) {
+      lastActors[e.targetId] = { name: e.actor?.fullName ?? "Hệ thống", action: e.action, at: e.createdAt.toISOString() };
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -63,12 +101,14 @@ export default async function AdminTutTricksPage({
           <h1 className="text-2xl font-bold text-gray-900">Quản lý Tut &amp; Tricks</h1>
           <p className="text-sm text-gray-500 mt-1">Hướng dẫn, thủ thuật và tài liệu kỹ thuật</p>
         </div>
-        <Link
-          href="/admin/tut-tricks/tao-moi"
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#7C3AED] text-white text-sm font-semibold hover:bg-[#A855F7] transition-colors whitespace-nowrap shrink-0"
-        >
-          + Thêm mới
-        </Link>
+        {canCreate && (
+          <Link
+            href="/admin/tut-tricks/tao-moi"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#7C3AED] text-white text-sm font-semibold hover:bg-[#A855F7] transition-colors whitespace-nowrap shrink-0"
+          >
+            + Thêm mới
+          </Link>
+        )}
       </div>
 
       {/* Stats */}
@@ -174,6 +214,9 @@ export default async function AdminTutTricksPage({
         q={q}
         dbCategories={dbCategories}
         currentPage={currentPage}
+        canUpdate={canUpdate}
+        canDelete={canDelete}
+        lastActors={lastActors}
       />
 
       {totalPages > 1 && (

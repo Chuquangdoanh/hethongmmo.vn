@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import type { AuthenticatedUser } from "@/lib/auth/rbac";
+import { getUserPermissions } from "@/lib/services/permission.service";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
 import { r2Url } from "@/lib/utils/image-url";
@@ -14,6 +18,23 @@ export default async function AdminMmoProductsPage({
 }: {
   searchParams: Promise<{ page?: string; group?: string; q?: string }>;
 }) {
+  const session = await auth();
+  const me = session?.user as AuthenticatedUser | undefined;
+  if (!me || (me.role !== "ADMIN" && me.role !== "STAFF")) redirect("/");
+
+  const isAdmin = me.role === "ADMIN";
+  let canCreate = isAdmin;
+  let canUpdate = isAdmin;
+  let canDelete = isAdmin;
+
+  if (!isAdmin) {
+    const perms = await getUserPermissions(me.id);
+    if (!perms.includes("resources:read")) redirect("/admin/dashboard");
+    canCreate = perms.includes("resources:create");
+    canUpdate = perms.includes("resources:update");
+    canDelete = perms.includes("resources:delete");
+  }
+
   const { page, group, q } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
 
@@ -58,6 +79,39 @@ export default async function AdminMmoProductsPage({
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
+  const mmoIds = products.map((p) => p.id);
+  const mmoAuditEntries = mmoIds.length > 0
+    ? await prisma.auditLog.findMany({
+        where: { targetType: "MmoProduct", targetId: { in: mmoIds } },
+        orderBy: { createdAt: "desc" },
+        take: mmoIds.length * 5,
+        select: { targetId: true, action: true, createdAt: true, actor: { select: { fullName: true } } },
+      })
+    : [];
+
+  const lastActors: Record<string, { name: string; action: string; at: string }> = {};
+  for (const e of mmoAuditEntries) {
+    if (e.targetId && !lastActors[e.targetId]) {
+      lastActors[e.targetId] = { name: e.actor?.fullName ?? "Hệ thống", action: e.action, at: e.createdAt.toISOString() };
+    }
+  }
+
+  function actionLabel(action: string) {
+    if (action.endsWith("_CREATE")) return "Thêm mới";
+    if (action.endsWith("_UPDATE")) return "Cập nhật";
+    if (action.includes("DELETE")) return "Đã xóa";
+    return "Cập nhật";
+  }
+
+  function relativeTime(iso: string) {
+    const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (mins < 1) return "Vừa xong";
+    if (mins < 60) return `${mins} phút trước`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} giờ trước`;
+    return `${Math.floor(hours / 24)} ngày trước`;
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -66,12 +120,14 @@ export default async function AdminMmoProductsPage({
           <h1 className="text-2xl font-bold text-gray-900">Quản lý Tài nguyên MMO</h1>
           <p className="text-sm text-gray-500 mt-1">Tài khoản, cookie, proxy và các tài nguyên MMO</p>
         </div>
-        <Link
-          href="/admin/mmo-products/tao-moi"
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#7C3AED] text-white text-sm font-semibold hover:bg-[#A855F7] transition-colors whitespace-nowrap flex-shrink-0"
-        >
-          + Thêm sản phẩm
-        </Link>
+        {canCreate && (
+          <Link
+            href="/admin/mmo-products/tao-moi"
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-[#7C3AED] text-white text-sm font-semibold hover:bg-[#A855F7] transition-colors whitespace-nowrap shrink-0"
+          >
+            + Thêm sản phẩm
+          </Link>
+        )}
       </div>
 
       {/* Stats */}
@@ -154,13 +210,14 @@ export default async function AdminMmoProductsPage({
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Đã bán</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Lượt xem</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Trạng thái</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Người c.nhật</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Hành động</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {products.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-16 text-center">
+                  <td colSpan={10} className="px-4 py-16 text-center">
                     <p className="text-4xl mb-3">📦</p>
                     <p className="text-sm font-medium text-gray-600">Không tìm thấy sản phẩm</p>
                     <p className="text-xs text-gray-400 mt-1">Thử thay đổi bộ lọc hoặc thêm sản phẩm mới</p>
@@ -220,6 +277,16 @@ export default async function AdminMmoProductsPage({
                       )}
                     </div>
                   </td>
+                  <td className="px-4 py-3.5">
+                    {lastActors[product.id] ? (
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-gray-700 truncate max-w-30">{lastActors[product.id]!.name}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{actionLabel(lastActors[product.id]!.action)} · {relativeTime(lastActors[product.id]!.at)}</p>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-300">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3.5 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Link
@@ -229,13 +296,15 @@ export default async function AdminMmoProductsPage({
                       >
                         Kho
                       </Link>
-                      <Link
-                        prefetch={false}
-                        href={`/admin/mmo-products/${product.id}/sua`}
-                        className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-[#7C3AED] bg-[#7C3AED]/8 hover:bg-[#7C3AED]/15 transition-colors"
-                      >
-                        Sửa
-                      </Link>
+                      {canUpdate && (
+                        <Link
+                          prefetch={false}
+                          href={`/admin/mmo-products/${product.id}/sua`}
+                          className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-[#7C3AED] bg-[#7C3AED]/8 hover:bg-[#7C3AED]/15 transition-colors"
+                        >
+                          Sửa
+                        </Link>
+                      )}
                     </div>
                   </td>
                 </tr>
