@@ -489,7 +489,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                       <span>Sản phẩm của tôi</span>
                       <FiChevronRight size={14} className="mnav-acc-chevron" />
                     </Link>
-                    <Link href="/ban-hang/don-hang-nhan" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
+                    <Link href="/ban-hang/don-hang" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
                       <FiPackage size={16} className="mnav-acc-icon" style={{ color: "#16a34a" }} />
                       <span>Đơn hàng nhận</span>
                       <FiChevronRight size={14} className="mnav-acc-chevron" />
