@@ -478,6 +478,27 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
                   </Link>
                 );
               })()}
+              {isAdmin && (() => {
+                const sysActive = isActive("/admin/cai-dat-he-thong");
+                return (
+                  <Link
+                    href="/admin/cai-dat-he-thong"
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      sysActive
+                        ? "bg-[#fef9c3] text-[#78350f]"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }`}
+                  >
+                    <div
+                      className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                      style={{ background: sysActive ? "#fef08a" : "#f0fdf4" }}
+                    >
+                      <Settings size={13} strokeWidth={1.75} style={{ color: sysActive ? "#92400e" : "#10b981" }} />
+                    </div>
+                    <span className="flex-1">Cài đặt hệ thống</span>
+                  </Link>
+                );
+              })()}
             </>
           )}
         </nav>

@@ -11,7 +11,7 @@ import DepositPanel from "./_components/DepositPanel";
 
 export const metadata: Metadata = { title: "Nạp tiền" };
 
-const BANK_INFO = {
+const ENV_BANK = {
   bankName:      process.env.BANK_NAME           ?? "MB Bank",
   accountNumber: process.env.BANK_ACCOUNT_NUMBER ?? "0393118789",
   accountHolder: process.env.BANK_ACCOUNT_HOLDER ?? "CHU QUANG DOANH",
@@ -24,7 +24,7 @@ export default async function NapTienPage() {
   const session = await auth();
   const me = session!.user as AuthenticatedUser;
 
-  const [user, lastDeposit, depositHistory] = await Promise.all([
+  const [user, lastDeposit, depositHistory, bankConfig] = await Promise.all([
     prisma.user.findUnique({
       where: { id: me.id },
       select: {
@@ -43,7 +43,19 @@ export default async function NapTienPage() {
       take: 5,
       select: { id: true, type: true, amount: true, description: true, createdAt: true },
     }),
+    prisma.systemConfig.findUnique({
+      where: { key: "deposit_bank_config" },
+      select: { value: true },
+    }),
   ]);
+
+  const savedBank = (bankConfig?.value ?? {}) as Record<string, string>;
+  const BANK_INFO = {
+    bankName:      savedBank["bank_name"]      ?? ENV_BANK.bankName,
+    accountNumber: savedBank["account_number"] ?? ENV_BANK.accountNumber,
+    accountHolder: savedBank["account_holder"] ?? ENV_BANK.accountHolder,
+    bankBin:       savedBank["bank_bin"]       ?? ENV_BANK.bankBin,
+  };
 
   if (!user) redirect("/");
 
