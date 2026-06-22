@@ -22,8 +22,9 @@ async function getIpWhitelist(): Promise<string[]> {
     const ips = Array.isArray(saved["ip_whitelist"])
       ? (saved["ip_whitelist"] as string[]).filter(Boolean)
       : [];
-    // Fallback về env var nếu DB chưa có config
-    const result = ips.length > 0
+    // Nếu DB đã có config → dùng DB (kể cả rỗng = không giới hạn IP)
+    // Chỉ fallback env var khi DB chưa có record nào
+    const result = config !== null
       ? ips
       : (process.env.SEPAY_IP_WHITELIST ?? "").split(",").map((s) => s.trim()).filter(Boolean);
     _ipCache = { ips: result, exp: now + 60_000 };
