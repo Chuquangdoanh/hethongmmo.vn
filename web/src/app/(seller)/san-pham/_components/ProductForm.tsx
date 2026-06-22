@@ -3,6 +3,10 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { r2Url } from "@/lib/utils/image-url";
+import { FileText, Upload, X, AlertCircle } from "lucide-react";
+
+const MAX_STOCK_ITEMS = 5000;
+const MAX_FILE_SIZE_MB = 10;
 
 interface SubCategoryItem {
   id: string;
@@ -28,6 +32,7 @@ interface ProductFormProps {
 export default function ProductForm({ mode, sellerCategory, subCategories = [], initialData }: ProductFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const txtInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     name: initialData?.name ?? "",
@@ -38,7 +43,17 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
     isHidden: initialData?.isHidden ?? false,
   });
   const [subCategoryId, setSubCategoryId] = useState<string | null>(initialData?.subCategoryId ?? null);
+
+  // ── Stock input state (create mode only) ──────────────────────────────────
+  const [stockTab, setStockTab] = useState<"file" | "manual">("file");
   const [stockText, setStockText] = useState("");
+  // Parsed items from file upload (overrides textarea when set)
+  const [fileItems, setFileItems] = useState<string[]>([]);
+  const [fileName, setFileName] = useState("");
+  const [fileError, setFileError] = useState("");
+  // In-file duplicate warning (shown after parsing)
+  const [fileDupCount, setFileDupCount] = useState(0);
+
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -53,32 +68,16 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
     setUploadError("");
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-
-      // Bước 1: lấy presigned URL từ VPS (không upload file lên VPS)
-      const presignRes = await fetch("/api/storage/presign", { credentials: "include",
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ purpose: "product-image", contentType: file.type, fileExtension: ext }),
-      });
-      const presignJson = await presignRes.json() as { data?: { uploadUrl: string; publicUrl: string }; error?: string };
-      if (!presignRes.ok || !presignJson.data?.uploadUrl) {
-        setUploadError(presignJson.error ?? "Không lấy được URL upload.");
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("purpose", "product-image");
+      const res = await fetch("/api/storage/upload", { credentials: "include", method: "POST", body: formData });
+      const json = await res.json() as { data?: { publicUrl: string }; error?: string };
+      if (!res.ok || !json.data?.publicUrl) {
+        setUploadError(json.error ?? "Upload ảnh thất bại. Vui lòng thử lại.");
         return;
       }
-
-      // Bước 2: upload thẳng từ browser lên R2 (không qua VPS)
-      const uploadRes = await fetch(presignJson.data.uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (!uploadRes.ok) {
-        setUploadError("Upload ảnh thất bại. Vui lòng thử lại.");
-        return;
-      }
-
-      setForm((f) => ({ ...f, imageUrl: presignJson.data!.publicUrl }));
+      setForm((f) => ({ ...f, imageUrl: json.data!.publicUrl }));
     } finally {
       setUploading(false);
     }
@@ -97,17 +96,80 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
     if (file?.type.startsWith("image/")) void handleImageFile(file);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const price = parseFloat(form.price);
-    if (!form.name.trim() || isNaN(price) || price <= 0) {
-      setError("Vui lòng điền đầy đủ thông tin hợp lệ.");
+  // ── TXT file handlers for stock ────────────────────────────────────────────
+  function handleTxtSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileError("");
+    setFileDupCount(0);
+
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      setFileError(`File quá lớn. Tối đa ${MAX_FILE_SIZE_MB}MB.`);
+      e.target.value = "";
       return;
     }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = (ev.target?.result ?? "") as string;
+      const raw = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+
+      if (raw.length === 0) { setFileError("File không có nội dung hợp lệ."); return; }
+      if (raw.length > MAX_STOCK_ITEMS) {
+        setFileError(`File có ${raw.length.toLocaleString("vi-VN")} dòng, vượt giới hạn ${MAX_STOCK_ITEMS.toLocaleString("vi-VN")}.`);
+        return;
+      }
+
+      // Detect + remove in-file duplicates
+      const seen = new Set<string>();
+      const deduped: string[] = [];
+      let dups = 0;
+      for (const line of raw) {
+        if (seen.has(line)) { dups++; } else { seen.add(line); deduped.push(line); }
+      }
+
+      setFileName(file.name);
+      setFileItems(deduped);
+      setFileDupCount(dups);
+    };
+    reader.readAsText(file, "utf-8");
+    e.target.value = "";
+  }
+
+  function clearFile() {
+    setFileItems([]);
+    setFileName("");
+    setFileError("");
+    setFileDupCount(0);
+  }
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    const trimmedName = form.name.trim();
+    if (!trimmedName) { setError("Vui lòng nhập tên sản phẩm."); return; }
+    if (trimmedName.length < 3) { setError("Tên sản phẩm tối thiểu 3 ký tự."); return; }
+
+    const price = parseFloat(form.price);
+    if (isNaN(price) || price <= 0) { setError("Vui lòng nhập giá bán hợp lệ."); return; }
+    if (price < 1000) { setError("Giá bán tối thiểu 1.000đ."); return; }
+    if (price > 100_000_000) { setError("Giá bán tối đa 100.000.000đ."); return; }
+
+    let stockItems: string[] = [];
     if (mode === "create") {
-      const lines = stockText.split("\n").map((l) => l.trim()).filter(Boolean);
-      if (lines.length === 0) {
-        setError("Vui lòng nhập ít nhất 1 item vào kho.");
+      if (stockTab === "file") {
+        if (fileItems.length === 0) { setError("Vui lòng chọn file TXT hoặc nhập tay ít nhất 1 item."); return; }
+        stockItems = fileItems;
+      } else {
+        const lines = stockText.split("\n").map((l) => l.trim()).filter(Boolean);
+        if (lines.length === 0) { setError("Vui lòng nhập ít nhất 1 item vào kho."); return; }
+        // Dedup in manual textarea
+        const seen = new Set<string>();
+        stockItems = lines.filter((l) => { if (seen.has(l)) return false; seen.add(l); return true; });
+      }
+      if (stockItems.length > 5000) {
+        setError(`Kho tối đa 5.000 items khi tạo sản phẩm. Hiện có ${stockItems.length.toLocaleString("vi-VN")} items — hãy chia nhỏ.`);
         return;
       }
     }
@@ -115,9 +177,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
     setError("");
     setLoading(true);
     try {
-      const url = mode === "create"
-        ? "/api/seller/products"
-        : `/api/seller/products/${initialData!.id}`;
+      const url = mode === "create" ? "/api/seller/products" : `/api/seller/products/${initialData!.id}`;
       const method = mode === "create" ? "POST" : "PATCH";
 
       const body: Record<string, unknown> = {
@@ -130,21 +190,11 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
         sellerCategory,
         subCategoryId: subCategoryId ?? null,
       };
+      if (mode === "create") body.stockItems = stockItems;
 
-      if (mode === "create") {
-        body.stockItems = stockText.split("\n").map((l) => l.trim()).filter(Boolean);
-      }
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const json = await res.json() as { success?: boolean; data?: unknown; error?: string };
-      if (!res.ok || (mode === "edit" && !json.success)) {
-        setError(json.error ?? "Thao tác thất bại.");
-        return;
-      }
+      if (!res.ok || (mode === "edit" && !json.success)) { setError(json.error ?? "Thao tác thất bại."); return; }
       router.push("/san-pham");
       router.refresh();
     } finally {
@@ -152,37 +202,28 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
     }
   }
 
-  // ── Shared blocks ──────────────────────────────────────
+  // ── Shared field blocks ────────────────────────────────────────────────────
   const nameField = (
     <div>
       <label className="block text-xs font-medium text-gray-500 mb-1.5">Tên sản phẩm *</label>
-      <input
-        type="text"
-        value={form.name}
-        onChange={set("name")}
-        required
-        maxLength={200}
+      <input type="text" value={form.name} onChange={set("name")} required minLength={3} maxLength={200}
         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-[#e11d48]/60 focus:bg-white focus:outline-none transition-colors"
-        placeholder="Tên sản phẩm"
-        suppressHydrationWarning
-      />
+        placeholder="Tên sản phẩm (tối thiểu 3 ký tự)" suppressHydrationWarning />
+      {form.name.trim().length > 0 && form.name.trim().length < 3 && (
+        <p className="text-[10px] text-amber-500 mt-1">Cần ít nhất 3 ký tự</p>
+      )}
     </div>
   );
 
   const priceField = (
     <div>
       <label className="block text-xs font-medium text-gray-500 mb-1.5">Giá bán (VNĐ) *</label>
-      <input
-        type="number"
-        value={form.price}
-        onChange={set("price")}
-        required
-        min={1000}
-        step={1000}
+      <input type="number" value={form.price} onChange={set("price")} required min={1000} max={100000000} step={1000}
         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-[#e11d48]/60 focus:bg-white focus:outline-none transition-colors"
-        placeholder="VD: 50000"
-        suppressHydrationWarning
-      />
+        placeholder="VD: 50000 (tối thiểu 1.000đ)" suppressHydrationWarning />
+      {form.price && parseFloat(form.price) > 0 && parseFloat(form.price) < 1000 && (
+        <p className="text-[10px] text-red-500 mt-1">Giá tối thiểu 1.000đ</p>
+      )}
     </div>
   );
 
@@ -193,27 +234,17 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
         {subCategories.map((sub) => {
           const active = subCategoryId === sub.id;
           return (
-            <button
-              key={sub.id}
-              type="button"
-              onClick={() => setSubCategoryId(active ? null : sub.id)}
+            <button key={sub.id} type="button" onClick={() => setSubCategoryId(active ? null : sub.id)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                active
-                  ? "bg-violet-600 border-violet-600 text-white"
-                  : "bg-white border-gray-200 text-gray-600 hover:border-violet-400 hover:text-violet-600"
-              }`}
-            >
+                active ? "bg-violet-600 border-violet-600 text-white" : "bg-white border-gray-200 text-gray-600 hover:border-violet-400 hover:text-violet-600"
+              }`}>
               {active ? "✓ " : ""}{sub.name}
             </button>
           );
         })}
       </div>
       {subCategoryId && (
-        <button
-          type="button"
-          onClick={() => setSubCategoryId(null)}
-          className="mt-1.5 text-[10px] text-gray-400 hover:text-gray-600 transition-colors"
-        >
+        <button type="button" onClick={() => setSubCategoryId(null)} className="mt-1.5 text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
           Bỏ chọn
         </button>
       )}
@@ -223,21 +254,13 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
   const checkboxes = (
     <div className="pt-2 border-t border-gray-100 flex items-center gap-6">
       <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={form.isActive}
-          onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
-          className="h-4 w-4 rounded border-gray-300 text-violet-600"
-        />
+        <input type="checkbox" checked={form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+          className="h-4 w-4 rounded border-gray-300 text-violet-600" />
         <span className="text-xs text-gray-600">Đang bán</span>
       </label>
       <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={form.isHidden}
-          onChange={(e) => setForm((f) => ({ ...f, isHidden: e.target.checked }))}
-          className="h-4 w-4 rounded border-gray-300 text-violet-600"
-        />
+        <input type="checkbox" checked={form.isHidden} onChange={(e) => setForm((f) => ({ ...f, isHidden: e.target.checked }))}
+          className="h-4 w-4 rounded border-gray-300 text-violet-600" />
         <span className="text-xs text-gray-600">Ẩn sản phẩm</span>
       </label>
     </div>
@@ -246,32 +269,18 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
   const imageUpload = (
     <div>
       <label className="block text-xs font-medium text-gray-500 mb-1.5">Ảnh sản phẩm</label>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
-        onChange={handleFileChange}
-        className="hidden"
-      />
-      <div
-        onClick={() => { if (!uploading) fileInputRef.current?.click(); }}
-        onDrop={handleDrop}
-        onDragOver={(e) => e.preventDefault()}
+      <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleFileChange} className="hidden" />
+      <div onClick={() => { if (!uploading) fileInputRef.current?.click(); }} onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}
         className={`rounded-xl border-2 border-dashed transition-colors select-none ${
-          uploading
-            ? "border-[#e11d48]/40 bg-red-50 cursor-wait"
-            : "border-[#e11d48]/30 bg-gray-50 hover:border-[#e11d48]/60 hover:bg-red-50/30 cursor-pointer"
-        }`}
-      >
+          uploading ? "border-[#e11d48]/40 bg-red-50 cursor-wait" : "border-[#e11d48]/30 bg-gray-50 hover:border-[#e11d48]/60 hover:bg-red-50/30 cursor-pointer"
+        }`}>
         {form.imageUrl ? (
           <div className="flex items-center gap-4 p-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={r2Url(form.imageUrl)} alt="preview" className="w-20 h-20 object-cover rounded-lg border border-gray-200 shrink-0" />
             <div className="flex gap-3">
-              <button type="button" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                className="text-xs font-medium text-violet-600 hover:text-violet-700 transition-colors">Đổi ảnh</button>
-              <button type="button" onClick={(e) => { e.stopPropagation(); setForm((f) => ({ ...f, imageUrl: "" })); }}
-                className="text-xs font-medium text-red-500 hover:text-red-600 transition-colors">Xóa</button>
+              <button type="button" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }} className="text-xs font-medium text-violet-600 hover:text-violet-700 transition-colors">Đổi ảnh</button>
+              <button type="button" onClick={(e) => { e.stopPropagation(); setForm((f) => ({ ...f, imageUrl: "" })); }} className="text-xs font-medium text-red-500 hover:text-red-600 transition-colors">Xóa</button>
             </div>
           </div>
         ) : (
@@ -284,8 +293,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
             ) : (
               <>
                 <svg className="w-8 h-8 text-[#e11d48]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <p className="text-xs text-gray-500 font-medium">Nhấn để chọn ảnh hoặc kéo thả</p>
                 <p className="text-[10px] text-gray-400">JPEG · PNG · WebP · GIF · Tối đa 5MB</p>
@@ -301,14 +309,9 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
   const descField = (
     <div>
       <label className="block text-xs font-medium text-gray-500 mb-1.5">Mô tả sản phẩm</label>
-      <textarea
-        value={form.description}
-        onChange={set("description")}
-        rows={6}
-        maxLength={5000}
+      <textarea value={form.description} onChange={set("description")} rows={6} maxLength={5000}
         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-[#e11d48]/60 focus:bg-white focus:outline-none transition-colors resize-none"
-        placeholder="Mô tả chi tiết về sản phẩm..."
-      />
+        placeholder="Mô tả chi tiết về sản phẩm..." />
     </div>
   );
 
@@ -324,7 +327,130 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
       </button>
     </div>
   );
-  // ── End shared blocks ───────────────────────────────────
+
+  // ── Stock section (create mode) ────────────────────────────────────────────
+  const manualLineCount = stockText.split("\n").filter((l) => l.trim()).length;
+
+  const stockSection = (
+    <div className="p-6 space-y-4 flex flex-col">
+      <div>
+        <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider mb-1">Kho hàng *</p>
+        <p className="text-[11px] text-gray-400">
+          Thêm kho từ file TXT hoặc nhập tay. Hệ thống tự loại bỏ dòng trùng trong file.
+        </p>
+      </div>
+
+      {/* Tab selector */}
+      <div className="flex rounded-lg border border-gray-200 overflow-hidden bg-gray-50 p-0.5 gap-0.5">
+        <button
+          type="button"
+          onClick={() => { setStockTab("file"); setError(""); }}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+            stockTab === "file"
+              ? "bg-white text-[#e11d48] shadow-sm"
+              : "text-gray-400 hover:text-gray-600"
+          }`}
+        >
+          <FileText size={12} /> Upload TXT
+        </button>
+        <button
+          type="button"
+          onClick={() => { setStockTab("manual"); setError(""); }}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+            stockTab === "manual"
+              ? "bg-white text-[#e11d48] shadow-sm"
+              : "text-gray-400 hover:text-gray-600"
+          }`}
+        >
+          ✏️ Nhập tay
+        </button>
+      </div>
+
+      {/* ── File tab ── */}
+      {stockTab === "file" && (
+        <div className="space-y-3 flex-1">
+          <p className="text-[11px] text-gray-400">
+            Mỗi dòng = 1 item · Tối đa {MAX_STOCK_ITEMS.toLocaleString("vi-VN")} dòng · UTF-8 · Max {MAX_FILE_SIZE_MB}MB
+          </p>
+
+          {fileError && (
+            <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200">
+              <AlertCircle size={13} className="text-red-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-red-600">{fileError}</p>
+            </div>
+          )}
+
+          {fileItems.length > 0 ? (
+            <div className="space-y-2">
+              {/* File preview card */}
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
+                <FileText size={14} className="text-emerald-500 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-700 truncate">{fileName}</p>
+                  <p className="text-[10px] text-emerald-600 mt-0.5">
+                    {fileItems.length.toLocaleString("vi-VN")} items sẽ thêm vào kho
+                  </p>
+                </div>
+                <button type="button" onClick={clearFile} className="text-gray-400 hover:text-gray-600 shrink-0">
+                  <X size={13} />
+                </button>
+              </div>
+
+              {/* Duplicate warning */}
+              {fileDupCount > 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+                  <AlertCircle size={13} className="text-amber-500 shrink-0" />
+                  <p className="text-xs text-amber-700">
+                    Đã tự loại bỏ <strong>{fileDupCount}</strong> dòng trùng lặp trong file.
+                  </p>
+                </div>
+              )}
+
+              {/* Replace file button */}
+              <div>
+                <input ref={txtInputRef} type="file" accept=".txt,text/plain" className="hidden" onChange={handleTxtSelect} />
+                <button type="button" onClick={() => txtInputRef.current?.click()} className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors">
+                  Chọn file khác
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <input ref={txtInputRef} type="file" accept=".txt,text/plain" className="hidden" onChange={handleTxtSelect} />
+              <button
+                type="button"
+                onClick={() => txtInputRef.current?.click()}
+                className="w-full flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#e11d48]/30 bg-gray-50 py-8 hover:border-[#e11d48]/60 hover:bg-red-50/20 transition-colors"
+              >
+                <Upload size={22} className="text-[#e11d48]/40" />
+                <p className="text-xs text-gray-600 font-medium">Click để chọn file .txt</p>
+                <p className="text-[10px] text-gray-400">Mỗi dòng = 1 item · tự động loại bỏ trùng</p>
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Manual tab ── */}
+      {stockTab === "manual" && (
+        <div className="space-y-2 flex-1 flex flex-col">
+          <textarea
+            value={stockText}
+            onChange={(e) => setStockText(e.target.value)}
+            rows={12}
+            placeholder={"user1@gmail.com:pass123\nuser2@gmail.com:pass456\n..."}
+            className="flex-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-800 font-mono placeholder:text-gray-400 focus:border-[#e11d48]/60 focus:outline-none resize-none"
+          />
+          <p className="text-[11px] text-gray-400">
+            {manualLineCount.toLocaleString("vi-VN")} items · Dòng trùng sẽ tự bị loại trước khi lưu
+          </p>
+        </div>
+      )}
+
+      {error && <p className="text-xs text-red-500">{error}</p>}
+      {actionButtons}
+    </div>
+  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -345,24 +471,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
               </div>
 
               {/* CREATE — phải: kho hàng */}
-              <div className="p-6 space-y-5 flex flex-col">
-                <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Kho hàng *</p>
-                <p className="text-[11px] text-gray-400 -mt-3">
-                  Nhập mỗi item trên 1 dòng (email:pass, cookie, key...). Tối thiểu 1, tối đa 100 items. Thêm tiếp sau khi tạo xong.
-                </p>
-                <textarea
-                  value={stockText}
-                  onChange={(e) => setStockText(e.target.value)}
-                  rows={14}
-                  placeholder={"user1@gmail.com:pass123\nuser2@gmail.com:pass456\n..."}
-                  className="flex-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-800 font-mono placeholder:text-gray-400 focus:border-[#e11d48]/60 focus:outline-none resize-none"
-                />
-                <p className="text-[11px] text-gray-400 -mt-3">
-                  {stockText.split("\n").filter((l) => l.trim()).length} items sẽ thêm vào kho
-                </p>
-                {error && <p className="text-xs text-red-500">{error}</p>}
-                {actionButtons}
-              </div>
+              {stockSection}
             </>
           ) : (
             <>

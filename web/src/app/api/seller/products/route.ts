@@ -10,13 +10,16 @@ import { toApiError } from "@/lib/errors";
 export const runtime = "nodejs";
 
 const addProductSchema = z.object({
-  name: z.string().min(1).max(200).trim(),
-  price: z.number().min(1000, "Giá tối thiểu 1,000đ"),
-  description: z.string().max(2000).optional(),
-  imageUrl: z.string().url().optional(),
+  name: z.string().min(3, "Tên sản phẩm tối thiểu 3 ký tự").max(200, "Tên sản phẩm tối đa 200 ký tự").trim(),
+  price: z.number().min(1000, "Giá tối thiểu 1.000đ").max(100_000_000, "Giá tối đa 100.000.000đ"),
+  description: z.string().max(5000, "Mô tả tối đa 5000 ký tự").nullish(),
+  imageUrl: z.string().url("URL ảnh không hợp lệ").nullish(),
   sellerCategory: z.string().min(1).max(100).trim(),
   subCategoryId: z.string().uuid().nullable().optional(),
-  stockItems: z.array(z.string().min(1).max(10000)).min(1, "Cần ít nhất 1 item").max(100, "Tối đa 100 items mỗi lần. Dùng trang Kho hàng để thêm tiếp."),
+  stockItems: z
+    .array(z.string().min(1, "Item không được rỗng").max(2000, "Mỗi item tối đa 2000 ký tự"))
+    .min(1, "Cần ít nhất 1 item kho")
+    .max(5000, "Tối đa 5.000 items mỗi lần tạo sản phẩm"),
 });
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
@@ -84,7 +87,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const productId = await addSellerProduct({ sellerId: me.id, ...parsed.data });
+    const { description, imageUrl, ...rest } = parsed.data;
+    const productId = await addSellerProduct({
+      sellerId: me.id,
+      ...rest,
+      description: description ?? undefined,
+      imageUrl: imageUrl ?? undefined,
+    });
     return NextResponse.json({ data: { productId } }, { status: 201 });
   } catch (err) {
     if (err instanceof AppAuthError) {

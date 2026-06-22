@@ -5,6 +5,23 @@ import { useRouter } from "next/navigation";
 import { Building2, CheckCircle, AlertTriangle, Clock, XCircle } from "lucide-react";
 import { formatDate } from "@/lib/utils/format";
 
+const BANKS = [
+  "Vietcombank",
+  "MBBank",
+  "Techcombank",
+  "VietinBank",
+  "Agribank",
+  "VPBank",
+  "BIDV",
+  "HDBank",
+  "SeaBank",
+  "Sacombank",
+  "OCB",
+  "VIB",
+  "SHB",
+  "LPBank",
+];
+
 interface BankRequest {
   id: string;
   status: string;
@@ -142,21 +159,27 @@ export default function BankChangeRequestForm({
               <p className="text-xs text-gray-500">Điền thông tin ngân hàng mới. Admin sẽ xác minh và cập nhật sau 1-2 ngày làm việc.</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[11px] text-gray-500 mb-1">Tên ngân hàng</label>
-                  <input
+                  <label className="block text-[11px] text-gray-500 mb-1">Ngân hàng</label>
+                  <select
                     required
                     value={form.bankName}
                     onChange={(e) => setForm((f) => ({ ...f, bankName: e.target.value }))}
-                    placeholder="VD: Vietcombank"
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
-                  />
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                  >
+                    <option value="">-- Chọn ngân hàng --</option>
+                    {BANKS.map((b) => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-[11px] text-gray-500 mb-1">Số tài khoản</label>
                   <input
                     required
+                    type="text"
+                    inputMode="numeric"
                     value={form.bankAccountNumber}
-                    onChange={(e) => setForm((f) => ({ ...f, bankAccountNumber: e.target.value }))}
+                    onChange={(e) => setForm((f) => ({ ...f, bankAccountNumber: e.target.value.replace(/\D/g, "") }))}
                     placeholder="VD: 1234567890"
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-300"
                   />
@@ -165,6 +188,7 @@ export default function BankChangeRequestForm({
                   <label className="block text-[11px] text-gray-500 mb-1">Chủ tài khoản</label>
                   <input
                     required
+                    type="text"
                     value={form.bankAccountHolder}
                     onChange={(e) => setForm((f) => ({ ...f, bankAccountHolder: e.target.value.toUpperCase() }))}
                     placeholder="VD: NGUYEN VAN A"

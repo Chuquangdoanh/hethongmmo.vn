@@ -45,13 +45,14 @@ function ComplaintPopup({
 
   async function handleSubmit() {
     if (!reason) { setError("Vui lòng chọn lý do khiếu nại."); return; }
+    if (detail.trim().length < 20) { setError("Mô tả chi tiết phải có ít nhất 20 ký tự."); return; }
     setError("");
     setSubmitting(true);
     try {
       const res = await fetch("/api/user/complaints", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject: reason, content: detail || reason, orderId }),
+        body: JSON.stringify({ subject: reason, content: detail.trim(), orderId }),
       });
       const json = await res.json() as { error?: string };
       if (!res.ok) { setError(json.error ?? "Gửi khiếu nại thất bại."); return; }
@@ -119,17 +120,32 @@ function ComplaintPopup({
 
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-              Mô tả chi tiết vấn đề gặp phải
+              Mô tả chi tiết vấn đề gặp phải <span className="text-red-500">*</span>
             </label>
             <textarea
               value={detail}
               onChange={(e) => setDetail(e.target.value)}
-              placeholder="Nhập mô tả chi tiết vấn đề bạn gặp phải..."
+              placeholder="Mô tả cụ thể vấn đề bạn gặp phải (tối thiểu 20 ký tự)..."
               rows={4}
               maxLength={2000}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full rounded-xl border px-3 py-2.5 text-sm text-gray-700 resize-none focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
+                detail.length > 0 && detail.trim().length < 20
+                  ? "border-red-300 focus:ring-red-400 bg-red-50"
+                  : "border-gray-200 focus:ring-blue-500"
+              }`}
             />
-            <p className="text-[10px] text-gray-400 text-right mt-0.5">{detail.length}/2000</p>
+            <div className="flex items-center justify-between mt-0.5">
+              {detail.trim().length > 0 && detail.trim().length < 20 ? (
+                <p className="text-[10px] text-red-500">
+                  Cần thêm {20 - detail.trim().length} ký tự nữa
+                </p>
+              ) : detail.trim().length >= 20 ? (
+                <p className="text-[10px] text-emerald-600">✓ Đủ yêu cầu</p>
+              ) : (
+                <p className="text-[10px] text-gray-400">Tối thiểu 20 ký tự</p>
+              )}
+              <p className="text-[10px] text-gray-400">{detail.length}/2000</p>
+            </div>
           </div>
 
           {error && (
