@@ -6,7 +6,7 @@ import { r2Url } from "@/lib/utils/image-url";
 
 const SVGL_PRESETS = [
   { name: "Facebook",    icon: "https://svgl.app/library/facebook-icon.svg" },
-  { name: "TikTok",      icon: "https://svgl.app/library/tiktok-icon-light.svg" },
+  { name: "TikTok",      icon: "https://svgl.app/library/tiktok-icon.svg" },
   { name: "YouTube",     icon: "https://svgl.app/library/youtube.svg" },
   { name: "Instagram",   icon: "https://svgl.app/library/instagram-icon.svg" },
   { name: "X (Twitter)", icon: "https://svgl.app/library/x.svg" },
@@ -348,7 +348,7 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
                     <span className="text-[11px] font-bold text-[#7C3AED]">{cat.displayOrder}</span>
                   </div>
                   <div className="w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center shrink-0 p-1.5">
-                    {cat.iconUrl && cat.iconUrl.startsWith("http") ? (
+                    {cat.iconUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={r2Url(cat.iconUrl)} alt={cat.name} className="w-full h-full object-contain" />
                     ) : (

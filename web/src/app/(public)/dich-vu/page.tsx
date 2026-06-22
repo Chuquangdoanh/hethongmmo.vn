@@ -5,7 +5,7 @@ import ServiceListWithForm from "./_components/ServiceListWithForm";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import Pagination from "@/components/shared/Pagination";
-import { Users, TrendingUp, Star, CheckCircle, Headphones } from "lucide-react";
+import { Users, TrendingUp, Star, CheckCircle, Headphones, SearchX } from "lucide-react";
 import { getDiscountInfo } from "@/lib/utils/discount";
 import { buildMeta } from "@/lib/utils/seo";
 import { ColoredTitle } from "@/components/shared/ColoredTitle";
@@ -154,9 +154,12 @@ export default async function DichVuPage({
 
         {/* Grid + inline form */}
         {services.length === 0 ? (
-          <div className="text-center py-20 text-text-muted">
-            <p className="text-4xl mb-4">🔍</p>
-            <p className="font-medium">Không có dịch vụ nào</p>
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-text-muted">
+            <div className="w-16 h-16 rounded-2xl bg-[#ede9fe] flex items-center justify-center">
+              <SearchX size={32} strokeWidth={1.5} className="text-accent" />
+            </div>
+            <p className="font-semibold text-text-dark">Không có dịch vụ nào</p>
+            <p className="text-sm text-text-muted">Thử chọn danh mục khác hoặc xem tất cả dịch vụ</p>
           </div>
         ) : (
           <ServiceListWithForm services={pagedServices} isLoggedIn={isLoggedIn} testimonials={testimonials} discountPct={discountPct} />

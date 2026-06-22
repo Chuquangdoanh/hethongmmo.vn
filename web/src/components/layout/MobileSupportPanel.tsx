@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { FiMessageCircle, FiChevronRight, FiRefreshCw } from "react-icons/fi";
+import { MessageCircle, ChevronRight, RefreshCw } from "lucide-react";
 
 interface TicketItem {
   id:             string;
@@ -93,7 +93,7 @@ export default function MobileSupportPanel({
       <div className="msup-state msup-state--error">
         <p className="msup-state-text">{error}</p>
         <button className="msup-retry" onClick={fetchTickets}>
-          <FiRefreshCw size={14} />
+          <RefreshCw size={14} />
           Thử lại
         </button>
       </div>
@@ -103,7 +103,7 @@ export default function MobileSupportPanel({
   if (!loading && tickets.length === 0) {
     return (
       <div className="msup-state">
-        <FiMessageCircle size={36} className="msup-empty-icon" />
+        <MessageCircle size={36} className="msup-empty-icon" />
         <p className="msup-state-title">Chưa có khiếu nại nào</p>
         <p className="msup-state-text">{emptyText}</p>
       </div>
@@ -156,7 +156,7 @@ export default function MobileSupportPanel({
                 </p>
               )}
             </div>
-            <FiChevronRight size={16} className="msup-chevron" />
+            <ChevronRight size={16} className="msup-chevron" />
           </Link>
         );
       })}

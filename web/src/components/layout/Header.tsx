@@ -26,7 +26,7 @@ export default async function Header() {
 
   let balance: number | null = null;
   let avatarUrl: string | null = null;
-  const [tutCategories, rawSvcCategories] = await Promise.all([
+  const [tutCategories, rawSvcCategories, activeServiceCats] = await Promise.all([
     prisma.tutTrickCategory.findMany({
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       select: { name: true },
@@ -34,6 +34,11 @@ export default async function Header() {
     prisma.serviceCategory.findMany({
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       select: { name: true, iconUrl: true },
+    }),
+    prisma.service.findMany({
+      where: { isActive: true, deletedAt: null },
+      select: { category: true },
+      distinct: ["category"],
     }),
     sessionUser?.id
       ? prisma.user.findUnique({
@@ -47,10 +52,18 @@ export default async function Header() {
         })
       : Promise.resolve(),
   ]);
-  const serviceCategories = rawSvcCategories.map((c) => ({
-    name: c.name,
-    iconUrl: r2Url(c.iconUrl),
-  }));
+  // Chỉ hiển thị danh mục có service active (giống logic Sidebar.tsx)
+  const activeCatNames = new Set(activeServiceCats.map((s) => s.category).filter(Boolean));
+  const svcCatMap = new Map(rawSvcCategories.map((c) => [c.name, c]));
+  const serviceCategories = [
+    ...rawSvcCategories
+      .filter((c) => activeCatNames.has(c.name))
+      .map((c) => ({ name: c.name, iconUrl: r2Url(c.iconUrl) })),
+    ...[...activeCatNames]
+      .filter((name) => !svcCatMap.has(name))
+      .sort()
+      .map((name) => ({ name, iconUrl: null as string | null })),
+  ];
 
   return (
     <header className="hdr-bar" role="banner">

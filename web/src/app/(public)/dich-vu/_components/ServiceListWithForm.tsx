@@ -22,7 +22,7 @@ const PLATFORM_LABELS: Record<string, string> = {
 };
 const PLATFORM_ICONS: Record<string, string> = {
   FACEBOOK:  "https://svgl.app/library/facebook-icon.svg",
-  TIKTOK:    "https://svgl.app/library/tiktok-icon-light.svg",
+  TIKTOK:    "https://svgl.app/library/tiktok-icon.svg",
   GOOGLE:    "https://svgl.app/library/google.svg",
   INSTAGRAM: "https://svgl.app/library/instagram-icon.svg",
   YOUTUBE:   "https://svgl.app/library/youtube.svg",

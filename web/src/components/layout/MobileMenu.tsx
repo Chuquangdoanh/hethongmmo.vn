@@ -6,13 +6,12 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { formatVnd } from "@/lib/utils/format";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
-import { Banknote } from "lucide-react";
 import {
-  FiHome, FiShoppingBag, FiBookOpen, FiFolder, FiUser,
-  FiSettings, FiLogOut, FiBell, FiHeart, FiPackage,
-  FiHelpCircle, FiChevronRight, FiChevronDown, FiArrowLeft,
-  FiAlertCircle, FiGrid, FiShield, FiLayers, FiBook, FiMessageCircle,
-} from "react-icons/fi";
+  Banknote, Home, Wrench, GraduationCap, Lightbulb, FolderOpen,
+  Package, ShoppingBag, User, Settings, LogOut, Bell,
+  Heart, Store, ChevronRight, ChevronDown, ArrowLeft, AlertCircle,
+  Grid3x3, LayoutDashboard, TicketCheck, BookOpen,
+} from "lucide-react";
 import MobileSupportPanel from "./MobileSupportPanel";
 
 interface NavLink {
@@ -51,7 +50,7 @@ const STATIC_RESOURCE_ITEMS: Omit<ResourceItem, "children">[] = [
   {
     id: "kho-tai-nguyen",
     href: "/kho-tai-nguyen",
-    icon: FiPackage,
+    icon: Package,
     iconBg: "#fef3c7",
     iconColor: "#d97706",
     label: "Kho tài nguyên",
@@ -60,7 +59,7 @@ const STATIC_RESOURCE_ITEMS: Omit<ResourceItem, "children">[] = [
   {
     id: "nguyen-lieu",
     href: "/tai-nguyen-mmo",
-    icon: FiFolder,
+    icon: FolderOpen,
     iconBg: "#fef3c7",
     iconColor: "#d97706",
     label: "Nguyên liệu",
@@ -138,7 +137,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
     {
       id: "tut-mmo",
       href: "/tut-tricks",
-      icon: FiLayers,
+      icon: Lightbulb,
       iconBg: "#fee2e2",
       iconColor: "#dc2626",
       label: "Tut MMO",
@@ -200,9 +199,9 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
         <div className="mnav-panel-body">
           {/* Xem tất cả */}
           <Link href="/dich-vu" prefetch={false} className="mnav-svc-viewall" onClick={closeWithNav}>
-            <FiShoppingBag size={16} />
+            <ShoppingBag size={16} />
             Xem tất cả dịch vụ
-            <FiChevronRight size={14} style={{ marginLeft: "auto" }} />
+            <ChevronRight size={14} style={{ marginLeft: "auto" }} />
           </Link>
 
           {/* Danh sách danh mục từ CMS */}
@@ -221,7 +220,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={cat.iconUrl} alt={cat.name} className="mnav-svc-icon-img" />
                     ) : (
-                      <FiShoppingBag size={20} style={{ color: "#7c3aed" }} />
+                      <ShoppingBag size={20} style={{ color: "#7c3aed" }} />
                     )}
                   </div>
                   <span className="mnav-svc-name">{cat.name}</span>
@@ -255,14 +254,14 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
             <div className="mnav-featured-grid">
               <Link href="/dich-vu" prefetch={false} className="mnav-featured-card" onClick={closeWithNav}>
                 <div className="mnav-featured-icon" style={{ background: "#ede9fe" }}>
-                  <FiShoppingBag size={20} style={{ color: "#7c3aed" }} />
+                  <Wrench size={20} style={{ color: "#7c3aed" }} />
                 </div>
                 <div className="mnav-featured-name">DỊCH VỤ</div>
                 <div className="mnav-featured-desc">Mua bán sản phẩm và dịch vụ MMO</div>
               </Link>
               <Link href="/khoa-hoc" prefetch={false} className="mnav-featured-card" onClick={closeWithNav}>
                 <div className="mnav-featured-icon" style={{ background: "#d1fae5" }}>
-                  <FiBookOpen size={20} style={{ color: "#059669" }} />
+                  <GraduationCap size={20} style={{ color: "#059669" }} />
                 </div>
                 <div className="mnav-featured-name">KHÓA HỌC</div>
                 <div className="mnav-featured-desc">Học tập và phát triển kỹ năng</div>
@@ -294,8 +293,8 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                           <span className="mnav-list-desc">{item.desc}</span>
                         </div>
                         {isExpanded
-                          ? <FiChevronDown size={14} className="mnav-chevron mnav-chevron--open" />
-                          : <FiChevronRight size={14} className="mnav-chevron" />}
+                          ? <ChevronDown size={14} className="mnav-chevron mnav-chevron--open" />
+                          : <ChevronRight size={14} className="mnav-chevron" />}
                       </button>
                     ) : (
                       <Link href={item.href} prefetch={false} className="mnav-list-link" onClick={closeWithNav}>
@@ -306,7 +305,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                           <span className="mnav-list-name">{item.label}</span>
                           <span className="mnav-list-desc">{item.desc}</span>
                         </div>
-                        <FiChevronRight size={14} className="mnav-chevron" />
+                        <ChevronRight size={14} className="mnav-chevron" />
                       </Link>
                     )}
                     {hasChildren && isExpanded && (
@@ -349,7 +348,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
             onClick={() => setActivePanel("account")}
             aria-label="Quay lại tài khoản"
           >
-            <FiArrowLeft size={16} />
+            <ArrowLeft size={16} />
             <span>Tài khoản</span>
           </button>
           <button className="mnav-panel-close" onClick={closePanel} aria-label="Đóng menu">✕</button>
@@ -371,7 +370,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
             className="mnav-support-cta"
             onClick={closeWithNav}
           >
-            <FiAlertCircle size={15} />
+            <AlertCircle size={15} />
             Khiếu nại đơn hàng mới
           </Link>
         </div>
@@ -391,7 +390,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
             onClick={() => setActivePanel("account")}
             aria-label="Quay lại tài khoản"
           >
-            <FiArrowLeft size={16} />
+            <ArrowLeft size={16} />
             <span>Tài khoản</span>
           </button>
           <button className="mnav-panel-close" onClick={closePanel} aria-label="Đóng menu">✕</button>
@@ -448,24 +447,31 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                 <p className="mnav-section-label">QUẢN LÝ TÀI KHOẢN</p>
                 <div className="mnav-acc-list">
                   <Link href="/thong-tin-ca-nhan" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                    <FiUser size={16} className="mnav-acc-icon" style={{ color: "#0066ff" }} />
+                    <User size={16} className="mnav-acc-icon" style={{ color: "#0066ff" }} />
                     <span>Ví của tôi</span>
-                    <FiChevronRight size={14} className="mnav-acc-chevron" />
+                    <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
                   <Link href="/don-hang" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                    <FiPackage size={16} className="mnav-acc-icon" style={{ color: "#7c3aed" }} />
+                    <Package size={16} className="mnav-acc-icon" style={{ color: "#7c3aed" }} />
                     <span>Đơn hàng của tôi</span>
-                    <FiChevronRight size={14} className="mnav-acc-chevron" />
+                    <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
+
                   <Link href="/ho-tro" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                    <FiHeart size={16} className="mnav-acc-icon" style={{ color: "#ec4899" }} />
+                    <TicketCheck size={16} className="mnav-acc-icon" style={{ color: "#2563eb" }} />
+                    <span>Ticket hỗ trợ</span>
+                    <ChevronRight size={14} className="mnav-acc-chevron" />
+                  </Link>
+                  
+                  <Link href="/ho-tro" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
+                    <Heart size={16} className="mnav-acc-icon" style={{ color: "#ec4899" }} />
                     <span>Sản phẩm yêu thích</span>
-                    <FiChevronRight size={14} className="mnav-acc-chevron" />
+                    <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
                   <Link href="/thong-tin-ca-nhan" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                    <FiBell size={16} className="mnav-acc-icon" style={{ color: "#f59e0b" }} />
+                    <Bell size={16} className="mnav-acc-icon" style={{ color: "#f59e0b" }} />
                     <span>Thông báo</span>
-                    <FiChevronRight size={14} className="mnav-acc-chevron" />
+                    <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
                 </div>
               </div>
@@ -476,27 +482,27 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                   <p className="mnav-section-label">KHU VỰC NGƯỜI BÁN</p>
                   <div className="mnav-acc-list">
                     <Link href="/ban-hang" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                      <FiShoppingBag size={16} className="mnav-acc-icon" style={{ color: "#16a34a" }} />
+                      <Store size={16} className="mnav-acc-icon" style={{ color: "#16a34a" }} />
                       <span>Seller Center</span>
-                      <FiChevronRight size={14} className="mnav-acc-chevron" />
+                      <ChevronRight size={14} className="mnav-acc-chevron" />
                     </Link>
                     <Link href="/ban-hang/san-pham" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                      <FiGrid size={16} className="mnav-acc-icon" style={{ color: "#16a34a" }} />
+                      <Grid3x3 size={16} className="mnav-acc-icon" style={{ color: "#16a34a" }} />
                       <span>Sản phẩm của tôi</span>
-                      <FiChevronRight size={14} className="mnav-acc-chevron" />
+                      <ChevronRight size={14} className="mnav-acc-chevron" />
                     </Link>
                     <Link href="/ban-hang/don-hang" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                      <FiPackage size={16} className="mnav-acc-icon" style={{ color: "#16a34a" }} />
+                      <Package size={16} className="mnav-acc-icon" style={{ color: "#16a34a" }} />
                       <span>Đơn hàng </span>
-                      <FiChevronRight size={14} className="mnav-acc-chevron" />
+                      <ChevronRight size={14} className="mnav-acc-chevron" />
                     </Link>
                     <button
                       className="mnav-acc-item mnav-acc-item--btn"
                       onClick={() => setActivePanel("seller-support")}
                     >
-                      <FiAlertCircle size={16} className="mnav-acc-icon" style={{ color: "#dc2626" }} />
+                      <AlertCircle size={16} className="mnav-acc-icon" style={{ color: "#dc2626" }} />
                       <span>Khiếu nại từ khách</span>
-                      <FiChevronRight size={14} className="mnav-acc-chevron" />
+                      <ChevronRight size={14} className="mnav-acc-chevron" />
                     </button>
                   </div>
                 </div>
@@ -508,48 +514,28 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                   <p className="mnav-section-label">QUẢN TRỊ HỆ THỐNG</p>
                   <div className="mnav-acc-list">
                     <Link href="/admin/dashboard" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                      <FiShield size={16} className="mnav-acc-icon" style={{ color: "#7c3aed" }} />
+                      <LayoutDashboard size={16} className="mnav-acc-icon" style={{ color: "#7c3aed" }} />
                       <span>Admin Panel</span>
-                      <FiChevronRight size={14} className="mnav-acc-chevron" />
+                      <ChevronRight size={14} className="mnav-acc-chevron" />
                     </Link>
                     <Link href="/thong-tin-ca-nhan" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                      <FiSettings size={16} className="mnav-acc-icon" style={{ color: "#64748b" }} />
+                      <Settings size={16} className="mnav-acc-icon" style={{ color: "#64748b" }} />
                       <span>Cài đặt hệ thống</span>
-                      <FiChevronRight size={14} className="mnav-acc-chevron" />
+                      <ChevronRight size={14} className="mnav-acc-chevron" />
                     </Link>
                   </div>
                 </div>
               )}
 
-              {/* Hỗ trợ khách hàng */}
-              <div className="mnav-section">
-                <p className="mnav-section-label">HỖ TRỢ KHÁCH HÀNG</p>
-                <div className="mnav-acc-list">
-                  <button
-                    className="mnav-acc-item mnav-acc-item--btn"
-                    onClick={() => setActivePanel("support")}
-                  >
-                    <FiMessageCircle size={16} className="mnav-acc-icon" style={{ color: "#0891b2" }} />
-                    <span>Danh sách ticket hỗ trợ</span>
-                    <FiChevronRight size={14} className="mnav-acc-chevron" />
-                  </button>
-                  <button
-                    className="mnav-acc-item mnav-acc-item--btn"
-                    onClick={() => setActivePanel("support")}
-                  >
-                    <FiAlertCircle size={16} className="mnav-acc-icon" style={{ color: "#dc2626" }} />
-                    <span>Khiếu nại đơn hàng</span>
-                    <FiChevronRight size={14} className="mnav-acc-chevron" />
-                  </button>
-                </div>
-              </div>
+              
+            
 
               {/* Đăng xuất */}
               <button
                 className="mnav-logout-btn"
                 onClick={() => { closePanel(); void signOut({ callbackUrl: "/" }); }}
               >
-                <FiLogOut size={16} />
+                <LogOut size={16} />
                 Đăng xuất
               </button>
             </>
@@ -564,7 +550,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           prefetch={false}
           className={`mnav-tab${!isOpen && pathname === "/" ? " mnav-tab--active" : ""}`}
         >
-          <FiHome size={22} className="mnav-tab-icon" />
+          <Home size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Trang chủ</span>
         </Link>
         <button
@@ -572,7 +558,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           onClick={() => openPanel("services")}
           aria-expanded={activePanel === "services"}
         >
-          <FiShoppingBag size={22} className="mnav-tab-icon" />
+          <Wrench size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Dịch vụ</span>
         </button>
         <Link
@@ -580,7 +566,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           prefetch={false}
           className={`mnav-tab${!isOpen && pathname.startsWith("/khoa-hoc") ? " mnav-tab--active" : ""}`}
         >
-          <FiBookOpen size={22} className="mnav-tab-icon" />
+          <GraduationCap size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Khóa học</span>
         </Link>
         <button
@@ -588,7 +574,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           onClick={() => openPanel("resources")}
           aria-expanded={activePanel === "resources"}
         >
-          <FiFolder size={22} className="mnav-tab-icon" />
+          <FolderOpen size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Tài nguyên</span>
         </button>
         <button
@@ -596,7 +582,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           onClick={() => openPanel("account")}
           aria-expanded={activePanel === "account"}
         >
-          <FiUser size={22} className="mnav-tab-icon" />
+          <User size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Tài khoản</span>
         </button>
       </nav>
