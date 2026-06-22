@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
+import { z } from "zod";
 import { auth } from "@/auth";
 import { requireStaff, AppAuthError } from "@/lib/auth/rbac";
 import { requirePermission } from "@/lib/auth/permission-guard";
@@ -11,9 +12,12 @@ import { toApiError } from "@/lib/errors";
 
 export const runtime = "nodejs";
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_LINES = 10_000;
-const MAX_ITEM_LENGTH = 10_000;
+const MAX_ITEMS = 10_000;
+
+const importSchema = z.object({
+  items:   z.array(z.string().min(1).max(10_000)).min(1).max(MAX_ITEMS),
+  preview: z.boolean().optional().default(false),
+});
 
 function normalizeItem(raw: string): string {
   return raw.trim().replace(/\s+/g, " ");
@@ -38,9 +42,10 @@ interface ParsedLine {
 
 /**
  * POST /api/products/mmo/[id]/stock/import
- * Import kho bằng file .txt — kiểm tra trùng trong file và với DB.
- *
- * Query: ?preview=true → phân tích mà không insert (xem trước kết quả)
+ * Body: { items: string[], preview?: boolean }
+ * Nhận mảng items đã đọc sẵn từ client.
+ * - preview=true  → phân tích không insert
+ * - preview=false → insert các item hợp lệ
  */
 export async function POST(
   req: NextRequest,
@@ -51,8 +56,6 @@ export async function POST(
     const actor = requireStaff(session);
     await requirePermission(session, "resources:update");
     const { id } = await params;
-
-    const preview = req.nextUrl.searchParams.get("preview") === "true";
 
     // ── Validate product ──────────────────────────────────────────────
     const product = await prisma.mmoProduct.findUnique({
@@ -72,82 +75,35 @@ export async function POST(
       );
     }
 
-    // ── Parse multipart form ──────────────────────────────────────────
-    let formData: FormData;
-    try {
-      formData = await req.formData();
-    } catch {
+    // ── Parse JSON body ───────────────────────────────────────────────
+    const body: unknown = await req.json();
+    const parsed = importSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: "Không thể đọc form data", code: "VALIDATION_ERROR" },
+        { success: false, error: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ", code: "VALIDATION_ERROR" },
         { status: 400 },
       );
     }
 
-    const file = formData.get("file");
-    if (!file || !(file instanceof File)) {
-      return NextResponse.json(
-        { success: false, error: "Thiếu file upload", code: "VALIDATION_ERROR" },
-        { status: 400 },
-      );
-    }
+    const { preview } = parsed.data;
 
-    if (!file.name.toLowerCase().endsWith(".txt")) {
-      return NextResponse.json(
-        { success: false, error: "Chỉ chấp nhận file .txt", code: "VALIDATION_ERROR" },
-        { status: 400 },
-      );
-    }
-
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { success: false, error: "File quá lớn. Tối đa 10MB.", code: "VALIDATION_ERROR" },
-        { status: 400 },
-      );
-    }
-
-    // ── Đọc và parse nội dung file ────────────────────────────────────
-    let text: string;
-    try {
-      text = await file.text();
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Không thể đọc file. Đảm bảo file mã hóa UTF-8.", code: "VALIDATION_ERROR" },
-        { status: 400 },
-      );
-    }
-
-    const rawLines = text.split("\n");
+    // Normalize và đánh số dòng (line number là thứ tự trong mảng gốc từ client)
     const parsedLines: ParsedLine[] = [];
-    let totalRows = 0;
-
-    for (let i = 0; i < rawLines.length; i++) {
-      const normalized = normalizeItem(rawLines[i] ?? "");
+    for (let i = 0; i < parsed.data.items.length; i++) {
+      const normalized = normalizeItem(parsed.data.items[i] ?? "");
       if (!normalized) continue;
-      totalRows++;
-      if (normalized.length > MAX_ITEM_LENGTH) continue; // skip corrupt lines
       parsedLines.push({ lineNum: i + 1, value: normalized, hash: hashItem(normalized) });
     }
 
     if (parsedLines.length === 0) {
       return NextResponse.json(
-        { success: false, error: "File không có dữ liệu hợp lệ", code: "VALIDATION_ERROR" },
-        { status: 400 },
-      );
-    }
-
-    if (parsedLines.length > MAX_LINES) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `File có ${parsedLines.length.toLocaleString("vi-VN")} dòng, vượt giới hạn ${MAX_LINES.toLocaleString("vi-VN")} dòng/lần.`,
-          code: "VALIDATION_ERROR",
-        },
+        { success: false, error: "Không có dữ liệu hợp lệ", code: "VALIDATION_ERROR" },
         { status: 400 },
       );
     }
 
     // ── Bước 1: Phát hiện trùng trong file ───────────────────────────
-    const seenInFile = new Map<string, number>(); // hash → số dòng đầu tiên
+    const seenInFile = new Map<string, number>(); // hash → lineNum đầu tiên
     const duplicateInFileErrors: ImportError[] = [];
     const uniqueLines: ParsedLine[] = [];
 
@@ -204,13 +160,12 @@ export async function POST(
       }));
 
       await prisma.$transaction(async (tx) => {
-        // skipDuplicates: safety net cho concurrent import — DB unique constraint ngăn nhân đôi
         const result = await tx.mmoProductItem.createMany({ data: records, skipDuplicates: true });
         insertedRows = result.count;
       });
 
       logger.info(
-        { productId: id, totalRows, insertedRows, staffId: actor.id, fileName: file.name },
+        { productId: id, totalRows: parsedLines.length, insertedRows, staffId: actor.id },
         "MMO stock import",
       );
 
@@ -220,8 +175,7 @@ export async function POST(
         targetType: "MmoProduct",
         targetId: id,
         after: {
-          fileName: file.name,
-          totalRows,
+          totalRows: parsedLines.length,
           insertedRows,
           duplicateInFile: duplicateInFileErrors.length,
           duplicateInDatabase: duplicateInDatabaseErrors.length,
@@ -233,16 +187,19 @@ export async function POST(
       (a, b) => a.line - b.line,
     );
 
+    const totalErrors = allErrors.length;
+
     return NextResponse.json({
       success: true,
       message: preview ? "Kết quả xem trước (chưa nhập kho)" : "Import kho hoàn tất",
       data: {
         preview,
-        totalRows,
+        totalRows: parsedLines.length,
         validRows: validItems.length,
         insertedRows,
         duplicateInFile: duplicateInFileErrors.length,
         duplicateInDatabase: duplicateInDatabaseErrors.length,
+        totalErrors,
         errors: allErrors,
       },
     });
