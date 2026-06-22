@@ -13,6 +13,7 @@ import {
   Grid3x3, LayoutDashboard, TicketCheck, BookOpen,
 } from "lucide-react";
 import MobileSupportPanel from "./MobileSupportPanel";
+import { r2Url } from "@/lib/utils/image-url";
 
 interface NavLink {
   href: string;
@@ -218,7 +219,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                   <div className="mnav-svc-icon">
                     {cat.iconUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={cat.iconUrl} alt={cat.name} className="mnav-svc-icon-img" />
+                      <img src={r2Url(cat.iconUrl)} alt={cat.name} className="mnav-svc-icon-img" />
                     ) : (
                       <ShoppingBag size={20} style={{ color: "#7c3aed" }} />
                     )}

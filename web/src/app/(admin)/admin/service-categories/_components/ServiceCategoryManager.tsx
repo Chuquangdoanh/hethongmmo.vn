@@ -4,24 +4,26 @@ import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { r2Url } from "@/lib/utils/image-url";
 
+const SVGL = (name: string) => `https://svgl.app/library/${name}.svg`;
+
 const SVGL_PRESETS = [
-  { name: "Facebook",    icon: "https://svgl.app/library/facebook-icon.svg" },
-  { name: "TikTok",      icon: "https://svgl.app/library/tiktok-icon.svg" },
-  { name: "YouTube",     icon: "https://svgl.app/library/youtube.svg" },
-  { name: "Instagram",   icon: "https://svgl.app/library/instagram-icon.svg" },
-  { name: "X (Twitter)", icon: "https://svgl.app/library/x.svg" },
-  { name: "Telegram",    icon: "https://svgl.app/library/telegram.svg" },
-  { name: "WhatsApp",    icon: "https://svgl.app/library/whatsapp-icon.svg" },
-  { name: "Google",      icon: "https://svgl.app/library/google.svg" },
-  { name: "Pinterest",   icon: "https://svgl.app/library/pinterest.svg" },
-  { name: "Reddit",      icon: "https://svgl.app/library/reddit.svg" },
-  { name: "LinkedIn",    icon: "https://svgl.app/library/linkedin.svg" },
-  { name: "Discord",     icon: "https://svgl.app/library/discord.svg" },
-  { name: "Twitch",      icon: "https://svgl.app/library/twitch.svg" },
-  { name: "Shopify",     icon: "https://svgl.app/library/shopify.svg" },
-  { name: "WordPress",   icon: "https://svgl.app/library/wordpress.svg" },
-  { name: "Canva",       icon: "https://svgl.app/library/canva.svg" },
-  { name: "Figma",       icon: "https://svgl.app/library/figma.svg" },
+  { name: "Facebook",    icon: SVGL("facebook-icon") },
+  { name: "TikTok",      icon: SVGL("tiktok-icon-light") },
+  { name: "YouTube",     icon: SVGL("youtube") },
+  { name: "Instagram",   icon: SVGL("instagram-icon") },
+  { name: "X (Twitter)", icon: SVGL("x") },
+  { name: "Telegram",    icon: SVGL("telegram") },
+  { name: "WhatsApp",    icon: SVGL("whatsapp-icon") },
+  { name: "Google",      icon: SVGL("google") },
+  { name: "Pinterest",   icon: SVGL("pinterest") },
+  { name: "Reddit",      icon: SVGL("reddit") },
+  { name: "LinkedIn",    icon: SVGL("linkedin") },
+  { name: "Discord",     icon: SVGL("discord") },
+  { name: "Twitch",      icon: SVGL("twitch") },
+  { name: "Shopify",     icon: SVGL("shopify") },
+  { name: "WordPress",   icon: SVGL("wordpress") },
+  { name: "Canva",       icon: SVGL("canva") },
+  { name: "Figma",       icon: SVGL("figma") },
 ];
 
 interface Category {
@@ -59,6 +61,24 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
     ? Math.max(...categories.map((c) => c.displayOrder)) + 1
     : 1;
   const [importing, setImporting] = useState(false);
+  const [presetImporting, setPresetImporting] = useState<string | null>(null); // preset name đang import
+
+  async function handlePresetClick(preset: { name: string; icon: string }) {
+    setUploadError("");
+    setPresetImporting(preset.name);
+    try {
+      const res = await fetch("/api/admin/upload/from-url", { credentials: "include",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: preset.icon, uploadType: "service-icon" }),
+      });
+      const json = (await res.json()) as { data?: { url: string }; error?: string };
+      if (!res.ok) { setUploadError(json.error ?? `Import "${preset.name}" thất bại`); return; }
+      setIconUrl(json.data?.url ?? "");
+    } finally {
+      setPresetImporting(null);
+    }
+  }
 
   function startEdit(cat: Category) {
     setEditingId(cat.id);
@@ -282,26 +302,38 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
         </div>
 
         <div>
-          <p className="text-xs text-gray-500 mb-2">Chọn nhanh từ svgl.app:</p>
+          <p className="text-xs text-gray-500 mb-2">Chọn nhanh (tự động lưu về server):</p>
           <div className="flex flex-wrap gap-2">
-            {SVGL_PRESETS.map((p) => (
-              <button
-                key={p.name}
-                type="button"
-                title={p.name}
-                onClick={() => setIconUrl(p.icon)}
-                className={`flex flex-col items-center gap-1 p-2 rounded-lg border transition-all ${
-                  iconUrl === p.icon
-                    ? "border-[#7C3AED] bg-[#7C3AED]/10 ring-1 ring-[#7C3AED]/40"
-                    : "border-gray-200 bg-white hover:border-[#7C3AED]/50"
-                }`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={r2Url(p.icon)} alt={p.name} className="w-6 h-6 object-contain" />
-                <span className="text-[9px] text-gray-500 max-w-[52px] truncate">{p.name}</span>
-              </button>
-            ))}
+            {SVGL_PRESETS.map((p) => {
+              const isImporting = presetImporting === p.name;
+              return (
+                <button
+                  key={p.name}
+                  type="button"
+                  title={p.name}
+                  onClick={() => void handlePresetClick(p)}
+                  disabled={presetImporting !== null}
+                  className={`relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all disabled:opacity-60 ${
+                    isImporting
+                      ? "border-[#7C3AED] bg-[#7C3AED]/10 ring-1 ring-[#7C3AED]/40"
+                      : "border-gray-200 bg-white hover:border-[#7C3AED]/50"
+                  }`}
+                >
+                  {isImporting ? (
+                    <svg className="w-6 h-6 animate-spin text-[#7C3AED]" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.icon} alt={p.name} className="w-6 h-6 object-contain" />
+                  )}
+                  <span className="text-[9px] text-gray-500 max-w-13 truncate">{p.name}</span>
+                </button>
+              );
+            })}
           </div>
+          <p className="mt-1 text-[10px] text-gray-400">Click icon để tải về R2 — ảnh không phụ thuộc CDN ngoài.</p>
         </div>
 
         {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
