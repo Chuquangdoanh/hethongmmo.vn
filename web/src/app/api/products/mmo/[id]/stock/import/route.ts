@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHash } from "crypto";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { requireStaff, AppAuthError } from "@/lib/auth/rbac";
 import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
-import { encrypt } from "@/lib/security/encryption";
+import { encrypt, decrypt } from "@/lib/security/encryption";
 import { writeAuditLog } from "@/lib/security/audit";
 import { logger } from "@/lib/utils/logger";
 import { toApiError } from "@/lib/errors";
@@ -19,33 +18,25 @@ const importSchema = z.object({
   preview: z.boolean().optional().default(false),
 });
 
-function normalizeItem(raw: string): string {
-  return raw.trim().replace(/\s+/g, " ");
-}
-
-function hashItem(normalized: string): string {
-  return createHash("sha256").update(normalized, "utf8").digest("hex");
-}
+type DuplicateType = "DUPLICATE_IN_FILE" | "DUPLICATE_IN_DATABASE";
 
 interface ImportError {
   line: number;
   value: string;
-  type: "DUPLICATE_IN_FILE" | "DUPLICATE_IN_DATABASE";
+  type: DuplicateType;
   detail: string;
 }
 
 interface ParsedLine {
   lineNum: number;
   value: string;
-  hash: string;
 }
 
 /**
  * POST /api/products/mmo/[id]/stock/import
  * Body: { items: string[], preview?: boolean }
- * Nhận mảng items đã đọc sẵn từ client.
- * - preview=true  → phân tích không insert
- * - preview=false → insert các item hợp lệ
+ * Đọc từ client, check 2 loại trùng (trong file + DB), insert items hợp lệ.
+ * preview=true → phân tích không insert.
  */
 export async function POST(
   req: NextRequest,
@@ -87,12 +78,12 @@ export async function POST(
 
     const { preview } = parsed.data;
 
-    // Normalize và đánh số dòng (line number là thứ tự trong mảng gốc từ client)
+    // Normalize và đánh số dòng
     const parsedLines: ParsedLine[] = [];
     for (let i = 0; i < parsed.data.items.length; i++) {
-      const normalized = normalizeItem(parsed.data.items[i] ?? "");
-      if (!normalized) continue;
-      parsedLines.push({ lineNum: i + 1, value: normalized, hash: hashItem(normalized) });
+      const value = (parsed.data.items[i] ?? "").trim().replace(/\s+/g, " ");
+      if (!value) continue;
+      parsedLines.push({ lineNum: i + 1, value });
     }
 
     if (parsedLines.length === 0) {
@@ -103,12 +94,12 @@ export async function POST(
     }
 
     // ── Bước 1: Phát hiện trùng trong file ───────────────────────────
-    const seenInFile = new Map<string, number>(); // hash → lineNum đầu tiên
+    const seenInFile = new Map<string, number>(); // value → lineNum đầu tiên
     const duplicateInFileErrors: ImportError[] = [];
     const uniqueLines: ParsedLine[] = [];
 
     for (const line of parsedLines) {
-      const firstLine = seenInFile.get(line.hash);
+      const firstLine = seenInFile.get(line.value);
       if (firstLine !== undefined) {
         duplicateInFileErrors.push({
           line: line.lineNum,
@@ -117,26 +108,32 @@ export async function POST(
           detail: `Trùng với dòng ${firstLine} trong file`,
         });
       } else {
-        seenInFile.set(line.hash, line.lineNum);
+        seenInFile.set(line.value, line.lineNum);
         uniqueLines.push(line);
       }
     }
 
-    // ── Bước 2: Phát hiện trùng với kho DB ───────────────────────────
-    const hashesToCheck = uniqueLines.map((l) => l.hash);
-    const existingItems = await prisma.mmoProductItem.findMany({
-      where: { productId: id, valueHash: { in: hashesToCheck } },
-      select: { valueHash: true },
+    // ── Bước 2: Phát hiện trùng với kho DB (decrypt) ─────────────────
+    // Lấy toàn bộ item của sản phẩm, decrypt để so sánh
+    const existingRows = await prisma.mmoProductItem.findMany({
+      where: { productId: id },
+      select: { valueEnc: true },
     });
-    const existingHashSet = new Set(
-      existingItems.map((e) => e.valueHash).filter((h): h is string => h !== null),
-    );
+
+    const existingSet = new Set<string>();
+    for (const row of existingRows) {
+      try {
+        existingSet.add(decrypt(row.valueEnc as Buffer));
+      } catch {
+        // skip unreadable items
+      }
+    }
 
     const duplicateInDatabaseErrors: ImportError[] = [];
     const validItems: ParsedLine[] = [];
 
     for (const line of uniqueLines) {
-      if (existingHashSet.has(line.hash)) {
+      if (existingSet.has(line.value)) {
         duplicateInDatabaseErrors.push({
           line: line.lineNum,
           value: line.value,
@@ -155,12 +152,11 @@ export async function POST(
       const records = validItems.map((item) => ({
         productId: id,
         valueEnc: encrypt(item.value) as unknown as Uint8Array<ArrayBuffer>,
-        valueHash: item.hash,
         status: "AVAILABLE" as const,
       }));
 
       await prisma.$transaction(async (tx) => {
-        const result = await tx.mmoProductItem.createMany({ data: records, skipDuplicates: true });
+        const result = await tx.mmoProductItem.createMany({ data: records });
         insertedRows = result.count;
       });
 
@@ -187,8 +183,6 @@ export async function POST(
       (a, b) => a.line - b.line,
     );
 
-    const totalErrors = allErrors.length;
-
     return NextResponse.json({
       success: true,
       message: preview ? "Kết quả xem trước (chưa nhập kho)" : "Import kho hoàn tất",
@@ -199,7 +193,7 @@ export async function POST(
         insertedRows,
         duplicateInFile: duplicateInFileErrors.length,
         duplicateInDatabase: duplicateInDatabaseErrors.length,
-        totalErrors,
+        totalErrors: allErrors.length,
         errors: allErrors,
       },
     });
