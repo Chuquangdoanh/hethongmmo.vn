@@ -549,6 +549,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           href="/"
           prefetch={false}
           className={`mnav-tab${!isOpen && pathname === "/" ? " mnav-tab--active" : ""}`}
+          onClick={closeWithNav}
         >
           <Home size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Trang chủ</span>
@@ -565,6 +566,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           href="/khoa-hoc"
           prefetch={false}
           className={`mnav-tab${!isOpen && pathname.startsWith("/khoa-hoc") ? " mnav-tab--active" : ""}`}
+          onClick={closeWithNav}
         >
           <GraduationCap size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Khóa học</span>

@@ -521,14 +521,16 @@ body.menu-open .scm-wrapper { display: none !important; }
   cursor: pointer;
   color: #94a3b8;
   text-decoration: none;
-  transition: color 0.18s;
+  /* Không transition — tab phản hồi ngay lập tức */
   -webkit-tap-highlight-color: transparent;
+  /* Loại bỏ 300ms tap delay trên mobile */
+  touch-action: manipulation;
   outline: none;
 }
 .mnav-tab:focus-visible { outline: 2px solid #0066ff; outline-offset: -2px; }
 .mnav-tab--active { color: #0066ff; }
-.mnav-tab-icon { display: block; transition: transform 0.18s; }
-.mnav-tab--active .mnav-tab-icon { transform: scale(1.12); }
+/* Không transform, không transition — icon hiện ngay */
+.mnav-tab-icon { display: block; }
 .mnav-tab-label {
   font-size: 10px;
   font-weight: 600;
@@ -537,14 +539,13 @@ body.menu-open .scm-wrapper { display: none !important; }
 }
 
 /* ── Overlay ────────────────────────────────────────────────── */
+/* KHÔNG dùng backdrop-filter: tạo compositing layer, gây delay touch trên iOS Safari */
 .mnav-overlay {
   position: fixed;
   inset: 0;
-  bottom: 65px;
+  bottom: 65px; /* Không che bottom nav — tab vẫn click được bất cứ lúc nào */
   z-index: 1040;
   background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   display: none;
 }
 .mnav-overlay--open { display: block; pointer-events: auto; }
@@ -590,6 +591,7 @@ body.menu-open .scm-wrapper { display: none !important; }
   font-size: 16px;
   line-height: 1;
   padding: 0;
+  touch-action: manipulation;
   transition: background 0.15s, color 0.15s;
 }
 .mnav-panel-close:hover { background: #f1f5f9; color: #0f172a; }
@@ -922,6 +924,7 @@ body.menu-open .scm-wrapper { display: none !important; }
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background 0.15s;
 }
 .mnav-panel-back:hover { background: #e2e8f0; }
@@ -933,6 +936,7 @@ body.menu-open .scm-wrapper { display: none !important; }
   background: transparent;
   cursor: pointer;
   text-align: left;
+  touch-action: manipulation;
 }
 
 /* ── Support panel ───────────────────────────────────────────── */
