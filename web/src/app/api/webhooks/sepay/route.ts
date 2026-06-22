@@ -7,6 +7,33 @@ import { processDeposit } from "@/lib/services/deposit.service";
 import { DuplicateError } from "@/lib/errors";
 import { logger } from "@/lib/utils/logger";
 
+// ── IP whitelist cache (60s TTL) — tránh query DB mỗi webhook ───────────────
+let _ipCache: { ips: string[]; exp: number } | null = null;
+
+async function getIpWhitelist(): Promise<string[]> {
+  const now = Date.now();
+  if (_ipCache && _ipCache.exp > now) return _ipCache.ips;
+  try {
+    const config = await prisma.systemConfig.findUnique({
+      where: { key: "deposit_bank_config" },
+      select: { value: true },
+    });
+    const saved = (config?.value ?? {}) as Record<string, unknown>;
+    const ips = Array.isArray(saved["ip_whitelist"])
+      ? (saved["ip_whitelist"] as string[]).filter(Boolean)
+      : [];
+    // Fallback về env var nếu DB chưa có config
+    const result = ips.length > 0
+      ? ips
+      : (process.env.SEPAY_IP_WHITELIST ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    _ipCache = { ips: result, exp: now + 60_000 };
+    return result;
+  } catch {
+    // DB lỗi → fallback env var
+    return (process.env.SEPAY_IP_WHITELIST ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  }
+}
+
 const sePaySchema = z.object({
   id: z.number(),
   gateway: z.string(),
@@ -28,16 +55,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // 1. Read raw body BEFORE anything else
   const rawBody = await req.text();
 
-  // 1a. IP whitelist — defense-in-depth layer behind HMAC (optional, set SEPAY_IP_WHITELIST)
-  const ipWhitelist = process.env.SEPAY_IP_WHITELIST;
-  if (ipWhitelist) {
-    const allowedIPs = ipWhitelist.split(",").map(ip => ip.trim()).filter(Boolean);
+  // 1a. IP whitelist — đọc từ SystemConfig (CMS) với fallback về env var
+  const allowedIPs = await getIpWhitelist();
+  if (allowedIPs.length > 0) {
     const clientIP =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
       req.headers.get("x-real-ip") ??
       "";
-    if (allowedIPs.length > 0 && !allowedIPs.includes(clientIP)) {
-      logger.warn({ clientIP }, "SePay webhook: IP not in whitelist");
+    if (!allowedIPs.includes(clientIP)) {
+      logger.warn({ clientIP, allowedIPs }, "SePay webhook: IP not in whitelist");
       return NextResponse.json({ success: false, message: "Forbidden" }, { status: 200 });
     }
   }

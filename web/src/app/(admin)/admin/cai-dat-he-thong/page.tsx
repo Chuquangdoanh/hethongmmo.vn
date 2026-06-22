@@ -9,6 +9,7 @@ const DEFAULTS = {
   account_number: process.env.BANK_ACCOUNT_NUMBER ?? "0393118789",
   account_holder: process.env.BANK_ACCOUNT_HOLDER ?? "CHU QUANG DOANH",
   bank_bin:       process.env.BANK_BIN            ?? "MB",
+  ip_whitelist:   (process.env.SEPAY_IP_WHITELIST ?? "").split(",").map((s) => s.trim()).filter(Boolean),
 };
 
 export default async function CaiDatHeThongPage() {
@@ -17,12 +18,15 @@ export default async function CaiDatHeThongPage() {
     select: { value: true },
   });
 
-  const saved = (config?.value ?? {}) as Record<string, string>;
+  const saved = (config?.value ?? {}) as Record<string, unknown>;
 
-  const bankName      = saved["bank_name"]      ?? DEFAULTS.bank_name;
-  const accountNumber = saved["account_number"] ?? DEFAULTS.account_number;
-  const accountHolder = saved["account_holder"] ?? DEFAULTS.account_holder;
-  const bankBin       = saved["bank_bin"]       ?? DEFAULTS.bank_bin;
+  const bankName      = (saved["bank_name"]      as string | undefined) ?? DEFAULTS.bank_name;
+  const accountNumber = (saved["account_number"] as string | undefined) ?? DEFAULTS.account_number;
+  const accountHolder = (saved["account_holder"] as string | undefined) ?? DEFAULTS.account_holder;
+  const bankBin       = (saved["bank_bin"]       as string | undefined) ?? DEFAULTS.bank_bin;
+  const ipWhitelist   = Array.isArray(saved["ip_whitelist"])
+    ? (saved["ip_whitelist"] as string[]).filter(Boolean)
+    : DEFAULTS.ip_whitelist;
 
   return (
     <div className="space-y-6">
@@ -36,6 +40,7 @@ export default async function CaiDatHeThongPage() {
         initialAccountNumber={accountNumber}
         initialAccountHolder={accountHolder}
         initialBankBin={bankBin}
+        initialIpWhitelist={ipWhitelist}
       />
     </div>
   );

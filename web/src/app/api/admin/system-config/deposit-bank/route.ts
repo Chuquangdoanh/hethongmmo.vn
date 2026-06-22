@@ -15,6 +15,7 @@ const depositBankSchema = z.object({
   account_number: z.string().min(6, "Số tài khoản phải từ 6 ký tự").max(30).trim(),
   account_holder: z.string().min(1, "Tên chủ tài khoản không được để trống").max(100).trim(),
   bank_bin:       z.string().min(1, "Bank BIN không được để trống").max(20).trim(),
+  ip_whitelist:   z.array(z.string().trim().min(7).max(45)).max(20).default([]),
 });
 
 export type DepositBankConfig = z.infer<typeof depositBankSchema>;
@@ -24,6 +25,7 @@ const DEFAULTS: DepositBankConfig = {
   account_number: process.env.BANK_ACCOUNT_NUMBER ?? "0393118789",
   account_holder: process.env.BANK_ACCOUNT_HOLDER ?? "CHU QUANG DOANH",
   bank_bin:       process.env.BANK_BIN            ?? "MB",
+  ip_whitelist:   (process.env.SEPAY_IP_WHITELIST ?? "").split(",").map((s) => s.trim()).filter(Boolean),
 };
 
 export async function GET(): Promise<NextResponse> {
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       },
     });
 
-    return apiSuccess("Cập nhật thông tin tài khoản nạp tiền thành công");
+    return apiSuccess("Cập nhật cấu hình thành công");
   } catch (err) {
     return apiCatch(err);
   }
