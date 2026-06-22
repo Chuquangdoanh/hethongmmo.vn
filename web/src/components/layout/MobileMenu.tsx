@@ -74,7 +74,6 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
   const [expanded, setExpanded]       = useState<string | null>(null);
   const [mounted, setMounted]         = useState(false);
   const navigatingRef                 = useRef(false);
-  const transitioningRef              = useRef(false);
   const pathname                      = usePathname();
 
   useEffect(() => { setMounted(true); }, []);
@@ -117,10 +116,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
   }, []);
 
   const openPanel = useCallback((panel: PanelType) => {
-    if (transitioningRef.current) return;
-    transitioningRef.current = true;
     setActivePanel((prev) => (prev === panel ? null : panel));
-    setTimeout(() => { transitioningRef.current = false; }, 350);
   }, []);
 
   const closeWithNav = useCallback(() => {
@@ -491,7 +487,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                     </Link>
                     <Link href="/ban-hang/don-hang" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
                       <FiPackage size={16} className="mnav-acc-icon" style={{ color: "#16a34a" }} />
-                      <span>Đơn hàng nhận</span>
+                      <span>Đơn hàng </span>
                       <FiChevronRight size={14} className="mnav-acc-chevron" />
                     </Link>
                     <button

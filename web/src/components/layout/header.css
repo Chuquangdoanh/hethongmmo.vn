@@ -20,12 +20,23 @@
   background: #ffffff;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   transition: background 0.3s ease, box-shadow 0.3s ease;
+  position: relative; /* required for ::before pseudo-element positioning */
 }
+/* backdrop-filter is on ::before so .hdr-bar itself does NOT become a
+   containing block for position:fixed children (MobileMenu bottom nav / panels).
+   backdrop-filter on the element itself breaks fixed positioning on mobile. */
 .hdr-sticky.hdr-scrolled .hdr-bar {
   background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+.hdr-sticky.hdr-scrolled .hdr-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.04);
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* ── Inner container ────────────────────────────────────────── */
@@ -534,14 +545,11 @@ body.menu-open .scm-wrapper { display: none !important; }
   background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-  will-change: opacity;
+  display: none;
 }
-.mnav-overlay--open { opacity: 1; pointer-events: auto; }
+.mnav-overlay--open { display: block; pointer-events: auto; }
 
-/* ── Full-screen panel (slides up from bottom) ──────────────── */
+/* ── Full-screen panel (instant show/hide — no slide animation) ── */
 .mnav-panel {
   position: fixed;
   top: 0;
@@ -550,14 +558,11 @@ body.menu-open .scm-wrapper { display: none !important; }
   bottom: 65px;
   z-index: 1050;
   background: #f8fafc;
-  transform: translateY(110%);
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
+  display: none;
   flex-direction: column;
   overflow: hidden;
-  will-change: transform;
 }
-.mnav-panel--open { transform: translateY(0); }
+.mnav-panel--open { display: flex; }
 
 /* Panel header */
 .mnav-panel-head {
