@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { formatDate } from "@/lib/utils/format";
 import { decrypt } from "@/lib/security/encryption";
 import StockUploadForm from "./StockUploadForm";
+import StockImportForm from "./StockImportForm";
 import Pagination from "@/components/shared/Pagination";
 
 export const metadata: Metadata = { title: "Admin — Quản lý kho MMO" };
@@ -88,7 +89,10 @@ export default async function AdminMmoStockPage({
         ))}
       </div>
 
-      {/* Upload form */}
+      {/* Import form (file upload, check trùng chi tiết) */}
+      <StockImportForm productId={id} />
+
+      {/* Quick add form (textarea, nhập nhanh số lượng nhỏ) */}
       <StockUploadForm productId={id} />
 
       {/* Filter */}

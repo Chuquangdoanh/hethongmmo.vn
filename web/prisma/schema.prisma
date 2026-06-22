@@ -524,6 +524,7 @@ model MmoProductItem {
   productId    String          @map("product_id") @db.Uuid
   product      MmoProduct      @relation(fields: [productId], references: [id], onDelete: Cascade)
   valueEnc     Bytes           @map("value_enc")
+  valueHash    String?         @map("value_hash") // SHA-256 của plaintext đã normalize; NULL cho item cũ
   status       StockItemStatus @default(AVAILABLE)
   soldToUserId String?         @map("sold_to_user_id") @db.Uuid
   orderId      String?         @map("order_id") @db.Uuid
@@ -531,6 +532,7 @@ model MmoProductItem {
   createdAt    DateTime        @default(now()) @map("created_at")
   updatedAt    DateTime        @updatedAt @map("updated_at")
 
+  @@unique([productId, valueHash]) // PostgreSQL bỏ qua NULL trong unique constraint
   @@index([productId, status])
   @@index([orderId])
   @@map("mmo_product_items")

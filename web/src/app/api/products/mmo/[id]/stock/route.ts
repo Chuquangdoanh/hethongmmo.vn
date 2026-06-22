@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHash } from "crypto";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { requireStaff, AppAuthError } from "@/lib/auth/rbac";
@@ -8,6 +9,11 @@ import { encrypt } from "@/lib/security/encryption";
 import { writeAuditLog } from "@/lib/security/audit";
 import { logger } from "@/lib/utils/logger";
 import { toApiError } from "@/lib/errors";
+
+function hashItemValue(value: string): string {
+  const normalized = value.trim().replace(/\s+/g, " ");
+  return createHash("sha256").update(normalized, "utf8").digest("hex");
+}
 
 export const runtime = "nodejs";
 
@@ -139,14 +145,15 @@ export async function POST(
     // Deduplicate trong input (giữ thứ tự xuất hiện đầu tiên)
     const unique = [...new Set(parsed.data.items.map((i) => i.trim()).filter(Boolean))];
 
-    // Encrypt từng item riêng biệt (mỗi item có nonce AES-GCM riêng)
+    // Encrypt từng item và tính hash để check trùng nhanh
     const records = unique.map((value) => ({
       productId: id,
       valueEnc: encrypt(value) as unknown as Uint8Array<ArrayBuffer>,
+      valueHash: hashItemValue(value),
       status: "AVAILABLE" as const,
     }));
 
-    await prisma.mmoProductItem.createMany({ data: records });
+    await prisma.mmoProductItem.createMany({ data: records, skipDuplicates: true });
 
     // Query số lượng AVAILABLE sau insert
     const totalAvailable = await prisma.mmoProductItem.count({
