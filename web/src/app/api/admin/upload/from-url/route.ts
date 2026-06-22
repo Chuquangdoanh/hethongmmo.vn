@@ -88,7 +88,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const contentType = imageRes.headers.get("content-type")?.split(";")[0]?.trim() ?? "";
     if (!isAllowedMimeType(contentType)) {
       return apiError(
-        "Định dạng ảnh không hợp lệ (chấp nhận JPEG, PNG, WebP, AVIF, GIF)",
+        "Định dạng ảnh không hợp lệ (chấp nhận JPEG, PNG, WebP, AVIF, GIF, SVG)",
         "INVALID_TYPE",
         400,
       );

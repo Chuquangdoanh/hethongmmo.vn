@@ -25,7 +25,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return apiError("File quá lớn, tối đa 5 MB", "FILE_TOO_LARGE", 400);
     }
     if (!isAllowedMimeType(file.type)) {
-      return apiError("Chỉ chấp nhận JPEG, PNG, WebP, AVIF, GIF", "INVALID_TYPE", 400);
+      return apiError("Chỉ chấp nhận JPEG, PNG, WebP, AVIF, GIF, SVG", "INVALID_TYPE", 400);
     }
 
     // Sanitized upload type controls the R2 key prefix (admin-controlled, validated in uploadToR2)

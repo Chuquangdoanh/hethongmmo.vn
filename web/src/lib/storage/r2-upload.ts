@@ -21,18 +21,20 @@ const ALLOWED_MIME_TYPES = [
   "image/png",
   "image/webp",
   "image/avif",
-  "image/gif", // retained for backward compat — GIF thumbnails already in production DB
+  "image/gif",       // retained for backward compat — GIF thumbnails already in production DB
+  "image/svg+xml",   // SVG icons (service categories, course icons)
 ] as const;
 
 export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];
 
 /** Extension derived from MIME type — never taken from client filename */
 const MIME_TO_EXT: Record<AllowedMimeType, string> = {
-  "image/jpeg": "jpg",
-  "image/png":  "png",
-  "image/webp": "webp",
-  "image/avif": "avif",
-  "image/gif":  "gif",
+  "image/jpeg":    "jpg",
+  "image/png":     "png",
+  "image/webp":    "webp",
+  "image/avif":    "avif",
+  "image/gif":     "gif",
+  "image/svg+xml": "svg",
 };
 
 // ---------------------------------------------------------------------------
