@@ -286,42 +286,18 @@ export default async function KhoTaiNguyenPage({
       extraTags: Math.max(0, rc.subCategories.length - 3),
     }));
 
-  // Category data for client-side filter component
-  // Hiển thị TẤT CẢ subcategory được cấu hình (showInKhoTaiNguyen=true), kể cả khi count=0
-  const allCategoryData = platformCards.map((card) => ({
-    name: card.name,
-    iconUrl: card.iconUrl,
-    count: card.count,
-    subCategories: (resourceCategories.find((rc) => rc.name === card.name)?.subCategories ?? [])
-      .map((s) => ({ id: s.id, name: s.name, count: subCatCountMap.get(s.name) ?? 0 })),
+  // Category data for client-side filter — CHỈ danh mục CMS được cấu hình showInKhoTaiNguyen=true
+  // Không thêm bất kỳ danh mục nào ngoài CMS để tránh lẫn giữa 2 trang
+  const allCategoryData = resourceCategories.map((rc) => ({
+    name: rc.name,
+    iconUrl: rc.iconUrl,
+    count: platformProductCount.get(rc.name) ?? 0,
+    subCategories: rc.subCategories.map((s) => ({
+      id: s.id,
+      name: s.name,
+      count: subCatCountMap.get(s.name) ?? 0,
+    })),
   }));
-
-  // Build seller subcategory map: sellerCategory → subcategories with showInKhoTaiNguyen=true
-  const sellerCatSubMap = new Map<string, { id: string; name: string; count: number }[]>();
-  for (const p of allStatProducts) {
-    const sub = p.subCategory;
-    if (!sub?.showInKhoTaiNguyen || !sub.name || !p.subCategoryId) continue;
-    if (!sellerCatSubMap.has(p.sellerCategory)) sellerCatSubMap.set(p.sellerCategory, []);
-    const arr = sellerCatSubMap.get(p.sellerCategory)!;
-    const found = arr.find((s) => s.name === sub.name);
-    if (found) found.count++;
-    else arr.push({ id: p.subCategoryId, name: sub.name, count: 1 });
-  }
-  // Add missing seller subcategories to matched parent categories already in allCategoryData
-  for (const catData of allCategoryData) {
-    const sellerSubs = sellerCatSubMap.get(catData.name) ?? [];
-    const existingNames = new Set(catData.subCategories.map((s) => s.name));
-    for (const sub of sellerSubs) {
-      if (!existingNames.has(sub.name)) catData.subCategories.push(sub);
-    }
-  }
-  // Add seller-only parent categories not backed by any ResourceCategory entry
-  const knownCatNames = new Set(allCategoryData.map((c) => c.name));
-  for (const [cat, count] of platformProductCount) {
-    if (!knownCatNames.has(cat) && count > 0) {
-      allCategoryData.push({ name: cat, iconUrl: null, count, subCategories: sellerCatSubMap.get(cat) ?? [] });
-    }
-  }
 
   // Review map (seller)
   const reviewMap = new Map(reviewStats.map((r) => [r.productId, { count: r._count.id, avg: r._avg.rating ?? 0 }]));

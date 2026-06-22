@@ -326,6 +326,9 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
   const [editingCatStore, setEditingCatStore] = useState<StoreFilter>("kho");
   const [formOpen, setFormOpen] = useState(false);
 
+  const [editShowInKho, setEditShowInKho] = useState(true);
+  const [editShowInMmo, setEditShowInMmo] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [uploadError, setUploadError] = useState("");
@@ -376,6 +379,8 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
     setUploadError("");
     setImportUrl("");
     setEditingCatStore(storeFilter);
+    setEditShowInKho(storeFilter === "kho");
+    setEditShowInMmo(storeFilter === "mmo");
     setFormOpen(true);
   }
 
@@ -383,6 +388,8 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
     setEditingId(cat.id);
     setName(cat.name);
     setIconUrl(cat.iconUrl ?? "");
+    setEditShowInKho(cat.showInKhoTaiNguyen);
+    setEditShowInMmo(cat.showInTaiNguyenMmo);
     setEditingCatStore(cat.showInKhoTaiNguyen ? "kho" : "mmo");
     setError("");
     setUploadError("");
@@ -407,9 +414,17 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
       const url = editingId ? `/api/admin/resource-categories/${editingId}` : "/api/admin/resource-categories";
       const method = editingId ? "PATCH" : "POST";
 
-      // Khi tạo mới: gán kho theo storeFilter. Khi sửa: chỉ cập nhật name + icon, không đổi kho.
+      if (editingId && !editShowInKho && !editShowInMmo) {
+        setError("Danh mục phải thuộc ít nhất 1 trang");
+        return;
+      }
       const body = editingId
-        ? { name: name.trim(), iconUrl: iconUrl.trim() }
+        ? {
+            name: name.trim(),
+            iconUrl: iconUrl.trim(),
+            showInKhoTaiNguyen: editShowInKho,
+            showInTaiNguyenMmo: editShowInMmo,
+          }
         : {
             name: name.trim(),
             iconUrl: iconUrl.trim(),
@@ -619,20 +634,45 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
       <Drawer open={formOpen} onClose={cancelEdit} title={drawerTitle} headerClass={drawerHeaderClass}>
         <div className="space-y-4">
 
-          {/* Badge kho — read-only, không cho thay đổi sau tạo */}
-          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${
-            activeFormStore === "kho"
-              ? "bg-blue-50 border-blue-200 text-blue-700"
-              : "bg-violet-50 border-violet-200 text-violet-700"
-          }`}>
-            {activeFormStore === "kho"
-              ? <><Warehouse size={13} /> Kho Tài Nguyên</>
-              : <><Package size={13} /> Nguyên Liệu</>
-            }
-            {editingId && (
-              <span className="ml-auto text-[10px] text-gray-400 font-normal">Kho không thể thay đổi sau khi tạo</span>
-            )}
-          </div>
+          {/* Phân kho — read-only khi tạo mới, có thể thay đổi khi sửa */}
+          {editingId ? (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 space-y-2">
+              <p className="text-xs font-semibold text-gray-600">Hiển thị trên trang</p>
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={editShowInKho}
+                  onChange={(e) => setEditShowInKho(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="flex items-center gap-1.5 text-xs font-medium text-blue-700">
+                  <Warehouse size={13} /> Kho Tài Nguyên
+                </span>
+              </label>
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={editShowInMmo}
+                  onChange={(e) => setEditShowInMmo(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                />
+                <span className="flex items-center gap-1.5 text-xs font-medium text-violet-700">
+                  <Package size={13} /> Nguyên Liệu MMO
+                </span>
+              </label>
+            </div>
+          ) : (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${
+              activeFormStore === "kho"
+                ? "bg-blue-50 border-blue-200 text-blue-700"
+                : "bg-violet-50 border-violet-200 text-violet-700"
+            }`}>
+              {activeFormStore === "kho"
+                ? <><Warehouse size={13} /> Kho Tài Nguyên</>
+                : <><Package size={13} /> Nguyên Liệu</>
+              }
+            </div>
+          )}
 
           {/* Số thứ tự tiếp theo (chỉ khi tạo mới) */}
           {!editingId && (

@@ -293,17 +293,14 @@ export default async function TaiNguyenMmoPage({
       extraTags: Math.max(0, c.subCategories.filter((s) => (s.count ?? 0) > 0).length - 3),
     }));
 
-  // Category data cho CategoryFilter — PHẢI dùng nguồn UNFILTERED (resourceCategories + allCategoryNames)
-  // KHÔNG được dùng platformCards/categoryItems vì chúng tính count từ mmoProducts/sellerProducts đã bị filter
-  // → khi đang chọn Facebook, Tiktok count=0 → bị loại → mất button Tiktok/Instagram/Game
-  const allCategoryData = resourceCategories
-    .filter((rc) => allCategoryNames.has(rc.name))
-    .map((rc) => ({
-      name: rc.name,
-      iconUrl: rc.iconUrl,
-      count: 0,
-      subCategories: rc.subCategories.map((s) => ({ id: s.id, name: s.name, count: 0 })),
-    }));
+  // Category data cho CategoryFilter — CHỈ danh mục CMS được cấu hình showInTaiNguyenMmo=true
+  // Không thêm bất kỳ danh mục nào ngoài CMS để tránh lẫn giữa 2 trang
+  const allCategoryData = resourceCategories.map((rc) => ({
+    name: rc.name,
+    iconUrl: rc.iconUrl,
+    count: 0,
+    subCategories: rc.subCategories.map((s) => ({ id: s.id, name: s.name, count: 0 })),
+  }));
 
   // eslint-disable-next-line react-hooks/purity
   const fourteenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
