@@ -4,9 +4,11 @@ import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import { r2Url } from "@/lib/utils/image-url";
+import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
+import { FaTelegramPlane, FaFacebook } from "react-icons/fa";
 import {
   Store, BadgeCheck, ShoppingCart, Star,
-  Clock, CheckCircle, Headphones, Package, RefreshCw,
+  MessageCircle, Clock, CheckCircle, Headphones, Package, RefreshCw,
   LayoutGrid, SortAsc,
 } from "lucide-react";
 import { buildMeta } from "@/lib/utils/seo";
@@ -63,7 +65,18 @@ export default async function KhoSellerProfilePage({
   params: Promise<{ sellerId: string }>;
   searchParams: Promise<{ category?: string; sort?: string }>;
 }) {
-  const [{ sellerId }, sp] = await Promise.all([params, searchParams]);
+  const [{ sellerId }, sp, cmsData] = await Promise.all([
+    params,
+    searchParams,
+    getSiteContent<Record<string, unknown>>(SITE_CONTENT_KEYS.PAGE_TAI_NGUYEN),
+  ]);
+
+  const contactTitle         = String(cmsData.contactTitle         ?? "Chăm sóc khách hàng Hệ Thống MMO");
+  const contactTelegramUrl   = String(cmsData.contactTelegramUrl   ?? "https://t.me/BossMeta789");
+  const contactTelegramLabel = String(cmsData.contactTelegramLabel ?? "@BossMeta789");
+  const contactFacebookUrl   = String(cmsData.contactFacebookUrl   ?? "https://www.facebook.com/Chu.Quang.Doanh.Media88/");
+  const contactFacebookLabel = String(cmsData.contactFacebookLabel ?? "HỆ THỐNG MMO");
+  const contactHours         = String(cmsData.contactHours         ?? "08:00 – 23:00 hàng ngày");
 
   const activeCategory = sp.category ?? "all";
   const activeSort     = (sp.sort ?? "newest") as SortId;
@@ -76,6 +89,7 @@ export default async function KhoSellerProfilePage({
         fullName: true,
         avatarUrl: true,
         sellerTier: true,
+        telegramUsername: true,
         createdAt: true,
       },
     }),
@@ -118,15 +132,15 @@ export default async function KhoSellerProfilePage({
     ? allProducts
     : allProducts.filter((p) => p.sellerCategory === activeCategory);
 
-  if (activeSort === "bestsell")   products = [...products].sort((a, b) => b.salesCount - a.salesCount);
+  if (activeSort === "bestsell")        products = [...products].sort((a, b) => b.salesCount - a.salesCount);
   else if (activeSort === "price_asc")  products = [...products].sort((a, b) => Number(a.price) - Number(b.price));
   else if (activeSort === "price_desc") products = [...products].sort((a, b) => Number(b.price) - Number(a.price));
-  else products = [...products].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  else                                  products = [...products].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   const tierDefs = tierDef as { key: string; label: string; badgeColor: string }[];
   const tier     = tierDefs.find((t) => t.key === seller.sellerTier) ?? { label: "Tiêu chuẩn", badgeColor: "gray" };
-  const avgRating    = reviewStats._avg.rating ?? 0;
-  const reviewCount  = reviewStats._count.id;
+  const avgRating   = reviewStats._avg.rating ?? 0;
+  const reviewCount = reviewStats._count.id;
   const positiveReviews = await prisma.review.count({
     where: { productType: "SELLER_PRODUCT", order: { sellerId }, rating: { gte: 4 } },
   });
@@ -159,9 +173,10 @@ export default async function KhoSellerProfilePage({
         <span className="text-[#64748b] font-medium">{seller.fullName}</span>
       </nav>
 
-      {/* Seller header */}
+      {/* ── Seller header card ──────────────────────────────────── */}
       <div className="rounded-2xl border border-[#e2e8f0] bg-white p-6 mb-6">
         <div className="flex items-start gap-5 flex-wrap">
+          {/* Avatar */}
           <div className="relative shrink-0">
             {seller.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -178,6 +193,7 @@ export default async function KhoSellerProfilePage({
             <span className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-[#22c55e] border-2 border-white" />
           </div>
 
+          {/* Info */}
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <h1 className="text-xl font-extrabold text-[#0f172a]">{seller.fullName}</h1>
@@ -194,12 +210,13 @@ export default async function KhoSellerProfilePage({
             </div>
             <p className="text-xs text-[#64748b]">Thành viên từ {formatDate(seller.createdAt)}</p>
 
+            {/* Stats row */}
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4">
               {[
-                { Icon: Star,        color: "#f59e0b", value: avgRating > 0 ? avgRating.toFixed(1) : "—", sub: `(${reviewCount} đánh giá)` },
-                { Icon: ShoppingCart,color: "#0066ff", value: completedOrders.toLocaleString("vi-VN"),      sub: "Đơn hoàn thành" },
-                { Icon: Clock,       color: "#10b981", value: `${replyRate}%`,                              sub: "Phản hồi nhanh" },
-                { Icon: BadgeCheck,  color: "#7c3aed", value: `${trustRate}%`,                              sub: "Uy tín" },
+                { Icon: Star,         color: "#f59e0b", value: avgRating > 0 ? avgRating.toFixed(1) : "—", sub: `(${reviewCount} đánh giá)` },
+                { Icon: ShoppingCart, color: "#0066ff", value: completedOrders.toLocaleString("vi-VN"),      sub: "Đơn hoàn thành" },
+                { Icon: Clock,        color: "#10b981", value: `${replyRate}%`,                              sub: "Phản hồi nhanh" },
+                { Icon: BadgeCheck,   color: "#7c3aed", value: `${trustRate}%`,                              sub: "Uy tín" },
               ].map(({ Icon, color, value, sub }) => (
                 <div key={sub} className="flex items-center gap-2">
                   <Icon size={16} strokeWidth={1.75} style={{ color }} />
@@ -212,11 +229,13 @@ export default async function KhoSellerProfilePage({
         </div>
       </div>
 
-      {/* Body: 2-column */}
+      {/* ── Body: 2-column ──────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
-        {/* Sidebar */}
+        {/* ── LEFT SIDEBAR ─────────────────────────────────────── */}
         <div className="lg:col-span-1 space-y-4">
+
+          {/* Category list */}
           <div className="rounded-2xl border border-[#e2e8f0] bg-white p-4">
             <p className="text-xs font-bold text-[#0f172a] mb-3 flex items-center gap-1.5">
               <LayoutGrid size={13} strokeWidth={2} className="text-[#0066ff]" />
@@ -243,6 +262,7 @@ export default async function KhoSellerProfilePage({
             </div>
           </div>
 
+          {/* Commitments */}
           <div className="rounded-2xl border border-[#e2e8f0] bg-white p-4">
             <p className="text-xs font-bold text-[#0f172a] mb-3 flex items-center gap-1.5">
               <BadgeCheck size={13} strokeWidth={2} className="text-[#10b981]" />
@@ -250,10 +270,10 @@ export default async function KhoSellerProfilePage({
             </p>
             <div className="space-y-2">
               {[
-                { Icon: CheckCircle, color: "#10b981", label: "Sản phẩm chất lượng" },
-                { Icon: RefreshCw,   color: "#0066ff", label: "Bảo hoàn đổi trả"   },
-                { Icon: Headphones,  color: "#7c3aed", label: "Hỗ trợ 24/7"         },
-                { Icon: Package,     color: "#f59e0b", label: "Giao hàng nhanh chóng"},
+                { Icon: CheckCircle, color: "#10b981", label: "Sản phẩm chất lượng"  },
+                { Icon: RefreshCw,   color: "#0066ff", label: "Bảo hành đổi trả"     },
+                { Icon: Headphones,  color: "#7c3aed", label: "Hỗ trợ 24/7"           },
+                { Icon: Package,     color: "#f59e0b", label: "Giao hàng nhanh chóng" },
               ].map(({ Icon, color, label }) => (
                 <div key={label} className="flex items-center gap-2.5 text-xs text-[#475569]">
                   <Icon size={13} strokeWidth={2} style={{ color }} className="shrink-0" />
@@ -262,9 +282,54 @@ export default async function KhoSellerProfilePage({
               ))}
             </div>
           </div>
+
+          {/* Seller Telegram (nếu có) */}
+          {seller.telegramUsername && (
+            <div className="rounded-2xl border border-[#e2e8f0] bg-white p-4">
+              <p className="text-xs font-bold text-[#0f172a] mb-3">Liên hệ nhà bán hàng</p>
+              <a
+                href={`https://t.me/${seller.telegramUsername.replace(/^@/, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-xs text-[#0088cc] hover:underline"
+              >
+                <FaTelegramPlane size={14} className="shrink-0" />
+                @{seller.telegramUsername.replace(/^@/, "")}
+              </a>
+            </div>
+          )}
+
+          {/* Platform contact */}
+          <div className="rounded-2xl border border-[#e2e8f0] bg-white p-4">
+            <p className="text-xs font-bold text-[#0f172a] mb-3">{contactTitle}</p>
+            <div className="space-y-2.5">
+              <a
+                href={contactTelegramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-xs text-[#0088cc] hover:underline"
+              >
+                <FaTelegramPlane size={14} className="shrink-0" />
+                {contactTelegramLabel}
+              </a>
+              <a
+                href={contactFacebookUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-xs text-[#1877f2] hover:underline"
+              >
+                <FaFacebook size={14} className="shrink-0" />
+                {contactFacebookLabel}
+              </a>
+              <div className="flex items-center gap-2 text-xs text-[#475569]">
+                <Clock size={13} strokeWidth={2} className="text-[#64748b] shrink-0" />
+                {contactHours}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Main content */}
+        {/* ── MAIN CONTENT ─────────────────────────────────────── */}
         <div className="lg:col-span-3 space-y-4">
 
           {/* Tabs + sort */}
@@ -315,7 +380,7 @@ export default async function KhoSellerProfilePage({
                 return (
                   <Link
                     key={p.id}
-                    href={`/tai-nguyen-mmo/san-pham/${p.id}`}
+                    href={`/kho-tai-nguyen/san-pham/${p.id}`}
                     className="group rounded-2xl border border-[#e2e8f0] bg-white overflow-hidden hover:border-[#0066ff] hover:shadow-lg transition-all"
                   >
                     <div className="aspect-video bg-[#f1f5f9] relative overflow-hidden">
@@ -384,7 +449,7 @@ export default async function KhoSellerProfilePage({
           <div className="rounded-2xl border border-[#e2e8f0] bg-[#f8fafc] p-5 flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[#0066ff]/10 flex items-center justify-center shrink-0">
-                <Store size={18} strokeWidth={1.75} className="text-[#0066ff]" />
+                <MessageCircle size={18} strokeWidth={1.75} className="text-[#0066ff]" />
               </div>
               <div>
                 <p className="text-sm font-bold text-[#0f172a]">Khám phá thêm tài nguyên?</p>

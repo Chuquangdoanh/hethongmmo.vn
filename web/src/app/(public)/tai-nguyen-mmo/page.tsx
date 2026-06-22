@@ -454,21 +454,10 @@ export default async function TaiNguyenMmoPage({
                 <p className="text-base font-extrabold text-text-dark">
                   {category ?? "Tất cả Nguyên Liệu"}
                 </p>
-                <p className="text-xs text-text-muted">
-                  {totalCount.toLocaleString("vi-VN")} sản phẩm
-                  {selectedSubcatNames.length > 0 && <> › <span className="font-semibold">{selectedSubcatNames.join(", ")}</span></>}
-                  {q && <> — &ldquo;{q}&rdquo;</>}
-                </p>
+                
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                {hasActiveFilter && (
-                  <Link
-                    href={BASE_PATH}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-danger border border-[#fca5a5] hover:bg-[#fff1f2] transition-colors"
-                  >
-                    <X size={11} strokeWidth={2.5} /> Xoá bộ lọc
-                  </Link>
-                )}
+                
                 <SortSelect />
               </div>
             </div>
@@ -564,10 +553,7 @@ export default async function TaiNguyenMmoPage({
                         </span>
                         <span className="text-[#d1d5db]">·</span>
                         <span>Còn <strong className="text-[#374151]">{p.available}</strong></span>
-                        <span className="text-[#d1d5db]">·</span>
-                        <span className="truncate max-w-20">
-                          <strong className="text-[#475569]">{p.sellerName}</strong>
-                        </span>
+                        
                       </div>
 
                       {/* Review action */}

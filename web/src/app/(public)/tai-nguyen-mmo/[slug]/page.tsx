@@ -57,7 +57,7 @@ const TRUST_ICONS = [
 
 const PLEDGES = [
   { Icon: RotateCcw,  label: "Hỗ trợ đổi trả"   },
-  { Icon: BadgeCheck, label: "Bảo hành 24 giờ"   },
+  { Icon: BadgeCheck, label: "Hỗ trợ 24 giờ"   },
   { Icon: Lock,       label: "Thanh toán an toàn" },
 ];
 
@@ -279,7 +279,7 @@ export default async function MmoProductDetailPage({
       {/* Title */}
       <div>
         <h1 className="text-xl font-extrabold text-text-dark leading-snug mb-1">{product.name}</h1>
-        <p className="text-xs text-text-muted">Truy cập ổn định · Bảo hành 24 giờ · Hỗ trợ nhanh 24/7</p>
+        <p className="text-xs text-text-muted">Hỗ trợ nhanh 24/7</p>
       </div>
 
       {/* Stars + sold */}

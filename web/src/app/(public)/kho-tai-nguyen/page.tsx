@@ -141,7 +141,7 @@ export default async function KhoTaiNguyenPage({
   const [allStatProducts, filteredProducts, resourceCategories, reviewStats, allMmoStat, filteredMmoProducts, mmoReviewStats] = await Promise.all([
     prisma.sellerProduct.findMany({
       where: baseWhere,
-      select: { id: true, sellerCategory: true, sellerId: true, subCategoryId: true },
+      select: { id: true, sellerCategory: true, sellerId: true, subCategoryId: true, subCategory: { select: { name: true, showInKhoTaiNguyen: true } } },
     }),
     prisma.sellerProduct.findMany({
       where: filteredWhere,
@@ -257,10 +257,9 @@ export default async function KhoTaiNguyenPage({
   );
   const subCatCountMap = new Map<string, number>();
   for (const p of allStatProducts) {
-    if (p.subCategoryId) {
-      const name = allSubCatById.get(p.subCategoryId);
-      if (name) subCatCountMap.set(name, (subCatCountMap.get(name) ?? 0) + 1);
-    }
+    // Dùng join trực tiếp (subCategory.name) để đếm chính xác hơn allSubCatById lookup
+    const subName = p.subCategory?.name ?? (p.subCategoryId ? allSubCatById.get(p.subCategoryId) : undefined);
+    if (subName) subCatCountMap.set(subName, (subCatCountMap.get(subName) ?? 0) + 1);
   }
   for (const p of allMmoStat) {
     if (p.category) subCatCountMap.set(p.category, (subCatCountMap.get(p.category) ?? 0) + 1);
@@ -288,14 +287,41 @@ export default async function KhoTaiNguyenPage({
     }));
 
   // Category data for client-side filter component
+  // Hiển thị TẤT CẢ subcategory được cấu hình (showInKhoTaiNguyen=true), kể cả khi count=0
   const allCategoryData = platformCards.map((card) => ({
     name: card.name,
     iconUrl: card.iconUrl,
     count: card.count,
     subCategories: (resourceCategories.find((rc) => rc.name === card.name)?.subCategories ?? [])
-      .filter((s) => (subCatCountMap.get(s.name) ?? 0) > 0)
       .map((s) => ({ id: s.id, name: s.name, count: subCatCountMap.get(s.name) ?? 0 })),
   }));
+
+  // Build seller subcategory map: sellerCategory → subcategories with showInKhoTaiNguyen=true
+  const sellerCatSubMap = new Map<string, { id: string; name: string; count: number }[]>();
+  for (const p of allStatProducts) {
+    const sub = p.subCategory;
+    if (!sub?.showInKhoTaiNguyen || !sub.name || !p.subCategoryId) continue;
+    if (!sellerCatSubMap.has(p.sellerCategory)) sellerCatSubMap.set(p.sellerCategory, []);
+    const arr = sellerCatSubMap.get(p.sellerCategory)!;
+    const found = arr.find((s) => s.name === sub.name);
+    if (found) found.count++;
+    else arr.push({ id: p.subCategoryId, name: sub.name, count: 1 });
+  }
+  // Add missing seller subcategories to matched parent categories already in allCategoryData
+  for (const catData of allCategoryData) {
+    const sellerSubs = sellerCatSubMap.get(catData.name) ?? [];
+    const existingNames = new Set(catData.subCategories.map((s) => s.name));
+    for (const sub of sellerSubs) {
+      if (!existingNames.has(sub.name)) catData.subCategories.push(sub);
+    }
+  }
+  // Add seller-only parent categories not backed by any ResourceCategory entry
+  const knownCatNames = new Set(allCategoryData.map((c) => c.name));
+  for (const [cat, count] of platformProductCount) {
+    if (!knownCatNames.has(cat) && count > 0) {
+      allCategoryData.push({ name: cat, iconUrl: null, count, subCategories: sellerCatSubMap.get(cat) ?? [] });
+    }
+  }
 
   // Review map (seller)
   const reviewMap = new Map(reviewStats.map((r) => [r.productId, { count: r._count.id, avg: r._avg.rating ?? 0 }]));
@@ -319,7 +345,7 @@ export default async function KhoTaiNguyenPage({
         price: Number(sp.price), salesCount: sp.salesCount, createdAt: sp.createdAt,
         sellerPrefix: `#${sp.seller.uidPrefix}`, available: sp._count.stockItems,
         isNew: sp.createdAt > fourteenDaysAgo, isHot: sp.salesCount >= 15,
-        href: `/tai-nguyen-mmo/san-pham/${sp.id}`,
+        href: `/kho-tai-nguyen/san-pham/${sp.id}`,
         bought: purchasedIds.has(sp.id), rated: reviewedIds.has(sp.id),
         review: reviewMap.get(sp.id), orderType: "SELLER_PRODUCT",
       })),
@@ -331,7 +357,7 @@ export default async function KhoTaiNguyenPage({
         price: Number(p.price), salesCount: p.totalOrders, createdAt: p.createdAt,
         sellerPrefix: "Hệ Thống", available: p._count.items,
         isNew: p.createdAt > fourteenDaysAgo, isHot: p.isFeatured,
-        href: `/tai-nguyen-mmo/${p.slug}`,
+        href: `/kho-tai-nguyen/${p.slug}`,
         bought: purchasedMmoIds.has(p.id), rated: reviewedMmoIds.has(p.id),
         review: mmoReviewMap.get(p.id), orderType: "MMO_PRODUCT",
       })),
@@ -440,30 +466,7 @@ export default async function KhoTaiNguyenPage({
               </div>
             </div>
 
-            {/* Result count + clear filters */}
-            <div className="flex items-center justify-between flex-wrap gap-1.5 mb-4 px-0.5">
-              <p className="text-sm text-text-muted">
-                <span className="font-semibold text-[#1e293b]">{totalCount.toLocaleString("vi-VN")}</span> sản phẩm
-                {selectedCategories.length > 0 && (
-                  <span className="ml-1">trong <span className="font-semibold text-[#1e293b]">&quot;{selectedCategories.join(", ")}&quot;</span></span>
-                )}
-                {selectedSubcatNames.length > 0 && (
-                  <span className="ml-1">› <span className="font-semibold text-[#1e293b]">&quot;{selectedSubcatNames.join(", ")}&quot;</span></span>
-                )}
-                {q && (
-                  <span className="ml-1">— tìm <span className="font-semibold text-[#1e293b]">&quot;{q}&quot;</span></span>
-                )}
-              </p>
-              {(selectedCategories.length > 0 || selectedSubcatNames.length > 0 || q || priceParam) && (
-                <Link
-                  href={BASE_PATH}
-                  className="inline-flex items-center gap-1 text-xs text-[#ef4444] hover:text-[#dc2626] font-semibold transition-colors"
-                >
-                  <X size={12} />
-                  Xoá bộ lọc
-                </Link>
-              )}
-            </div>
+            
 
             {totalCount === 0 ? (
               <div className="text-center py-20">
@@ -554,8 +557,7 @@ export default async function KhoTaiNguyenPage({
                           </span>
                           <span className="text-[#d1d5db]">·</span>
                           <span>Còn <strong className="text-[#374151]">{avail}</strong></span>
-                          <span className="text-[#d1d5db]">·</span>
-                          <span>Seller <strong className="text-[#475569]">{seller}</strong></span>
+                         
                         </div>
 
                         {/* Review actions */}
