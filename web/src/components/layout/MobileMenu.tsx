@@ -73,10 +73,28 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
   const [activePanel, setActivePanel] = useState<PanelType | null>(null);
   const [expanded, setExpanded]       = useState<string | null>(null);
   const [mounted, setMounted]         = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigatingRef                 = useRef(false);
   const pathname                      = usePathname();
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Poll unread notification count (chỉ khi đã đăng nhập)
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    let cancelled = false;
+    async function fetchCount() {
+      try {
+        const res = await fetch("/api/user/notifications?limit=1&excludeSystem=1", { credentials: "include" });
+        if (!res.ok || cancelled) return;
+        const json = (await res.json()) as { meta?: { unreadCount?: number } };
+        setUnreadCount(json.meta?.unreadCount ?? 0);
+      } catch { /* bỏ qua lỗi mạng */ }
+    }
+    const timer = setTimeout(() => { void fetchCount(); }, 1_500);
+    const id = setInterval(() => { void fetchCount(); }, 30_000);
+    return () => { cancelled = true; clearTimeout(timer); clearInterval(id); };
+  }, [isLoggedIn]);
 
   // Close panels on route change
   useEffect(() => {
@@ -458,14 +476,39 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                     <span>Ticket hỗ trợ</span>
                     <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
-                  <Link href="/ho-tro" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
+                  <Link href="/not-found" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
                     <span className="mnav-acc-icon-badge"><Heart size={16} /></span>
                     <span>Sản phẩm yêu thích</span>
                     <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
-                  <Link href="/thong-tin-ca-nhan" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                    <span className="mnav-acc-icon-badge"><Bell size={16} /></span>
+                  <Link href="/thong-bao" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
+                    <span className="mnav-acc-icon-badge" style={{ position: "relative" }}>
+                      <Bell size={16} />
+                      {unreadCount > 0 && (
+                        <span style={{
+                          position: "absolute", top: "-4px", right: "-4px",
+                          minWidth: "14px", height: "14px",
+                          background: "#ef4444", color: "#fff",
+                          fontSize: "8px", fontWeight: 700,
+                          borderRadius: "999px", padding: "0 2px",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          lineHeight: 1, outline: "1.5px solid #fff",
+                        }}>
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      )}
+                    </span>
                     <span>Thông báo</span>
+                    {unreadCount > 0 && (
+                      <span style={{
+                        marginLeft: "auto", marginRight: "4px",
+                        fontSize: "10px", fontWeight: 700,
+                        background: "#ef4444", color: "#fff",
+                        borderRadius: "20px", padding: "1px 6px",
+                      }}>
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
                     <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
                 </div>
