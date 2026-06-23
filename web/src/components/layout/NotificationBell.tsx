@@ -58,16 +58,17 @@ export default function NotificationBell() {
 
     async function fetchCount() {
       try {
-        const res = await fetch("/api/user/notifications?limit=1", { credentials: "include" });
+        const res = await fetch("/api/user/notifications?limit=1&excludeSystem=1", { credentials: "include" });
         if (!res.ok || cancelled) return;
         const json = (await res.json()) as ApiResponse;
         setUnread(json.meta?.unreadCount ?? 0);
       } catch { /* network error — bỏ qua */ }
     }
 
-    void fetchCount();
+    // Delay 1s lần đầu để đảm bảo DB commit xong sau redirect login/register
+    const initTimer = setTimeout(() => { void fetchCount(); }, 1_000);
     const id = setInterval(() => { void fetchCount(); }, 10_000);
-    return () => { cancelled = true; clearInterval(id); };
+    return () => { cancelled = true; clearTimeout(initTimer); clearInterval(id); };
   }, []);
 
   // Đóng dropdown khi click ngoài
@@ -87,7 +88,7 @@ export default function NotificationBell() {
     setOpen(true);
     setLoading(true);
     try {
-      const res = await fetch("/api/user/notifications?limit=15", { credentials: "include" });
+      const res = await fetch("/api/user/notifications?limit=15&excludeSystem=1", { credentials: "include" });
       const json = (await res.json()) as ApiResponse;
       setItems(json.data ?? []);
       setUnread(json.meta?.unreadCount ?? 0);

@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import "./globals.css";
 import Providers from "@/components/providers/Providers";
 import { Toaster } from "@/components/shared/Toaster";
+import ToastNotification from "@/components/layout/ToastNotification";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -60,6 +61,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Providers>
           {children}
           <Toaster />
+          <ToastNotification />
         </Providers>
       </body>
     </html>

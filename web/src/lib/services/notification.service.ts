@@ -38,9 +38,13 @@ export async function markAllAsRead(userId: string): Promise<void> {
   });
 }
 
-export async function getUnreadCount(userId: string): Promise<number> {
+export async function getUnreadCount(userId: string, excludeSystem = false): Promise<number> {
   return prisma.notification.count({
-    where: { userId, isRead: false },
+    where: {
+      userId,
+      isRead: false,
+      ...(excludeSystem ? { NOT: { type: "SYSTEM" } } : {}),
+    },
   });
 }
 
@@ -48,16 +52,16 @@ export async function getUserNotifications(
   userId: string,
   page = 1,
   limit = 20,
+  excludeSystem = false,
 ): Promise<{ data: Notification[]; total: number }> {
   const skip = (page - 1) * limit;
+  const where = {
+    userId,
+    ...(excludeSystem ? { NOT: { type: "SYSTEM" as const } } : {}),
+  };
   const [data, total] = await Promise.all([
-    prisma.notification.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      skip,
-      take: limit,
-    }),
-    prisma.notification.count({ where: { userId } }),
+    prisma.notification.findMany({ where, orderBy: { createdAt: "desc" }, skip, take: limit }),
+    prisma.notification.count({ where }),
   ]);
   return { data, total };
 }

@@ -26,10 +26,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const { searchParams } = req.nextUrl;
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10)));
+    const excludeSystem = searchParams.get("excludeSystem") === "1";
 
     const [{ data, total }, unreadCount] = await Promise.all([
-      getUserNotifications(me.id, page, limit),
-      getUnreadCount(me.id),
+      getUserNotifications(me.id, page, limit, excludeSystem),
+      getUnreadCount(me.id, excludeSystem),
     ]);
 
     return NextResponse.json({

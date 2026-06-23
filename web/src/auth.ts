@@ -224,7 +224,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         });
 
         void recordAttempt(true);
-        void prisma.notification.create({
+        await prisma.notification.create({
           data: {
             userId: user.id,
             title: "Đăng nhập thành công",
