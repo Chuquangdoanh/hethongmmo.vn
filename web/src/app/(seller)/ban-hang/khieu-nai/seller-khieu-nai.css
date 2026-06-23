@@ -67,7 +67,6 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-right: 1px solid #e2e8f0;
   min-width: 0;
 }
 .ht-middle--empty {
@@ -243,7 +242,6 @@
 
 @media (min-width: 1024px) {
   .ht-wrapper {
-    grid-template-columns: 300px 1fr 320px;
+    grid-template-columns: 300px 1fr;
   }
-  .ht-right { display: flex; }
 }

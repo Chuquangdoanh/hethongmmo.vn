@@ -1,9 +1,11 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { prisma } from "@/lib/db/prisma";
 import { formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import CloseComplaintButton from "./_components/CloseComplaintButton";
+import ComplaintsSearchInput from "./_components/ComplaintsSearchInput";
 
 export const metadata: Metadata = { title: "Admin — Khiếu nại" };
 
@@ -26,12 +28,39 @@ const STATUS_LABELS: Record<string, string> = {
 export default async function AdminComplaintsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; q?: string }>;
 }) {
-  const { page, status } = await searchParams;
+  const { page, status, q } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
+  const search = q?.trim() || undefined;
 
-  const where = status ? { status: status as never } : {};
+  // Nếu user gõ mã dạng "#KN-ABC12345", "KN-ABC12345", hoặc "ABC12345"
+  // → tìm UUID bắt đầu bằng chuỗi đó qua raw SQL (Prisma không hỗ trợ string filter trên UUID)
+  const idPrefix = search ? search.replace(/^#?KN-/i, "").toLowerCase() : undefined;
+  const idMatches =
+    idPrefix && idPrefix.length >= 4
+      ? (
+          await prisma.$queryRaw<Array<{ id: string }>>`
+            SELECT id::text FROM complaints
+            WHERE id::text ILIKE ${idPrefix + "%"}
+            LIMIT 50
+          `
+        ).map((r) => r.id)
+      : [];
+
+  const where = {
+    ...(status ? { status: status as never } : {}),
+    ...(search
+      ? {
+          OR: [
+            { subject:  { contains: search, mode: "insensitive" as const } },
+            { user: { fullName: { contains: search, mode: "insensitive" as const } } },
+            { user: { email:    { contains: search, mode: "insensitive" as const } } },
+            ...(idMatches.length > 0 ? [{ id: { in: idMatches } }] : []),
+          ],
+        }
+      : {}),
+  };
 
   const [complaints, total] = await Promise.all([
     prisma.complaint.findMany({
@@ -50,9 +79,14 @@ export default async function AdminComplaintsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Khiếu nại</h1>
-        <span className="text-sm text-gray-500">{total.toLocaleString("vi-VN")} khiếu nại</span>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Khiếu nại</h1>
+          <span className="text-sm text-gray-500">{total.toLocaleString("vi-VN")} khiếu nại</span>
+        </div>
+        <Suspense fallback={<div className="w-64 h-9 rounded-lg bg-gray-100 animate-pulse" />}>
+          <ComplaintsSearchInput defaultValue={search ?? ""} />
+        </Suspense>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -75,6 +109,7 @@ export default async function AdminComplaintsPage({
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Mã KN</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Người dùng</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Chủ đề</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Trạng thái</th>
@@ -85,6 +120,11 @@ export default async function AdminComplaintsPage({
           <tbody>
             {complaints.map((c, i) => (
               <tr key={c.id} className={`${i !== 0 ? "border-t border-gray-200" : ""} hover:bg-gray-100 transition-colors`}>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span style={{ fontSize: "15px", fontFamily: "monospace", fontWeight: 500, color: "#0f172a" }}>
+                    #KN-{c.id.slice(0, 8).toUpperCase()}
+                  </span>
+                </td>
                 <td className="px-4 py-3">
                   <p className="text-sm text-gray-900">{c.user.fullName}</p>
                   <p className="text-[11px] text-gray-500">{c.user.email}</p>
@@ -113,7 +153,10 @@ export default async function AdminComplaintsPage({
           currentPage={currentPage}
           totalPages={totalPages}
           basePath="/admin/complaints"
-          searchParams={status ? { status } : {}}
+          searchParams={{
+            ...(status ? { status } : {}),
+            ...(search ? { q: search } : {}),
+          }}
         />
       )}
     </div>

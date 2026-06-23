@@ -6,11 +6,10 @@ import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import {
-  Search, Clock, CheckCircle, MessageCircleWarning,
-  ClipboardList, ShoppingBag, Banknote, ShieldCheck,
+  Clock, CheckCircle, MessageCircleWarning,
 } from "lucide-react";
+import SellerKhieuNaiSidebar, { type ComplaintListItem } from "./_components/SellerKhieuNaiSidebar";
 import TicketChatPanel from "@/app/(user)/ho-tro/_components/TicketChatPanel";
-import TicketScrollLink from "@/app/(user)/ho-tro/_components/TicketScrollLink";
 import ScrollToTop from "@/components/shared/ScrollToTop";
 import BackBtn from "@/components/shared/BackBtn";
 import "./seller-khieu-nai.css";
@@ -183,95 +182,24 @@ export default async function SellerKhieuNaiPage({
 
       {/* ══ LEFT — Danh sách khiếu nại ═══════════════════════════ */}
       <div className="ht-sidebar">
-        <div className="ht-sidebar-head">
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a" }}>
-              Khiếu nại từ khách
-            </span>
-            <span style={{
-              fontSize: "10px", padding: "2px 8px", background: "#f1f5f9",
-              borderRadius: "20px", border: "1px solid #e2e8f0", color: "#64748b",
-            }}>
-              {complaints.length} khiếu nại
-            </span>
-          </div>
-          <div className="ht-search">
-            <Search size={12} style={{ color: "#94a3b8", flexShrink: 0 }} />
-            <span style={{ fontSize: "12px", color: "#cbd5e1" }}>Tìm kiếm...</span>
-          </div>
-        </div>
-
-        <div className="ht-sidebar-list">
-          {complaints.length === 0 ? (
-            <div style={{ padding: "40px 16px", textAlign: "center" }}>
-              <MessageCircleWarning size={28} style={{ color: "#cbd5e1", margin: "0 auto 8px", display: "block" }} />
-              <p style={{ fontSize: "12px", color: "#94a3b8" }}>Chưa có khiếu nại nào</p>
-              <p style={{ fontSize: "11px", color: "#cbd5e1", marginTop: "4px" }}>
-                Tiếp tục duy trì chất lượng sản phẩm tốt nhé!
-              </p>
-            </div>
-          ) : (
-            complaints.map((c) => {
-              const o        = c.orderId ? orderListMap.get(c.orderId) : null;
-              const isActive = c.id === activeId;
-              const lastMsg  = c.chatRoom?.messages[0];
-              const st       = STATUS_STYLE[c.status] ?? defaultStyle;
-              const buyerName = c.user.fullName ?? c.user.email;
-
-              return (
-                <TicketScrollLink
-                  key={c.id}
-                  href={`/ban-hang/khieu-nai?id=${c.id}`}
-                  className={`ht-ticket-item${isActive ? " ht-ticket-item--active" : ""}`}
-                >
-                  <div style={{ display: "flex", gap: "8px", justifyContent: "space-between" }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{
-                        fontSize: "12px", fontWeight: "700",
-                        color: isActive ? "#ea580c" : "#1e293b", marginBottom: "2px",
-                      }}>
-                        {ticketCode(c.id)}
-                      </p>
-                      <p style={{
-                        fontSize: "11px", color: "#475569",
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                        marginBottom: "1px",
-                      }}>
-                        Từ: {buyerName}
-                      </p>
-                      <p style={{
-                        fontSize: "11px", color: "#64748b",
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                      }}>
-                        {o ? `Đơn #${o.orderCode} · ${o.itemName}` : c.subject}
-                      </p>
-                      {lastMsg && (
-                        <p style={{
-                          fontSize: "10px", color: "#94a3b8", marginTop: "2px",
-                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                        }}>
-                          {lastMsg.senderName}: {lastMsg.content}
-                        </p>
-                      )}
-                    </div>
-                    <div style={{ flexShrink: 0, textAlign: "right" }}>
-                      <p style={{ fontSize: "10px", color: "#94a3b8", marginBottom: "5px" }}>
-                        {new Date(c.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}
-                      </p>
-                      <span style={{
-                        display: "inline-block", fontSize: "9px", padding: "2px 7px",
-                        borderRadius: "10px", fontWeight: "600",
-                        background: st.bg, color: st.color, border: `1px solid ${st.border}`,
-                      }}>
-                        {STATUS_LABEL[c.status] ?? c.status}
-                      </span>
-                    </div>
-                  </div>
-                </TicketScrollLink>
-              );
-            })
-          )}
-        </div>
+        <SellerKhieuNaiSidebar
+          activeId={activeId}
+          complaints={complaints.map((c): ComplaintListItem => {
+            const o       = c.orderId ? orderListMap.get(c.orderId) : null;
+            const lastMsg = c.chatRoom?.messages[0];
+            return {
+              id:                 c.id,
+              status:             c.status,
+              updatedAt:          c.updatedAt.toISOString(),
+              buyerName:          c.user.fullName ?? c.user.email,
+              orderCode:          o?.orderCode ?? undefined,
+              itemName:           o?.itemName  ?? undefined,
+              subject:            c.subject,
+              lastMsgSenderName:  lastMsg?.senderName  ?? undefined,
+              lastMsgContent:     lastMsg?.content     ?? undefined,
+            };
+          })}
+        />
       </div>
 
       {/* ══ MIDDLE — Chi tiết khiếu nại ══════════════════════════ */}
@@ -405,81 +333,6 @@ export default async function SellerKhieuNaiPage({
         </div>
       )}
 
-      {/* ══ RIGHT — Thông tin đơn hàng ═══════════════════════════ */}
-      {selected ? (
-        <div className="ht-right">
-          {selectedOrder && (
-            <div className="ht-right-section">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
-                <h3 style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a", margin: 0 }}>Thông tin đơn hàng</h3>
-                <Link href="/ban-hang/don-hang" style={{ fontSize: "11px", color: "#2563eb", textDecoration: "none" }}>
-                  Xem chi tiết ↗
-                </Link>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <InfoRow icon={<ClipboardList size={14} />} label="Mã đơn hàng">
-                  <span style={{ fontSize: "12px", fontWeight: "700", fontFamily: "monospace", color: "#1e293b" }}>
-                    #{selectedOrder.orderCode}
-                  </span>
-                </InfoRow>
-                <InfoRow icon={<ShoppingBag size={14} />} label="Sản phẩm">
-                  <span style={{ fontSize: "12px", color: "#1e293b", fontWeight: "500" }}>{selectedOrder.itemName}</span>
-                </InfoRow>
-                <InfoRow icon={<Banknote size={14} />} label="Giá trị đơn">
-                  <span style={{ fontSize: "13px", fontWeight: "800", color: "#16a34a" }}>
-                    {formatVnd(Number(selectedOrder.finalPrice))}
-                  </span>
-                </InfoRow>
-                <InfoRow icon={<Clock size={14} />} label="Ngày mua">
-                  <span style={{ fontSize: "11px", color: "#475569" }}>{formatDate(selectedOrder.createdAt)}</span>
-                </InfoRow>
-              </div>
-            </div>
-          )}
-
-          <div className="ht-divider" />
-
-          <div className="ht-right-section">
-            <h3 style={{
-              fontSize: "13px", fontWeight: "700", color: "#0f172a",
-              margin: "0 0 12px", display: "flex", alignItems: "center", gap: "6px",
-            }}>
-              <ShieldCheck size={14} style={{ color: "#f59e0b" }} />
-              Hướng dẫn xử lý
-            </h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
-              {[
-                "Phản hồi trong 12 giờ để tránh tự động hoàn tiền",
-                "Cung cấp bằng chứng xác nhận đã giao hàng đúng",
-                "Sau 20 tin nhắn: bấm xác nhận đơn hoàn thành",
-                "Nếu hai bên không đồng ý, admin sẽ phân xử",
-              ].map((r) => (
-                <div key={r} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: "2px" }}>
-                    <circle cx="7" cy="7" r="7" fill="#fef3c7" />
-                    <path d="M4 7.5L5.8 9.5L10 4.5" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <span style={{ fontSize: "11px", color: "#475569", lineHeight: "1.45" }}>{r}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="ht-right" />
-      )}
-    </div>
-  );
-}
-
-function InfoRow({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-      <span style={{ flexShrink: 0, lineHeight: 1, color: "#64748b", marginTop: "1px" }}>{icon}</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: "10px", color: "#94a3b8", margin: "0 0 2px" }}>{label}</p>
-        {children}
-      </div>
     </div>
   );
 }

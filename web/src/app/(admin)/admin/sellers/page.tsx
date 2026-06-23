@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import Pagination from "@/components/shared/Pagination";
 import SellersTableClient, { type SellerRowData } from "./SellersTableClient";
@@ -277,12 +276,12 @@ export default async function AdminSellersPage({
         </form>
       </div>
 
-      {/* ── Search + Tier filter ── */}
+      {/* ── Search + Filters ── */}
       <form method="get" action="/admin/sellers" className="flex items-center gap-2 flex-wrap">
-        {status    && <input type="hidden" name="status"    value={status} />}
-        {month     && <input type="hidden" name="month"     value={month} />}
-        {year      && <input type="hidden" name="year"      value={year} />}
-        {storeType && <input type="hidden" name="storeType" value={storeType} />}
+        {month && <input type="hidden" name="month" value={month} />}
+        {year  && <input type="hidden" name="year"  value={year} />}
+
+        {/* Search */}
         <div className="relative">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
@@ -291,86 +290,57 @@ export default async function AdminSellersPage({
             name="q"
             defaultValue={search ?? ""}
             placeholder="Tìm tên hoặc email người bán..."
-            className="w-72 rounded-lg border border-gray-200 bg-white pl-9 pr-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-violet-500 focus:outline-none transition-colors"
+            className="w-64 rounded-lg border border-gray-200 bg-white pl-9 pr-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-violet-500 focus:outline-none transition-colors"
           />
         </div>
+
+        {/* Tier select */}
+        <select
+          name="tier"
+          defaultValue={tier ?? ""}
+          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-violet-400 focus:outline-none transition-colors"
+        >
+          <option value="">Tất cả hạng</option>
+          {tierDefs.map(({ key, label }) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </select>
+
+        {/* Status select */}
+        <select
+          name="status"
+          defaultValue={status ?? ""}
+          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-violet-400 focus:outline-none transition-colors"
+        >
+          <option value="">Tất cả trạng thái</option>
+          <option value="PENDING">Chờ duyệt</option>
+          <option value="APPROVED">Đã duyệt</option>
+          <option value="REJECTED">Từ chối</option>
+        </select>
+
+        {/* Store type select */}
+        <select
+          name="storeType"
+          defaultValue={storeType ?? ""}
+          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-violet-400 focus:outline-none transition-colors"
+        >
+          <option value="">Tất cả loại cửa hàng</option>
+          <option value="TAI_NGUYEN_MMO">Tài Nguyên MMO</option>
+          <option value="KHO_TAI_NGUYEN">Kho Tài Nguyên</option>
+        </select>
+
         <button type="submit" className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors">
           Tìm kiếm
         </button>
-        {search && (
-          <a href={buildHref({ status, tier, month, year, storeType })} className="px-3 py-2 rounded-lg border border-gray-200 text-xs text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors">
-            Xóa
+        {(search || tier || status || storeType) && (
+          <a
+            href={buildHref({ month, year })}
+            className="px-3 py-2 rounded-lg border border-gray-200 text-xs text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors"
+          >
+            Xóa lọc
           </a>
         )}
-
-        <div className="h-5 w-px bg-gray-200 mx-1" />
-
-        {/* Tier chips */}
-        <a
-          href={buildHref({ status, tier: undefined, q: search, month, year, storeType })}
-          className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-            !tier ? "bg-[#7C3AED] text-white" : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
-          }`}
-        >
-          Tất cả hạng
-        </a>
-        {tierDefs.map(({ key, label }) => (
-          <a
-            key={key}
-            href={buildHref({ status, tier: key, q: search, month, year, storeType })}
-            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-              tier === key ? "bg-[#7C3AED] text-white" : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
-            }`}
-          >
-            {label}
-          </a>
-        ))}
       </form>
-
-      {/* ── Status filter ── */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-gray-400 font-medium mr-1">Trạng thái:</span>
-        {[
-          { key: "",         label: "Tất cả" },
-          { key: "PENDING",  label: "Chờ duyệt" },
-          { key: "APPROVED", label: "Đã duyệt" },
-          { key: "REJECTED", label: "Từ chối" },
-        ].map(({ key, label }) => (
-          <Link
-            key={key}
-            href={buildHref({ status: key || undefined, tier, q: search, month, year, storeType })}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              status === key || (!status && !key)
-                ? "bg-[#7C3AED] text-white"
-                : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
-            }`}
-          >
-            {label}
-          </Link>
-        ))}
-      </div>
-
-      {/* ── Store type filter ── */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs text-gray-400 font-medium mr-1">Loại cửa hàng:</span>
-        {[
-          { key: "",               label: "Tất cả" },
-          { key: "TAI_NGUYEN_MMO", label: "Tài Nguyên MMO" },
-          { key: "KHO_TAI_NGUYEN", label: "Kho Tài Nguyên" },
-        ].map(({ key, label }) => (
-          <Link
-            key={key}
-            href={buildHref({ status, tier, q: search, month, year, storeType: key || undefined })}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              storeType === key || (!storeType && !key)
-                ? "bg-blue-600 text-white"
-                : "border border-gray-200 text-gray-500 hover:border-blue-500 hover:text-gray-900"
-            }`}
-          >
-            {label}
-          </Link>
-        ))}
-      </div>
 
       {/* ── Date filter indicator ── */}
       {hasDateFilter && (
