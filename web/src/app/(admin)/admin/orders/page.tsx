@@ -86,6 +86,7 @@ export default async function AdminOrdersPage({
       select: {
         id: true, orderCode: true, itemName: true, orderType: true,
         finalPrice: true, status: true, createdAt: true, warrantyVariant: true,
+        paymentType: true, remainingAmount: true,
         user: { select: { email: true, fullName: true } },
       },
     }),
@@ -328,18 +329,28 @@ export default async function AdminOrdersPage({
                         {typeInfo?.icon} {typeInfo?.label ?? order.orderType}
                       </span>
                     </td>
-                    <td className="px-4 py-3.5">
-                      <p className="text-sm text-gray-900 font-medium truncate max-w-[180px]">{order.itemName}</p>
+                    <td className="px-4 py-3.5 max-w-[240px]">
+                      <p className="text-sm text-gray-900 font-medium leading-snug">{order.itemName}</p>
                       {order.warrantyVariant && (
                         <p className="text-[10px] text-[#A855F7] mt-0.5">BH: {order.warrantyVariant}</p>
+                      )}
+                      {order.paymentType === "DEPOSIT" && (
+                        <span className="inline-flex mt-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-200">
+                          Đã cọc
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3.5">
                       <p className="text-xs font-medium text-gray-700 truncate max-w-[140px]">{order.user.fullName || "—"}</p>
                       <p className="text-[10px] text-gray-400 mt-0.5 truncate max-w-[140px] font-mono">{order.user.email}</p>
                     </td>
-                    <td className="px-4 py-3.5 text-right text-sm font-bold text-[#A855F7]">
-                      {formatVnd(Number(order.finalPrice))}
+                    <td className="px-4 py-3.5 text-right">
+                      <p className="text-sm font-bold text-[#A855F7]">{formatVnd(Number(order.finalPrice))}</p>
+                      {order.paymentType === "DEPOSIT" && Number(order.remainingAmount ?? 0) > 0 && (
+                        <p className="text-[10px] font-semibold text-red-500 mt-0.5">
+                          Còn: {formatVnd(Number(order.remainingAmount))}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3.5 text-center">
                       <InlineStatusCell orderId={order.id} status={order.status} />

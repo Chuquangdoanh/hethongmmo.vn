@@ -90,6 +90,8 @@ enum TxType {
   BUY_TUTTRICK
   BUY_MMO_PRODUCT
   BUY_SELLER_PRODUCT
+  COURSE_DEPOSIT
+  COURSE_FINAL_PAYMENT
   REFUND
   SELLER_REGISTRATION
   SELLER_SLOT_PURCHASE
@@ -638,6 +640,12 @@ model Order {
   tutTrickDocs          String?        @map("tut_trick_docs")
   idempotencyKey        String?        @unique @map("idempotency_key")
   withdrawn             Boolean        @default(false)
+
+  // Deposit payment fields (used when course price is 25M–100M)
+  paymentType     String         @default("FULL") @map("payment_type") @db.VarChar(20)
+  depositAmount   Decimal?       @db.Decimal(18, 2) @map("deposit_amount")
+  remainingAmount Decimal?       @db.Decimal(18, 2) @map("remaining_amount")
+  finalPaidAt     DateTime?      @map("final_paid_at")
 
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")

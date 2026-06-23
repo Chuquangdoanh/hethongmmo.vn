@@ -9,6 +9,7 @@ import { Package, ShoppingBag } from "lucide-react";
 import UserProfileHero from "@/components/shared/UserProfileHero";
 import Pagination from "@/components/shared/Pagination";
 import OrderActions from "./_components/OrderActions";
+import PayRemainingButton from "./_components/PayRemainingButton";
 
 export const metadata: Metadata = { title: "Lịch sử mua hàng" };
 
@@ -85,6 +86,7 @@ export default async function DonHangPage({
       select: {
         id: true, orderCode: true, itemName: true,
         orderType: true, finalPrice: true, status: true, createdAt: true,
+        paymentType: true, depositAmount: true, remainingAmount: true,
       },
     }),
     prisma.order.count({ where: ordersWhere }),
@@ -200,6 +202,9 @@ export default async function DonHangPage({
                   const isDone   = order.status === "DONE";
                   const hasComplaint = complainedOrderIds.has(order.id);
 
+                  const isDeposit = order.paymentType === "DEPOSIT";
+                  const hasRemaining = isDeposit && Number(order.remainingAmount ?? 0) > 0;
+
                   return (
                     <div key={order.id} className="hover:bg-gray-50/80 transition-colors">
 
@@ -210,7 +215,11 @@ export default async function DonHangPage({
                             <p className="text-sm font-medium text-gray-800 leading-snug line-clamp-2">{order.itemName}</p>
                             <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                               <p className="text-[10px] text-gray-400">#{order.orderCode}</p>
-                             
+                              {isDeposit && (
+                                <span className="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200">
+                                  Đã cọc
+                                </span>
+                              )}
                             </div>
                           </div>
                           <span className={`shrink-0 inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium border ${st.cls}`}>
@@ -219,8 +228,18 @@ export default async function DonHangPage({
                         </div>
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-[11px] text-gray-400">{formatDate(order.createdAt)}</p>
-                          <p className="text-sm font-semibold text-emerald-600">{formatVnd(Number(order.finalPrice))}</p>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-emerald-600">{formatVnd(Number(order.finalPrice))}</p>
+                            {hasRemaining && (
+                              <p className="text-[10px] text-red-500">Còn lại: {formatVnd(Number(order.remainingAmount))}</p>
+                            )}
+                          </div>
                         </div>
+                        {hasRemaining && (
+                          <div className="pt-0.5">
+                            <PayRemainingButton orderId={order.id} remainingAmount={Number(order.remainingAmount)} />
+                          </div>
+                        )}
                         {showActions && (
                           <div className="pt-0.5">
                             <OrderActions
@@ -243,9 +262,18 @@ export default async function DonHangPage({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-sm font-medium text-gray-800 truncate">{order.itemName}</span>
-                              
+                              {isDeposit && (
+                                <span className="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200">
+                                  Đã cọc
+                                </span>
+                              )}
                             </div>
-                            <p className="text-[11px] text-gray-400 mt-0.5">#{order.orderCode}</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <p className="text-[11px] text-gray-400">#{order.orderCode}</p>
+                              {hasRemaining && (
+                                <p className="text-[11px] text-red-500">Còn lại: {formatVnd(Number(order.remainingAmount))}</p>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <p className="text-xs text-gray-500">{formatDate(order.createdAt)}</p>
@@ -267,6 +295,11 @@ export default async function DonHangPage({
                               allowComplaint={activeTab === "tainguyen"}
                               orderCreatedAt={order.createdAt.toISOString()}
                             />
+                          </div>
+                        )}
+                        {!showActions && hasRemaining && (
+                          <div className="flex justify-end">
+                            <PayRemainingButton orderId={order.id} remainingAmount={Number(order.remainingAmount)} />
                           </div>
                         )}
                       </div>

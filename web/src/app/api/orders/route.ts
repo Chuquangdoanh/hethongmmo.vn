@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { requireUser } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
-import { purchaseProduct } from "@/lib/services/purchase.service";
+import { purchaseProduct, isCourseDepositEligible, COURSE_DEPOSIT_AMOUNT } from "@/lib/services/purchase.service";
 import { orderRatelimit, checkRateLimit } from "@/lib/security/rate-limit";
 import { trackRateHit } from "@/lib/security/rate-alert";
 import { AppError } from "@/lib/errors";
@@ -57,6 +57,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           finalPrice: true,
           warrantyVariant: true,
           status: true,
+          paymentType: true,
+          depositAmount: true,
+          remainingAmount: true,
           createdAt: true,
           completedAt: true,
         },
@@ -132,6 +135,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         status: result.order.status,
         deliveredContent: result.deliveredContent,
         tutTrickDocs: result.tutTrickDocs ?? null,
+        isDeposit: result.isDeposit ?? false,
+        depositAmount: result.depositAmount ?? null,
+        remainingAmount: result.remainingAmount ?? null,
+        ...(result.isDeposit && isCourseDepositEligible(finalPrice)
+          ? { depositInfo: { depositAmount: COURSE_DEPOSIT_AMOUNT, remainingAmount: result.remainingAmount } }
+          : {}),
       },
       201,
     );

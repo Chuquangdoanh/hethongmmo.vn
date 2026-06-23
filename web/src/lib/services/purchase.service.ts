@@ -12,6 +12,15 @@ import { decrypt } from "@/lib/security/encryption";
 import { logger } from "@/lib/utils/logger";
 import { randomBytes } from "crypto";
 
+// ── Course deposit constants ──────────────────────────────────────────────────
+export const COURSE_DEPOSIT_AMOUNT = 5_000_000;
+export const COURSE_DEPOSIT_MIN_PRICE = 25_000_000;
+export const COURSE_DEPOSIT_MAX_PRICE = 100_000_000;
+
+export function isCourseDepositEligible(price: number): boolean {
+  return price >= COURSE_DEPOSIT_MIN_PRICE && price <= COURSE_DEPOSIT_MAX_PRICE;
+}
+
 const ORDER_TYPE_TO_TX: Record<OrderType, string> = {
   SERVICE: "BUY_SERVICE",
   COURSE: "BUY_COURSE",
@@ -37,6 +46,9 @@ interface PurchaseResult {
   order: Order;
   deliveredContent?: string;
   tutTrickDocs?: string;
+  isDeposit?: boolean;
+  depositAmount?: number;
+  remainingAmount?: number;
 }
 
 function generateOrderCode(): string {
@@ -62,9 +74,16 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
     return { order: existingOrder };
   }
 
-  const price = new Decimal(finalPrice);
   const txType = ORDER_TYPE_TO_TX[orderType];
   if (!txType) throw new AppError("Loại đơn hàng không hợp lệ.", "INVALID_ORDER_TYPE", 400);
+
+  // ── Course deposit path ───────────────────────────────────────────────────
+  if (orderType === "COURSE" && isCourseDepositEligible(finalPrice)) {
+    return purchaseCourseDeposit({ userId, itemId, itemName, catalogPrice, finalPrice, discountPercent, idempotencyKey, warrantyVariant, customerNote });
+  }
+
+  // ── Standard full-payment path ────────────────────────────────────────────
+  const price = new Decimal(finalPrice);
 
   const result = await prisma.$transaction(async (tx) => {
     // ── 1. Lock user balance ──────────────────────────────────────────
@@ -234,6 +253,219 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
 
   logger.info({ userId, orderType, itemId, orderId: result.order.id }, "Purchase processed");
   return result;
+}
+
+// ── Course deposit purchase ───────────────────────────────────────────────────
+
+interface CourseDepositParams {
+  userId: string;
+  itemId: string;
+  itemName: string;
+  catalogPrice: number;
+  finalPrice: number;
+  discountPercent: number;
+  idempotencyKey: string;
+  warrantyVariant?: string;
+  customerNote?: string;
+}
+
+async function purchaseCourseDeposit(params: CourseDepositParams): Promise<PurchaseResult> {
+  const { userId, itemId, itemName, catalogPrice, finalPrice, discountPercent, idempotencyKey, warrantyVariant, customerNote } = params;
+
+  const deposit = new Decimal(COURSE_DEPOSIT_AMOUNT);
+  const remaining = new Decimal(finalPrice).sub(deposit);
+
+  // Check existing non-cancelled deposit/processing order for this course
+  const existingCourseOrder = await prisma.order.findFirst({
+    where: {
+      userId,
+      courseId: itemId,
+      orderType: "COURSE",
+      status: { notIn: ["CANCELLED", "REFUNDED"] },
+    },
+    select: { id: true, paymentType: true, remainingAmount: true },
+  });
+  if (existingCourseOrder) {
+    if (existingCourseOrder.paymentType === "DEPOSIT" && existingCourseOrder.remainingAmount && Number(existingCourseOrder.remainingAmount) > 0) {
+      throw new AppError(
+        "Bạn đã đặt cọc khóa học này rồi. Hãy thanh toán phần còn lại trong mục Đơn hàng.",
+        "COURSE_DEPOSIT_EXISTS",
+        409,
+      );
+    }
+    throw new AppError("Bạn đã đăng ký khóa học này rồi.", "COURSE_ALREADY_REGISTERED", 409);
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    // Lock user balance
+    const userRows = await tx.$queryRaw<Array<{ balance: string; total_spent: string }>>`
+      SELECT balance, total_spent FROM users WHERE id = ${userId}::uuid FOR UPDATE
+    `;
+    const userRow = userRows[0];
+    if (!userRow) throw new NotFoundError("User");
+
+    const balanceBefore = new Decimal(userRow.balance);
+    if (balanceBefore.lt(deposit)) {
+      throw new InsufficientBalanceError(balanceBefore.toNumber(), deposit.toNumber());
+    }
+    const balanceAfter = balanceBefore.sub(deposit);
+    const newTotalSpent = new Decimal(userRow.total_spent).add(deposit);
+
+    // Verify course is still active
+    const courseRows = await tx.$queryRaw<Array<{ is_active: boolean }>>`
+      SELECT is_active FROM courses WHERE id = ${itemId}::uuid AND deleted_at IS NULL
+    `;
+    if (!courseRows[0]?.is_active) throw new ItemInactiveError();
+
+    // Deduct deposit from balance
+    await tx.$executeRaw`
+      UPDATE users
+      SET balance     = ${balanceAfter.toFixed(2)}::numeric,
+          total_spent = ${newTotalSpent.toFixed(2)}::numeric,
+          updated_at  = now()
+      WHERE id = ${userId}::uuid
+    `;
+
+    const orderCode = generateOrderCode();
+    const order = await tx.order.create({
+      data: {
+        orderCode,
+        userId,
+        courseId: itemId,
+        orderType: "COURSE",
+        itemName,
+        originalPrice: new Decimal(catalogPrice).toFixed(2),
+        finalPrice: deposit.toFixed(2),
+        warrantyVariant,
+        customerNote,
+        status: "PROCESSING",
+        idempotencyKey,
+        paymentType: "DEPOSIT",
+        depositAmount: deposit.toFixed(2),
+        remainingAmount: remaining.toFixed(2),
+      },
+    });
+
+    await tx.transaction.create({
+      data: {
+        userId,
+        orderId: order.id,
+        type: "COURSE_DEPOSIT" as never,
+        amount: deposit.neg().toFixed(2),
+        description: discountPercent > 0
+          ? `Đặt cọc khóa học: ${itemName} (giảm ${discountPercent}%) — còn lại ${remaining.toFixed(0)}đ`
+          : `Đặt cọc khóa học: ${itemName} — còn lại ${remaining.toFixed(0)}đ`,
+        balanceBefore: balanceBefore.toFixed(2),
+        balanceAfter: balanceAfter.toFixed(2),
+      },
+    });
+
+    await tx.notification.create({
+      data: {
+        userId,
+        title: "Đặt cọc khóa học thành công",
+        body: `Đã cọc ${COURSE_DEPOSIT_AMOUNT.toLocaleString("vi-VN")}đ cho khóa học ${itemName}. Còn lại ${remaining.toNumber().toLocaleString("vi-VN")}đ.`,
+        type: "PURCHASE",
+        meta: { orderCode, orderType: "COURSE", depositAmount: deposit.toFixed(2), remainingAmount: remaining.toFixed(2) },
+      },
+    });
+
+    return { order };
+  });
+
+  logger.info({ userId, itemId, orderId: result.order.id }, "Course deposit processed");
+  return {
+    order: result.order,
+    isDeposit: true,
+    depositAmount: deposit.toNumber(),
+    remainingAmount: remaining.toNumber(),
+  };
+}
+
+// ── Pay remaining balance for a deposited course ──────────────────────────────
+
+export async function purchaseCourseRemainder(orderId: string, userId: string): Promise<Order> {
+  // Fetch order with IDOR protection
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, userId, orderType: "COURSE", paymentType: "DEPOSIT" },
+    select: {
+      id: true, orderCode: true, itemName: true, courseId: true,
+      remainingAmount: true, finalPrice: true, originalPrice: true,
+      status: true,
+    },
+  });
+
+  if (!order) throw new NotFoundError("Đơn hàng");
+  if (order.status === "CANCELLED" || order.status === "REFUNDED") {
+    throw new AppError("Đơn hàng đã bị hủy hoặc hoàn tiền.", "ORDER_NOT_ACTIVE", 400);
+  }
+  const remaining = new Decimal(order.remainingAmount ?? 0);
+  if (remaining.lte(0)) {
+    throw new AppError("Khóa học này đã được thanh toán đầy đủ.", "ALREADY_FULLY_PAID", 400);
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    // Lock user balance
+    const userRows = await tx.$queryRaw<Array<{ balance: string; total_spent: string }>>`
+      SELECT balance, total_spent FROM users WHERE id = ${userId}::uuid FOR UPDATE
+    `;
+    const userRow = userRows[0];
+    if (!userRow) throw new NotFoundError("User");
+
+    const balanceBefore = new Decimal(userRow.balance);
+    if (balanceBefore.lt(remaining)) {
+      throw new InsufficientBalanceError(balanceBefore.toNumber(), remaining.toNumber());
+    }
+    const balanceAfter = balanceBefore.sub(remaining);
+    const newTotalSpent = new Decimal(userRow.total_spent).add(remaining);
+
+    await tx.$executeRaw`
+      UPDATE users
+      SET balance     = ${balanceAfter.toFixed(2)}::numeric,
+          total_spent = ${newTotalSpent.toFixed(2)}::numeric,
+          updated_at  = now()
+      WHERE id = ${userId}::uuid
+    `;
+
+    const newFinalPrice = new Decimal(order.finalPrice).add(remaining);
+
+    const updatedOrder = await tx.order.update({
+      where: { id: orderId },
+      data: {
+        paymentType: "FULL",
+        remainingAmount: "0",
+        finalPrice: newFinalPrice.toFixed(2),
+        finalPaidAt: new Date(),
+      },
+    });
+
+    await tx.transaction.create({
+      data: {
+        userId,
+        orderId,
+        type: "COURSE_FINAL_PAYMENT" as never,
+        amount: remaining.neg().toFixed(2),
+        description: `Thanh toán phần còn lại khóa học: ${order.itemName}`,
+        balanceBefore: balanceBefore.toFixed(2),
+        balanceAfter: balanceAfter.toFixed(2),
+      },
+    });
+
+    await tx.notification.create({
+      data: {
+        userId,
+        title: "Thanh toán khóa học hoàn tất",
+        body: `Đã thanh toán đủ cho khóa học ${order.itemName}. Đơn hàng #${order.orderCode} đang được xử lý.`,
+        type: "PURCHASE",
+        meta: { orderCode: order.orderCode, amount: remaining.toFixed(2) },
+      },
+    });
+
+    return updatedOrder;
+  });
+
+  logger.info({ userId, orderId }, "Course final payment processed");
+  return updated;
 }
 
 async function checkItemActive(

@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { formatVnd } from "@/lib/utils/format";
 import { Phone, User, Tag, ChevronRight, AlertTriangle } from "lucide-react";
 
+const DEPOSIT_AMOUNT = 5_000_000;
+const DEPOSIT_MIN_PRICE = 25_000_000;
+const DEPOSIT_MAX_PRICE = 100_000_000;
+
 interface Props {
   courseId: string;
   courseName: string;
@@ -27,6 +31,10 @@ export default function CourseOrderForm({
   discountPct = 0,
 }: Props) {
   const discountedPrice = discountPct > 0 ? Math.round(price * (1 - discountPct / 100)) : price;
+  const effectivePrice = discountedPrice;
+  const isDepositEligible = effectivePrice >= DEPOSIT_MIN_PRICE && effectivePrice <= DEPOSIT_MAX_PRICE;
+  const remainingAmount = isDepositEligible ? effectivePrice - DEPOSIT_AMOUNT : 0;
+
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [name, setName] = useState(userName);
@@ -59,12 +67,12 @@ export default function CourseOrderForm({
           idempotencyKey: crypto.randomUUID(),
         }),
       });
-      const json = await res.json() as { data?: { orderId?: string }; error?: string };
+      const json = await res.json() as { data?: { orderId?: string; isDeposit?: boolean }; error?: string };
       if (!res.ok || !json.data?.orderId) {
         setError(json.error ?? "Đặt hàng thất bại, thử lại sau.");
         return;
       }
-      router.push("/cam-on?type=khoa-hoc");
+      router.push(json.data.isDeposit ? "/cam-on?type=dat-coc-khoa-hoc" : "/cam-on?type=khoa-hoc");
     } catch {
       setError("Lỗi kết nối, vui lòng thử lại.");
     } finally {
@@ -114,32 +122,48 @@ export default function CourseOrderForm({
         </div>
       </div>
 
-      {/* Price display — yellow box */}
-      <div
-        className="flex items-center justify-between px-4 py-3 rounded-xl"
-        style={{ background: "linear-gradient(135deg, #fef3c7, #fde68a)" }}
-      >
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-[#92400e]">
-          <Tag size={13} strokeWidth={1.75} style={{ color: "#d97706" }} />
-          Giá thanh toán
-        </span>
-        <div className="flex items-center gap-2">
-          {discountPct > 0 ? (
-            <>
-              <span className="text-xs text-[#92400e]/60 line-through">{formatVnd(price)}</span>
-              <span className="text-sm font-extrabold text-[#E53E3E]">{formatVnd(discountedPrice)}</span>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">-{discountPct}%</span>
-            </>
-          ) : (
-            <>
-              {isOnSale && (
-                <span className="text-xs text-[#92400e]/60 line-through">{formatVnd(originalPrice)}</span>
-              )}
-              <span className="text-sm font-extrabold text-[#E53E3E]">{formatVnd(price)}</span>
-            </>
-          )}
+{/* Price display — yellow box */}
+      {!isDepositEligible && (
+        <div
+          className="flex items-center justify-between px-4 py-3 rounded-xl"
+          style={{ background: "linear-gradient(135deg, #fef3c7, #fde68a)" }}
+        >
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-[#92400e]">
+            <Tag size={13} strokeWidth={1.75} style={{ color: "#d97706" }} />
+            Giá thanh toán
+          </span>
+          <div className="flex items-center gap-2">
+            {discountPct > 0 ? (
+              <>
+                <span className="text-xs text-[#92400e]/60 line-through">{formatVnd(price)}</span>
+                <span className="text-sm font-extrabold text-[#E53E3E]">{formatVnd(discountedPrice)}</span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">-{discountPct}%</span>
+              </>
+            ) : (
+              <>
+                {isOnSale && (
+                  <span className="text-xs text-[#92400e]/60 line-through">{formatVnd(originalPrice)}</span>
+                )}
+                <span className="text-sm font-extrabold text-[#E53E3E]">{formatVnd(price)}</span>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Deposit price summary — yellow box variant */}
+      {isDepositEligible && (
+        <div
+          className="flex items-center justify-between px-4 py-3 rounded-xl"
+          style={{ background: "linear-gradient(135deg, #fef3c7, #fde68a)" }}
+        >
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-[#92400e]">
+            <Tag size={13} strokeWidth={1.75} style={{ color: "#d97706" }} />
+            Thanh toán ngay hôm nay
+          </span>
+          <span className="text-sm font-extrabold text-[#E53E3E]">{formatVnd(DEPOSIT_AMOUNT)}</span>
+        </div>
+      )}
 
       {/* Error */}
       {error && (
@@ -169,7 +193,7 @@ export default function CourseOrderForm({
           </>
         ) : isLoggedIn ? (
           <>
-            ĐĂNG KÝ NGAY
+            {isDepositEligible ? `ĐẶT CỌC ${formatVnd(DEPOSIT_AMOUNT)}` : "ĐĂNG KÝ NGAY"}
             <ChevronRight size={16} strokeWidth={2.5} />
           </>
         ) : (
@@ -183,6 +207,12 @@ export default function CourseOrderForm({
       {!isLoggedIn && (
         <p className="text-[10px] text-[#94a3b8] text-center">
           Bạn cần đăng nhập để thực hiện đăng ký
+        </p>
+      )}
+
+      {isDepositEligible && isLoggedIn && (
+        <p className="text-[10px] text-[#64748b] text-center leading-relaxed">
+          Chỉ cần cọc {formatVnd(DEPOSIT_AMOUNT)} hôm nay. Phần còn lại {formatVnd(remainingAmount)} thanh toán sau trong mục Đơn hàng.
         </p>
       )}
     </form>

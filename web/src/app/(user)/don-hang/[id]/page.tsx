@@ -10,6 +10,7 @@ import ReviewSection from "@/components/shared/ReviewSection";
 import { type ChatRoomInfo } from "@/components/shared/ChatWidget";
 import TicketChatPanel from "@/app/(user)/ho-tro/_components/TicketChatPanel";
 import UserProfileHero from "@/components/shared/UserProfileHero";
+import PayRemainingButton from "../_components/PayRemainingButton";
 
 export const metadata: Metadata = { title: "Chi tiết đơn hàng" };
 
@@ -40,6 +41,7 @@ export default async function DonHangDetailPage({
         originalPrice: true, finalPrice: true, warrantyVariant: true,
         status: true, createdAt: true, completedAt: true,
         sellerProductId: true, mmoProductId: true,
+        paymentType: true, depositAmount: true, remainingAmount: true, finalPaidAt: true,
       },
     }),
     prisma.user.findUnique({
@@ -199,19 +201,33 @@ export default async function DonHangDetailPage({
                 {[
                   { label: "Loại đơn", value: order.orderType },
                   { label: "Giá gốc",  value: formatVnd(Number(order.originalPrice)) },
-                  { label: "Thực tế",  value: formatVnd(Number(order.finalPrice)) },
+                  order.paymentType === "DEPOSIT"
+                    ? { label: "Đã cọc", value: formatVnd(Number(order.depositAmount ?? 0)) }
+                    : { label: "Thực tế", value: formatVnd(Number(order.finalPrice)) },
+                  order.paymentType === "DEPOSIT" && Number(order.remainingAmount ?? 0) > 0
+                    ? { label: "Còn lại", value: formatVnd(Number(order.remainingAmount)) }
+                    : null,
+                  order.paymentType === "DEPOSIT" && Number(order.remainingAmount ?? 0) === 0
+                    ? { label: "Tổng đã trả", value: formatVnd(Number(order.finalPrice)) }
+                    : null,
                   order.warrantyVariant ? { label: "Bảo hành", value: order.warrantyVariant } : null,
                   { label: "Ngày đặt",    value: formatDate(order.createdAt) },
+                  order.finalPaidAt ? { label: "Thanh toán đủ", value: formatDate(order.finalPaidAt) } : null,
                   order.completedAt ? { label: "Hoàn thành", value: formatDate(order.completedAt) } : null,
                 ]
                   .filter(Boolean)
                   .map((row) => (
                     <div key={row!.label} className="flex justify-between text-sm">
                       <span className="text-gray-500">{row!.label}</span>
-                      <span className="text-gray-800 font-medium">{row!.value}</span>
+                      <span className={`font-medium ${row!.label === "Còn lại" ? "text-red-500" : "text-gray-800"}`}>{row!.value}</span>
                     </div>
                   ))}
               </div>
+              {order.paymentType === "DEPOSIT" && Number(order.remainingAmount ?? 0) > 0 && (
+                <div className="px-5 pb-4">
+                  <PayRemainingButton orderId={order.id} remainingAmount={Number(order.remainingAmount)} />
+                </div>
+              )}
             </div>
 
             {/* Delivered content */}
