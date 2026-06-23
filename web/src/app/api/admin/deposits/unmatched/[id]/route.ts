@@ -80,3 +80,33 @@ export async function PATCH(
     return apiCatch(err);
   }
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+): Promise<NextResponse> {
+  try {
+    const session = await auth();
+    const me = requireStaff(session);
+    await requirePermission(session, "finance:approve");
+
+    const { id } = await params;
+
+    const transfer = await prisma.unmatchedTransfer.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    });
+
+    if (!transfer) return apiError("Không tìm thấy giao dịch", "NOT_FOUND", 404);
+    if (transfer.status !== "PENDING") return apiError("Giao dịch này đã được xử lý", "ALREADY_RESOLVED", 409);
+
+    await prisma.unmatchedTransfer.update({
+      where: { id },
+      data: { status: "DISMISSED", resolvedByUserId: me.id, resolvedAt: new Date() },
+    });
+
+    return apiOk({ dismissed: true });
+  } catch (err) {
+    return apiCatch(err);
+  }
+}

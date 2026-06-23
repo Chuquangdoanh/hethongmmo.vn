@@ -14,6 +14,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 type User = {
   id: string;
+  uidPrefix: string;
   email: string;
   fullName: string;
   role: string;
@@ -170,7 +171,10 @@ export default function UsersTableClient({ users, currentUserId, total, role, q 
                         {(u.fullName || u.email).slice(0, 2).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate max-w-[160px]">{u.fullName || "—"}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-medium text-gray-900 truncate max-w-35">{u.fullName || "—"}</p>
+                          <span className="text-[9px] font-mono font-semibold text-violet-500 bg-violet-50 px-1 py-0.5 rounded shrink-0">#{u.uidPrefix}</span>
+                        </div>
                         <p className="text-[10px] text-gray-400 font-mono mt-0.5 truncate max-w-[160px]">{u.email}</p>
                       </div>
                     </div>

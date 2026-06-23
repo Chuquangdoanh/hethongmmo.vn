@@ -49,7 +49,7 @@ export default function UsersSearchInput() {
         type="text"
         defaultValue={currentQ}
         onChange={handleChange}
-        placeholder="Tìm theo email, tên, hoặc User ID..."
+        placeholder="Tìm theo email, tên, mã user (#a1b2c3d4)..."
         className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/30 focus:border-[#7C3AED] transition-colors placeholder:text-gray-400"
       />
       {isPending && (

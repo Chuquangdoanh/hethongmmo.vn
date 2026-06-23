@@ -153,7 +153,7 @@ export default function DepositBankForm({
           </button>
         </div>
         <p className="text-[11px] text-gray-400 mt-2">
-          IP SePay xem trong log server: <code className="bg-gray-100 px-1 rounded">pm2 logs | grep "IP not in whitelist"</code>
+          IP SePay trên vps docker 
         </p>
       </div>
 

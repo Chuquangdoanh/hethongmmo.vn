@@ -35,12 +35,14 @@ export default async function AdminUsersPage({
   today.setHours(0, 0, 0, 0);
 
   const isFullUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q ?? "");
+  // Strip # prefix khi admin gõ dạng "#a1b2c3d4"
+  const uidQuery = q ? q.replace(/^#/, "").replace(/-/g, "") : "";
 
   const where = {
     deletedAt: null,
     ...(q ? { OR: [
       ...(isFullUuid ? [{ id: q }] : []),
-      { uidPrefix: { contains: q.replace(/-/g, ""), mode: "insensitive" as const } },
+      { uidPrefix: { contains: uidQuery, mode: "insensitive" as const } },
       { email:     { contains: q, mode: "insensitive" as const } },
       { fullName:  { contains: q, mode: "insensitive" as const } },
     ]} : {}),
@@ -62,7 +64,7 @@ export default async function AdminUsersPage({
       skip: (currentPage - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       select: {
-        id: true, email: true, fullName: true, role: true,
+        id: true, uidPrefix: true, email: true, fullName: true, role: true,
         status: true, balance: true,
         totalDeposited: true, discountPercent: true,
         createdAt: true,
@@ -151,6 +153,7 @@ export default async function AdminUsersPage({
       <UsersTableClient
         users={users.map((u) => ({
           ...u,
+          uidPrefix: u.uidPrefix,
           balance: Number(u.balance),
           totalDeposited: Number(u.totalDeposited),
         }))}
