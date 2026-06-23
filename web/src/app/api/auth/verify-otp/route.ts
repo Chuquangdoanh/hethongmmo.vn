@@ -163,6 +163,15 @@ export async function POST(req: NextRequest) {
 
       await tx.pendingRegistration.delete({ where: { email } });
 
+      await tx.notification.create({
+        data: {
+          userId: newUser.id,
+          title: "Đăng ký thành công !",
+          body: "",
+          type: "SYSTEM",
+        },
+      });
+
       await tx.auditLog.create({
         data: {
           actorId: newUser.id,

@@ -115,7 +115,7 @@ export default function DepositPanel({ bankName, accountNumber, accountHolder, b
         {/* Bank details */}
         <div className="space-y-2.5">
           <InfoField label="NGÂN HÀNG"     value={bankName}      />
-          <InfoField label="SỐ TÀI KHOẢN"  value={accountNumber} copy />
+          <InfoField label="SỐ TÀI KHOẢN"  value={accountNumber} />
           <InfoField label="CHỦ TÀI KHOẢN" value={accountHolder} />
         </div>
       </div>
@@ -130,7 +130,7 @@ export default function DepositPanel({ bankName, accountNumber, accountHolder, b
             </p>
             <p className="text-base font-bold text-orange-600 tracking-widest">{transferContent}</p>
           </div>
-          <CopyButton text={transferContent} />
+          
         </div>
       </div>
 

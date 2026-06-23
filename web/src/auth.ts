@@ -224,6 +224,14 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         });
 
         void recordAttempt(true);
+        void prisma.notification.create({
+          data: {
+            userId: user.id,
+            title: "Đăng nhập thành công",
+            body: "",
+            type: "SYSTEM",
+          },
+        });
         logger.info({ userId: user.id, email: user.email }, "Login successful");
 
         return {

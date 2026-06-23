@@ -4,10 +4,11 @@ import { prisma } from "@/lib/db/prisma";
 import { getCachedPageVisibility } from "@/lib/services/public-page-config.service";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { r2Url } from "@/lib/utils/image-url";
-import { Search, Bell, TicketCheck } from "lucide-react";
+import { Search } from "lucide-react";
 import UserMenu from "./UserMenu";
 import MobileMenu from "./MobileMenu";
 import SidebarCollapseToggle from "./SidebarCollapseToggle";
+import NotificationBell from "./NotificationBell";
 import { NAV_LINKS } from "./nav-links";
 import "./header.css";
 
@@ -87,10 +88,7 @@ export default async function Header() {
         {/* ── Right: icons + auth + hamburger ── */}
         <div className="hdr-actions">
           <div className="hdr-desktop-icons">
-            <button type="button" className="hdr-icon-btn" aria-label="Thông báo">
-              <Bell size={18} strokeWidth={1.75} />
-            </button>
-          
+            {sessionUser && <NotificationBell />}
           </div>
           <div className="hdr-desktop-auth">
             {sessionUser ? (
