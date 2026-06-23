@@ -163,7 +163,7 @@ export default async function Sidebar() {
         <Link href="/" className="sb-brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/images/djmedia-logo.gif" alt="hethongmmo.vn" className="sb-brand-logo" />
-          <p className="sb-label sb-brand-headline">HỆ THỐNG MMO</p>
+          <p className="sb-label sb-brand-headline cqd-hud-frame">HỆ THỐNG MMO</p>
         </Link>
 
         {sessionUser && (

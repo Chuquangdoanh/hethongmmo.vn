@@ -56,19 +56,41 @@
   flex-shrink: 0;
 }
 .sb-brand-logo {
-  width: 100%;
+  width: 80%;
   height: auto;
   display: block;
 }
 .sb-brand-headline {
   margin: 10px 0 0;
-  color: #000000;
-  font-size: 15px;
+  color: #0f172a;
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
   text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(107, 94, 214, 0.5);
 }
 html.sb-collapsed .sb-brand { padding: 12px 8px 14px; }
+
+/* ── CQD HUD Frame — ảnh viền futuristic quanh "HỆ THỐNG MMO" (namespace: cqd-) ── */
+.cqd-hud-frame {
+  position: relative;
+  padding: 10px 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cqd-hud-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/images/hud-frame.png') center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+
+/* Ẩn viền khi sidebar thu gọn */
+html.sb-collapsed .cqd-hud-frame { padding: 0; }
+html.sb-collapsed .cqd-hud-frame::before { display: none; }
 
 /* ── User balance card ─────────────────────────────────────── */
 .sb-user-card {
