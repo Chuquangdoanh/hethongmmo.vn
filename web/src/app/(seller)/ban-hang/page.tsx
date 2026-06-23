@@ -134,25 +134,25 @@ export default async function BanHangPage() {
       Icon: Package,     label: "Sản phẩm",
       value: `${productCount} / ${maxProducts}`,
       sub: `Còn ${maxProducts - productCount} slot`,
-      valueColor: "text-blue-600", iconBg: "bg-blue-50", iconColor: "text-blue-600",
+      valueColor: "text-blue-600", iconBg: "bg-gray-100", iconColor: "text-gray-400",
     },
     {
       Icon: ShoppingBag, label: "Đơn hàng",
       value: totalOrders.toLocaleString("vi-VN"),
       sub: "Tổng đơn",
-      valueColor: "text-purple-600", iconBg: "bg-purple-50", iconColor: "text-purple-600",
+      valueColor: "text-purple-600", iconBg: "bg-gray-100", iconColor: "text-gray-400",
     },
     {
       Icon: TrendingUp,  label: "Doanh thu",
       value: formatVnd(revenue),
       sub: "Đơn hoàn thành",
-      valueColor: "text-emerald-600", iconBg: "bg-emerald-50", iconColor: "text-emerald-600",
+      valueColor: "text-emerald-600", iconBg: "bg-gray-100", iconColor: "text-gray-400",
     },
     {
       Icon: Wallet,      label: "Có thể rút",
       value: formatVnd(qualifyingNet),
       sub: `Sau phí ${feePercent}%`,
-      valueColor: "text-amber-600", iconBg: "bg-amber-50", iconColor: "text-amber-600",
+      valueColor: "text-amber-600", iconBg: "bg-gray-100", iconColor: "text-gray-400",
     },
   ];
 

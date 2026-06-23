@@ -152,17 +152,17 @@ export default function UserMenu({ user, balance, avatarUrl }: UserMenuProps) {
             )}
           </div>
 
-          <MenuItem href="/thong-tin-ca-nhan" Icon={User}          iconBg="#f1f5f9" iconColor="#475569" label="Hồ sơ cá nhân" onClick={() => setOpen(false)} />
-          <MenuItem href="/ho-tro"             Icon={TicketCheck}  iconBg="#eff6ff" iconColor="#2563eb" label="Ticket hỗ trợ" onClick={() => setOpen(false)} />
-          <MenuItem href="/nap-tien"          Icon={CreditCard}   iconBg="#dbeafe" iconColor="#0891b2" label="Nạp tiền"      onClick={() => setOpen(false)} />
+          <MenuItem href="/thong-tin-ca-nhan"              Icon={User}            label="Hồ sơ cá nhân"    onClick={() => setOpen(false)} />
+          <MenuItem href="/ho-tro"                          Icon={TicketCheck}     label="Ticket hỗ trợ"   onClick={() => setOpen(false)} />
+          <MenuItem href="/nap-tien"                        Icon={CreditCard}      label="Nạp tiền"         onClick={() => setOpen(false)} />
 
           {isSeller ? (
-            <MenuItem href="/ban-hang" Icon={Store} iconBg="#f0fdf4" iconColor="#16a34a" label="Bán Hàng" onClick={() => setOpen(false)} />
+            <MenuItem href="/ban-hang"                      Icon={Store}           label="Bán Hàng"         onClick={() => setOpen(false)} />
           ) : (
-            <MenuItem href="/thong-tin-ca-nhan#seller-register" Icon={Rocket} iconBg="#f5f3ff" iconColor="#7c3aed" label="Đăng Ký Bán Hàng" onClick={() => setOpen(false)} />
+            <MenuItem href="/thong-tin-ca-nhan#seller-register" Icon={Rocket}     label="Đăng Ký Bán Hàng" onClick={() => setOpen(false)} />
           )}
           {isAdmin && (
-            <MenuItem href="/admin/dashboard" Icon={LayoutDashboard} iconBg="#ede9fe" iconColor="#7c3aed" label="Admin Panel" onClick={() => setOpen(false)} />
+            <MenuItem href="/admin/dashboard"               Icon={LayoutDashboard} label="Admin Panel"       onClick={() => setOpen(false)} />
           )}
 
           <div style={{ borderTop: "1px solid #e2e8f0", marginTop: "4px", paddingTop: "4px" }}>
@@ -177,15 +177,11 @@ export default function UserMenu({ user, balance, avatarUrl }: UserMenuProps) {
 function MenuItem({
   href,
   Icon,
-  iconBg,
-  iconColor,
   label,
   onClick,
 }: {
   href: string;
   Icon: React.ElementType;
-  iconBg: string;
-  iconColor: string;
   label: string;
   onClick?: () => void;
 }) {
@@ -206,25 +202,36 @@ function MenuItem({
         transition: "all 0.15s ease",
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.background = "#f1f5f9";
-        (e.currentTarget as HTMLElement).style.color = "#0066ff";
+        const el = e.currentTarget as HTMLElement;
+        el.style.background = "#f1f5f9";
+        el.style.color = "#0066ff";
+        const iconEl = el.querySelector<HTMLElement>(".menu-icon-badge");
+        if (iconEl) { iconEl.style.background = "#dbeafe"; }
+        const svg = el.querySelector<SVGElement>("svg");
+        if (svg) { svg.style.color = "#2563eb"; }
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.background = "transparent";
-        (e.currentTarget as HTMLElement).style.color = "#0f172a";
+        const el = e.currentTarget as HTMLElement;
+        el.style.background = "transparent";
+        el.style.color = "#0f172a";
+        const iconEl = el.querySelector<HTMLElement>(".menu-icon-badge");
+        if (iconEl) { iconEl.style.background = "#f1f5f9"; }
+        const svg = el.querySelector<SVGElement>("svg");
+        if (svg) { svg.style.color = "#94a3b8"; }
       }}
     >
-      <span style={{
+      <span className="menu-icon-badge" style={{
         width: "30px",
         height: "30px",
         borderRadius: "8px",
-        background: iconBg,
+        background: "#f1f5f9",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         flexShrink: 0,
+        transition: "background 0.15s",
       }}>
-        <Icon size={15} strokeWidth={1.75} style={{ color: iconColor }} />
+        <Icon size={15} strokeWidth={1.75} style={{ color: "#94a3b8", transition: "color 0.15s" }} />
       </span>
       {label}
     </Link>
@@ -251,27 +258,45 @@ function LogoutBtn({ onLogout }: { onLogout: () => void }) {
         gap: "10px",
         width: "100%",
         padding: "7px 10px",
-        background: "#fef2f2",
-        color: "#dc2626",
+        background: "transparent",
+        color: "#0f172a",
         border: "none",
         borderRadius: "8px",
         fontSize: "13px",
-        fontWeight: "600",
+        fontWeight: "500",
         cursor: "pointer",
         textAlign: "left",
+        transition: "background 0.15s, color 0.15s",
+      }}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget as HTMLButtonElement;
+        el.style.background = "#f1f5f9";
+        const iconEl = el.querySelector<HTMLElement>(".menu-icon-badge");
+        if (iconEl) { iconEl.style.background = "#dbeafe"; }
+        const svg = el.querySelector<SVGElement>("svg");
+        if (svg) { svg.style.color = "#2563eb"; }
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget as HTMLButtonElement;
+        el.style.background = "transparent";
+        const iconEl = el.querySelector<HTMLElement>(".menu-icon-badge");
+        if (iconEl) { iconEl.style.background = "#f1f5f9"; }
+        const svg = el.querySelector<SVGElement>("svg");
+        if (svg) { svg.style.color = "#94a3b8"; }
       }}
     >
-      <span style={{
+      <span className="menu-icon-badge" style={{
         width: "30px",
         height: "30px",
         borderRadius: "8px",
-        background: "#fee2e2",
+        background: "#f1f5f9",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         flexShrink: 0,
+        transition: "background 0.15s",
       }}>
-        <LogOut size={15} strokeWidth={2} style={{ color: "#dc2626" }} />
+        <LogOut size={15} strokeWidth={1.75} style={{ color: "#94a3b8", transition: "color 0.15s" }} />
       </span>
       Đăng xuất
     </button>

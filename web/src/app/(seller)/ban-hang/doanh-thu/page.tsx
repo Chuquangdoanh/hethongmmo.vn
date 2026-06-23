@@ -60,18 +60,18 @@ export default async function SellerDoanhThuPage() {
       value: formatVnd(allTimeRevenue),
       sub: `${allTime._count} đơn hoàn thành`,
       valueColor: "text-violet-600",
-      iconBg: "bg-purple-50",
+      iconBg: "bg-gray-100",
       Icon: TrendingUp,
-      iconColor: "text-purple-600",
+      iconColor: "text-gray-400",
     },
     {
       label: "Tháng này",
       value: formatVnd(thisMonthRevenue),
       sub: `${thisMonth._count} đơn`,
       valueColor: "text-emerald-600",
-      iconBg: "bg-emerald-50",
+      iconBg: "bg-gray-100",
       Icon: BarChart3,
-      iconColor: "text-emerald-600",
+      iconColor: "text-gray-400",
     },
     {
       label: "Tháng trước",
@@ -80,9 +80,9 @@ export default async function SellerDoanhThuPage() {
         ? `${growthPositive ? "↑" : "↓"} ${Math.abs(parseFloat(growth))}% so với tháng trước`
         : "Chưa có dữ liệu tháng trước",
       valueColor: "text-gray-800",
-      iconBg: growthPositive ? "bg-emerald-50" : "bg-red-50",
+      iconBg: "bg-gray-100",
       Icon: growthPositive ? TrendingUp : TrendingDown,
-      iconColor: growthPositive ? "text-emerald-600" : "text-red-500",
+      iconColor: "text-gray-400",
     },
   ];
 
@@ -94,8 +94,8 @@ export default async function SellerDoanhThuPage() {
 
           {/* Header */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center">
-              <BarChart3 size={17} className="text-purple-600" />
+            <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center">
+              <BarChart3 size={17} className="text-gray-400" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Doanh thu</h1>
           </div>

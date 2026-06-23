@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react";
 import { formatVnd } from "@/lib/utils/format";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import {
-  Banknote, Home, Wrench, GraduationCap, Lightbulb, FolderOpen,
+  Banknote, Home, GalleryVerticalEnd, GraduationCap, Lightbulb, FolderOpen,
   Package, ShoppingBag, User, Settings, LogOut, Bell,
   Heart, Store, ChevronRight, ChevronDown, ArrowLeft, AlertCircle,
   Grid3x3, LayoutDashboard, TicketCheck, BookOpen,
@@ -221,7 +221,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={r2Url(cat.iconUrl)} alt={cat.name} className="mnav-svc-icon-img" />
                     ) : (
-                      <ShoppingBag size={20} style={{ color: "#7c3aed" }} />
+                      <ShoppingBag size={20} />
                     )}
                   </div>
                   <span className="mnav-svc-name">{cat.name}</span>
@@ -254,16 +254,12 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
             <p className="mnav-section-label">NỔI BẬT</p>
             <div className="mnav-featured-grid">
               <Link href="/dich-vu" prefetch={false} className="mnav-featured-card" onClick={closeWithNav}>
-                <div className="mnav-featured-icon" style={{ background: "#ede9fe" }}>
-                  <Wrench size={20} style={{ color: "#7c3aed" }} />
-                </div>
+                <div className="mnav-featured-icon"><GalleryVerticalEnd size={20} /></div>
                 <div className="mnav-featured-name">DỊCH VỤ</div>
                 <div className="mnav-featured-desc">Mua bán sản phẩm và dịch vụ MMO</div>
               </Link>
               <Link href="/khoa-hoc" prefetch={false} className="mnav-featured-card" onClick={closeWithNav}>
-                <div className="mnav-featured-icon" style={{ background: "#d1fae5" }}>
-                  <GraduationCap size={20} style={{ color: "#059669" }} />
-                </div>
+                <div className="mnav-featured-icon"><GraduationCap size={20} /></div>
                 <div className="mnav-featured-name">KHÓA HỌC</div>
                 <div className="mnav-featured-desc">Học tập và phát triển kỹ năng</div>
               </Link>
@@ -286,8 +282,8 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                         onClick={() => toggleExpanded(item.id)}
                         aria-expanded={isExpanded}
                       >
-                        <span className="mnav-list-icon" style={{ background: item.iconBg }}>
-                          <Icon size={16} style={{ color: item.iconColor }} />
+                        <span className="mnav-list-icon">
+                          <Icon size={16} />
                         </span>
                         <div className="mnav-list-text">
                           <span className="mnav-list-name">{item.label}</span>
@@ -299,8 +295,8 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                       </button>
                     ) : (
                       <Link href={item.href} prefetch={false} className="mnav-list-link" onClick={closeWithNav}>
-                        <span className="mnav-list-icon" style={{ background: item.iconBg }}>
-                          <Icon size={16} style={{ color: item.iconColor }} />
+                        <span className="mnav-list-icon">
+                          <Icon size={16} />
                         </span>
                         <div className="mnav-list-text">
                           <span className="mnav-list-name">{item.label}</span>
@@ -448,29 +444,27 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                 <p className="mnav-section-label">QUẢN LÝ TÀI KHOẢN</p>
                 <div className="mnav-acc-list">
                   <Link href="/thong-tin-ca-nhan" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                    <User size={16} className="mnav-acc-icon" style={{ color: "#0066ff" }} />
+                    <span className="mnav-acc-icon-badge"><User size={16} /></span>
                     <span>Ví của tôi</span>
                     <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
                   <Link href="/don-hang" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                    <Package size={16} className="mnav-acc-icon" style={{ color: "#7c3aed" }} />
+                    <span className="mnav-acc-icon-badge"><Package size={16} /></span>
                     <span>Đơn hàng của tôi</span>
                     <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
-
                   <Link href="/ho-tro" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                    <TicketCheck size={16} className="mnav-acc-icon" style={{ color: "#2563eb" }} />
+                    <span className="mnav-acc-icon-badge"><TicketCheck size={16} /></span>
                     <span>Ticket hỗ trợ</span>
                     <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
-                  
                   <Link href="/ho-tro" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                    <Heart size={16} className="mnav-acc-icon" style={{ color: "#ec4899" }} />
+                    <span className="mnav-acc-icon-badge"><Heart size={16} /></span>
                     <span>Sản phẩm yêu thích</span>
                     <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
                   <Link href="/thong-tin-ca-nhan" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                    <Bell size={16} className="mnav-acc-icon" style={{ color: "#f59e0b" }} />
+                    <span className="mnav-acc-icon-badge"><Bell size={16} /></span>
                     <span>Thông báo</span>
                     <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
@@ -483,17 +477,17 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                   <p className="mnav-section-label">KHU VỰC NGƯỜI BÁN</p>
                   <div className="mnav-acc-list">
                     <Link href="/ban-hang" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                      <Store size={16} className="mnav-acc-icon" style={{ color: "#16a34a" }} />
+                      <span className="mnav-acc-icon-badge"><Store size={16} /></span>
                       <span>Seller Center</span>
                       <ChevronRight size={14} className="mnav-acc-chevron" />
                     </Link>
                     <Link href="/ban-hang/san-pham" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                      <Grid3x3 size={16} className="mnav-acc-icon" style={{ color: "#16a34a" }} />
+                      <span className="mnav-acc-icon-badge"><Grid3x3 size={16} /></span>
                       <span>Sản phẩm của tôi</span>
                       <ChevronRight size={14} className="mnav-acc-chevron" />
                     </Link>
                     <Link href="/ban-hang/don-hang" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                      <Package size={16} className="mnav-acc-icon" style={{ color: "#16a34a" }} />
+                      <span className="mnav-acc-icon-badge"><Package size={16} /></span>
                       <span>Đơn hàng </span>
                       <ChevronRight size={14} className="mnav-acc-chevron" />
                     </Link>
@@ -501,7 +495,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                       className="mnav-acc-item mnav-acc-item--btn"
                       onClick={() => setActivePanel("seller-support")}
                     >
-                      <AlertCircle size={16} className="mnav-acc-icon" style={{ color: "#dc2626" }} />
+                      <span className="mnav-acc-icon-badge"><AlertCircle size={16} /></span>
                       <span>Khiếu nại từ khách</span>
                       <ChevronRight size={14} className="mnav-acc-chevron" />
                     </button>
@@ -515,12 +509,12 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                   <p className="mnav-section-label">QUẢN TRỊ HỆ THỐNG</p>
                   <div className="mnav-acc-list">
                     <Link href="/admin/dashboard" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                      <LayoutDashboard size={16} className="mnav-acc-icon" style={{ color: "#7c3aed" }} />
+                      <span className="mnav-acc-icon-badge"><LayoutDashboard size={16} /></span>
                       <span>Admin Panel</span>
                       <ChevronRight size={14} className="mnav-acc-chevron" />
                     </Link>
                     <Link href="/thong-tin-ca-nhan" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                      <Settings size={16} className="mnav-acc-icon" style={{ color: "#64748b" }} />
+                      <span className="mnav-acc-icon-badge"><Settings size={16} /></span>
                       <span>Cài đặt hệ thống</span>
                       <ChevronRight size={14} className="mnav-acc-chevron" />
                     </Link>
@@ -560,7 +554,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           onClick={() => openPanel("services")}
           aria-expanded={activePanel === "services"}
         >
-          <Wrench size={22} className="mnav-tab-icon" />
+          <GalleryVerticalEnd size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Dịch vụ</span>
         </button>
         <Link

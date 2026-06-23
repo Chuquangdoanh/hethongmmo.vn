@@ -207,7 +207,7 @@ export default async function AdminAuditLogPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Nhật ký hoạt động</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Chỉ lưu 7 ngày gần nhất · Tự động xóa bản ghi cũ</p>
+          <p className="text-xs text-gray-400 mt-0.5">Lưu 90 ngày gần nhất </p>
         </div>
         <span className="text-sm text-gray-500">{total.toLocaleString("vi-VN")} bản ghi</span>
       </div>

@@ -4,13 +4,11 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
-import { formatVnd, formatDate } from "@/lib/utils/format";
+import { formatDate } from "@/lib/utils/format";
 import {
   Search, Clock, CheckCircle, TicketCheck, ShieldAlert,
-  ClipboardList, ShoppingBag, Banknote, Lock, ShieldCheck,
 } from "lucide-react";
 import TicketChatPanel from "./_components/TicketChatPanel";
-import SlaTimer from "./_components/SlaTimer";
 import TicketScrollLink from "./_components/TicketScrollLink";
 import ScrollToTop from "@/components/shared/ScrollToTop";
 import BackBtn from "@/components/shared/BackBtn";
@@ -476,105 +474,6 @@ export default async function HoTroPage({
         </div>
       )}
 
-      {/* ══ RIGHT — Thông tin đơn hàng + SLA ══════════════════════ */}
-      {selected ? (
-        <div className="ht-right">
-          <div className="ht-right-section">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
-              <h3 style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a", margin: 0 }}>Thông tin đơn hàng</h3>
-              <Link href="/don-hang" style={{ fontSize: "11px", color: "#2563eb", textDecoration: "none" }}>Xem chi tiết</Link>
-            </div>
-            {selectedOrder ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <InfoRow icon={<ClipboardList size={14} />} label="Mã đơn hàng">
-                  <span style={{ fontSize: "12px", fontWeight: "700", fontFamily: "monospace", color: "#1e293b" }}>
-                    #{selectedOrder.orderCode}
-                  </span>
-                </InfoRow>
-                <InfoRow icon={<ShoppingBag size={14} />} label="Dịch vụ">
-                  <span style={{ fontSize: "12px", color: "#1e293b", fontWeight: "500" }}>{selectedOrder.itemName}</span>
-                </InfoRow>
-                <InfoRow icon={<Banknote size={14} />} label="Số tiền">
-                  <span style={{ fontSize: "13px", fontWeight: "800", color: "#16a34a" }}>
-                    {formatVnd(Number(selectedOrder.finalPrice))}
-                  </span>
-                </InfoRow>
-                <InfoRow icon={<Lock size={14} />} label="Trạng thái tiền">
-                  <span style={{
-                    fontSize: "11px", padding: "2px 8px", borderRadius: "20px",
-                    background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a", fontWeight: "600",
-                  }}>
-                    Đang bị treo
-                  </span>
-                </InfoRow>
-                <InfoRow icon={<Clock size={14} />} label="Thời gian mua">
-                  <span style={{ fontSize: "11px", color: "#475569" }}>{formatDate(selectedOrder.createdAt)}</span>
-                </InfoRow>
-              </div>
-            ) : (
-              <p style={{ fontSize: "12px", color: "#94a3b8" }}>Không có thông tin đơn hàng</p>
-            )}
-          </div>
-
-          {/* SLA Timer */}
-          {selected.status === "IN_REVIEW" && (
-            <>
-              <div className="ht-divider" />
-              <div className="ht-right-section">
-                <h3 style={{
-                  fontSize: "13px", fontWeight: "700", color: "#dc2626",
-                  margin: "0 0 14px", display: "flex", alignItems: "center", gap: "6px",
-                }}>
-                  <Clock size={13} />
-                  Thời gian SLA phản hồi
-                </h3>
-                <SlaTimer
-                  startAt={selected.chatRoom?.createdAt?.toISOString() ?? selected.createdAt.toISOString()}
-                  durationMinutes={60}
-                />
-              </div>
-            </>
-          )}
-
-          <div className="ht-divider" />
-          <div className="ht-right-section">
-            <h3 style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a", margin: "0 0 12px", display: "flex", alignItems: "center", gap: "6px" }}>
-              <ShieldCheck size={14} style={{ color: "#16a34a" }} />
-              Quyền lợi của bạn
-            </h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
-              {[
-                "Nhà bán hàng phải phản hồi trong 12 giờ",
-                "Tự động hoàn tiền nếu seller không hỗ trợ",
-                "Tối đa 20 tin nhắn để giải quyết",
-                "Admin phán quyết khi không đồng thuận",
-              ].map(r => (
-                <div key={r} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, marginTop: "2px" }}>
-                    <circle cx="7" cy="7" r="7" fill="#dcfce7" />
-                    <path d="M4 7.5L5.8 9.5L10 4.5" stroke="#16a34a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <span style={{ fontSize: "11px", color: "#475569", lineHeight: "1.45" }}>{r}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="ht-right" />
-      )}
-    </div>
-  );
-}
-
-function InfoRow({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-      <span style={{ flexShrink: 0, lineHeight: 1, color: "#64748b", marginTop: "1px" }}>{icon}</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: "10px", color: "#94a3b8", margin: "0 0 2px" }}>{label}</p>
-        {children}
-      </div>
     </div>
   );
 }

@@ -189,7 +189,24 @@ html.sb-collapsed .sb-collapse-btn { justify-content: center; }
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  background: #f1f5f9;
+  transition: background 0.15s;
 }
+.sb-icon-badge svg { color: #94a3b8; transition: color 0.15s; }
+
+/* Hover — blue */
+.sb-link:hover .sb-icon-badge,
+.sb-home-link:hover .sb-icon-badge { background: #dbeafe; }
+.sb-link:hover .sb-icon-badge svg,
+.sb-home-link:hover .sb-icon-badge svg { color: #2563eb; }
+
+/* Active — blue */
+.sb-link.sb-active .sb-icon-badge { background: #dbeafe; }
+.sb-link.sb-active .sb-icon-badge svg { color: #2563eb; }
+
+/* Home active (nền xanh đậm) — icon trắng */
+.sb-home-link.sb-active .sb-icon-badge { background: rgba(255, 255, 255, 0.2); }
+.sb-home-link.sb-active .sb-icon-badge svg { color: #fff; }
 .sb-cat-icon { width: 18px; height: 18px; object-fit: contain; border-radius: 4px; background: #fff; padding: 2px; border: 1px solid rgba(0, 0, 0, 0.06); }
 .sb-link-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sb-badge {

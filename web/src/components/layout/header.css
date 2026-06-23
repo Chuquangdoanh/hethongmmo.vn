@@ -716,6 +716,8 @@ body.menu-open .scm-wrapper { display: none !important; }
   align-items: center;
   justify-content: center;
 }
+.mnav-featured-icon svg { color: #94a3b8; transition: color 0.15s; }
+.mnav-featured-card:hover .mnav-featured-icon svg { color: #2563eb; }
 .mnav-featured-name {
   font-size: 13px;
   font-weight: 700;
@@ -754,6 +756,8 @@ body.menu-open .scm-wrapper { display: none !important; }
   justify-content: center;
   flex-shrink: 0;
 }
+.mnav-list-icon svg { color: #94a3b8; transition: color 0.15s; }
+.mnav-list-link:hover .mnav-list-icon svg { color: #2563eb; }
 .mnav-list-text { flex: 1; min-width: 0; }
 .mnav-list-name { display: block; font-size: 13.5px; font-weight: 600; color: #0f172a; }
 .mnav-list-desc { display: block; font-size: 11px; color: #94a3b8; margin-top: 1px; }
@@ -810,8 +814,17 @@ body.menu-open .scm-wrapper { display: none !important; }
 }
 .mnav-acc-item:last-child { border-bottom: none; }
 .mnav-acc-item:hover { background: #f8fafc; }
-.mnav-acc-item > span { flex: 1; }
+.mnav-acc-item > span:not(.mnav-acc-icon-badge) { flex: 1; }
 .mnav-acc-icon { flex-shrink: 0; }
+.mnav-acc-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.mnav-acc-icon-badge svg { color: #94a3b8; transition: color 0.15s; }
+.mnav-acc-item:hover .mnav-acc-icon-badge svg,
+.mnav-acc-item:active .mnav-acc-icon-badge svg { color: #2563eb; }
 .mnav-acc-chevron { color: #cbd5e1; flex-shrink: 0; }
 
 /* ── Guest actions ──────────────────────────────────────────── */
@@ -1077,12 +1090,14 @@ body.menu-open .scm-wrapper { display: none !important; }
   gap: 8px;
   padding: 13px;
   border-radius: 12px;
-  background: #fef2f2;
-  color: #dc2626;
+  background: #f8fafc;
+  color: #475569;
   font-size: 14px;
   font-weight: 600;
-  border: 1px solid #fee2e2;
+  border: 1px solid #e2e8f0;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
-.mnav-logout-btn:hover { background: #fee2e2; }
+.mnav-logout-btn svg { color: #94a3b8; transition: color 0.15s; }
+.mnav-logout-btn:hover { background: #f1f5f9; color: #0f172a; }
+.mnav-logout-btn:hover svg { color: #0f172a; }

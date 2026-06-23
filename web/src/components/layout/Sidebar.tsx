@@ -82,10 +82,10 @@ export default async function Sidebar() {
   const iconBadge = (href: string) => {
     const meta = NAV_ICONS[href];
     if (!meta) return undefined;
-    const { Icon, bg, color } = meta;
+    const { Icon } = meta;
     return (
-      <span className="sb-icon-badge" style={{ background: bg }}>
-        <Icon size={15} strokeWidth={1.75} style={{ color }} />
+      <span className="sb-icon-badge">
+        <Icon size={15} strokeWidth={1.75} />
       </span>
     );
   };
@@ -102,8 +102,8 @@ export default async function Sidebar() {
       label: "Mở Gian Hàng",
       exact: true,
       icon: isSeller
-        ? <span className="sb-icon-badge" style={{ background: "#f0fdf4" }}><Store size={15} strokeWidth={1.75} style={{ color: "#16a34a" }} /></span>
-        : <span className="sb-icon-badge" style={{ background: "#f5f3ff" }}><Rocket size={15} strokeWidth={1.75} style={{ color: "#7c3aed" }} /></span>,
+        ? <span className="sb-icon-badge"><Store size={15} strokeWidth={1.75} /></span>
+        : <span className="sb-icon-badge"><Rocket size={15} strokeWidth={1.75} /></span>,
     }] : []),
   ];
 
@@ -115,8 +115,8 @@ export default async function Sidebar() {
     groups.push({
       title: "TÀI CHÍNH",
       items: [
-        { href: "/nap-tien", label: "Ví & Nạp tiền", icon: <span className="sb-icon-badge" style={{ background: "#dbeafe" }}><Wallet size={15} strokeWidth={1.75} style={{ color: "#2563eb" }} /></span> },
-        { href: "/don-hang", label: "Đơn hàng",       icon: <span className="sb-icon-badge" style={{ background: "#fef3c7" }}><Package size={15} strokeWidth={1.75} style={{ color: "#b45309" }} /></span> },
+        { href: "/nap-tien", label: "Ví & Nạp tiền", icon: <span className="sb-icon-badge"><Wallet size={15} strokeWidth={1.75} /></span> },
+        { href: "/don-hang", label: "Đơn hàng",       icon: <span className="sb-icon-badge"><Package size={15} strokeWidth={1.75} /></span> },
       ],
     });
   }
@@ -127,19 +127,19 @@ export default async function Sidebar() {
       ...(sessionUser ? [{
         href: "/ho-tro",
         label: "Ticket hỗ trợ",
-        icon: <span className="sb-icon-badge" style={{ background: "#eff6ff" }}><TicketCheck size={15} strokeWidth={1.75} style={{ color: "#2563eb" }} /></span>,
+        icon: <span className="sb-icon-badge"><TicketCheck size={15} strokeWidth={1.75} /></span>,
         badge: openTicketCount || undefined,
       }] : []),
       ...(isSeller ? [{
         href: "/ban-hang/khieu-nai",
         label: "Khiếu nại từ khách",
-        icon: <span className="sb-icon-badge" style={{ background: "#fff7ed" }}><MessageCircleWarning size={15} strokeWidth={1.75} style={{ color: "#ea580c" }} /></span>,
+        icon: <span className="sb-icon-badge"><MessageCircleWarning size={15} strokeWidth={1.75} /></span>,
         badge: sellerOpenComplaintCount || undefined,
       }] : []),
       {
         href: TELEGRAM_COMMUNITY_URL,
         label: "Telegram cộng đồng",
-        icon: <span className="sb-icon-badge" style={{ background: "#e0f2fe" }}><Send size={15} strokeWidth={1.75} style={{ color: "#0891b2" }} /></span>,
+        icon: <span className="sb-icon-badge"><Send size={15} strokeWidth={1.75} /></span>,
         external: true,
       },
     ],
@@ -149,7 +149,7 @@ export default async function Sidebar() {
     groups.push({
       title: "CÀI ĐẶT",
       items: [
-        { href: "/thong-tin-ca-nhan", label: "Cài đặt tài khoản", icon: <span className="sb-icon-badge" style={{ background: "#f1f5f9" }}><Settings size={15} strokeWidth={1.75} style={{ color: "#475569" }} /></span> },
+        { href: "/thong-tin-ca-nhan", label: "Cài đặt tài khoản", icon: <span className="sb-icon-badge"><Settings size={15} strokeWidth={1.75} /></span> },
       ],
     });
   }

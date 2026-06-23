@@ -1,5 +1,5 @@
 import {
-  Home, Wrench, GraduationCap, Lightbulb, FolderOpen, Package, Megaphone, Globe, Info,
+  Home, GalleryVerticalEnd, GraduationCap, Lightbulb, FolderOpen, Package, Megaphone, Globe, Info,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,7 +24,7 @@ export const NAV_LINKS: NavLinkDef[] = [
 
 export const NAV_ICONS: Record<string, { Icon: LucideIcon; bg: string; color: string }> = {
   "/":               { Icon: Home,          bg: "#dbeafe", color: "#2563eb" },
-  "/dich-vu":        { Icon: Wrench,        bg: "#ede9fe", color: "#7c3aed" },
+  "/dich-vu":        { Icon: GalleryVerticalEnd, bg: "#ede9fe", color: "#7c3aed" },
   "/khoa-hoc":       { Icon: GraduationCap, bg: "#d1fae5", color: "#059669" },
   "/tut-tricks":     { Icon: Lightbulb,     bg: "#fee2e2", color: "#dc2626" },
   "/kho-tai-nguyen": { Icon: Package,        bg: "#fef3c7", color: "#d97706" },

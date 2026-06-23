@@ -51,10 +51,10 @@ export default async function SellerProfileHero({ userId, activeTab }: Props) {
   const initials = (user.fullName ?? user.email ?? "?").slice(0, 2).toUpperCase();
 
   const STATS = [
-    { Icon: TrendingUp,  label: "Doanh thu",      value: formatVnd(totalRevenue),                  color: "text-emerald-400", iconBg: "bg-emerald-500/10" },
-    { Icon: CheckCircle, label: "Đơn hoàn thành", value: revenueAgg._count.toLocaleString("vi-VN"), color: "text-teal-400",    iconBg: "bg-teal-500/10"    },
-    { Icon: Clock,       label: "Đơn chờ xử lý",  value: pendingCount.toLocaleString("vi-VN"),      color: "text-amber-300",  iconBg: "bg-amber-500/10"   },
-    { Icon: Package,     label: "Sản phẩm",        value: productCount.toLocaleString("vi-VN"),      color: "text-blue-300",   iconBg: "bg-blue-500/10"    },
+    { Icon: TrendingUp,  label: "Doanh thu",      value: formatVnd(totalRevenue),                  valueColor: "text-emerald-400", iconBg: "bg-white/8" },
+    { Icon: CheckCircle, label: "Đơn hoàn thành", value: revenueAgg._count.toLocaleString("vi-VN"), valueColor: "text-teal-400",    iconBg: "bg-white/8" },
+    { Icon: Clock,       label: "Đơn chờ xử lý",  value: pendingCount.toLocaleString("vi-VN"),      valueColor: "text-amber-300",  iconBg: "bg-white/8" },
+    { Icon: Package,     label: "Sản phẩm",        value: productCount.toLocaleString("vi-VN"),      valueColor: "text-blue-300",   iconBg: "bg-white/8" },
   ];
 
   return (
@@ -92,15 +92,15 @@ export default async function SellerProfileHero({ userId, activeTab }: Props) {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          {STATS.map(({ Icon, label, value, color, iconBg }) => (
+          {STATS.map(({ Icon, label, value, valueColor, iconBg }) => (
             <div key={label} className="rounded-xl bg-white/6 border border-white/8 px-4 py-3">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <div className={`w-5 h-5 rounded-md flex items-center justify-center ${iconBg}`}>
-                  <Icon size={11} className={color} />
+                  <Icon size={11} className="text-slate-400" />
                 </div>
                 <span className="text-[11px] text-slate-400 leading-tight">{label}</span>
               </div>
-              <p className={`text-sm font-semibold ${color}`}>{value}</p>
+              <p className={`text-sm font-semibold ${valueColor}`}>{value}</p>
             </div>
           ))}
         </div>

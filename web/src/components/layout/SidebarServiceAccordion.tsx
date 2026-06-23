@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { ChevronDown, Wrench } from "lucide-react";
+import { ChevronDown, GalleryVerticalEnd } from "lucide-react";
 import { r2Url } from "@/lib/utils/image-url";
 
 export interface SvcCategory {
@@ -33,8 +33,8 @@ export default function SidebarServiceAccordion({ categories }: { categories: Sv
         className="sb-link sb-svc-toggle"
       >
         <span className="sb-link-icon">
-          <span className="sb-icon-badge" style={{ background: "#ede9fe" }}>
-            <Wrench size={15} strokeWidth={1.75} style={{ color: "#7c3aed" }} />
+          <span className="sb-icon-badge">
+            <GalleryVerticalEnd size={15} strokeWidth={1.75} />
           </span>
         </span>
         <span className="sb-label sb-link-text">DỊCH VỤ</span>

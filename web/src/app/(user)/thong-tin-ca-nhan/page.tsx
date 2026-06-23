@@ -95,8 +95,8 @@ export default async function ThongTinCaNhanPage() {
             {/* Thông tin cá nhân (display) */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <User size={14} className="text-blue-600" />
+                <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <User size={14} className="text-gray-400" />
                 </div>
                 Thông tin cá nhân
               </h3>
@@ -155,8 +155,8 @@ export default async function ThongTinCaNhanPage() {
             {/* Đăng ký bán hàng */}
             <div id="seller-register" className="scroll-mt-24 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center">
-                  <Store size={14} className="text-violet-600" />
+                <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center">
+                  <Store size={14} className="text-gray-400" />
                 </div>
                 Đăng ký bán hàng
               </h3>

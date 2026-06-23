@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Megaphone } from "lucide-react";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -31,24 +30,20 @@ function ItemSpan({ item }: { item: DisplayItem }) {
         gap:        "8px",
         padding:    "0 60px",
         fontSize:   "13px",
-        fontWeight: 700,
+        fontWeight: 500,
         color:      "#0f172a",
-        WebkitTextStroke: "0.6px #facc15",
-        paintOrder: "stroke fill",
         lineHeight: 1,
         whiteSpace: "nowrap",
         flexShrink: 0,
       }}
     >
-      {/* Diamond separator */}
+      {/* Separator */}
       <span
         aria-hidden
         style={{
-          width: "6px", height: "6px",
-          borderRadius: "1px",
-          background: "#facc15",
-          transform:  "rotate(45deg)",
-          opacity:    0.9,
+          width: "4px", height: "4px",
+          borderRadius: "50%",
+          background: "#cbd5e1",
           flexShrink: 0,
           display:    "inline-block",
         }}
@@ -206,34 +201,12 @@ export default function Ticker() {
         width:           "100%",
         overflow:        "hidden",
         background:      "#ffffff",
-        boxShadow:       "0 2px 10px rgba(250,204,21,0.28),inset 0 -2px 0 #facc15",
+        boxShadow:       "0 1px 0 rgba(0,0,0,0.06)",
         fontFamily:      "'Inter','Segoe UI',sans-serif",
         userSelect:      "none",
         animation:       "noti-bar-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both",
       }}
     >
-      {/* ── LIVE badge ── */}
-      <div
-        style={{
-          flexShrink:    0,
-          height:        "100%",
-          display:       "flex",
-          alignItems:    "center",
-          gap:           "7px",
-          padding:       "0 16px",
-          background:    "#0066ff",
-          borderRight:   "1px solid rgba(0,0,0,0.06)",
-          color:         "#fff",
-          fontSize:      "10px",
-          fontWeight:    800,
-          letterSpacing: "2.2px",
-          textTransform: "uppercase",
-          whiteSpace:    "nowrap",
-        }}
-      >
-        <Megaphone size={14} strokeWidth={2} style={{ color: "#fff", flexShrink: 0 }} />
-      </div>
-
       {/* ── Scrolling area ── */}
       <div
         style={{

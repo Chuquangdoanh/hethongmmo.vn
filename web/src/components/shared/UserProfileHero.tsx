@@ -43,22 +43,22 @@ export default function UserProfileHero({
     {
       Icon: Wallet,       label: "Số dư hiện tại",
       value: formatVnd(balance),
-      color: "text-blue-300",    iconBg: "bg-blue-500/10",
+      valueColor: "text-blue-300",    iconBg: "bg-white/8",
     },
     {
       Icon: TrendingUp,   label: "Tổng tiền nạp",
       value: formatVnd(totalDeposited),
-      color: "text-emerald-400", iconBg: "bg-emerald-500/10",
+      valueColor: "text-emerald-400", iconBg: "bg-white/8",
     },
     {
       Icon: TrendingDown, label: "Tổng tiền sử dụng",
       value: formatVnd(totalSpent),
-      color: "text-rose-400",    iconBg: "bg-rose-500/10",
+      valueColor: "text-rose-400",    iconBg: "bg-white/8",
     },
     {
       Icon: Calendar,     label: "Ngày nạp gần nhất",
       value: lastDepositAt ? formatDate(lastDepositAt) : "Chưa có",
-      color: "text-amber-300",   iconBg: "bg-amber-500/10",
+      valueColor: "text-amber-300",   iconBg: "bg-white/8",
     },
   ];
 
@@ -91,15 +91,15 @@ export default function UserProfileHero({
 
         {/* Stats row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          {STATS.map(({ Icon, label, value, color, iconBg }) => (
+          {STATS.map(({ Icon, label, value, valueColor, iconBg }) => (
             <div key={label} className="rounded-xl bg-white/6 border border-white/8 px-4 py-3">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <div className={`w-5 h-5 rounded-md flex items-center justify-center ${iconBg}`}>
-                  <Icon size={11} className={color} />
+                  <Icon size={11} className="text-slate-400" />
                 </div>
                 <span className="text-[11px] text-slate-400 leading-tight">{label}</span>
               </div>
-              <p className={`text-sm font-semibold ${color}`}>{value}</p>
+              <p className={`text-sm font-semibold ${valueColor}`}>{value}</p>
             </div>
           ))}
         </div>

@@ -59,52 +59,52 @@ const TOAST_META: Record<BadgeKey, { label: string; Icon: LucideIcon; color: str
 
 const SECTIONS: NavSection[] = [
   {
-    key: "products", label: "Sản phẩm", Icon: Package, color: "#7c3aed", bg: "#ede9fe",
+    key: "products", label: "Sản phẩm", Icon: Package, color: "#94a3b8", bg: "#f1f5f9",
     links: [
-      { href: "/admin/services",     label: "Dịch vụ",      Icon: Zap,      color: "#7c3aed", permission: "services:read"   },
-      { href: "/admin/courses",      label: "Khóa học",     Icon: BookOpen, color: "#0066ff", permission: "courses:read"    },
-      { href: "/admin/tut-tricks",   label: "Tut / Tricks", Icon: FileText, color: "#475569", permission: "tut_tricks:read" },
-      { href: "/admin/mmo-products", label: "Tài nguyên",   Icon: Gamepad2, color: "#6366f1", permission: "resources:read"  },
+      { href: "/admin/services",     label: "Dịch vụ",      Icon: Zap,      color: "#94a3b8", permission: "services:read"   },
+      { href: "/admin/courses",      label: "Khóa học",     Icon: BookOpen, color: "#94a3b8", permission: "courses:read"    },
+      { href: "/admin/tut-tricks",   label: "Tut / Tricks", Icon: FileText, color: "#94a3b8", permission: "tut_tricks:read" },
+      { href: "/admin/mmo-products", label: "Tài nguyên",   Icon: Gamepad2, color: "#94a3b8", permission: "resources:read"  },
     ],
   },
   {
-    key: "categories", label: "Danh mục", Icon: Tags, color: "#0d9488", bg: "#ccfbf1",
+    key: "categories", label: "Danh mục", Icon: Tags, color: "#94a3b8", bg: "#f1f5f9",
     links: [
-      { href: "/admin/course-categories",    label: "DM Khóa học",     Icon: BookMarked, color: "#0d9488", permission: "categories:read" },
-      { href: "/admin/service-categories",   label: "DM Dịch vụ",      Icon: Tag,        color: "#0d9488", permission: "categories:read" },
-      { href: "/admin/resource-categories",  label: "DM Tài nguyên",   Icon: FolderOpen, color: "#0d9488", permission: "categories:read" },
-      { href: "/admin/tut-trick-categories", label: "DM Tut & Tricks", Icon: FileText,   color: "#0d9488", permission: "categories:read" },
+      { href: "/admin/course-categories",    label: "DM Khóa học",     Icon: BookMarked, color: "#94a3b8", permission: "categories:read" },
+      { href: "/admin/service-categories",   label: "DM Dịch vụ",      Icon: Tag,        color: "#94a3b8", permission: "categories:read" },
+      { href: "/admin/resource-categories",  label: "DM Tài nguyên",   Icon: FolderOpen, color: "#94a3b8", permission: "categories:read" },
+      { href: "/admin/tut-trick-categories", label: "DM Tut & Tricks", Icon: FileText,   color: "#94a3b8", permission: "categories:read" },
     ],
   },
   {
-    key: "quality", label: "Chất lượng", Icon: ShieldCheck, color: "#f59e0b", bg: "#fef3c7",
+    key: "quality", label: "Chất lượng", Icon: ShieldCheck, color: "#94a3b8", bg: "#f1f5f9",
     links: [
-      { href: "/admin/complaints", label: "Khiếu nại", Icon: AlertTriangle, color: "#ef4444", badge: "complaints", permission: "complaints:read" },
-      { href: "/admin/danh-gia",   label: "Đánh giá",  Icon: Star,          color: "#f59e0b",                      permission: "products:read"    },
-      { href: "/admin/tickers",    label: "Ticker",    Icon: Radio,         color: "#0066ff",                      permission: "content:read"     },
+      { href: "/admin/complaints", label: "Khiếu nại", Icon: AlertTriangle, color: "#94a3b8", badge: "complaints", permission: "complaints:read" },
+      { href: "/admin/danh-gia",   label: "Đánh giá",  Icon: Star,          color: "#94a3b8",                      permission: "products:read"    },
+      { href: "/admin/tickers",    label: "Ticker",    Icon: Radio,         color: "#94a3b8",                      permission: "content:read"     },
     ],
   },
   {
-    key: "finance", label: "Tài chính", Icon: Wallet, color: "#10b981", bg: "#d1fae5",
+    key: "finance", label: "Tài chính", Icon: Wallet, color: "#94a3b8", bg: "#f1f5f9",
     links: [
-      { href: "/admin/deposits",    label: "Nạp tiền", Icon: ArrowDownCircle, color: "#10b981", badge: "deposits",    permission: "finance:read" },
-      { href: "/admin/withdrawals", label: "Rút tiền", Icon: ArrowUpCircle,   color: "#ef4444", badge: "withdrawals", permission: "finance:read" },
+      { href: "/admin/deposits",    label: "Nạp tiền", Icon: ArrowDownCircle, color: "#94a3b8", badge: "deposits",    permission: "finance:read" },
+      { href: "/admin/withdrawals", label: "Rút tiền", Icon: ArrowUpCircle,   color: "#94a3b8", badge: "withdrawals", permission: "finance:read" },
     ],
   },
   {
-    key: "selling", label: "Bán hàng", Icon: Store, color: "#ec4899", bg: "#fce7f3",
+    key: "selling", label: "Bán hàng", Icon: Store, color: "#94a3b8", bg: "#f1f5f9",
     links: [
-      { href: "/admin/sellers",          label: "Sellers",           Icon: Store,       color: "#ec4899", permission: "sellers:read"          },
-      { href: "/admin/san-pham-ban",     label: "SP Nhà bán hàng",  Icon: ShoppingBag, color: "#f97316", permission: "seller_products:read"  },
-      { href: "/admin/cai-dat-ban-hang", label: "Cài đặt bán hàng", Icon: Settings,    color: "#64748b", adminOnly: true                     },
+      { href: "/admin/sellers",          label: "Sellers",           Icon: Store,       color: "#94a3b8", permission: "sellers:read"          },
+      { href: "/admin/san-pham-ban",     label: "SP Nhà bán hàng",  Icon: ShoppingBag, color: "#94a3b8", permission: "seller_products:read"  },
+      { href: "/admin/cai-dat-ban-hang", label: "Cài đặt bán hàng", Icon: Settings,    color: "#94a3b8", adminOnly: true                     },
     ],
   },
   {
-    key: "system", label: "Hệ thống", Icon: Users, color: "#64748b", bg: "#f1f5f9",
+    key: "system", label: "Hệ thống", Icon: Users, color: "#94a3b8", bg: "#f1f5f9",
     links: [
-      { href: "/admin/users",      label: "Người dùng", Icon: Users,  color: "#0066ff", permission: "users:read"      },
-      { href: "/admin/audit-log",  label: "Audit Log",  Icon: Search, color: "#64748b", permission: "audit_logs:read" },
-      { href: "/admin/phan-quyen", label: "Phân quyền", Icon: Lock,   color: "#64748b", adminOnly: true               },
+      { href: "/admin/users",      label: "Người dùng", Icon: Users,  color: "#94a3b8", permission: "users:read"      },
+      { href: "/admin/audit-log",  label: "Audit Log",  Icon: Search, color: "#94a3b8", permission: "audit_logs:read" },
+      { href: "/admin/phan-quyen", label: "Phân quyền", Icon: Lock,   color: "#94a3b8", adminOnly: true               },
     ],
   },
 ];
@@ -323,9 +323,9 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
               >
                 <div
                   className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-                  style={{ background: active ? "#fef08a" : "#f1f5f9" }}
+                  style={{ background: active ? "#dbeafe" : "#f1f5f9" }}
                 >
-                  <LayoutDashboard size={13} strokeWidth={1.75} style={{ color: active ? "#92400e" : "#94a3b8" }} />
+                  <LayoutDashboard size={13} strokeWidth={1.75} style={{ color: active ? "#2563eb" : "#94a3b8" }} />
                 </div>
                 <span className="flex-1">Dashboard</span>
                 {totalUnread > 0 && <BadgeCount count={totalUnread} />}
@@ -340,7 +340,7 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
               onClick={() => dismiss("orders")}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 orderActive
-                  ? "bg-[#fef9c3] text-[#78350f]"
+                  ? "bg-[#eff6ff] text-[#1d4ed8]"
                   : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               }`}
             >
@@ -429,7 +429,7 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
                           onClick={() => link.badge && dismiss(link.badge)}
                           className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[13px] transition-colors ${
                             active
-                              ? "bg-[#fef9c3] text-[#78350f] font-semibold"
+                              ? "bg-[#eff6ff] text-[#1d4ed8] font-semibold"
                               : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                           }`}
                         >
@@ -437,7 +437,7 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
                             size={13}
                             strokeWidth={active ? 2 : 1.75}
                             className="shrink-0"
-                            style={{ color: active ? "#92400e" : "#94a3b8" }}
+                            style={{ color: active ? "#2563eb" : "#94a3b8" }}
                           />
                           <span className="flex-1">{link.label}</span>
                           {linkBadge && link.badge && <BadgeCount count={badges[link.badge]} />}
@@ -464,15 +464,15 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
                     href="/admin/cai-dat-giao-dien"
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       cmsActive
-                        ? "bg-[#fef9c3] text-[#78350f]"
+                        ? "bg-[#eff6ff] text-[#1d4ed8]"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     }`}
                   >
                     <div
                       className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-                      style={{ background: cmsActive ? "#fef08a" : "#f5f3ff" }}
+                      style={{ background: cmsActive ? "#dbeafe" : "#f1f5f9" }}
                     >
-                      <Monitor size={13} strokeWidth={1.75} style={{ color: cmsActive ? "#92400e" : "#8b5cf6" }} />
+                      <Monitor size={13} strokeWidth={1.75} style={{ color: cmsActive ? "#2563eb" : "#94a3b8" }} />
                     </div>
                     <span className="flex-1">Cài đặt giao diện</span>
                   </Link>
@@ -485,17 +485,17 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
                     href="/admin/cai-dat-he-thong"
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       sysActive
-                        ? "bg-[#fef9c3] text-[#78350f]"
+                        ? "bg-[#eff6ff] text-[#1d4ed8]"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     }`}
                   >
                     <div
                       className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-                      style={{ background: sysActive ? "#fef08a" : "#f0fdf4" }}
+                      style={{ background: sysActive ? "#dbeafe" : "#f1f5f9" }}
                     >
-                      <Settings size={13} strokeWidth={1.75} style={{ color: sysActive ? "#92400e" : "#10b981" }} />
+                      <Settings size={13} strokeWidth={1.75} style={{ color: sysActive ? "#2563eb" : "#94a3b8" }} />
                     </div>
-                    <span className="flex-1">Cài đặt hệ thống</span>
+                    <span className="flex-1">Cài đặt ngân hàng</span>
                   </Link>
                 );
               })()}
