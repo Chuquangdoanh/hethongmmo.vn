@@ -431,7 +431,6 @@ export default async function KhoTaiNguyenPage({
           <div className="flex-1 min-w-0">
 
           {/* Sản phẩm */}
-          <div className="bg-white rounded-2xl border border-border p-4 shadow-sm">
             {/* Header row */}
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <div className="flex items-center gap-2">
@@ -575,7 +574,6 @@ export default async function KhoTaiNguyenPage({
                 />
               </div>
             )}
-          </div>
           </div>
         </div>
 
