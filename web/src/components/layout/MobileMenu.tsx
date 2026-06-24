@@ -10,7 +10,7 @@ import {
   Banknote, Home, GalleryVerticalEnd, GraduationCap, Lightbulb, FolderOpen,
   Package, ShoppingBag, User, Settings, LogOut, Bell,
   Heart, Store, ChevronRight, ChevronDown, ArrowLeft, AlertCircle,
-  Grid3x3, LayoutDashboard, TicketCheck, BookOpen,
+  Grid3x3, LayoutDashboard, TicketCheck, BookOpen, RotateCcw, Headphones, Award,
 } from "lucide-react";
 import MobileSupportPanel from "./MobileSupportPanel";
 import { r2Url } from "@/lib/utils/image-url";
@@ -216,11 +216,39 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           <button className="mnav-panel-close" onClick={closePanel} aria-label="Đóng menu">✕</button>
         </div>
         <div className="mnav-panel-body">
-          {/* Xem tất cả */}
-          <Link href="/dich-vu" prefetch={false} className="mnav-svc-viewall" onClick={closeWithNav}>
-            <ShoppingBag size={16} />
-            Xem tất cả dịch vụ
-            <ChevronRight size={14} style={{ marginLeft: "auto" }} />
+          {/* Banner dịch vụ */}
+          <Link href="/dich-vu" prefetch={false} className="mnav-svc-banner" onClick={closeWithNav}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/pagecm.jpg" alt="" className="mnav-res-banner-bg" aria-hidden="true" />
+            <div className="mnav-svc-banner-text">
+              <p className="mnav-svc-banner-title">
+                Dịch vụ <ChevronRight size={13} className="mnav-res-banner-arrow" />
+              </p>
+              <p className="mnav-svc-banner-desc">Xem tất cả dịch vụ MMO</p>
+            </div>
+            <div className="mnav-banner-trust">
+              <div className="mnav-banner-trust-item">
+                <RotateCcw size={15} className="mnav-banner-trust-icon--green" />
+                <div>
+                  <p className="mnav-banner-trust-name">Hoàn tiền 100%</p>
+                  <p className="mnav-banner-trust-sub">Nếu không hài lòng</p>
+                </div>
+              </div>
+              <div className="mnav-banner-trust-item">
+                <Headphones size={15} className="mnav-banner-trust-icon--blue" />
+                <div>
+                  <p className="mnav-banner-trust-name">Hỗ trợ 24/7</p>
+                  <p className="mnav-banner-trust-sub">Đội ngũ luôn sẵn sàng</p>
+                </div>
+              </div>
+              <div className="mnav-banner-trust-item">
+                <Award size={15} className="mnav-banner-trust-icon--orange" />
+                <div>
+                  <p className="mnav-banner-trust-name">Uy tín hàng đầu</p>
+                  <p className="mnav-banner-trust-sub">Cộng đồng MMO lớn mạnh</p>
+                </div>
+              </div>
+            </div>
           </Link>
 
           {/* Danh sách danh mục từ CMS */}
@@ -265,7 +293,40 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           <button className="mnav-panel-close" onClick={closePanel} aria-label="Đóng menu">✕</button>
         </div>
         <div className="mnav-panel-body">
-          {userCard}
+          {/* Banner hero card */}
+          <div className="mnav-res-banner">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/Tuttrick.jpg" alt="" className="mnav-res-banner-bg" aria-hidden="true" />
+            <div className="mnav-res-banner-text">
+              <p className="mnav-res-banner-title">
+                Tài nguyên <ChevronRight size={14} className="mnav-res-banner-arrow" />
+              </p>
+              <p className="mnav-res-banner-desc">Khám phá, học hỏi và phát triển kỹ năng MMO mỗi ngày.</p>
+            </div>
+            <div className="mnav-banner-trust">
+              <div className="mnav-banner-trust-item">
+                <RotateCcw size={15} className="mnav-banner-trust-icon--green" />
+                <div>
+                  <p className="mnav-banner-trust-name">Hoàn tiền 100%</p>
+                  <p className="mnav-banner-trust-sub">Nếu không hài lòng</p>
+                </div>
+              </div>
+              <div className="mnav-banner-trust-item">
+                <Headphones size={15} className="mnav-banner-trust-icon--blue" />
+                <div>
+                  <p className="mnav-banner-trust-name">Hỗ trợ 24/7</p>
+                  <p className="mnav-banner-trust-sub">Đội ngũ luôn sẵn sàng</p>
+                </div>
+              </div>
+              <div className="mnav-banner-trust-item">
+                <Award size={15} className="mnav-banner-trust-icon--orange" />
+                <div>
+                  <p className="mnav-banner-trust-name">Uy tín hàng đầu</p>
+                  <p className="mnav-banner-trust-sub">Cộng đồng MMO lớn mạnh</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* NỔI BẬT */}
           <div className="mnav-section">
@@ -445,13 +506,18 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
         </div>
         <div className="mnav-panel-body">
           {isLoggedIn && user ? userCard : (
-            <div className="mnav-guest-actions">
-              <Link href="/dang-nhap" prefetch={false} className="mnav-guest-btn mnav-guest-btn--login" onClick={closeWithNav}>
-                Đăng nhập
-              </Link>
-              <Link href="/dang-ky" prefetch={false} className="mnav-guest-btn mnav-guest-btn--register" onClick={closeWithNav}>
-                Đăng ký miễn phí
-              </Link>
+            <div className="mnav-guest-branding">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/djmedia-logo.gif" alt="hethongmmo.vn" className="mnav-guest-logo" />
+              <p className="mnav-guest-headline cqd-hud-frame">HỆ THỐNG MMO</p>
+              <div className="mnav-guest-actions">
+                <Link href="/dang-nhap" prefetch={false} className="mnav-guest-btn mnav-guest-btn--login" onClick={closeWithNav}>
+                  Đăng nhập
+                </Link>
+                <Link href="/dang-ky" prefetch={false} className="mnav-guest-btn mnav-guest-btn--register" onClick={closeWithNav}>
+                  Đăng ký miễn phí
+                </Link>
+              </div>
             </div>
           )}
 
@@ -617,14 +683,26 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           <FolderOpen size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Tài nguyên</span>
         </button>
-        <button
-          className={`mnav-tab${activePanel === "account" ? " mnav-tab--active" : ""}`}
-          onClick={() => openPanel("account")}
-          aria-expanded={activePanel === "account"}
-        >
-          <User size={22} className="mnav-tab-icon" />
-          <span className="mnav-tab-label">Tài khoản</span>
-        </button>
+        {isLoggedIn ? (
+          <button
+            className={`mnav-tab${activePanel === "account" ? " mnav-tab--active" : ""}`}
+            onClick={() => openPanel("account")}
+            aria-expanded={activePanel === "account"}
+          >
+            <User size={22} className="mnav-tab-icon" />
+            <span className="mnav-tab-label">Tài khoản</span>
+          </button>
+        ) : (
+          <Link
+            href="/dang-nhap"
+            prefetch={false}
+            className={`mnav-tab${!isOpen && (pathname === "/dang-nhap" || pathname === "/dang-ky") ? " mnav-tab--active" : ""}`}
+            onClick={closeWithNav}
+          >
+            <User size={22} className="mnav-tab-icon" />
+            <span className="mnav-tab-label">Tài khoản</span>
+          </Link>
+        )}
       </nav>
     </>
   );
