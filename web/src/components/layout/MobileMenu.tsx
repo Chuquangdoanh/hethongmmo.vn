@@ -54,8 +54,8 @@ const STATIC_RESOURCE_ITEMS: Omit<ResourceItem, "children">[] = [
     icon: Package,
     iconBg: "#fef3c7",
     iconColor: "#d97706",
-    label: "Kho tài nguyên",
-    desc: "Tài liệu, tool, ebook,...",
+    label: "KHO TÀI NGUYÊN",
+    desc: "Hệ Thống Bán Kho Facebook | Fanpage | Kênh Tik Tok...",
   },
   {
     id: "nguyen-lieu",
@@ -63,8 +63,8 @@ const STATIC_RESOURCE_ITEMS: Omit<ResourceItem, "children">[] = [
     icon: FolderOpen,
     iconBg: "#fef3c7",
     iconColor: "#d97706",
-    label: "Nguyên liệu",
-    desc: "Tài nguyên làm MMO",
+    label: "NGUYÊN LIỆU",
+    desc: "VIA | Fanpage | BM | Tài Khoản Pro | Fake IP....",
   },
 ];
 
@@ -159,8 +159,8 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
       icon: Lightbulb,
       iconBg: "#fee2e2",
       iconColor: "#dc2626",
-      label: "Tut MMO",
-      desc: "Hướng dẫn kiếm tiền online",
+      label: "TUT MMO",
+      desc: "Cung Cấp TUT + Thủ Thuật Các Nền Tảng Facebook + Tik Tok...",
       children: tutCategories.map((c) => ({
         label: c.name,
         href: `/tut-tricks?category=${encodeURIComponent(c.name)}`,
