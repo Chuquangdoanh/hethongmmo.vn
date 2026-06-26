@@ -11,6 +11,7 @@
 
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
+import sharp from "sharp";
 
 // ---------------------------------------------------------------------------
 // MIME whitelist
@@ -199,8 +200,19 @@ export async function uploadToR2(params: {
     throw new Error("Invalid userId format");
   }
 
+  // Convert raster images to WebP (SVG and GIF are excluded)
+  let finalBuffer = buffer;
+  let finalMime   = mimeType as AllowedMimeType;
+  if (mimeType !== "image/svg+xml" && mimeType !== "image/gif") {
+    finalBuffer = await sharp(buffer)
+      .resize({ width: 1600, withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer();
+    finalMime = "image/webp";
+  }
+
   const bucket = getR2Bucket();
-  const ext    = MIME_TO_EXT[mimeType];
+  const ext    = MIME_TO_EXT[finalMime];
   const key    = `${purpose}/${userId}/${randomUUID()}.${ext}`;
   const client = createR2Client();
 
@@ -209,8 +221,8 @@ export async function uploadToR2(params: {
       new PutObjectCommand({
         Bucket:      bucket,
         Key:         key,
-        Body:        buffer,
-        ContentType: mimeType,
+        Body:        finalBuffer,
+        ContentType: finalMime,
       }),
     );
   } catch (err) {
@@ -223,7 +235,7 @@ export async function uploadToR2(params: {
   return {
     key,
     url:      buildCdnUrl(key),
-    mimeType: mimeType as AllowedMimeType,
-    size:     buffer.byteLength,
+    mimeType: finalMime,
+    size:     finalBuffer.byteLength,
   };
 }
