@@ -656,7 +656,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           onClick={closeWithNav}
         >
           <Home size={22} className="mnav-tab-icon" />
-          <span className="mnav-tab-label">Trang chủ</span>
+          <span className="mnav-tab-label">Trang Chủ</span>
         </Link>
         <button
           className={`mnav-tab${activePanel === "services" || (!isOpen && pathname.startsWith("/dich-vu")) ? " mnav-tab--active" : ""}`}
@@ -664,7 +664,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           aria-expanded={activePanel === "services"}
         >
           <GalleryVerticalEnd size={22} className="mnav-tab-icon" />
-          <span className="mnav-tab-label">Dịch vụ</span>
+          <span className="mnav-tab-label">Dịch Vụ</span>
         </button>
         <Link
           href="/khoa-hoc"
@@ -673,7 +673,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           onClick={closeWithNav}
         >
           <GraduationCap size={22} className="mnav-tab-icon" />
-          <span className="mnav-tab-label">Khóa học</span>
+          <span className="mnav-tab-label">Khóa Học</span>
         </Link>
         <button
           className={`mnav-tab${activePanel === "resources" ? " mnav-tab--active" : ""}`}
@@ -681,7 +681,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           aria-expanded={activePanel === "resources"}
         >
           <FolderOpen size={22} className="mnav-tab-icon" />
-          <span className="mnav-tab-label">Tài nguyên</span>
+          <span className="mnav-tab-label">Tài Nguyên</span>
         </button>
         {isLoggedIn ? (
           <button
@@ -690,7 +690,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
             aria-expanded={activePanel === "account"}
           >
             <User size={22} className="mnav-tab-icon" />
-            <span className="mnav-tab-label">Tài khoản</span>
+            <span className="mnav-tab-label">Tài Khoản</span>
           </button>
         ) : (
           <Link
@@ -700,7 +700,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
             onClick={closeWithNav}
           >
             <User size={22} className="mnav-tab-icon" />
-            <span className="mnav-tab-label">Tài khoản</span>
+            <span className="mnav-tab-label">Tài Khoản</span>
           </Link>
         )}
       </nav>
