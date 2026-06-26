@@ -1,6 +1,10 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
@@ -30,6 +34,10 @@ export default async function AdminComplaintsPage({
 }: {
   searchParams: Promise<{ page?: string; status?: string; q?: string }>;
 }) {
+  const session = await auth();
+  try { requireStaff(session); } catch { redirect("/"); }
+  try { await requirePermission(session, "complaints:read"); } catch { redirect("/admin"); }
+
   const { page, status, q } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
   const search = q?.trim() || undefined;

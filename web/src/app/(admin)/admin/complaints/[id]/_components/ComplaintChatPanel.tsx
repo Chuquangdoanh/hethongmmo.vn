@@ -229,7 +229,7 @@ export default function ComplaintChatPanel({
 
   // — Room exists —
   return (
-    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col" style={{ height: "560px" }}>
+    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col" style={{ height: "clamp(560px, calc(100vh - 280px), 900px)" }}>
       {/* Header */}
       <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 shrink-0">
         <div className="flex items-center justify-between gap-3">

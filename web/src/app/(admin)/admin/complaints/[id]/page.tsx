@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireStaff, type AuthenticatedUser } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import { decrypt } from "@/lib/security/encryption";
@@ -26,11 +27,16 @@ export default async function AdminComplaintDetailPage({
   const { id } = await params;
 
   const session = await auth();
-  let me;
+  let me: AuthenticatedUser;
   try {
-    me = requireAdmin(session);
+    me = requireStaff(session);
   } catch {
     redirect("/");
+  }
+  try {
+    await requirePermission(session, "complaints:read");
+  } catch {
+    redirect("/admin/complaints");
   }
 
   const complaint = await prisma.complaint.findUnique({
@@ -142,7 +148,7 @@ export default async function AdminComplaintDetailPage({
   const badge = STATUS_BADGES[complaint.status] ?? STATUS_BADGES["OPEN"]!;
 
   return (
-    <div className="max-w-6xl space-y-5">
+    <div className="w-full space-y-5">
       {/* Breadcrumb + title */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
