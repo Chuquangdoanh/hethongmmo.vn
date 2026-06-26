@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
-import { requirePermission } from "@/lib/auth/permission-guard";
+import { requireStaff } from "@/lib/auth/rbac";
+import { requireAnyPermission } from "@/lib/auth/permission-guard";
 import { uploadToR2, isAllowedMimeType } from "@/lib/storage/r2-upload";
 import { apiOk, apiError, apiCatch } from "@/lib/api-response";
 
@@ -13,7 +13,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
     const actor = requireStaff(session);
- await requirePermission(session, "content:create");
+    await requireAnyPermission(session, [
+      "content:create", "content:update",
+      "services:create", "services:update",
+      "courses:create", "courses:update",
+      "tut_tricks:create", "tut_tricks:update",
+      "resources:create", "resources:update",
+    ]);
 
     const formData = await req.formData();
     const file = formData.get("file");

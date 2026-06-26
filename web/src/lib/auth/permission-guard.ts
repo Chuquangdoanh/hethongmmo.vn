@@ -34,6 +34,33 @@ export async function requirePermission(
 }
 
 /**
+ * Kiểm tra session có ít nhất 1 trong danh sách permissions — dùng cho endpoints
+ * dùng chung bởi nhiều nhóm quyền (ví dụ: upload thumbnail cho cả services lẫn content).
+ */
+export async function requireAnyPermission(
+  session: Session | null,
+  codes: PermissionCode[],
+): Promise<void> {
+  if (!session?.user?.id) {
+    throw new AppAuthError("Bạn chưa đăng nhập", "UNAUTHORIZED", 401);
+  }
+
+  const user = session.user as { id: string; role?: string };
+  if (user.role === "ADMIN") return;
+
+  for (const code of codes) {
+    const allowed = await hasPermission(user.id, code);
+    if (allowed) return;
+  }
+
+  throw new AppAuthError(
+    `Bạn không có quyền thực hiện hành động này (cần một trong: ${codes.join(", ")})`,
+    "PERMISSION_DENIED",
+    403,
+  );
+}
+
+/**
  * Kiểm tra user có ít nhất 1 quyền trong module — dùng để guard route-level access.
  * Ví dụ: /admin/products cần canAccessModule("products").
  */

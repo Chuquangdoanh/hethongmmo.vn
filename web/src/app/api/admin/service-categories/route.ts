@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
-import { requirePermission } from "@/lib/auth/permission-guard";
+import { requireStaff } from "@/lib/auth/rbac";
+import { requirePermission, requireAnyPermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { createServiceCategorySchema } from "@/lib/validation/service-category.schema";
 import { apiOk, apiError, apiCatch, apiValidationError } from "@/lib/api-response";
@@ -14,7 +14,10 @@ export async function GET(): Promise<NextResponse> {
     const session = await auth();
     requireStaff(session);
 
-    await requirePermission(session, "categories:read");
+    await requireAnyPermission(session, [
+      "categories:read",
+      "services:read", "services:create", "services:update",
+    ]);
     const categories = await prisma.serviceCategory.findMany({
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       select: { id: true, name: true, iconUrl: true, displayOrder: true },
