@@ -8,6 +8,7 @@ import {
   getSiteContent,
   getAllSiteContent,
   upsertSiteContent,
+  invalidateSiteContentCache,
   SITE_CONTENT_KEYS,
   type SiteContentKey,
 } from "@/lib/services/site-content.service";
@@ -58,6 +59,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     if (!parsed.success) return apiValidationError(parsed.error.issues);
 
     await upsertSiteContent(parsed.data.key as SiteContentKey, parsed.data.content, me.id);
+    invalidateSiteContentCache();
 
     return apiOk({ key: parsed.data.key, saved: true });
   } catch (err) {

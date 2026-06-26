@@ -1,5 +1,5 @@
-// ISR: homepage không có auth() → cache 60s, rebuild khi có traffic sau khi stale
-export const revalidate = 60;
+// ISR: homepage không có auth() → cache 5 phút, rebuild khi có traffic sau khi stale
+export const revalidate = 300;
 
 import type { Metadata } from "next";
 import Link from "next/link";

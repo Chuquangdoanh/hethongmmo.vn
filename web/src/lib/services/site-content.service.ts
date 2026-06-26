@@ -306,13 +306,24 @@ export async function getSiteContent<T = unknown>(key: SiteContentKey): Promise<
   return row.content as T;
 }
 
+// Cache 5 phút — CMS data hiếm khi đổi, tránh DB query mỗi ISR render
+let _siteContentCache: { data: Record<string, unknown>; exp: number } | null = null;
+
 export async function getAllSiteContent(): Promise<Record<string, unknown>> {
+  const now = Date.now();
+  if (_siteContentCache && _siteContentCache.exp > now) return _siteContentCache.data;
+
   const rows = await prisma.siteContent.findMany();
   const result: Record<string, unknown> = { ...DEFAULTS };
   for (const row of rows) {
     result[row.key] = row.content;
   }
+  _siteContentCache = { data: result, exp: now + 5 * 60_000 };
   return result;
+}
+
+export function invalidateSiteContentCache(): void {
+  _siteContentCache = null;
 }
 
 export async function upsertSiteContent(
