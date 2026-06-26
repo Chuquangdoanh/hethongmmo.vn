@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
-import type { AuthenticatedUser } from "@/lib/auth/rbac";
+import { requireUser } from "@/lib/auth/rbac";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import {
   CheckCircle, Clock, XCircle, Store, Package, ChevronRight,
@@ -34,7 +34,7 @@ const STATUS_CONFIG: Record<string, {
 
 export default async function DangKyBanHangPage() {
   const session = await auth();
-  const me = session!.user as AuthenticatedUser;
+  const me = requireUser(session);
 
   const [user, request, subCategoryRows] = await Promise.all([
     prisma.user.findUnique({

@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { FolderOpen, Package } from "lucide-react";
 import { formatVnd } from "@/lib/utils/format";
 
-const REGISTRATION_FEE = 50_000;
-
 const BANKS = [
   "Vietcombank",
   "MBBank",
@@ -85,8 +83,10 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Fee fetched from system_config via API — fallback 50,000đ khi đang tải
+  const [registrationFee, setRegistrationFee] = useState<number>(50_000);
 
-  const canAfford = balance >= REGISTRATION_FEE;
+  const canAfford = balance >= registrationFee;
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -98,8 +98,21 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
     }
   }, []);
 
+  const fetchFee = useCallback(async () => {
+    try {
+      const res = await fetch("/api/seller/register", { credentials: "include" });
+      const json = await res.json() as { data?: { registrationFee?: number } };
+      if (typeof json.data?.registrationFee === "number") {
+        setRegistrationFee(json.data.registrationFee);
+      }
+    } catch {
+      // keep default 50,000đ
+    }
+  }, []);
+
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void fetchCategories(); }, [fetchCategories]);
+  useEffect(() => { void fetchFee(); }, [fetchFee]);
 
   function handleOpen() {
     setStep(1);
@@ -115,6 +128,7 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
     setPortraitFile(null);
     setError("");
     void fetchCategories();
+    void fetchFee();
     setOpen(true);
   }
 
@@ -129,7 +143,7 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
       setError("Vui lòng nhập chi tiết sản phẩm muốn đăng ký");
       return;
     }
-    if (!canAfford) { setError(`Số dư không đủ. Cần tối thiểu ${formatVnd(REGISTRATION_FEE)}`); return; }
+    if (!canAfford) { setError(`Số dư không đủ. Cần tối thiểu ${formatVnd(registrationFee)}`); return; }
     setError("");
     setStep(2);
   }
@@ -408,7 +422,7 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
                       <div>
                         <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Phí đăng ký</p>
                         <p className={`text-2xl font-bold ${canAfford ? "text-amber-600" : "text-red-600"}`}>
-                          {formatVnd(REGISTRATION_FEE)}
+                          {formatVnd(registrationFee)}
                         </p>
                         <p className={`text-xs mt-0.5 ${canAfford ? "text-amber-700" : "text-red-600 font-medium"}`}>
                           {canAfford

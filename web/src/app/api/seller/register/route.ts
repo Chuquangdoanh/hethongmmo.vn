@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { requireUser } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
-import { registerSeller } from "@/lib/services/seller.service";
+import { registerSeller, getRegistrationFee } from "@/lib/services/seller.service";
 import { sellerRegisterRatelimit, checkRateLimit } from "@/lib/security/rate-limit";
 import { apiOk, apiSuccess, apiCatch, apiValidationError, apiError } from "@/lib/api-response";
 
@@ -14,21 +14,24 @@ export async function GET(_req: NextRequest): Promise<NextResponse> {
     const session = await auth();
     const me = requireUser(session);
 
-    const user = await prisma.user.findUnique({
-      where: { id: me.id },
-      select: {
-        sellerStatus: true,
-        sellerCategory: true,
-        sellerRequest: {
-          select: {
-            id: true, category: true, status: true,
-            rejectReason: true, createdAt: true, approvedAt: true, rejectedAt: true,
+    const [user, registrationFee] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: me.id },
+        select: {
+          sellerStatus: true,
+          sellerCategory: true,
+          sellerRequest: {
+            select: {
+              id: true, category: true, storeType: true, status: true,
+              rejectReason: true, createdAt: true, approvedAt: true, rejectedAt: true,
+            },
           },
         },
-      },
-    });
+      }),
+      getRegistrationFee(),
+    ]);
 
-    return apiOk(user);
+    return apiOk({ ...user, registrationFee });
   } catch (err) {
     return apiCatch(err);
   }

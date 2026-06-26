@@ -1,9 +1,5 @@
 import { z } from "zod";
 
-export const sellerRegisterSchema = z.object({
-  category: z.enum(["Facebook", "TikTok", "YouTube", "Instagram", "Telegram", "Zalo"]),
-});
-
 export const sellerProductSchema = z.object({
   name: z.string().min(3).max(500).trim(),
   price: z.number().positive().max(100_000_000),

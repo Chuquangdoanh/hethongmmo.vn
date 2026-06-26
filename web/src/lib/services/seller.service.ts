@@ -56,7 +56,11 @@ export async function registerSeller(params: RegisterSellerParams): Promise<void
     await tx.sellerRequest.upsert({
       where: { userId },
       create: { userId, category, storeType, fee: fee.toFixed(2) },
-      update: { category, storeType, fee: fee.toFixed(2), status: "PENDING", rejectReason: null },
+      update: {
+        category, storeType, fee: fee.toFixed(2), status: "PENDING",
+        rejectReason: null, approvedCategory: null,
+        approvedAt: null, rejectedAt: null, reviewedByUserId: null,
+      },
     });
 
     await tx.transaction.create({
@@ -70,9 +74,9 @@ export async function registerSeller(params: RegisterSellerParams): Promise<void
       },
     });
 
-    // Store requested sub-categories (replace existing if re-registering)
+    // Store requested sub-categories — luôn xóa cũ khi re-register để không giữ lại sub từ đơn trước
+    await tx.userSubCategory.deleteMany({ where: { userId } });
     if (subCategoryIds.length > 0) {
-      await tx.userSubCategory.deleteMany({ where: { userId } });
       await tx.userSubCategory.createMany({
         data: subCategoryIds.map((subCategoryId) => ({ userId, subCategoryId })),
         skipDuplicates: true,
