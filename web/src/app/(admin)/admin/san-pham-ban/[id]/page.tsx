@@ -11,6 +11,7 @@ import Pagination from "@/components/shared/Pagination";
 import RestrictButton from "../_components/RestrictButton";
 import ImageZoom from "../_components/ImageZoom";
 import ReviewActions from "./_components/ReviewActions";
+import VariantManager from "@/components/shared/VariantManager";
 
 export const metadata: Metadata = { title: "Chi tiết sản phẩm" };
 
@@ -267,6 +268,11 @@ export default async function AdminSellerProductDetailPage({
             <p className="text-sm text-gray-700 whitespace-pre-line">{product.description}</p>
           </div>
         )}
+      </div>
+
+      {/* Biến thể sản phẩm */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <VariantManager productId={product.id} isAdmin apiBase="/api/seller/products" />
       </div>
 
       {/* Stock summary */}

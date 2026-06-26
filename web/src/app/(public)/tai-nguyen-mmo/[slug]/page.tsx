@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ReviewSection from "@/components/shared/ReviewSection";
 import ProductBuyButton from "../_components/ProductBuyButton";
+import type { ProductVariant } from "../_components/ProductBuyButton";
 import {
   CheckCircle, XCircle, ShieldCheck, Zap, ArrowLeft,
   ShoppingCart, Headphones, RotateCcw, BadgeCheck, Lock,
@@ -104,6 +105,11 @@ export default async function MmoProductDetailPage({
         category: true, categoryGroup: true, price: true,
         description: true, totalOrders: true, createdAt: true,
         _count: { select: { items: { where: { status: "AVAILABLE" } } } },
+        variants: {
+          where: { isActive: true, deletedAt: null },
+          select: { id: true, variantPrice: true, warranty: true, isActive: true },
+          orderBy: { variantPrice: "asc" },
+        },
       },
     }),
     auth(),
@@ -114,6 +120,12 @@ export default async function MmoProductDetailPage({
   const me = session?.user as AuthenticatedUser | undefined;
   const available = product._count.items;
   const isOutOfStock = available === 0;
+  const variants: ProductVariant[] = product.variants.map((v) => ({
+    id: v.id,
+    variantPrice: Number(v.variantPrice),
+    warranty: v.warranty,
+    isActive: v.isActive,
+  }));
 
   const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown] = await Promise.all([
     prisma.review.aggregate({
@@ -336,6 +348,7 @@ export default async function MmoProductDetailPage({
           reviewCount={reviewCount}
           available={available}
           totalSold={product.totalOrders}
+          variants={variants.length > 0 ? variants : undefined}
         />
       )}
 

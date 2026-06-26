@@ -512,6 +512,7 @@ model MmoProduct {
   deletedAt           DateTime?  @map("deleted_at")
 
   items         MmoProductItem[]
+  variants      MmoProductVariant[]
   orders        Order[]
 
   @@index([slug])
@@ -519,6 +520,22 @@ model MmoProduct {
   @@index([isActive])
   @@index([section])
   @@map("mmo_products")
+}
+
+model MmoProductVariant {
+  id           String     @id @default(uuid()) @db.Uuid
+  productId    String     @map("product_id") @db.Uuid
+  product      MmoProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantName  String?    @map("variant_name")
+  variantPrice Decimal    @db.Decimal(18, 2) @map("variant_price")
+  warranty     String     @default("") @map("warranty")
+  isActive     Boolean    @default(true) @map("is_active")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+
+  @@index([productId])
+  @@map("mmo_product_variants")
 }
 
 model MmoProductItem {
@@ -755,12 +772,29 @@ model SellerProduct {
   deletedAt       DateTime? @map("deleted_at")
 
   stockItems      SellerProductStock[]
+  variants        SellerProductVariant[]
   orders          Order[]
 
   @@index([sellerId])
   @@index([isActive, isHidden, isRestricted])
   @@index([subCategoryId])
   @@map("seller_products")
+}
+
+model SellerProductVariant {
+  id           String        @id @default(uuid()) @db.Uuid
+  productId    String        @map("product_id") @db.Uuid
+  product      SellerProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantName  String?       @map("variant_name") @db.VarChar(100)
+  variantPrice Decimal       @map("variant_price") @db.Decimal(18, 2)
+  warranty     String        @db.VarChar(50)
+  isActive     Boolean       @default(true) @map("is_active")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  deletedAt    DateTime?     @map("deleted_at")
+
+  @@index([productId, isActive])
+  @@map("seller_product_variants")
 }
 
 model SellerProductStock {

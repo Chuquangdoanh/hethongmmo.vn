@@ -364,20 +364,7 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
 
                     {category && (
                       <div className="mt-2 space-y-3">
-                        <div>
-                          <input
-                            type="text"
-                            value={categoryDetail}
-                            onChange={(e) => { setCategoryDetail(e.target.value); setError(""); }}
-                            placeholder={category === "Khác" ? "Nhập sản phẩm bạn muốn đăng ký..." : "vd: Tài khoản quảng cáo, tài khoản game, tài khoản app..."}
-                            maxLength={200}
-                            className="w-full rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none"
-                          />
-                          <p className="mt-1 text-[10px] text-gray-400">
-                            Mô tả cụ thể loại sản phẩm/dịch vụ bạn muốn bán
-                          </p>
-                        </div>
-
+                        
                         {availableSubs.length > 0 && (
                           <div>
                             <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide block mb-2">

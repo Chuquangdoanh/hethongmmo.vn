@@ -1268,3 +1268,37 @@ body.menu-open .scm-wrapper { display: none !important; }
 .mnav-logout-btn svg { color: #94a3b8; transition: color 0.15s; }
 .mnav-logout-btn:hover { background: #f1f5f9; color: #0f172a; }
 .mnav-logout-btn:hover svg { color: #0f172a; }
+
+/* ── Open store button ──────────────────────────────────────── */
+.mnav-open-store-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff;
+  color: #0f172a;
+  text-decoration: none;
+  border: 1.5px solid #e2e8f0;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.mnav-open-store-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+.mnav-open-store-btn > svg { flex-shrink: 0; color: #0f172a; }
+.mnav-open-store-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mnav-open-store-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.mnav-open-store-sub {
+  font-size: 11px;
+  color: #64748b;
+}
+.mnav-open-store-btn .mnav-acc-chevron { color: #64748b; }

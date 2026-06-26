@@ -98,31 +98,28 @@ export default function RegisterSlotsModal({ packages, currentSlots, userBalance
               <div className="space-y-2">
                 {packages.map((pkg) => {
                   const canAfford = userBalance >= pkg.price;
-                  const isCurrent = pkg.slots === currentSlots;
                   const isSelected = selected?.slots === pkg.slots;
 
                   return (
                     <button
                       key={pkg.slots}
                       type="button"
-                      onClick={() => { if (!isCurrent && canAfford) setSelected(pkg); }}
-                      disabled={isCurrent || !canAfford}
+                      onClick={() => { if (canAfford) setSelected(pkg); }}
+                      disabled={!canAfford}
                       className={`w-full flex items-center justify-between rounded-xl border-2 px-4 py-3.5 text-left transition-all ${
                         isSelected
                           ? "border-violet-500 bg-violet-50"
-                          : isCurrent
-                          ? "border-emerald-300 bg-emerald-50 cursor-default"
                           : !canAfford
                           ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
                           : "border-gray-200 hover:border-violet-300 hover:bg-violet-50/40 cursor-pointer"
                       }`}
                     >
                       <div>
-                        <p className="text-sm font-bold text-gray-800">{pkg.slots} sản phẩm</p>
-                        {isCurrent && (
-                          <p className="text-[10px] text-emerald-600 font-medium mt-0.5">Gói hiện tại</p>
-                        )}
-                        {!canAfford && !isCurrent && (
+                        <p className="text-sm font-bold text-gray-800">+ {pkg.slots} slot sản phẩm</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">
+                          Sau mua: {currentSlots + pkg.slots} slot tổng
+                        </p>
+                        {!canAfford && (
                           <p className="text-[10px] text-red-500 mt-0.5">Số dư không đủ</p>
                         )}
                       </div>
@@ -147,8 +144,8 @@ export default function RegisterSlotsModal({ packages, currentSlots, userBalance
               {selected && !success && (
                 <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5">
                   <p className="text-xs text-amber-800">
-                    Mua gói <strong>{selected.slots} slot</strong> với giá <strong>{formatVnd(selected.price)}</strong>.
-                    Số dư sau mua: <strong className={balanceAfter < 0 ? "text-red-600" : "text-emerald-700"}>{formatVnd(balanceAfter)}</strong>
+                    Thêm <strong>{selected.slots} slot</strong> · Tổng sau mua: <strong>{currentSlots + selected.slots} slot</strong> · Chi phí: <strong>{formatVnd(selected.price)}</strong>.{" "}
+                    Số dư còn lại: <strong className={balanceAfter < 0 ? "text-red-600" : "text-emerald-700"}>{formatVnd(balanceAfter)}</strong>
                   </p>
                 </div>
               )}

@@ -47,12 +47,6 @@ export default function CategoryCombobox({ value, onChange, section, placeholder
   // Sync query khi value thay đổi từ bên ngoài (edit mode hoặc reset từ form)
   useEffect(() => { setQuery(value); }, [value]);
 
-  // Reset selection khi đổi section — danh mục của kho khác không còn phù hợp
-  useEffect(() => {
-    onChange("");
-    setQuery("");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section]);
 
   // Đóng dropdown khi click ngoài
   useEffect(() => {

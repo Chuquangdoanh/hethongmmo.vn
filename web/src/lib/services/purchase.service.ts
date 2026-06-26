@@ -38,6 +38,7 @@ interface PurchaseParams {
   finalPrice: number;     // giá thực trả (= catalogPrice khi không có discount)
   discountPercent: number;
   idempotencyKey: string;
+  variantId?: string;
   warrantyVariant?: string;
   customerNote?: string;
 }
@@ -62,7 +63,7 @@ function generateOrderCode(): string {
  * creates order + transaction. Returns decrypted content for digital items.
  */
 export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseResult> {
-  const { userId, orderType, itemId, itemName, catalogPrice, finalPrice, discountPercent, idempotencyKey, warrantyVariant, customerNote } =
+  const { userId, orderType, itemId, itemName, catalogPrice, finalPrice, discountPercent, idempotencyKey, variantId, warrantyVariant, customerNote } =
     params;
 
   // Idempotency: return existing order if already processed

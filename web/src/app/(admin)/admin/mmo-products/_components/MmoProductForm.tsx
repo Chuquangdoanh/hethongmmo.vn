@@ -119,9 +119,9 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    const price = parseFloat(form.price);
-    if (isNaN(price) || price <= 0) {
-      setError("Giá phải là số dương.");
+    const price = parseInt(form.price, 10);
+    if (isNaN(price) || price < 0) {
+      setError("Giá không hợp lệ.");
       return;
     }
 
@@ -155,7 +155,7 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
       }
       const targetId = isEdit ? initial!.id : json.data?.id;
       if (targetId && !isEdit) {
-        router.push(`/admin/mmo-products/${targetId}/stock`);
+        router.push(`/admin/mmo-products/${targetId}/sua`);
       } else {
         router.push("/admin/mmo-products");
       }
@@ -194,6 +194,22 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
         </div>
       )}
 
+      {!isEdit && (
+        <div className="flex items-center gap-0 rounded-xl border border-gray-200 bg-white overflow-hidden text-xs mb-1">
+          {[
+            { n: "1", label: "Thông tin cơ bản", active: true },
+            { n: "2", label: "Biến thể & Giá", active: false },
+            { n: "3", label: "Nhập kho", active: false },
+          ].map((step, i, arr) => (
+            <div key={step.n} className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 font-medium border-r last:border-r-0 border-gray-200 transition-colors ${step.active ? "bg-[#7C3AED]/8 text-[#7C3AED]" : "text-gray-400"}`}>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${step.active ? "bg-[#7C3AED] text-white" : "bg-gray-200 text-gray-400"}`}>{step.n}</span>
+              {step.label}
+              {i < arr.length - 1 && <span className="ml-1 text-gray-300 hidden sm:inline">→</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 items-start">
 
         {/* ── LEFT column ── */}
@@ -211,7 +227,7 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
                   <button
                     key={val}
                     type="button"
-                    onClick={() => set("section", val)}
+                    onClick={() => { set("section", val); set("categoryGroup", ""); set("category", ""); }}
                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-semibold transition-all ${
                       active
                         ? "bg-[#7C3AED] border-[#7C3AED] text-white shadow-sm"
@@ -275,9 +291,24 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
               </div>
 
               <div>
-                <label className="block text-xs text-gray-500 mb-1.5">Giá (VND) *</label>
-                <input required type="number" min="1" value={form.price} onChange={(e) => set("price", e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none" />
+                <label className="block text-xs text-gray-500 mb-1.5">Giá mặc định (VNĐ) *</label>
+                <input
+                  required
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.price}
+                  onChange={(e) => set("price", e.target.value)}
+                  placeholder="0"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none"
+                />
+                {form.price !== "" && !isNaN(parseInt(form.price, 10)) && (
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    = {parseInt(form.price, 10).toLocaleString("vi-VN")}đ
+                    {parseInt(form.price, 10) === 0 && <span className="ml-1 text-amber-500">· Sản phẩm miễn phí</span>}
+                  </p>
+                )}
+                <p className="text-[11px] text-gray-400 mt-0.5">Giá hiển thị khi không có gói biến thể</p>
               </div>
 
               <div>
@@ -422,7 +453,7 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
 
           {!isEdit && (
             <p className="text-xs text-gray-500 px-1">
-              Sau khi tạo, bạn sẽ được chuyển đến trang quản lý kho để nhập hàng.
+              Sau khi tạo, bạn sẽ được chuyển đến trang chỉnh sửa để thêm gói biến thể và nhập kho.
             </p>
           )}
 
@@ -431,7 +462,7 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
           <div className="flex items-center gap-3">
             <button type="submit" disabled={loading}
               className="px-5 py-2.5 rounded-lg bg-[#7C3AED] text-white text-sm font-semibold hover:bg-[#A855F7] disabled:opacity-60 transition-colors">
-              {loading ? "Đang lưu..." : isEdit ? "Cập nhật" : "Tạo & nhập kho →"}
+              {loading ? "Đang lưu..." : isEdit ? "Cập nhật" : "Tạo sản phẩm →"}
             </button>
             {isEdit && (
               <button type="button" onClick={() => void handleDelete()} disabled={loading}

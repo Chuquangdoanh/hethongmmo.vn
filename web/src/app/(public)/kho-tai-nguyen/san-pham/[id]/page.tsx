@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ReviewSection from "@/components/shared/ReviewSection";
 import ProductBuyButton from "@/app/(public)/tai-nguyen-mmo/_components/ProductBuyButton";
+import type { ProductVariant } from "@/app/(public)/tai-nguyen-mmo/_components/ProductBuyButton";
 import {
   CheckCircle, XCircle, ShieldCheck, Zap, ArrowLeft,
   Store, ExternalLink, ShoppingCart, Headphones,
@@ -116,6 +117,11 @@ export default async function KhoSellerProductDetailPage({
         price: true, salesCount: true, description: true, createdAt: true,
         seller: { select: { id: true, fullName: true, sellerTier: true, avatarUrl: true } },
         _count: { select: { stockItems: { where: { status: "AVAILABLE" } } } },
+        variants: {
+          where: { isActive: true, deletedAt: null },
+          select: { id: true, variantPrice: true, warranty: true, isActive: true },
+          orderBy: { variantPrice: "asc" },
+        },
       },
     }),
     auth(),
@@ -127,6 +133,12 @@ export default async function KhoSellerProductDetailPage({
   const available = product._count.stockItems;
   const isOutOfStock = available === 0;
   const sellerName = product.seller.fullName;
+  const variants: ProductVariant[] = product.variants.map((v) => ({
+    id: v.id,
+    variantPrice: Number(v.variantPrice),
+    warranty: v.warranty,
+    isActive: v.isActive,
+  }));
 
   const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, tierDef, relatedProducts] = await Promise.all([
     prisma.review.aggregate({
@@ -318,7 +330,7 @@ export default async function KhoSellerProductDetailPage({
       {/* Title */}
       <div>
         <h1 className="text-xl font-extrabold text-text-dark leading-snug mb-1">{product.name}</h1>
-        <p className="text-xs text-text-muted">Truy cập ổn định · Bảo hành 24 giờ · Hỗ trợ nhanh 24/7</p>
+        <p className="text-xs text-text-muted"> Hỗ trợ nhanh 24/7</p>
       </div>
 
       {/* Stars + sold */}
@@ -377,6 +389,7 @@ export default async function KhoSellerProductDetailPage({
           totalSold={product.salesCount}
           sellerName={sellerName}
           showCartButton
+          variants={variants.length > 0 ? variants : undefined}
         />
       )}
 

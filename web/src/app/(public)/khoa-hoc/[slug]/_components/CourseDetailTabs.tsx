@@ -112,10 +112,10 @@ export default function CourseDetailTabs({
   const reviewCount = testimonials.length;
 
   const TABS: { id: Tab; label: string }[] = [
-    { id: "intro",   label: "Giới thiệu" },
-    { id: "content", label: "Nội dung đào tạo" },
-    { id: "reviews", label: `Đánh giá (${reviewCount})` },
-    { id: "faq",     label: "Hỏi đáp" },
+    { id: "intro",   label: "Giới Thiệu" },
+    { id: "content", label: "Nội Dung Đào Tạo" },
+    { id: "reviews", label: `Đánh Giá (${reviewCount})` },
+    { id: "faq",     label: "Hỏi Đáp" },
   ];
 
   // Build content groups: split flat list into sections

@@ -8,6 +8,7 @@ import { PenLine, ChevronLeft, Boxes, AlertTriangle } from "lucide-react";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
 import ProductForm from "../../_components/ProductForm";
 import DeleteProductButton from "./DeleteProductButton";
+import VariantManager from "@/components/shared/VariantManager";
 
 export const metadata: Metadata = { title: "Chỉnh sửa sản phẩm" };
 
@@ -106,6 +107,13 @@ export default async function SuaSanPhamPage({
               subCategoryId: product.subCategoryId ?? null,
             }}
           />
+
+          {/* Biến thể sản phẩm — chỉ hiện khi sản phẩm không bị khóa */}
+          {!product.isRestricted && (
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <VariantManager productId={product.id} />
+            </div>
+          )}
         </div>
       </div>
     </>

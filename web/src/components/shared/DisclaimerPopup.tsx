@@ -79,7 +79,7 @@ export default function DisclaimerPopup() {
             onClick={dismissFor2Hours}
             disabled={!agreed}
             className="flex-1 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors
-              bg-gray-800 hover:bg-gray-700 active:bg-gray-900
+              bg-blue-600 hover:bg-blue-700 active:bg-blue-800
               disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-400"
           >
             Tôi Đồng Ý

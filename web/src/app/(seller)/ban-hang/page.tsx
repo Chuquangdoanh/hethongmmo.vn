@@ -133,8 +133,11 @@ export default async function BanHangPage() {
     {
       Icon: Package,     label: "Sản phẩm",
       value: `${productCount} / ${maxProducts}`,
-      sub: `Còn ${maxProducts - productCount} slot`,
-      valueColor: "text-blue-600", iconBg: "bg-gray-100", iconColor: "text-gray-400",
+      sub: productCount > maxProducts
+        ? `⚠ Vượt giới hạn ${productCount - maxProducts} slot`
+        : `Còn ${maxProducts - productCount} slot`,
+      valueColor: productCount > maxProducts ? "text-red-500" : "text-blue-600",
+      iconBg: "bg-gray-100", iconColor: "text-gray-400",
     },
     {
       Icon: ShoppingBag, label: "Đơn hàng",

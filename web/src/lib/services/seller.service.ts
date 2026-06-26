@@ -263,14 +263,14 @@ interface BuySellerSlotsParams {
   price: number;
 }
 
-/** Deducts fee and sets maxSellerProducts to purchased slot count. */
+/** Deducts fee and adds slots to maxSellerProducts (cumulative). */
 export async function buySellerSlots(params: BuySellerSlotsParams): Promise<void> {
   const { userId, slots, price } = params;
 
   await prisma.$transaction(async (tx) => {
     const rows = await tx.$queryRaw<
-      Array<{ balance: string; seller_status: string }>
-    >`SELECT balance, seller_status FROM users WHERE id = ${userId}::uuid FOR UPDATE`;
+      Array<{ balance: string; seller_status: string; max_seller_products: number }>
+    >`SELECT balance, seller_status, max_seller_products FROM users WHERE id = ${userId}::uuid FOR UPDATE`;
 
     const user = rows[0];
     if (!user) throw new NotFoundError("User");
@@ -283,11 +283,12 @@ export async function buySellerSlots(params: BuySellerSlotsParams): Promise<void
     if (balance.lt(cost)) throw new InsufficientBalanceError(balance.toNumber(), cost.toNumber());
 
     const balanceAfter = balance.sub(cost);
+    const newMaxProducts = (user.max_seller_products ?? 0) + slots;
 
     await tx.$executeRaw`
       UPDATE users
       SET balance = ${balanceAfter.toFixed(2)}::numeric,
-          max_seller_products = ${slots},
+          max_seller_products = ${newMaxProducts},
           updated_at = now()
       WHERE id = ${userId}::uuid
     `;
@@ -297,7 +298,7 @@ export async function buySellerSlots(params: BuySellerSlotsParams): Promise<void
         userId,
         type: "SELLER_SLOT_PURCHASE",
         amount: cost.neg().toFixed(2),
-        description: `Mua gói ${slots} slot sản phẩm`,
+        description: `Thêm ${slots} slot sản phẩm (tổng: ${newMaxProducts})`,
         balanceBefore: balance.toFixed(2),
         balanceAfter: balanceAfter.toFixed(2),
       },
@@ -309,7 +310,7 @@ export async function buySellerSlots(params: BuySellerSlotsParams): Promise<void
         action: "SELLER_SLOT_PURCHASE",
         targetType: "User",
         targetId: userId,
-        metadata: { slots, price },
+        metadata: { slots, price, newMaxProducts },
       },
     });
   });

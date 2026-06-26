@@ -3,7 +3,8 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { r2Url } from "@/lib/utils/image-url";
-import { FileText, Upload, X, AlertCircle } from "lucide-react";
+import { FileText, Upload, X, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
+import VariantManager from "@/components/shared/VariantManager";
 
 const MAX_STOCK_ITEMS = 5000;
 const MAX_FILE_SIZE_MB = 10;
@@ -58,6 +59,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [error, setError] = useState("");
+  const [createdProductId, setCreatedProductId] = useState<string | null>(null);
 
   function set<K extends keyof typeof form>(field: K) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -143,6 +145,10 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
     setFileDupCount(0);
   }
 
+  function descWordCount() {
+    return form.description.trim().split(/\s+/).filter(Boolean).length;
+  }
+
   // ── Submit ─────────────────────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -151,10 +157,14 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
     if (!trimmedName) { setError("Vui lòng nhập tên sản phẩm."); return; }
     if (trimmedName.length < 3) { setError("Tên sản phẩm tối thiểu 3 ký tự."); return; }
 
-    const price = parseFloat(form.price);
-    if (isNaN(price) || price <= 0) { setError("Vui lòng nhập giá bán hợp lệ."); return; }
-    if (price < 1000) { setError("Giá bán tối thiểu 1.000đ."); return; }
-    if (price > 100_000_000) { setError("Giá bán tối đa 100.000.000đ."); return; }
+    if (!form.imageUrl.trim()) { setError("Vui lòng thêm ảnh sản phẩm."); return; }
+
+    if (subCategories.length > 0 && !subCategoryId) { setError("Vui lòng chọn danh mục con."); return; }
+
+    if (descWordCount() < 20) { setError("Mô tả sản phẩm phải có ít nhất 20 từ."); return; }
+
+    const price = parseInt(form.price, 10);
+    if (isNaN(price) || price < 0) { setError("Giá bán không hợp lệ."); return; }
 
     let stockItems: string[] = [];
     if (mode === "create") {
@@ -193,8 +203,12 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
       if (mode === "create") body.stockItems = stockItems;
 
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      const json = await res.json() as { success?: boolean; data?: unknown; error?: string };
+      const json = await res.json() as { success?: boolean; data?: { productId?: string }; error?: string };
       if (!res.ok || (mode === "edit" && !json.success)) { setError(json.error ?? "Thao tác thất bại."); return; }
+      if (mode === "create") {
+        setCreatedProductId(json.data?.productId ?? null);
+        return;
+      }
       router.push("/san-pham");
       router.refresh();
     } finally {
@@ -218,18 +232,23 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
   const priceField = (
     <div>
       <label className="block text-xs font-medium text-gray-500 mb-1.5">Giá bán (VNĐ) *</label>
-      <input type="number" value={form.price} onChange={set("price")} required min={1000} max={100000000} step={1000}
+      <input type="number" value={form.price} onChange={set("price")} required min={0} step={1}
         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-[#e11d48]/60 focus:bg-white focus:outline-none transition-colors"
-        placeholder="VD: 50000 (tối thiểu 1.000đ)" suppressHydrationWarning />
-      {form.price && parseFloat(form.price) > 0 && parseFloat(form.price) < 1000 && (
-        <p className="text-[10px] text-red-500 mt-1">Giá tối thiểu 1.000đ</p>
+        placeholder="VD: 50000" suppressHydrationWarning />
+      {form.price !== "" && !isNaN(parseInt(form.price, 10)) && (
+        <p className="text-[10px] text-gray-400 mt-1">
+          = {parseInt(form.price, 10).toLocaleString("vi-VN")}đ
+          {parseInt(form.price, 10) === 0 && <span className="ml-1 text-amber-500">· Miễn phí</span>}
+        </p>
       )}
     </div>
   );
 
   const subCategoryField = subCategories.length > 0 ? (
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-2">Danh mục con</label>
+      <label className="block text-xs font-medium text-gray-500 mb-2">
+        Danh mục con <span className="text-red-500">*</span>
+      </label>
       <div className="flex flex-wrap gap-2">
         {subCategories.map((sub) => {
           const active = subCategoryId === sub.id;
@@ -268,7 +287,9 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
 
   const imageUpload = (
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1.5">Ảnh sản phẩm</label>
+      <label className="block text-xs font-medium text-gray-500 mb-1.5">
+        Ảnh sản phẩm <span className="text-red-500">*</span>
+      </label>
       <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleFileChange} className="hidden" />
       <div onClick={() => { if (!uploading) fileInputRef.current?.click(); }} onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}
         className={`rounded-xl border-2 border-dashed transition-colors select-none ${
@@ -308,10 +329,28 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
 
   const descField = (
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-1.5">Mô tả sản phẩm</label>
+      <label className="block text-xs font-medium text-gray-500 mb-1.5">
+        Mô tả sản phẩm <span className="text-red-500">*</span>
+      </label>
       <textarea value={form.description} onChange={set("description")} rows={6} maxLength={5000}
-        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-[#e11d48]/60 focus:bg-white focus:outline-none transition-colors resize-none"
-        placeholder="Mô tả chi tiết về sản phẩm..." />
+        className={`w-full rounded-lg border bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:bg-white focus:outline-none transition-colors resize-none ${
+          form.description && descWordCount() < 20
+            ? "border-amber-300 focus:border-amber-400"
+            : "border-gray-200 focus:border-[#e11d48]/60"
+        }`}
+        placeholder="Mô tả chi tiết về sản phẩm (ít nhất 20 từ)..." />
+      <div className="flex items-center justify-between mt-1">
+        {form.description ? (
+          descWordCount() < 20 ? (
+            <p className="text-[10px] text-amber-500">Cần thêm {20 - descWordCount()} từ nữa</p>
+          ) : (
+            <p className="text-[10px] text-emerald-500">✓ Đủ mô tả</p>
+          )
+        ) : (
+          <p className="text-[10px] text-gray-400">Tối thiểu 20 từ</p>
+        )}
+        <p className="text-[10px] text-gray-400">{descWordCount()} / 20 từ</p>
+      </div>
     </div>
   );
 
@@ -451,6 +490,35 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
       {actionButtons}
     </div>
   );
+
+  // ── Post-create: show VariantManager inline ───────────────────────────────
+  if (mode === "create" && createdProductId) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+          <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-emerald-700">Sản phẩm đã được tạo thành công!</p>
+            <p className="text-xs text-emerald-600 mt-0.5">Thêm gói biến thể (giá + bảo hành) bên dưới, hoặc bỏ qua và xem danh sách.</p>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <VariantManager productId={createdProductId} />
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => router.push("/san-pham")}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+          >
+            Không bảo hành <ArrowRight size={15} />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">

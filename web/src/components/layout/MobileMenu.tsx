@@ -222,7 +222,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
             <img src="/images/pagecm.jpg" alt="" className="mnav-res-banner-bg" aria-hidden="true" />
             <div className="mnav-svc-banner-text">
               <p className="mnav-svc-banner-title">
-                Dịch vụ <ChevronRight size={13} className="mnav-res-banner-arrow" />
+                Trung Tâm Dịch Vụ <ChevronRight size={13} className="mnav-res-banner-arrow" />
               </p>
               <p className="mnav-svc-banner-desc">Xem tất cả dịch vụ MMO</p>
             </div>
@@ -579,6 +579,26 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                   </Link>
                 </div>
               </div>
+
+              {/* Mở gian hàng — chỉ hiện khi chưa phải seller */}
+              {!isSeller && user?.role === "USER" && (
+                <div className="mnav-section">
+                  <p className="mnav-section-label">KINH DOANH CÙNG CHÚNG TÔI</p>
+                  <Link
+                    href="/dang-ky-ban-hang"
+                    prefetch={false}
+                    className="mnav-open-store-btn"
+                    onClick={closeWithNav}
+                  >
+                    <Store size={18} />
+                    <div className="mnav-open-store-text">
+                      <span className="mnav-open-store-title">Mở gian hàng</span>
+                      <span className="mnav-open-store-sub">Trở thành nhà bán hàng trên Hệ Thống MMO</span>
+                    </div>
+                    <ChevronRight size={16} className="mnav-acc-chevron" />
+                  </Link>
+                </div>
+              )}
 
               {/* Khu vực người bán */}
               {isSeller && (
