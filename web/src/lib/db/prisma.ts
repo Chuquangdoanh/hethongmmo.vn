@@ -20,6 +20,10 @@ function createPrismaClient(): PrismaClient {
   });
   const adapter = new PrismaPg(pool);
 
+  // Pre-warm 1 connection ngay khi module load — tránh cold-connect 300-700ms
+  // ở request đầu tiên của user. Fire-and-forget, không block startup.
+  pool.query("SELECT 1").catch(() => undefined);
+
   return new PrismaClient({
     adapter,
     log: ["error"],

@@ -14,6 +14,8 @@ import {
   ShoppingCart, Headphones, RotateCcw, BadgeCheck, Lock,
   ExternalLink, Building2, ChevronLeft, ChevronRight,
 } from "lucide-react";
+import { getFavoriteStatus } from "@/lib/services/favorite.service";
+import FavoriteButton from "@/components/shared/FavoriteButton";
 
 export async function generateMetadata({
   params,
@@ -107,7 +109,7 @@ export default async function KhoMmoProductDetailPage({
         _count: { select: { items: { where: { status: "AVAILABLE" } } } },
         variants: {
           where: { isActive: true, deletedAt: null },
-          select: { id: true, variantPrice: true, warranty: true, isActive: true },
+          select: { id: true, variantName: true, variantPrice: true, warranty: true, isActive: true },
           orderBy: { variantPrice: "asc" },
         },
       },
@@ -122,12 +124,13 @@ export default async function KhoMmoProductDetailPage({
   const isOutOfStock = available === 0;
   const variants: ProductVariant[] = product.variants.map((v) => ({
     id: v.id,
+    variantName: v.variantName ?? undefined,
     variantPrice: Number(v.variantPrice),
     warranty: v.warranty,
     isActive: v.isActive,
   }));
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, favoriteStatus] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "MMO_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -161,6 +164,7 @@ export default async function KhoMmoProductDetailPage({
       where: { productType: "MMO_PRODUCT", productId: product.id },
       _count: { id: true },
     }),
+    getFavoriteStatus(me?.id, "MMO_PRODUCT", product.id),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
@@ -287,9 +291,21 @@ export default async function KhoMmoProductDetailPage({
         </span>
       </div>
 
-      {/* Title */}
+      {/* Title + Favorite */}
       <div>
-        <h1 className="text-xl font-extrabold text-text-dark leading-snug mb-1">{product.name}</h1>
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <h1 className="text-xl font-extrabold text-text-dark leading-snug flex-1">{product.name}</h1>
+          <FavoriteButton
+            productId={product.id}
+            productType="MMO_PRODUCT"
+            initialIsFavorite={favoriteStatus.isFavorite}
+            initialCount={favoriteStatus.favoriteCount}
+            isLoggedIn={!!me}
+            showCount
+            className="shrink-0 pt-0.5"
+            iconSize={20}
+          />
+        </div>
         <p className="text-xs text-text-muted">Hỗ trợ nhanh 24/7</p>
       </div>
 

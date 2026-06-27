@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { SortSelect } from "./_components/SortSelect";
 import { buildMeta } from "@/lib/utils/seo";
+import { batchGetFavoriteData } from "@/lib/services/favorite.service";
+import FavoriteButton from "@/components/shared/FavoriteButton";
 
 export const metadata: Metadata = buildMeta({
   title: "Nguyên Liệu MMO | Tài Khoản & Công Cụ Số Chất Lượng Cao",
@@ -52,6 +54,8 @@ type UnifiedProduct = {
   purchasedByMe: boolean;
   reviewedByMe: boolean;
   category: string;
+  favoriteCount: number;
+  isFavorite: boolean;
 };
 
 function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }) {
@@ -226,6 +230,13 @@ export default async function TaiNguyenMmoPage({
   const sellerReviewMap = new Map(
     sellerReviewStats.map((r) => [r.productId, { count: r._count.id, avg: r._avg.rating ?? 0 }])
   );
+
+  const { mmoFavCounts, sellerFavCounts, myMmoFavs, mySellerFavs } =
+    await batchGetFavoriteData({
+      userId: me?.id,
+      mmoProductIds: mmoProducts.map((p) => p.id),
+      sellerProductIds: sellerProducts.map((p) => p.id),
+    });
   const categoryIconMap = new Map(resourceCategories.map((c) => [c.name, c.iconUrl]));
 
   const mmoGroupSet = new Set(allMmoGroups.map((c) => c.categoryGroup));
@@ -320,6 +331,8 @@ export default async function TaiNguyenMmoPage({
         href: `${BASE_PATH}/${p.slug}`, shopHref: `${BASE_PATH}/he-thong`,
         createdAt: p.createdAt, sellerName: "Hệ thống MMO",
         purchasedByMe: purchasedMmoIds.has(p.id), reviewedByMe: reviewedMmoIds.has(p.id),
+        favoriteCount: mmoFavCounts.get(p.id) ?? 0,
+        isFavorite: myMmoFavs.has(p.id),
       };
     }),
     ...sellerProducts.map((sp) => {
@@ -335,6 +348,8 @@ export default async function TaiNguyenMmoPage({
         createdAt: sp.createdAt, sellerName: `#${sp.seller.uidPrefix}`,
         purchasedByMe: purchasedSellerIds.has(sp.id), reviewedByMe: reviewedSellerIds.has(sp.id),
         category: sp.sellerCategory,
+        favoriteCount: sellerFavCounts.get(sp.id) ?? 0,
+        isFavorite: mySellerFavs.has(sp.id),
       };
     }),
   ];
@@ -516,6 +531,20 @@ export default async function TaiNguyenMmoPage({
                           </span>
                         ) : null}
 
+                        {/* Nút yêu thích — góc dưới phải ảnh, z-10 để click được trên overlay Link */}
+                        <div className="absolute bottom-8 right-2 z-10">
+                          <FavoriteButton
+                            productId={p.id}
+                            productType={p.kind === "mmo" ? "MMO_PRODUCT" : "SELLER_PRODUCT"}
+                            initialIsFavorite={p.isFavorite}
+                            initialCount={p.favoriteCount}
+                            isLoggedIn={!!me}
+                            showCount={false}
+                            className="w-7 h-7 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
+                            iconSize={14}
+                          />
+                        </div>
+
                         {/* Star rating overlay — bottom */}
                         <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/65 to-transparent px-2.5 pt-5 pb-2">
                           {p.reviewCount > 0 ? (
@@ -550,7 +579,14 @@ export default async function TaiNguyenMmoPage({
                         </span>
                         <span className="text-[#d1d5db]">·</span>
                         <span>Còn <strong className="text-[#374151]">{p.available}</strong></span>
-                        
+                        {p.favoriteCount > 0 && (
+                          <>
+                            <span className="text-[#d1d5db]">·</span>
+                            <span className="flex items-center gap-0.5 text-[#E53E3E]">
+                              ❤️ <strong>{p.favoriteCount}</strong>
+                            </span>
+                          </>
+                        )}
                       </div>
 
                       {/* Review action */}

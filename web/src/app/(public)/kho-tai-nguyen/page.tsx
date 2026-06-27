@@ -12,6 +12,8 @@ import { SortSelect } from "@/app/(public)/tai-nguyen-mmo/_components/SortSelect
 import { buildMeta } from "@/lib/utils/seo";
 import { KhoFilterSidebar } from "./_components/KhoFilterSidebar";
 import { CategoryFilter } from "@/components/shared/CategoryFilter";
+import { batchGetFavoriteData } from "@/lib/services/favorite.service";
+import FavoriteButton from "@/components/shared/FavoriteButton";
 import {
   Package, ShoppingBag, ShoppingCart,
   Pencil, CheckCircle, FolderOpen,
@@ -239,6 +241,13 @@ export default async function KhoTaiNguyenPage({
 
   const mmoReviewMap = new Map(mmoReviewStats.map((r) => [r.productId, { count: r._count.id, avg: r._avg.rating ?? 0 }]));
 
+  const { mmoFavCounts, sellerFavCounts, myMmoFavs, mySellerFavs } =
+    await batchGetFavoriteData({
+      userId: me?.id,
+      mmoProductIds: filteredMmoProducts.map((p) => p.id),
+      sellerProductIds: filteredProducts.map((p) => p.id),
+    });
+
   // Build platform stats (seller + mmo)
   const platformProductCount = new Map<string, number>();
   const platformSellerSet = new Map<string, Set<string>>();
@@ -307,8 +316,8 @@ export default async function KhoTaiNguyenPage({
 
   // Build unified product list
   type KhoProduct =
-    | { kind: "seller"; id: string; name: string; imageUrl: string | null; category: string; description: string | null; price: number; salesCount: number; createdAt: Date; sellerPrefix: string; available: number; isNew: boolean; isHot: boolean; href: string; bought: boolean; rated: boolean; review: { count: number; avg: number } | undefined; orderType: "SELLER_PRODUCT" }
-    | { kind: "mmo"; id: string; name: string; imageUrl: string | null; category: string; description: string | null; price: number; salesCount: number; createdAt: Date; sellerPrefix: string; available: number; isNew: boolean; isHot: boolean; href: string; bought: boolean; rated: boolean; review: { count: number; avg: number } | undefined; orderType: "MMO_PRODUCT"; slug: string };
+    | { kind: "seller"; id: string; name: string; imageUrl: string | null; category: string; description: string | null; price: number; salesCount: number; createdAt: Date; sellerPrefix: string; available: number; isNew: boolean; isHot: boolean; href: string; bought: boolean; rated: boolean; review: { count: number; avg: number } | undefined; orderType: "SELLER_PRODUCT"; favoriteCount: number; isFavorite: boolean }
+    | { kind: "mmo"; id: string; name: string; imageUrl: string | null; category: string; description: string | null; price: number; salesCount: number; createdAt: Date; sellerPrefix: string; available: number; isNew: boolean; isHot: boolean; href: string; bought: boolean; rated: boolean; review: { count: number; avg: number } | undefined; orderType: "MMO_PRODUCT"; slug: string; favoriteCount: number; isFavorite: boolean };
 
   const minRating = ratingParam ? Number(ratingParam) : 0;
 
@@ -324,6 +333,8 @@ export default async function KhoTaiNguyenPage({
         href: `/kho-tai-nguyen/san-pham/${sp.id}`,
         bought: purchasedIds.has(sp.id), rated: reviewedIds.has(sp.id),
         review: reviewMap.get(sp.id), orderType: "SELLER_PRODUCT",
+        favoriteCount: sellerFavCounts.get(sp.id) ?? 0,
+        isFavorite: mySellerFavs.has(sp.id),
       })),
     ...filteredMmoProducts
       .filter((p) => minRating === 0 || (mmoReviewMap.get(p.id)?.avg ?? p.rating) >= minRating)
@@ -336,6 +347,8 @@ export default async function KhoTaiNguyenPage({
         href: `/kho-tai-nguyen/${p.slug}`,
         bought: purchasedMmoIds.has(p.id), rated: reviewedMmoIds.has(p.id),
         review: mmoReviewMap.get(p.id), orderType: "MMO_PRODUCT",
+        favoriteCount: mmoFavCounts.get(p.id) ?? 0,
+        isFavorite: myMmoFavs.has(p.id),
       })),
   ].sort((a, b) => {
     if (activeSort === "ban-chay") return b.salesCount - a.salesCount;
@@ -455,7 +468,7 @@ export default async function KhoTaiNguyenPage({
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
                 {pagedProducts.map((item) => {
-                  const { id, name, imageUrl, category, description: desc, price, salesCount, isNew, isHot, href, bought, rated, review, available: avail, sellerPrefix: seller } = item;
+                  const { id, name, imageUrl, category, description: desc, price, salesCount, isNew, isHot, href, bought, rated, review, available: avail, sellerPrefix: seller, favoriteCount, isFavorite, kind } = item;
 
                   return (
                     <div
@@ -512,6 +525,20 @@ export default async function KhoTaiNguyenPage({
                               <span className="text-[10px] text-white/50 italic">Chưa có đánh giá</span>
                             )}
                           </div>
+
+                          {/* Nút yêu thích — z-10 để click được trên Link overlay */}
+                          <div className="absolute bottom-8 right-2 z-10">
+                            <FavoriteButton
+                              productId={id}
+                              productType={kind === "mmo" ? "MMO_PRODUCT" : "SELLER_PRODUCT"}
+                              initialIsFavorite={isFavorite}
+                              initialCount={favoriteCount}
+                              isLoggedIn={isLoggedIn}
+                              showCount={false}
+                              className="w-7 h-7 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
+                              iconSize={14}
+                            />
+                          </div>
                         </div>
                       </div>
 
@@ -524,7 +551,7 @@ export default async function KhoTaiNguyenPage({
                           <p className="text-[11px] text-text-muted line-clamp-2 leading-relaxed">{desc}</p>
                         )}
 
-                        {/* Stats: Đã bán · Còn · Seller */}
+                        {/* Stats: Đã bán · Còn · Yêu thích */}
                         <div className="flex items-center gap-1.5 text-[10px] text-[#94a3b8] flex-wrap">
                           <span className="flex items-center gap-0.5">
                             <ShoppingCart size={8} strokeWidth={2} />
@@ -532,7 +559,14 @@ export default async function KhoTaiNguyenPage({
                           </span>
                           <span className="text-[#d1d5db]">·</span>
                           <span>Còn <strong className="text-[#374151]">{avail}</strong></span>
-                         
+                          {favoriteCount > 0 && (
+                            <>
+                              <span className="text-[#d1d5db]">·</span>
+                              <span className="flex items-center gap-0.5 text-[#E53E3E]">
+                                ❤️ <strong>{favoriteCount}</strong>
+                              </span>
+                            </>
+                          )}
                         </div>
 
                         {/* Review actions */}

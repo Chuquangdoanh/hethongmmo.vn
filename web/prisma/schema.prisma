@@ -72,6 +72,14 @@ enum OrderType {
   SELLER_PRODUCT
 }
 
+enum FavoriteProductType {
+  SERVICE
+  COURSE
+  TUTTRICK
+  MMO_PRODUCT
+  SELLER_PRODUCT
+}
+
 enum OrderStatus {
   PENDING
   PROCESSING
@@ -224,6 +232,7 @@ model User {
   subCategories        UserSubCategory[]
   staffPermissions     StaffPermission[]
   siteContentUpdates   SiteContent[]
+  favorites            ProductFavorite[]
 
   @@index([email])
   @@index([uidPrefix])
@@ -1294,4 +1303,22 @@ model SiteContent {
   updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@map("site_content")
+}
+
+// ====================================================================
+// 29. PRODUCT_FAVORITES (Yêu thích sản phẩm)
+// ====================================================================
+
+model ProductFavorite {
+  id          String              @id @default(uuid()) @db.Uuid
+  userId      String              @map("user_id") @db.Uuid
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productType FavoriteProductType @map("product_type")
+  productId   String              @map("product_id") @db.Uuid
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  @@unique([userId, productType, productId])
+  @@index([userId])
+  @@index([productType, productId])
+  @@map("product_favorites")
 }
