@@ -184,6 +184,10 @@ jobs:
 
               # Pull với retry — lỗi lease thường tự hết sau lần thử lại
               docker compose pull || (echo "⚠️  Pull lần 1 thất bại, thử lại..." && sleep 5 && docker compose pull)
+
+              # Stop web trước để tránh lỗi "cannot remove container: container is running"
+              docker compose stop hethongmmo-web 2>/dev/null || true
+
               docker compose up -d
               docker image prune -f
               echo "🐳 App image updated"
