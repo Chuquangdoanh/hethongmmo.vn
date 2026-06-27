@@ -30,6 +30,11 @@ const patchSchema = z.discriminatedUnion("action", [
     action: z.literal("set_discount"),
     discountPercent: z.number().int().min(0).max(100),
   }),
+  z.object({
+    action: z.literal("adjust_escrow"),
+    amount: z.number().refine((n) => n !== 0, "Số tiền không được bằng 0"),
+    note: z.string().min(1).max(500).optional(),
+  }),
 ]);
 
 export async function GET(
@@ -210,6 +215,33 @@ export async function PATCH(
         });
       });
       logger.info({ adminId: admin.id, targetUserId: id }, "Admin revoked seller access");
+      return apiSuccess();
+    }
+
+    if (action === "adjust_escrow") {
+      const { amount, note } = parsed.data as Extract<(typeof parsed)["data"], { action: "adjust_escrow" }>;
+      await prisma.$transaction(async (tx) => {
+        const locked = await tx.user.findUniqueOrThrow({
+          where: { id },
+          select: { sellerEscrow: true },
+        });
+        const escrowBefore = locked.sellerEscrow;
+        const escrowAfter = Number(escrowBefore) + amount;
+        if (escrowAfter < 0) throw new Error("Ký quỹ không được âm");
+
+        await tx.user.update({ where: { id }, data: { sellerEscrow: escrowAfter } });
+        await tx.auditLog.create({
+          data: {
+            actorId: admin.id,
+            action: "ADMIN_ADJUST_ESCROW",
+            targetType: "User",
+            targetId: id,
+            before: { sellerEscrow: Number(escrowBefore) },
+            after: { sellerEscrow: escrowAfter, amount, note },
+          },
+        });
+      });
+      logger.info({ adminId: admin.id, targetUserId: id, amount }, "Admin adjusted seller escrow");
       return apiSuccess();
     }
 

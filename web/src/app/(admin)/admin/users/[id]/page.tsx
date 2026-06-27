@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import AdminUserActions from "./AdminUserActions";
 import AdminBalanceAdjust from "./AdminBalanceAdjust";
+import AdminEscrowAdjust from "./AdminEscrowAdjust";
 
 export const metadata: Metadata = { title: "Chi tiết người dùng" };
 
@@ -113,6 +114,7 @@ export default async function AdminUserDetailPage({
       sellerStatus: true,
       sellerCategory: true,
       maxSellerProducts: true,
+      sellerEscrow: true,
       uidPrefix: true,
       discountPercent: true,
       cccdImageUrl: true,
@@ -315,6 +317,7 @@ export default async function AdminUserDetailPage({
                   )}
                 </>
               )}
+              <AdminEscrowAdjust userId={user.id} sellerEscrow={Number(user.sellerEscrow)} />
               {(user.cccdImageUrl || user.portraitImageUrl) && (
                 <div className="mt-3 pt-3 border-t border-gray-100 flex gap-4">
                   {user.cccdImageUrl && (
