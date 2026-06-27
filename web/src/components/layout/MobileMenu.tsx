@@ -540,7 +540,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                   </Link>
                   <Link href="/ho-tro" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
                     <span className="mnav-acc-icon-badge"><TicketCheck size={16} /></span>
-                    <span>Ticket hỗ trợ</span>
+                    <span>Hộp thư hỗ trợ</span>
                     <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
                 
@@ -566,10 +566,10 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                       <span style={{
                         marginLeft: "auto", marginRight: "4px",
                         fontSize: "10px", fontWeight: 700,
-                        background: "#ef4444", color: "#fff",
+                       
                         borderRadius: "20px", padding: "1px 6px",
                       }}>
-                        {unreadCount > 99 ? "99+" : unreadCount}
+                      
                       </span>
                     )}
                     <ChevronRight size={14} className="mnav-acc-chevron" />

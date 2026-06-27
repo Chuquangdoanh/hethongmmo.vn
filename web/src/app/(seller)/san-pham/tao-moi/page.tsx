@@ -14,17 +14,30 @@ export default async function TaoMoiSanPhamPage() {
   const session = await auth();
   const me = session!.user as AuthenticatedUser;
 
-  const user = await prisma.user.findUnique({
-    where: { id: me.id },
-    select: {
-      sellerCategory: true,
-      maxSellerProducts: true,
-      _count: { select: { sellerProducts: { where: { deletedAt: null } } } },
-      subCategories: {
-        select: { subCategory: { select: { id: true, name: true } } },
+  const [user, allSubCats] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: me.id },
+      select: {
+        sellerCategory: true,
+        maxSellerProducts: true,
+        _count: { select: { sellerProducts: { where: { deletedAt: null } } } },
+        subCategories: {
+          select: { subCategory: { select: { id: true, name: true } } },
+        },
       },
-    },
-  });
+    }),
+    prisma.sellerSubCategory.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        categoryName: true,
+        showInKhoTaiNguyen: true,
+        showInTaiNguyenMmo: true,
+      },
+      orderBy: [{ categoryName: "asc" }, { displayOrder: "asc" }],
+    }),
+  ]);
 
   if (!user?.sellerCategory) redirect("/ban-hang");
 
@@ -66,7 +79,12 @@ export default async function TaoMoiSanPhamPage() {
               </div>
             </div>
           ) : (
-            <ProductForm mode="create" sellerCategory={user.sellerCategory} subCategories={subCategories} />
+            <ProductForm
+              mode="create"
+              sellerCategory={user.sellerCategory}
+              subCategories={subCategories}
+              allSubCats={allSubCats}
+            />
           )}
         </div>
       </div>

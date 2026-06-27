@@ -17,6 +17,7 @@ const addProductSchema = z.object({
   imageUrl: z.string().url("URL ảnh không hợp lệ").nullish(),
   sellerCategory: z.string().min(1).max(100).trim(),
   subCategoryId: z.string().uuid().nullable().optional(),
+  storeType: z.enum(["KHO_TAI_NGUYEN", "TAI_NGUYEN_MMO"]).optional(),
   stockItems: z
     .array(z.string().min(1, "Item không được rỗng").max(2000, "Mỗi item tối đa 2000 ký tự"))
     .min(1, "Cần ít nhất 1 item kho")

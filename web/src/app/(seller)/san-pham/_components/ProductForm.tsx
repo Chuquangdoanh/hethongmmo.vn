@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { r2Url } from "@/lib/utils/image-url";
 import { FileText, Upload, X, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
@@ -9,15 +9,31 @@ import VariantManager from "@/components/shared/VariantManager";
 const MAX_STOCK_ITEMS = 5000;
 const MAX_FILE_SIZE_MB = 10;
 
+type StoreTypeKey = "KHO_TAI_NGUYEN" | "TAI_NGUYEN_MMO";
+
+const STORE_PAGES: { key: StoreTypeKey; label: string; flag: "showInKhoTaiNguyen" | "showInTaiNguyenMmo" }[] = [
+  { key: "KHO_TAI_NGUYEN", label: "Kho tài nguyên", flag: "showInKhoTaiNguyen" },
+  { key: "TAI_NGUYEN_MMO",  label: "Nguyên liệu",    flag: "showInTaiNguyenMmo" },
+];
+
 interface SubCategoryItem {
   id: string;
   name: string;
+}
+
+interface SubCatFull {
+  id: string;
+  name: string;
+  categoryName: string;
+  showInKhoTaiNguyen: boolean;
+  showInTaiNguyenMmo: boolean;
 }
 
 interface ProductFormProps {
   mode: "create" | "edit";
   sellerCategory: string;
   subCategories?: SubCategoryItem[];
+  allSubCats?: SubCatFull[];
   initialData?: {
     id: string;
     name: string;
@@ -28,10 +44,12 @@ interface ProductFormProps {
     isActive: boolean;
     isHidden: boolean;
     subCategoryId?: string | null;
+    storeType?: string;
+    productSellerCategory?: string;
   };
 }
 
-export default function ProductForm({ mode, sellerCategory, subCategories = [], initialData }: ProductFormProps) {
+export default function ProductForm({ mode, sellerCategory, subCategories = [], allSubCats, initialData }: ProductFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const txtInputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +64,25 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
     isHidden: initialData?.isHidden ?? false,
   });
   const [subCategoryId, setSubCategoryId] = useState<string | null>(initialData?.subCategoryId ?? null);
+
+  // ── Category selector state (khi allSubCats được truyền vào) ─────────────
+  const [storeType, setStoreType] = useState<StoreTypeKey>(
+    (initialData?.storeType as StoreTypeKey | undefined) ?? "KHO_TAI_NGUYEN",
+  );
+  const [sellerCat, setSellerCat] = useState(initialData?.productSellerCategory ?? "");
+
+  const currentPageDef = useMemo(
+    () => STORE_PAGES.find((p) => p.key === storeType) ?? STORE_PAGES[0]!,
+    [storeType],
+  );
+  const parentCats = useMemo(() => {
+    if (!allSubCats) return [];
+    return [...new Set(allSubCats.filter((s) => s[currentPageDef.flag]).map((s) => s.categoryName))].sort();
+  }, [allSubCats, storeType]);
+  const filteredSubCats = useMemo(() => {
+    if (!allSubCats || !sellerCat) return [];
+    return allSubCats.filter((s) => s[currentPageDef.flag] && s.categoryName === sellerCat);
+  }, [allSubCats, storeType, sellerCat]);
 
   // ── Stock input state (create mode only) ──────────────────────────────────
   const [stockTab, setStockTab] = useState<"file" | "manual">("file");
@@ -194,6 +231,14 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
       const url = mode === "create" ? "/api/seller/products" : `/api/seller/products/${initialData!.id}`;
       const method = mode === "create" ? "POST" : "PATCH";
 
+      // Khi có allSubCats (chế độ chọn danh mục mới): dùng sellerCat + storeType
+      // Khi không có: fallback về sellerCategory cũ (backward compat)
+      const resolvedSellerCategory = allSubCats ? sellerCat : sellerCategory;
+      if (allSubCats && !sellerCat) {
+        setError("Vui lòng chọn danh mục cha.");
+        return;
+      }
+
       const body: Record<string, unknown> = {
         name: form.name.trim(),
         price,
@@ -202,9 +247,10 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
         imageUrl: form.imageUrl.trim() || null,
         isActive: form.isActive,
         isHidden: form.isHidden,
-        sellerCategory,
+        sellerCategory: resolvedSellerCategory,
         subCategoryId: subCategoryId ?? null,
       };
+      if (allSubCats) body.storeType = storeType;
       if (mode === "create") body.stockItems = stockItems;
 
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -304,6 +350,75 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
       )}
     </div>
   ) : null;
+
+  // ── Category selector (3 tầng) — chỉ hiển thị khi allSubCats được truyền ──
+  const categorySelector = allSubCats && allSubCats.length > 0 ? (
+    <div className="space-y-3">
+      <label className="block text-xs font-medium text-gray-500">Trang & Danh mục *</label>
+
+      {/* Page tabs */}
+      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
+        {STORE_PAGES.map((page) => (
+          <button
+            key={page.key}
+            type="button"
+            onClick={() => { setStoreType(page.key); setSellerCat(""); setSubCategoryId(null); }}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              storeType === page.key ? "bg-white text-violet-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {page.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Parent category */}
+      {parentCats.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] text-gray-400 uppercase tracking-wide">Danh mục cha</p>
+          <div className="flex flex-wrap gap-2">
+            {parentCats.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => { setSellerCat(cat); setSubCategoryId(null); }}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                  sellerCat === cat
+                    ? "bg-violet-600 border-violet-600 text-white"
+                    : "bg-white border-gray-200 text-gray-600 hover:border-violet-400 hover:text-violet-600"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sub-category */}
+      {sellerCat && filteredSubCats.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] text-gray-400 uppercase tracking-wide">Danh mục con</p>
+          <div className="flex flex-wrap gap-2">
+            {filteredSubCats.map((sub) => (
+              <button
+                key={sub.id}
+                type="button"
+                onClick={() => setSubCategoryId(subCategoryId === sub.id ? null : sub.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                  subCategoryId === sub.id
+                    ? "bg-violet-600 border-violet-600 text-white"
+                    : "bg-white border-gray-200 text-gray-600 hover:border-violet-400 hover:text-violet-600"
+                }`}
+              >
+                {subCategoryId === sub.id ? "✓ " : ""}{sub.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  ) : subCategoryField;
 
   const checkboxes = (
     <div className="pt-2 border-t border-gray-100 flex items-center gap-6">
@@ -568,7 +683,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
                 {nameField}
                 {warrantyInfoField}
                 {priceField}
-                {subCategoryField}
+                {categorySelector}
                 {imageUpload}
                 {descField}
                 {checkboxes}
@@ -584,7 +699,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
                 <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Thông tin cơ bản</p>
                 {nameField}
                 {priceField}
-                {subCategoryField}
+                {categorySelector}
                 {checkboxes}
               </div>
 

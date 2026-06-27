@@ -21,13 +21,13 @@ export default async function SuaSanPhamPage({
   const session = await auth();
   const me = session!.user as AuthenticatedUser;
 
-  const [product, user] = await Promise.all([
+  const [product, user, allSubCats] = await Promise.all([
     prisma.sellerProduct.findFirst({
       where: { id, sellerId: me.id, deletedAt: null },
       select: {
         id: true, name: true, price: true, warrantyInfo: true, description: true,
         imageUrl: true, isActive: true, isHidden: true,
-        isRestricted: true, sellerCategory: true, subCategoryId: true,
+        isRestricted: true, sellerCategory: true, subCategoryId: true, storeType: true,
       },
     }),
     prisma.user.findUnique({
@@ -38,6 +38,17 @@ export default async function SuaSanPhamPage({
           select: { subCategory: { select: { id: true, name: true } } },
         },
       },
+    }),
+    prisma.sellerSubCategory.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        categoryName: true,
+        showInKhoTaiNguyen: true,
+        showInTaiNguyenMmo: true,
+      },
+      orderBy: [{ categoryName: "asc" }, { displayOrder: "asc" }],
     }),
   ]);
 
@@ -96,6 +107,7 @@ export default async function SuaSanPhamPage({
             mode="edit"
             sellerCategory={user.sellerCategory}
             subCategories={subCategories}
+            allSubCats={allSubCats}
             initialData={{
               id: product.id,
               name: product.name,
@@ -106,6 +118,8 @@ export default async function SuaSanPhamPage({
               isActive: product.isActive,
               isHidden: product.isHidden,
               subCategoryId: product.subCategoryId ?? null,
+              storeType: product.storeType,
+              productSellerCategory: product.sellerCategory,
             }}
           />
 

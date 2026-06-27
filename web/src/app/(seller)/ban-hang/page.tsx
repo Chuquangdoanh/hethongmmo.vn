@@ -12,7 +12,7 @@ import {
   ArrowDownToLine, Calendar,
 } from "lucide-react";
 import ProductActions from "./_components/ProductActions";
-import RegisterSlotsModal from "./_components/RegisterSlotsModal";
+import UpgradeShopModal from "./_components/UpgradeShopModal";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
 import { r2Url } from "@/lib/utils/image-url";
 
@@ -108,6 +108,25 @@ export default async function BanHangPage() {
     `,
     prisma.$queryRaw<ShopRow[]>`SELECT shop_locked FROM users WHERE id = ${me.id}`,
   ]);
+
+  const [availableSubCats, selectedSubCats] = await Promise.all([
+    prisma.sellerSubCategory.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        categoryName: true,
+        showInKhoTaiNguyen: true,
+        showInTaiNguyenMmo: true,
+      },
+      orderBy: [{ categoryName: "asc" }, { displayOrder: "asc" }],
+    }),
+    prisma.userSubCategory.findMany({
+      where: { userId: me.id },
+      select: { subCategoryId: true },
+    }),
+  ]);
+  const selectedSubCatIds = selectedSubCats.map((s) => s.subCategoryId);
 
   const revenue = Number(totalRevenueAgg._sum.finalPrice ?? 0);
   const qualifyingGross = Number(qualifyingRows[0]?.total ?? 0);
@@ -205,10 +224,13 @@ export default async function BanHangPage() {
                   Sản phẩm của tôi
                 </h2>
                 <div className="flex items-center gap-2">
-                  <RegisterSlotsModal
+                  <UpgradeShopModal
                     packages={slotPackages}
                     currentSlots={maxProducts}
                     userBalance={userBalance}
+                    sellerCategory={user?.sellerCategory ?? null}
+                    availableSubCats={availableSubCats}
+                    selectedSubCatIds={selectedSubCatIds}
                   />
                   {productCount < maxProducts ? (
                     <Link

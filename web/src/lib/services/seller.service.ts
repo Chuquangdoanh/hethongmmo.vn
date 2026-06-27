@@ -107,6 +107,7 @@ interface AddProductParams {
   sellerCategory: string;
   subCategoryId?: string | null;
   stockItems: string[];
+  storeType?: "KHO_TAI_NGUYEN" | "TAI_NGUYEN_MMO"; // nếu có, dùng thay vì fetch từ sellerRequest
 }
 
 /** Adds a new product with encrypted stock items. Enforces product limit. */
@@ -142,7 +143,7 @@ export async function addSellerProduct(params: AddProductParams): Promise<string
     contentEnc: encrypt(item) as unknown as Uint8Array<ArrayBuffer>,
   }));
 
-  const storeType = sellerRequest?.storeType ?? "TAI_NGUYEN_MMO";
+  const storeType = params.storeType ?? sellerRequest?.storeType ?? "TAI_NGUYEN_MMO";
 
   const product = await prisma.sellerProduct.create({
     data: {
