@@ -480,7 +480,7 @@ export default async function KhoTaiNguyenPage({
 
                       {/* ── Ảnh sản phẩm ── */}
                       <div className="block relative shrink-0">
-                        <div className="aspect-video bg-light overflow-hidden relative">
+                        <div className="aspect-video bg-light overflow-hidden" style={{ position: "relative" }}>
                           {imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -496,22 +496,21 @@ export default async function KhoTaiNguyenPage({
                             </div>
                           )}
 
-                          {/* Badges top-left: category + HOT/NEW */}
-                          <div className="absolute top-2 left-2 flex gap-1">
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide bg-[#1d4ed8]/85 text-white">
-                              {category}
-                            </span>
-                            {isHot && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-[#ef4444] text-white uppercase">
-                                HOT
-                              </span>
-                            )}
-                            {!isHot && isNew && (
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-[#22c55e] text-white uppercase">
-                                NEW
-                              </span>
-                            )}
-                          </div>
+                          {/* HOT / NEW — top-left */}
+                          {(isHot || isNew) && (
+                            <div className="absolute top-2 left-2 flex gap-1">
+                              {isHot && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-[#ef4444] text-white uppercase">
+                                  HOT
+                                </span>
+                              )}
+                              {!isHot && isNew && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-[#22c55e] text-white uppercase">
+                                  NEW
+                                </span>
+                              )}
+                            </div>
+                          )}
 
                           {/* Rating overlay — luôn hiển thị (match Tài Nguyên MMO) */}
                           <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/65 to-transparent px-2.5 pt-5 pb-2">
@@ -526,19 +525,6 @@ export default async function KhoTaiNguyenPage({
                             )}
                           </div>
 
-                          {/* Nút yêu thích — z-10 để click được trên Link overlay */}
-                          <div className="absolute bottom-8 right-2 z-10">
-                            <FavoriteButton
-                              productId={id}
-                              productType={kind === "mmo" ? "MMO_PRODUCT" : "SELLER_PRODUCT"}
-                              initialIsFavorite={isFavorite}
-                              initialCount={favoriteCount}
-                              isLoggedIn={isLoggedIn}
-                              showCount={false}
-                              className="w-7 h-7 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
-                              iconSize={14}
-                            />
-                          </div>
                         </div>
                       </div>
 
@@ -547,11 +533,8 @@ export default async function KhoTaiNguyenPage({
                         <h3 className="text-sm font-bold text-[#1e293b] line-clamp-2 leading-snug">
                           {name}
                         </h3>
-                        {desc && (
-                          <p className="text-[11px] text-text-muted line-clamp-2 leading-relaxed">{desc}</p>
-                        )}
 
-                        {/* Stats: Đã bán · Còn · Yêu thích */}
+                        {/* Stats: Đã bán · Còn */}
                         <div className="flex items-center gap-1.5 text-[10px] text-[#94a3b8] flex-wrap">
                           <span className="flex items-center gap-0.5">
                             <ShoppingCart size={8} strokeWidth={2} />
@@ -559,14 +542,6 @@ export default async function KhoTaiNguyenPage({
                           </span>
                           <span className="text-[#d1d5db]">·</span>
                           <span>Còn <strong className="text-[#374151]">{avail}</strong></span>
-                          {favoriteCount > 0 && (
-                            <>
-                              <span className="text-[#d1d5db]">·</span>
-                              <span className="flex items-center gap-0.5 text-[#E53E3E]">
-                                ❤️ <strong>{favoriteCount}</strong>
-                              </span>
-                            </>
-                          )}
                         </div>
 
                         {/* Review actions */}

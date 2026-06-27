@@ -185,7 +185,10 @@ export default async function KhoMmoProductDetailPage({
   // ── JSX SECTIONS ──────────────────────────────────────────────
 
   const sectionImage = (
-    <div className="rounded-2xl bg-[#f1f5f9] overflow-hidden relative" style={{ aspectRatio: "4/3" }}>
+    <div
+      className="rounded-2xl bg-[#f1f5f9] overflow-hidden"
+      style={{ aspectRatio: "16/9", position: "relative" }}
+    >
       {product.thumbnail ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -197,7 +200,7 @@ export default async function KhoMmoProductDetailPage({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={r2Url(product.thumbnail)} alt={product.name}
-            className="relative z-10 w-full h-full object-contain"
+            className="absolute inset-0 w-full h-full object-cover"
             loading="eager" decoding="async"
           />
         </>
@@ -207,12 +210,25 @@ export default async function KhoMmoProductDetailPage({
         </div>
       )}
       {isOutOfStock && (
-        <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
+        <div className="absolute inset-0 bg-black/60 flex items-center justify-center" style={{ zIndex: 10 }}>
           <span className="px-5 py-2.5 rounded-xl bg-black/80 text-danger font-extrabold text-lg tracking-widest">
             HẾT HÀNG
           </span>
         </div>
       )}
+      {/* Nút yêu thích — cuối DOM + z-index cao nhất, luôn đứng trên mọi ảnh */}
+      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 9999 }}>
+        <FavoriteButton
+          productId={product.id}
+          productType="MMO_PRODUCT"
+          initialIsFavorite={favoriteStatus.isFavorite}
+          initialCount={favoriteStatus.favoriteCount}
+          isLoggedIn={!!me}
+          showCount
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white border border-white shadow-md hover:shadow-lg transition-shadow"
+          iconSize={18}
+        />
+      </div>
     </div>
   );
 
@@ -291,21 +307,9 @@ export default async function KhoMmoProductDetailPage({
         </span>
       </div>
 
-      {/* Title + Favorite */}
+      {/* Title */}
       <div>
-        <div className="flex items-start justify-between gap-3 mb-1">
-          <h1 className="text-xl font-extrabold text-text-dark leading-snug flex-1">{product.name}</h1>
-          <FavoriteButton
-            productId={product.id}
-            productType="MMO_PRODUCT"
-            initialIsFavorite={favoriteStatus.isFavorite}
-            initialCount={favoriteStatus.favoriteCount}
-            isLoggedIn={!!me}
-            showCount
-            className="shrink-0 pt-0.5"
-            iconSize={20}
-          />
-        </div>
+        <h1 className="text-xl font-extrabold text-text-dark leading-snug mb-1">{product.name}</h1>
         <p className="text-xs text-text-muted">Hỗ trợ nhanh 24/7</p>
       </div>
 
@@ -332,19 +336,6 @@ export default async function KhoMmoProductDetailPage({
           {isOutOfStock ? <XCircle size={16} strokeWidth={2} /> : <CheckCircle size={16} strokeWidth={2} />}
           {isOutOfStock ? "Hết hàng" : "Còn hàng"}
         </div>
-      </div>
-
-      {/* Trust icons */}
-      <div className="grid grid-cols-3 gap-2 py-3 border-y border-[#f1f5f9]">
-        {TRUST_ICONS.map(({ Icon, color, label, sub }) => (
-          <div key={label} className="text-center">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center mx-auto mb-1.5" style={{ background: `${color}14` }}>
-              <Icon size={18} strokeWidth={1.75} style={{ color }} />
-            </div>
-            <p className="text-[10px] font-bold text-[#374151]">{label}</p>
-            <p className="text-[9px] text-[#94a3b8] leading-tight mt-0.5 hidden sm:block">{sub}</p>
-          </div>
-        ))}
       </div>
 
       {/* Buy button */}

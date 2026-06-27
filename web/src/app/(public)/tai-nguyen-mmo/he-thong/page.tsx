@@ -314,13 +314,13 @@ export default async function SystemProfilePage({
                     href={`/tai-nguyen-mmo/${p.slug}`}
                     className="group rounded-2xl border border-[#e2e8f0] bg-white overflow-hidden hover:border-[#0066ff] hover:shadow-lg transition-all"
                   >
-                    <div className="aspect-video bg-[#f1f5f9] relative overflow-hidden">
+                    <div className="aspect-video bg-[#f1f5f9] overflow-hidden" style={{ position: "relative" }}>
                       {p.thumbnail ? (
                         <>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={r2Url(p.thumbnail)} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-45 pointer-events-none" loading="lazy" />
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={r2Url(p.thumbnail)} alt={p.name} className="relative z-10 w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                          <img src={r2Url(p.thumbnail)} alt={p.name} className="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" loading="lazy" />
                         </>
                       ) : (
                         <div className="flex items-center justify-center h-full">

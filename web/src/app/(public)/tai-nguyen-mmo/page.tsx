@@ -495,7 +495,7 @@ export default async function TaiNguyenMmoPage({
 
                     {/* Image area */}
                     <div className="block relative shrink-0">
-                      <div className="aspect-video bg-[#f1f5f9] overflow-hidden relative">
+                      <div className="aspect-video bg-[#f1f5f9] overflow-hidden" style={{ position: "relative" }}>
                         {p.imageUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -515,35 +515,16 @@ export default async function TaiNguyenMmoPage({
                           </div>
                         )}
 
-                        {/* Category badge — top-left */}
-                        <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wide bg-[#1d4ed8]/85 text-white backdrop-blur-sm">
-                          {p.category}
-                        </span>
-
-                        {/* HOT / NEW — top-right */}
+                        {/* HOT / NEW — top-left */}
                         {p.isHot ? (
-                          <span className="absolute top-2 right-2 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-danger text-white uppercase tracking-wide shadow">
+                          <span className="absolute top-2 left-2 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-danger text-white uppercase tracking-wide shadow">
                             HOT
                           </span>
                         ) : p.isNew ? (
-                          <span className="absolute top-2 right-2 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-[#22c55e] text-white uppercase tracking-wide shadow">
+                          <span className="absolute top-2 left-2 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-[#22c55e] text-white uppercase tracking-wide shadow">
                             NEW
                           </span>
                         ) : null}
-
-                        {/* Nút yêu thích — góc dưới phải ảnh, z-10 để click được trên overlay Link */}
-                        <div className="absolute bottom-8 right-2 z-10">
-                          <FavoriteButton
-                            productId={p.id}
-                            productType={p.kind === "mmo" ? "MMO_PRODUCT" : "SELLER_PRODUCT"}
-                            initialIsFavorite={p.isFavorite}
-                            initialCount={p.favoriteCount}
-                            isLoggedIn={!!me}
-                            showCount={false}
-                            className="w-7 h-7 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
-                            iconSize={14}
-                          />
-                        </div>
 
                         {/* Star rating overlay — bottom */}
                         <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/65 to-transparent px-2.5 pt-5 pb-2">
@@ -565,11 +546,6 @@ export default async function TaiNguyenMmoPage({
                       <h3 className="text-sm font-bold text-text-dark line-clamp-2 leading-snug">
                         {p.name}
                       </h3>
-                      {p.description && (
-                        <p className="text-[11px] text-text-muted line-clamp-2 leading-relaxed">
-                          {p.description}
-                        </p>
-                      )}
 
                       {/* Stats row */}
                       <div className="flex items-center gap-1.5 text-[10px] text-text-muted mt-0.5 flex-wrap">
@@ -579,14 +555,6 @@ export default async function TaiNguyenMmoPage({
                         </span>
                         <span className="text-[#d1d5db]">·</span>
                         <span>Còn <strong className="text-[#374151]">{p.available}</strong></span>
-                        {p.favoriteCount > 0 && (
-                          <>
-                            <span className="text-[#d1d5db]">·</span>
-                            <span className="flex items-center gap-0.5 text-[#E53E3E]">
-                              ❤️ <strong>{p.favoriteCount}</strong>
-                            </span>
-                          </>
-                        )}
                       </div>
 
                       {/* Review action */}

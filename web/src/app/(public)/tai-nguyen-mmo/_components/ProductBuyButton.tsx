@@ -11,6 +11,7 @@ import {
 
 export interface ProductVariant {
   id: string;
+  variantName?: string | null;
   variantPrice: number;
   warranty: string;
   isActive: boolean;
@@ -361,37 +362,46 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
         {/* Variant selector */}
         {hasVariants && (
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-gray-700">Chọn gói</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-gray-700">Chọn gói</p>
+              {selectedVariantId && (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedVariantId(null); setError(""); }}
+                  className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <X size={11} /> Hủy chọn
+                </button>
+              )}
+            </div>
             <div className="space-y-2">
               {activeVariants.map((v, i) => {
                 const isSelected = selectedVariantId === v.id;
+                const label = v.variantName?.trim() || `Gói ${i + 1}`;
                 return (
                   <button
                     key={v.id}
                     type="button"
                     onClick={() => { setSelectedVariantId(v.id); setError(""); }}
-                    className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all duration-150 ${
+                    className={`w-full text-left rounded-xl border-2 px-3 py-2.5 transition-all duration-150 ${
                       isSelected
-                        ? "border-[#C53030] bg-red-50"
-                        : "border-gray-200 bg-white hover:border-gray-300"
+                        ? "border-[#C53030] bg-red-50/60"
+                        : "border-gray-200 bg-white hover:border-red-200 hover:bg-red-50/20"
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                          isSelected ? "border-[#C53030] bg-[#C53030]" : "border-gray-300"
-                        }`}>
-                          {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold text-gray-900">Gói {i + 1}</p>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <ShieldCheck size={10} className="text-emerald-600" />
-                            <p className="text-[10px] text-emerald-700 font-medium">Bảo hành: {v.warranty}</p>
-                          </div>
-                        </div>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-lg shrink-0 flex items-center justify-center ${
+                        isSelected ? "bg-[#C53030]/10" : "bg-red-50"
+                      }`}>
+                        <ShieldCheck size={18} className={isSelected ? "text-[#C53030]" : "text-red-400"} />
                       </div>
-                      <p className={`text-sm font-bold shrink-0 ${isSelected ? "text-[#C53030]" : "text-gray-800"}`}>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold leading-tight ${isSelected ? "text-[#C53030]" : "text-gray-900"}`}>
+                          {label}
+                        </p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">{v.warranty}</p>
+                      </div>
+                      <p className={`text-sm font-bold shrink-0 ${isSelected ? "text-[#C53030]" : "text-gray-700"}`}>
                         {formatVnd(v.variantPrice)}
                       </p>
                     </div>
@@ -423,7 +433,7 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
               : "py-3.5 text-sm bg-[#C53030] hover:bg-[#9B2C2C] text-white shadow-md"
           }`}
         >
-          {!props.compact && <Zap size={16} />}
+          {!props.compact && <ShoppingCart size={16} />}
           {props.compact
             ? (props.isLoggedIn ? "MUA NGAY" : "ĐĂNG NHẬP")
             : (props.isLoggedIn

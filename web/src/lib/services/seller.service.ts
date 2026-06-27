@@ -263,7 +263,7 @@ interface BuySellerSlotsParams {
   price: number;
 }
 
-/** Deducts fee and adds slots to maxSellerProducts (cumulative). */
+/** Deducts fee and upgrades maxSellerProducts to the purchased slot tier (must be higher than current). */
 export async function buySellerSlots(params: BuySellerSlotsParams): Promise<void> {
   const { userId, slots, price } = params;
 
@@ -277,18 +277,22 @@ export async function buySellerSlots(params: BuySellerSlotsParams): Promise<void
     if (user.seller_status !== "APPROVED") {
       throw new ValidationError("Tài khoản chưa được duyệt làm seller");
     }
+    if (slots <= user.max_seller_products) {
+      throw new ValidationError(
+        `Chỉ có thể nâng cấp lên gói cao hơn gói hiện tại (${user.max_seller_products} slot)`,
+      );
+    }
 
     const balance = new Decimal(user.balance);
     const cost = new Decimal(Number(price));
     if (balance.lt(cost)) throw new InsufficientBalanceError(balance.toNumber(), cost.toNumber());
 
     const balanceAfter = balance.sub(cost);
-    const newMaxProducts = (user.max_seller_products ?? 0) + slots;
 
     await tx.$executeRaw`
       UPDATE users
       SET balance = ${balanceAfter.toFixed(2)}::numeric,
-          max_seller_products = ${newMaxProducts},
+          max_seller_products = ${slots},
           updated_at = now()
       WHERE id = ${userId}::uuid
     `;
@@ -298,7 +302,7 @@ export async function buySellerSlots(params: BuySellerSlotsParams): Promise<void
         userId,
         type: "SELLER_SLOT_PURCHASE",
         amount: cost.neg().toFixed(2),
-        description: `Thêm ${slots} slot sản phẩm (tổng: ${newMaxProducts})`,
+        description: `Nâng cấp gói slot: ${user.max_seller_products} → ${slots} sản phẩm`,
         balanceBefore: balance.toFixed(2),
         balanceAfter: balanceAfter.toFixed(2),
       },
@@ -310,7 +314,7 @@ export async function buySellerSlots(params: BuySellerSlotsParams): Promise<void
         action: "SELLER_SLOT_PURCHASE",
         targetType: "User",
         targetId: userId,
-        metadata: { slots, price, newMaxProducts },
+        metadata: { slots, price, previousSlots: user.max_seller_products },
       },
     });
   });
