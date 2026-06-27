@@ -11,6 +11,7 @@ export const metadata: Metadata = buildMeta({
   url: "/",
   image: "/images/doinguctydjmedia.jpg",
 });
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db/prisma";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { formatVnd } from "@/lib/utils/format";
@@ -100,55 +101,67 @@ const PLATFORM_LABEL: Record<string, string> = {
   ZALO: "Zalo", TELEGRAM: "Telegram", TWITTER: "Twitter", OTHER: "Khác",
 };
 
+// Cache DB queries 5 phút — tách khỏi ISR để background rebuild không hit DB
+const getHomepageDbData = unstable_cache(
+  async () => {
+    const [hotTuts, featuredProducts, featuredServices, rawCourses, navCategories] = await Promise.all([
+      prisma.tutTrick.findMany({
+        where: { isActive: true, deletedAt: null },
+        orderBy: [{ isFeatured: "desc" }, { totalOrders: "desc" }],
+        take: 2,
+        select: {
+          id: true, name: true, slug: true, thumbnail: true, price: true,
+          platform: true, totalOrders: true, successRate: true,
+          publishedDate: true, rating: true, processingTime: true, warrantyPolicy: true,
+        },
+      }),
+      prisma.sellerProduct.findMany({
+        where: {
+          isActive: true, isHidden: false, isRestricted: false, deletedAt: null,
+          stockItems: { some: { status: "AVAILABLE" } },
+        },
+        orderBy: [{ salesCount: "desc" }, { createdAt: "desc" }],
+        take: 3,
+        select: {
+          id: true, name: true, price: true, imageUrl: true, salesCount: true,
+          description: true, sellerCategory: true,
+          seller: { select: { uidPrefix: true } },
+          _count: { select: { stockItems: { where: { status: "AVAILABLE" } } } },
+        },
+      }),
+      prisma.service.findMany({
+        where: { isActive: true, deletedAt: null },
+        orderBy: [{ isFeatured: "desc" }, { displayOrder: "asc" }],
+        take: 8,
+        select: { id: true, slug: true, name: true, thumbnail: true, price: true, platform: true, category: true },
+      }),
+      prisma.course.findMany({
+        where: { isActive: true, deletedAt: null },
+        orderBy: [{ displayOrder: "asc" }, { totalOrders: "desc" }],
+        take: 6,
+        select: {
+          id: true, slug: true, name: true, thumbnail: true,
+          description: true, category: true,
+          salePrice: true, originalPrice: true,
+          studentCount: true, rating: true, badge: true,
+        },
+      }),
+      prisma.resourceCategory.findMany({
+        orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+        select: { name: true },
+      }),
+    ]);
+    return { hotTuts, featuredProducts, featuredServices, rawCourses, navCategories };
+  },
+  ["homepage-db-data"],
+  { revalidate: 300 },
+);
+
 /* ═══════════════════════════════════════════════════════ */
 export default async function HomePage() {
   await guardPublicPage("");
-  const [hotTuts, featuredProducts, featuredServices, rawCourses, navCategories, cmsData] = await Promise.all([
-    prisma.tutTrick.findMany({
-      where: { isActive: true, deletedAt: null },
-      orderBy: [{ isFeatured: "desc" }, { totalOrders: "desc" }],
-      take: 2,
-      select: {
-        id: true, name: true, slug: true, thumbnail: true, price: true,
-        platform: true, totalOrders: true, successRate: true,
-        publishedDate: true, rating: true, processingTime: true, warrantyPolicy: true,
-      },
-    }),
-    prisma.sellerProduct.findMany({
-      where: {
-        isActive: true, isHidden: false, isRestricted: false, deletedAt: null,
-        stockItems: { some: { status: "AVAILABLE" } },
-      },
-      orderBy: [{ salesCount: "desc" }, { createdAt: "desc" }],
-      take: 3,
-      select: {
-        id: true, name: true, price: true, imageUrl: true, salesCount: true,
-        description: true, sellerCategory: true,
-        seller: { select: { uidPrefix: true } },
-        _count: { select: { stockItems: { where: { status: "AVAILABLE" } } } },
-      },
-    }),
-    prisma.service.findMany({
-      where: { isActive: true, deletedAt: null },
-      orderBy: [{ isFeatured: "desc" }, { displayOrder: "asc" }],
-      take: 8,
-      select: { id: true, slug: true, name: true, thumbnail: true, price: true, platform: true, category: true },
-    }),
-    prisma.course.findMany({
-      where: { isActive: true, deletedAt: null },
-      orderBy: [{ displayOrder: "asc" }, { totalOrders: "desc" }],
-      take: 6,
-      select: {
-        id: true, slug: true, name: true, thumbnail: true,
-        description: true, category: true,
-        salePrice: true, originalPrice: true,
-        studentCount: true, rating: true, badge: true,
-      },
-    }),
-    prisma.resourceCategory.findMany({
-      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
-      select: { name: true },
-    }),
+  const [{ hotTuts, featuredProducts, featuredServices, rawCourses, navCategories }, cmsData] = await Promise.all([
+    getHomepageDbData(),
     getAllSiteContent(),
   ]);
 

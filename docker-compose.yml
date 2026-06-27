@@ -94,6 +94,7 @@ services:
       DB_POOL_SIZE: "10"
     volumes:
       - ./uploads:/uploads
+      - nextjs_cache:/app/.next/cache   # unstable_cache survive container restart
     # Không expose port 3000 ra host — chỉ Nginx mới được proxy vào
     expose:
       - "3000"
@@ -225,6 +226,7 @@ volumes:
   pg_data:
   redis_data:
   nginx_cache:
+  nextjs_cache:
   netdataconfig:
   netdatalib:
   netdatacache:

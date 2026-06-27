@@ -499,7 +499,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
           <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
           <div>
             <p className="text-sm font-semibold text-emerald-700">Sản phẩm đã được tạo thành công!</p>
-            <p className="text-xs text-emerald-600 mt-0.5">Thêm gói biến thể (giá + bảo hành) bên dưới, hoặc bỏ qua và xem danh sách.</p>
+            <p className="text-xs text-emerald-600 mt-0.5">Hãy Thêm gói bảo hành của bạn để đạt được nhiều kết quả tốt hơn. </p>
           </div>
         </div>
 

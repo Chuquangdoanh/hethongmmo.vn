@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import CourseScrollHelper from "./_components/CourseScrollHelper";
 import CategoryFilterClient from "./_components/CategoryFilterClient";
 import { prisma } from "@/lib/db/prisma";
@@ -56,6 +57,45 @@ function formatViews(n: number): string {
   return String(n);
 }
 
+// Cache danh sách category và definition — không phụ thuộc filter
+const getCourseStaticData = unstable_cache(
+  async () => {
+    const [rawCategories, courseCategoryDefs] = await Promise.all([
+      prisma.course.findMany({
+        where: { isActive: true, deletedAt: null },
+        select: { category: true },
+        distinct: ["category"],
+      }),
+      prisma.courseCategory.findMany({
+        select: { name: true, icon: true, displayOrder: true },
+        orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+      }),
+    ]);
+    return { rawCategories, courseCategoryDefs };
+  },
+  ["khoa-hoc-static"],
+  { revalidate: 300 },
+);
+
+// Cache courses per category — argument tự động thành phần cache key
+const getCoursesByCategory = unstable_cache(
+  async (category: string) => prisma.course.findMany({
+    where: { isActive: true, deletedAt: null, ...(category ? { category } : {}) },
+    orderBy: [{ displayOrder: "asc" }, { studentCount: "desc" }],
+    select: {
+      id: true, slug: true, name: true, thumbnail: true,
+      category: true, learningFormat: true,
+      originalPrice: true, salePrice: true,
+      duration: true, studentCount: true,
+      rating: true, badge: true, saleDeadline: true,
+      description: true, contentList: true, totalViews: true,
+      displayOrder: true,
+    },
+  }),
+  ["khoa-hoc-courses"],
+  { revalidate: 300 },
+);
+
 export default async function KhoaHocPage({
   searchParams,
 }: {
@@ -65,29 +105,9 @@ export default async function KhoaHocPage({
   const pageHero = await getSiteContent<{ badge: string; title: string; description: string; titleAccentColor: string }>(SITE_CONTENT_KEYS.PAGE_KHOA_HOC);
   const { category } = await searchParams;
 
-  const [courses, rawCategories, courseCategoryDefs] = await Promise.all([
-    prisma.course.findMany({
-      where: { isActive: true, deletedAt: null, ...(category ? { category } : {}) },
-      orderBy: [{ displayOrder: "asc" }, { studentCount: "desc" }],
-      select: {
-        id: true, slug: true, name: true, thumbnail: true,
-        category: true, learningFormat: true,
-        originalPrice: true, salePrice: true,
-        duration: true, studentCount: true,
-        rating: true, badge: true, saleDeadline: true,
-        description: true, contentList: true, totalViews: true,
-        displayOrder: true,
-      },
-    }),
-    prisma.course.findMany({
-      where: { isActive: true, deletedAt: null },
-      select: { category: true },
-      distinct: ["category"],
-    }),
-    prisma.courseCategory.findMany({
-      select: { name: true, icon: true, displayOrder: true },
-      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
-    }),
+  const [courses, { rawCategories, courseCategoryDefs }] = await Promise.all([
+    getCoursesByCategory(category ?? ""),
+    getCourseStaticData(),
   ]);
 
   // Sort 4 cấp: category displayOrder → course displayOrder → badge priority → studentCount DESC
