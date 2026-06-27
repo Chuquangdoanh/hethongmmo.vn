@@ -29,12 +29,13 @@ interface Props {
   services: Service[];
   illustrations: Illustration[];
   userInfo: UserInfo | null;
+  telegramHref?: string;
 }
 
 type ServiceType = "MUA_PAGE" | "CAP_PAGE";
 type Status = "idle" | "loading" | "success" | "error";
 
-export default function ServiceSectionClient({ services, illustrations, userInfo }: Props) {
+export default function ServiceSectionClient({ services, illustrations, userInfo, telegramHref = "https://t.me/BossMeta789" }: Props) {
   const router = useRouter();
   const [activeService, setActiveService] = useState<Service | null>(null);
   const [serviceType, setServiceType]     = useState<ServiceType>("MUA_PAGE");
@@ -192,7 +193,7 @@ export default function ServiceSectionClient({ services, illustrations, userInfo
                 </p>
                 <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
                   <a
-                    href="https://t.me/BossMeta789"
+                    href={telegramHref}
                     target="_blank" rel="noopener noreferrer"
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 6,

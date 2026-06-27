@@ -103,11 +103,14 @@ interface PageNetworksKoc {
 export default async function NetworksPage() {
   await guardPublicPage("NetWorks");
 
-  const [pageHero, trustContent, kocContent] = await Promise.all([
+  const [pageHero, trustContent, kocContent, contactCms] = await Promise.all([
     getSiteContent<PageNetworksHero>(SITE_CONTENT_KEYS.PAGE_NETWORKS),
     getSiteContent<PageNetworksTrust>(SITE_CONTENT_KEYS.PAGE_NETWORKS_TRUST),
     getSiteContent<PageNetworksKoc>(SITE_CONTENT_KEYS.PAGE_NETWORKS_KOC),
+    getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT),
   ]);
+  const telegramBtn = contactCms.quickButtons?.find((b) => b.id === "telegram");
+  const telegramHref = telegramBtn?.href ?? "https://t.me/BossMeta789";
 
   const session = await auth();
   const sessionUser = session?.user as AuthenticatedUser | undefined;
@@ -204,7 +207,7 @@ export default async function NetworksPage() {
             </h2>
           </div>
 
-          <ServiceSectionClient services={SERVICES} illustrations={ILLUSTRATIONS} userInfo={userInfo} />
+          <ServiceSectionClient services={SERVICES} illustrations={ILLUSTRATIONS} userInfo={userInfo} telegramHref={telegramHref} />
         </div>
       </section>
 

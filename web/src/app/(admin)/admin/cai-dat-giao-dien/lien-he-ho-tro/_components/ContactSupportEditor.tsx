@@ -12,10 +12,19 @@ interface ContactItem {
   bgColor: string;
 }
 
+interface QuickButton {
+  id: string;
+  label: string;
+  href: string;
+}
+
 interface ContactSupportData {
   buttonLabel: string;
   items: ContactItem[];
+  quickButtons: QuickButton[];
 }
+
+const DEFAULT_QUICK_BTN: QuickButton = { id: "", label: "Liên hệ ngay", href: "" };
 
 const PLATFORMS = [
   { value: "facebook", label: "Facebook", color: "#1877F2" },
@@ -33,6 +42,7 @@ export default function ContactSupportEditor({ initialData }: { initialData: Rec
   const [data, setData] = useState<ContactSupportData>({
     buttonLabel: String(initialData["buttonLabel"] ?? "Liên hệ hỗ trợ"),
     items: (initialData["items"] as ContactItem[] | undefined) ?? [],
+    quickButtons: (initialData["quickButtons"] as QuickButton[] | undefined) ?? [],
   });
 
   const [saving, setSaving] = useState(false);
@@ -56,6 +66,22 @@ export default function ContactSupportEditor({ initialData }: { initialData: Rec
 
   function addItem() {
     setData((prev) => ({ ...prev, items: [...prev.items, { ...DEFAULT_ITEM }] }));
+  }
+
+  function addQuickBtn() {
+    setData((prev) => ({ ...prev, quickButtons: [...prev.quickButtons, { ...DEFAULT_QUICK_BTN }] }));
+  }
+
+  function updateQuickBtn(idx: number, patch: Partial<QuickButton>) {
+    setData((prev) => {
+      const quickButtons = [...prev.quickButtons];
+      quickButtons[idx] = { ...quickButtons[idx]!, ...patch };
+      return { ...prev, quickButtons };
+    });
+  }
+
+  function removeQuickBtn(idx: number) {
+    setData((prev) => ({ ...prev, quickButtons: prev.quickButtons.filter((_, i) => i !== idx) }));
   }
 
   function onPlatformChange(idx: number, platform: string) {
@@ -144,6 +170,66 @@ export default function ContactSupportEditor({ initialData }: { initialData: Rec
           placeholder="Liên hệ hỗ trợ"
           hint='Văn bản hiển thị trên nút cố định góc phải màn hình'
         />
+      </div>
+
+      {/* Quick Buttons */}
+      <div className={cardClass}>
+        <h2 className="text-base font-bold text-gray-800">Nút liên hệ nhanh trên trang</h2>
+        <p className="text-xs text-gray-500 -mt-2">
+          Hiển thị trong sidebar trang sản phẩm, danh mục, khóa học. Dùng <code className="bg-gray-100 px-1 rounded">id</code> để phân biệt vị trí (vd: <code className="bg-gray-100 px-1 rounded">product</code>, <code className="bg-gray-100 px-1 rounded">course</code>).
+        </p>
+
+        {data.quickButtons.length === 0 && (
+          <p className="text-sm text-gray-400 py-4 text-center border border-dashed border-gray-200 rounded-xl">
+            Chưa có nút nào. Nhấn "Thêm nút" để bắt đầu.
+          </p>
+        )}
+
+        {data.quickButtons.map((btn, idx) => (
+          <div key={idx} className="border border-gray-200 rounded-xl p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">
+                Nút {idx + 1}{btn.id ? ` — ID: ${btn.id}` : ""}
+              </p>
+              <button
+                type="button"
+                onClick={() => removeQuickBtn(idx)}
+                className="text-[11px] text-red-500 hover:text-red-700 font-semibold"
+              >
+                Xóa
+              </button>
+            </div>
+            <FieldGrid cols={3}>
+              <FieldText
+                label="ID (định danh)"
+                value={btn.id}
+                onChange={(v) => updateQuickBtn(idx, { id: v.toLowerCase().replace(/\s+/g, "-") })}
+                placeholder="product / course / ..."
+                hint="Pages dùng ID này để tìm đúng nút"
+              />
+              <FieldText
+                label="Nhãn nút"
+                value={btn.label}
+                onChange={(v) => updateQuickBtn(idx, { label: v })}
+                placeholder="Liên hệ ngay"
+              />
+              <FieldText
+                label="Link URL"
+                value={btn.href}
+                onChange={(v) => updateQuickBtn(idx, { href: v })}
+                placeholder="https://t.me/..."
+              />
+            </FieldGrid>
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={addQuickBtn}
+          className="w-full text-sm font-semibold text-emerald-600 hover:text-emerald-800 border border-emerald-300 rounded-xl px-4 py-3 transition-colors hover:bg-emerald-50"
+        >
+          + Thêm nút liên hệ nhanh
+        </button>
       </div>
 
       {/* Items */}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
+import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 
 import { buildMeta } from "@/lib/utils/seo";
 export const metadata: Metadata = buildMeta({
@@ -227,6 +228,8 @@ const TOC = SECTIONS.map((s, i) => ({ id: s.id, label: `${i + 1}. ${s.title}` })
 
 export default async function DieuKhoanPage() {
   await guardPublicPage("dieu-khoan");
+  const contactCms = await getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT);
+  const telegramHref = contactCms.quickButtons?.find((b) => b.id === "telegram")?.href ?? "https://t.me/BossMeta789";
   return (
     <div className="mx-auto max-w-[1100px] px-4 md:px-6 lg:px-8 py-12">
 
@@ -414,7 +417,7 @@ export default async function DieuKhoanPage() {
             </div>
             <div className="flex gap-3 shrink-0">
               <a
-                href="https://t.me/BossMeta789"
+                href={telegramHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-5 py-2.5 rounded-lg bg-[#0066ff] text-white text-sm font-semibold hover:bg-[#0047cc] transition-colors"

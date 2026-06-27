@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { getFavoriteStatus } from "@/lib/services/favorite.service";
 import FavoriteButton from "@/components/shared/FavoriteButton";
+import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 
 export async function generateMetadata({
   params,
@@ -130,7 +131,7 @@ export default async function KhoMmoProductDetailPage({
     isActive: v.isActive,
   }));
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, favoriteStatus] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, favoriteStatus, contactCms] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "MMO_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -165,10 +166,14 @@ export default async function KhoMmoProductDetailPage({
       _count: { id: true },
     }),
     getFavoriteStatus(me?.id, "MMO_PRODUCT", product.id),
+    getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
   const reviewCount = reviewStats._count.id;
+  const productBtn  = contactCms.quickButtons?.find((b) => b.id === "product");
+  const productContactUrl   = productBtn?.href  ?? "https://m.me/chuquangdoanh";
+  const productContactLabel = productBtn?.label ?? "Liên hệ ngay";
 
   const starCounts = [5, 4, 3, 2, 1].map((star) => ({
     star,
@@ -524,12 +529,12 @@ export default async function KhoMmoProductDetailPage({
         </div>
       </div>
       <a
-        href={process.env.NEXT_PUBLIC_SUPPORT_URL ?? "https://m.me/chuquangdoanh"}
+        href={productContactUrl}
         target="_blank"
         rel="noopener noreferrer"
         className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-[#0052cc] transition-colors"
       >
-        Liên hệ ngay
+        {productContactLabel}
       </a>
     </div>
   );

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import CourseDetailTabs from "./_components/CourseDetailTabs";
 import SidebarRegisterButton from "./_components/SidebarRegisterButton";
+import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import YoutubeEmbed from "./_components/YoutubeEmbed";
 import { CourseIcon } from "@/lib/utils/course-icons";
 
@@ -117,7 +118,7 @@ export default async function KhoaHocDetailPage({ params }: Props) {
     : 0;
 
   // Bọc trong try/catch — bảng chưa tồn tại nếu migration chưa chạy trên server
-  const [faqCategories, supportItems, uncategorizedFaqs] = await Promise.all([
+  const [faqCategories, supportItems, uncategorizedFaqs, contactCms] = await Promise.all([
     prisma.courseFaqCategory.findMany({
       where: { courseId: course.id },
       include: {
@@ -139,7 +140,12 @@ export default async function KhoaHocDetailPage({ params }: Props) {
       select: { id: true, question: true, answer: true, categoryId: true },
       orderBy: { displayOrder: "asc" },
     }).catch(() => []),
+    getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT),
   ]);
+
+  const courseBtn = contactCms.quickButtons?.find((b) => b.id === "course");
+  const courseContactUrl   = courseBtn?.href  ?? "https://t.me/BossMeta789";
+  const courseContactLabel = courseBtn?.label ?? "Liên hệ hỗ trợ ngay";
 
   const isOnSale  = Number(course.salePrice) < Number(course.originalPrice);
   const isExpired = course.saleDeadline ? new Date(course.saleDeadline) < new Date() : false;
@@ -552,14 +558,14 @@ export default async function KhoaHocDetailPage({ params }: Props) {
                   Đội ngũ hỗ trợ của chúng tôi luôn sẵn sàng giải đáp mọi thắc mắc của bạn!
                 </p>
                 <a
-                  href="https://t.me/BossMeta789"
+                  href={courseContactUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm bg-white transition-colors hover:bg-blue-50"
                   style={{ color: "#0066ff" }}
                 >
                   <Headphones size={15} strokeWidth={2} />
-                  Liên hệ hỗ trợ ngay
+                  {courseContactLabel}
                 </a>
               </div>
 

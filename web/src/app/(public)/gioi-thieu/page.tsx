@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { buildMeta } from "@/lib/utils/seo";
+import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import {
   ExternalLink, Send, Headphones, Zap, ShieldCheck,
   Users, FileText, AlertTriangle, CheckCircle,
@@ -88,6 +89,8 @@ const POLICIES = [
 
 export default async function GioiThieuPage() {
   await guardPublicPage("gioi-thieu");
+  const contactCms = await getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT);
+  const telegramHref = contactCms.quickButtons?.find((b) => b.id === "telegram")?.href ?? "https://web.telegram.org/k/#@hethongmmovn";
 
   return (
     <div className="mx-auto max-w-4xl px-4 md:px-6 lg:px-8 py-12">
@@ -196,7 +199,7 @@ export default async function GioiThieuPage() {
               Cộng đồng Update Biến Chuyển Meta — chia sẻ tài nguyên và xu hướng MMO, Facebook Ads mới nhất.
             </p>
             <a
-              href="https://web.telegram.org/k/#@hethongmmovn"
+              href={telegramHref}
               target="_blank"
               rel="noopener noreferrer"
               style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: ".8rem", fontWeight: "600", color: "#0891b2", textDecoration: "none" }}

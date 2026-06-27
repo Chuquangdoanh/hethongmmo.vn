@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { Store, Zap, ShieldCheck, CheckCircle2, XCircle, Info } from "lucide-react";
+import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 
 import { buildMeta } from "@/lib/utils/seo";
 export const metadata: Metadata = buildMeta({
@@ -151,6 +152,8 @@ const TOC = SECTIONS.map((s, i) => ({ id: s.id, label: `${i + 1}. ${s.title}` })
 
 export default async function ChinhSachNhaBanHangPage() {
   await guardPublicPage("chinh-sach-nha-ban-hang");
+  const contactCms = await getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT);
+  const telegramHref = contactCms.quickButtons?.find((b) => b.id === "telegram")?.href ?? "https://t.me/BossMeta789";
   return (
     <div className="mx-auto max-w-[1100px] px-4 md:px-6 lg:px-8 py-12">
 
@@ -228,7 +231,7 @@ export default async function ChinhSachNhaBanHangPage() {
             <p className="text-xs font-semibold text-[#92400e] mb-1">Muốn trở thành nhà bán?</p>
             <p className="text-xs text-[#78350f] leading-snug mb-3">Liên hệ để được hướng dẫn mở gian hàng.</p>
             <a
-              href="https://t.me/BossMeta789"
+              href={telegramHref}
               target="_blank"
               rel="noopener noreferrer"
               className="block text-center text-xs font-semibold py-2 rounded-lg bg-[#d97706] text-white hover:bg-[#b45309] transition-colors"
@@ -386,7 +389,7 @@ export default async function ChinhSachNhaBanHangPage() {
             </div>
             <div className="flex gap-3 shrink-0">
               <a
-                href="https://t.me/BossMeta789"
+                href={telegramHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-5 py-2.5 rounded-lg bg-[#d97706] text-white text-sm font-semibold hover:bg-[#b45309] transition-colors"

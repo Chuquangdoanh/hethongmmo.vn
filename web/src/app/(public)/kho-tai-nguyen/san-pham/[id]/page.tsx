@@ -7,6 +7,7 @@ import { r2Url } from "@/lib/utils/image-url";
 import { auth } from "@/auth";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ReviewSection from "@/components/shared/ReviewSection";
+import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import ProductBuyButton from "@/app/(public)/tai-nguyen-mmo/_components/ProductBuyButton";
 import type { ProductVariant } from "@/app/(public)/tai-nguyen-mmo/_components/ProductBuyButton";
 import {
@@ -50,7 +51,8 @@ export async function generateMetadata({
   };
 }
 
-const SUPPORT_URL = process.env.NEXT_PUBLIC_SUPPORT_URL ?? "https://m.me/chuquangdoanh";
+// URL now managed via CMS: /admin/cai-dat-giao-dien/lien-he-ho-tro (id: "product")
+const SUPPORT_URL_FALLBACK = "https://m.me/chuquangdoanh";
 
 const TRUST_ICONS = [
   { Icon: Zap,         color: "#f59e0b", label: "Giao tự động",  sub: "Nhận ngay sau khi thanh toán" },
@@ -140,7 +142,7 @@ export default async function KhoSellerProductDetailPage({
     isActive: v.isActive,
   }));
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, tierDef, relatedProducts] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, tierDef, relatedProducts, contactCms] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "SELLER_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -193,10 +195,14 @@ export default async function KhoSellerProductDetailPage({
         _count: { select: { stockItems: { where: { status: "AVAILABLE" } } } },
       },
     }),
+    getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
   const reviewCount = reviewStats._count.id;
+  const productBtn  = contactCms.quickButtons?.find((b) => b.id === "product");
+  const SUPPORT_URL   = productBtn?.href  ?? SUPPORT_URL_FALLBACK;
+  const SUPPORT_LABEL = productBtn?.label ?? "Liên hệ ngay";
 
   const starCounts = [5, 4, 3, 2, 1].map((star) => ({
     star,
@@ -563,7 +569,7 @@ export default async function KhoSellerProductDetailPage({
         rel="noopener noreferrer"
         className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-[#0052cc] transition-colors"
       >
-        Liên hệ ngay
+        {SUPPORT_LABEL}
       </a>
     </div>
   );
