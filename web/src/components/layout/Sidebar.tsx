@@ -10,12 +10,16 @@ import { NAV_LINKS, NAV_ICONS } from "./nav-links";
 import SidebarNav, { type SidebarNavGroup, type SidebarNavItem } from "./SidebarNav";
 import SidebarServiceAccordion from "./SidebarServiceAccordion";
 import SidebarCollapseToggle from "./SidebarCollapseToggle";
+import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import "./sidebar.css";
 
-const TELEGRAM_COMMUNITY_URL = "https://t.me/BossMeta789";
-
 export default async function Sidebar() {
-  const [session, pageConfigs] = await Promise.all([auth(), getCachedPageVisibility()]);
+  const [session, pageConfigs, contactCms] = await Promise.all([
+    auth(),
+    getCachedPageVisibility(),
+    getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT),
+  ]);
+  const telegramCommunityUrl = contactCms.quickButtons?.find((b) => b.id === "telegram")?.href ?? "https://t.me/BossMeta789";
   const sessionUser = session?.user as AuthenticatedUser | undefined;
 
   const hiddenSet = new Set(pageConfigs.filter((p) => !p.isVisible).map((p) => p.pageKey));
@@ -137,7 +141,7 @@ export default async function Sidebar() {
         badge: sellerOpenComplaintCount || undefined,
       }] : []),
       {
-        href: TELEGRAM_COMMUNITY_URL,
+        href: telegramCommunityUrl,
         label: "Telegram cộng đồng",
         icon: <span className="sb-icon-badge"><Send size={15} strokeWidth={1.75} /></span>,
         external: true,
