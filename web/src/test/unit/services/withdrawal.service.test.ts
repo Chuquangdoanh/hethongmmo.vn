@@ -32,6 +32,7 @@ function makeApprovedSellerRow(balance = "1000000") {
   return [
     {
       balance,
+      seller_escrow: "1000000",
       seller_status: "APPROVED",
       bank_name_enc: Buffer.from("enc"),
       bank_account_number_enc: Buffer.from("enc"),
