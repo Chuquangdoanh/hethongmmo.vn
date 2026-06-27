@@ -12,6 +12,7 @@ export const runtime = "nodejs";
 const addProductSchema = z.object({
   name: z.string().min(3, "Tên sản phẩm tối thiểu 3 ký tự").max(200, "Tên sản phẩm tối đa 200 ký tự").trim(),
   price: z.number().min(1000, "Giá tối thiểu 1.000đ").max(100_000_000, "Giá tối đa 100.000.000đ"),
+  warrantyInfo: z.string().min(1, "Thông tin bảo hành không được để trống").max(2000, "Thông tin bảo hành tối đa 2000 ký tự").trim(),
   description: z.string().max(5000, "Mô tả tối đa 5000 ký tự").nullish(),
   imageUrl: z.string().url("URL ảnh không hợp lệ").nullish(),
   sellerCategory: z.string().min(1).max(100).trim(),
@@ -93,6 +94,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ...rest,
       description: description ?? undefined,
       imageUrl: imageUrl ?? undefined,
+      warrantyInfo: rest.warrantyInfo,
     });
     return NextResponse.json({ data: { productId } }, { status: 201 });
   } catch (err) {

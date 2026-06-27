@@ -146,19 +146,14 @@ export default function StockImportForm({ productId }: Props) {
   }
 
   return (
-    <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-3">
-        <FileText size={15} className="text-violet-600 shrink-0" />
-        <p className="text-sm font-semibold text-violet-800">Thêm kho từ file TXT</p>
-        <span className="text-[10px] text-violet-500 ml-1">
-          (mỗi dòng = 1 item · tối đa {MAX_IMPORT_ITEMS.toLocaleString("vi-VN")} dòng)
-        </span>
-      </div>
+    <div className="space-y-3">
+      <p className="text-[11px] text-gray-400">
+        Mỗi dòng = 1 item · Tối đa {MAX_IMPORT_ITEMS.toLocaleString("vi-VN")} dòng · UTF-8 · Max {MAX_FILE_SIZE_MB}MB
+      </p>
 
       {/* Import result panel */}
       {importResult && (
-        <div className="mb-3 rounded-lg border bg-white overflow-hidden">
+        <div className="rounded-lg border bg-white overflow-hidden">
           {/* Stats row */}
           <div className="grid grid-cols-5 divide-x divide-gray-100 text-center border-b border-gray-100">
             <StatCell label="Tổng dòng" value={importResult.totalRows} />
@@ -274,7 +269,7 @@ export default function StockImportForm({ productId }: Props) {
 
       {/* File error */}
       {fileError && (
-        <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200 mb-3">
+        <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200">
           <AlertTriangle size={13} className="text-red-500 shrink-0 mt-0.5" />
           <p className="text-xs text-red-600">{fileError}</p>
         </div>
@@ -283,10 +278,10 @@ export default function StockImportForm({ productId }: Props) {
       {/* File selected → show info + action buttons */}
       {items.length > 0 ? (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-violet-200">
-            <FileText size={13} className="text-violet-400 shrink-0" />
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-[#e11d48]/20">
+            <FileText size={13} className="text-[#e11d48]/60 shrink-0" />
             <span className="text-xs text-gray-700 flex-1 truncate">{fileName}</span>
-            <span className="text-xs font-bold text-violet-700 shrink-0">
+            <span className="text-xs font-bold text-[#e11d48] shrink-0">
               {items.length.toLocaleString("vi-VN")} dòng
             </span>
             <button
@@ -302,14 +297,14 @@ export default function StockImportForm({ productId }: Props) {
             <button
               onClick={() => void callApi(true)}
               disabled={uploading}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-violet-400 text-violet-700 bg-white text-xs font-semibold hover:bg-violet-50 disabled:opacity-60 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-[#e11d48]/40 text-[#e11d48] bg-white text-xs font-semibold hover:bg-red-50 disabled:opacity-60 transition-colors"
             >
               {uploading ? "Đang phân tích..." : "Xem trước"}
             </button>
             <button
               onClick={() => void callApi(false)}
               disabled={uploading}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 disabled:opacity-60 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#e11d48] text-white text-xs font-semibold hover:bg-[#be123c] disabled:opacity-60 transition-colors"
             >
               <Upload size={12} />
               {uploading
@@ -326,7 +321,7 @@ export default function StockImportForm({ productId }: Props) {
           </div>
 
           {uploading && (
-            <p className="text-[10px] text-violet-500">
+            <p className="text-[10px] text-[#e11d48]/70">
               Đang kiểm tra trùng lặp và thêm vào kho, vui lòng chờ...
             </p>
           )}
@@ -343,16 +338,11 @@ export default function StockImportForm({ productId }: Props) {
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-full flex flex-col items-center gap-2 rounded-lg border-2 border-dashed border-violet-300 bg-white py-6 text-center hover:border-violet-500 hover:bg-violet-50/50 transition-colors"
+            className="w-full flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-[#e11d48]/30 bg-gray-50 py-8 text-center hover:border-[#e11d48]/60 hover:bg-red-50/20 transition-colors"
           >
-            <Upload size={20} className="text-violet-400" />
-            <p className="text-xs text-violet-600 font-medium">Click để chọn file .txt</p>
-            <p className="text-[10px] text-gray-400">
-              Mỗi dòng = 1 item · Tối đa {MAX_IMPORT_ITEMS.toLocaleString("vi-VN")} dòng · UTF-8 · Max {MAX_FILE_SIZE_MB}MB
-            </p>
-            <p className="text-[10px] text-gray-400">
-              Hệ thống tự động kiểm tra trùng lặp trong file và trong kho
-            </p>
+            <Upload size={22} className="text-[#e11d48]/40" />
+            <p className="text-xs text-gray-600 font-medium">Click để chọn file .txt</p>
+            <p className="text-[10px] text-gray-400">Mỗi dòng = 1 item · tự động loại bỏ trùng</p>
           </button>
         </div>
       )}

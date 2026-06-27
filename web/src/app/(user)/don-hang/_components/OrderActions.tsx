@@ -381,10 +381,10 @@ function DetailModal({ orderId, itemName, orderType, onClose }: {
 }
 
 export default function OrderActions({ orderId, itemName, orderType, isDone, hasComplaint, allowComplaint, orderCreatedAt }: Props) {
-  const [isWithin24h, setIsWithin24h] = useState(false);
+  const [isWithin2h, setIsWithin2h] = useState(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsWithin24h(Date.now() - new Date(orderCreatedAt).getTime() < 24 * 60 * 60 * 1000);
+    setIsWithin2h(Date.now() - new Date(orderCreatedAt).getTime() < 2 * 60 * 60 * 1000);
   }, [orderCreatedAt]);
   const router = useRouter();
   const [showDetail, setShowDetail] = useState(false);
@@ -430,7 +430,7 @@ export default function OrderActions({ orderId, itemName, orderType, isDone, has
             <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-medium whitespace-nowrap">
               <CheckCircle size={11} /> Đã khiếu nại
             </span>
-          ) : isWithin24h ? (
+          ) : isWithin2h ? (
             <button
               onClick={() => setShowPopup(true)}
               className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 border border-red-200 text-red-700 text-[11px] font-medium hover:bg-red-100 transition-colors whitespace-nowrap"
@@ -438,7 +438,7 @@ export default function OrderActions({ orderId, itemName, orderType, isDone, has
               <Flag size={11} /> Khiếu nại
             </button>
           ) : (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-gray-400 text-[11px] font-medium whitespace-nowrap" title="Chỉ có thể khiếu nại trong 24 giờ đầu sau khi mua">
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-gray-400 text-[11px] font-medium whitespace-nowrap" title="Chỉ có thể khiếu nại trong 2 giờ đầu sau khi mua">
               <Flag size={11} /> Hết hạn KN
             </span>
           )

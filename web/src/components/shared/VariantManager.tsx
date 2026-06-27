@@ -181,8 +181,8 @@ export default function VariantManager({ productId, isAdmin = false, apiBase = "
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Bảo hành sản phẩm</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">Quản lý gói bảo hành.</p>
+          <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Gói sản phẩm</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">Quản lý gói sản phẩm.</p>
         </div>
         <button
           type="button"
@@ -190,7 +190,7 @@ export default function VariantManager({ productId, isAdmin = false, apiBase = "
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors"
         >
           {showAdd ? <X size={12} /> : <Plus size={12} />}
-          {showAdd ? "Đóng" : "Thêm bảo hành"}
+          {showAdd ? "Đóng" : "Thêm gói sản phẩm"}
         </button>
       </div>
 
@@ -212,7 +212,7 @@ export default function VariantManager({ productId, isAdmin = false, apiBase = "
               />
             </div>
             <div>
-              <label className="block text-[10px] font-medium text-gray-500 mb-1">Bảo hành *</label>
+              <label className="block text-[10px] font-medium text-gray-500 mb-1">Mô tả gói</label>
               <input
                 type="text"
                 value={addForm.warranty}

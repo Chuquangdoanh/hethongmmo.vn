@@ -13,6 +13,7 @@ export const runtime = "nodejs";
 const patchSchema = z.object({
   name:          z.string().min(2).max(255).optional(),
   price:         z.number().positive().max(100_000_000).optional(),
+  warrantyInfo:  z.string().min(1).max(2000).optional(),
   description:   z.string().max(5000).optional(),
   imageUrl:      z.string().url().optional(),
   isHidden:      z.boolean().optional(),
@@ -39,7 +40,7 @@ export async function GET(
       where: { id, deletedAt: null },
       select: {
         id: true, sellerId: true, sellerCategory: true, name: true,
-        price: true, description: true, imageUrl: true,
+        price: true, warrantyInfo: true, description: true, imageUrl: true,
         publishDate: true, isActive: true, isHidden: true, isRestricted: true,
         salesCount: true, revenue: true, createdAt: true, updatedAt: true,
       },

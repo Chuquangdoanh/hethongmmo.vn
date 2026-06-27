@@ -116,7 +116,7 @@ export default async function KhoSellerProductDetailPage({
       where: { id, isActive: true, isHidden: false, isRestricted: false, deletedAt: null },
       select: {
         id: true, name: true, imageUrl: true, sellerCategory: true,
-        price: true, salesCount: true, description: true, createdAt: true,
+        price: true, salesCount: true, warrantyInfo: true, description: true, createdAt: true,
         seller: { select: { id: true, fullName: true, sellerTier: true, avatarUrl: true } },
         _count: { select: { stockItems: { where: { status: "AVAILABLE" } } } },
         variants: {
@@ -242,7 +242,7 @@ export default async function KhoSellerProductDetailPage({
       )}
     </div>
   );
-
+  
   const sectionDescription = (
     <div className="rounded-2xl border border-border bg-white p-5">
       <h2 className="text-sm font-bold text-text-dark mb-4 flex items-center gap-2">
@@ -266,6 +266,20 @@ export default async function KhoSellerProductDetailPage({
       </div>
     </div>
   );
+
+  const sectionIntroduction = product.warrantyInfo ? (
+    <div className="rounded-2xl border border-border bg-white p-5">
+      <h2 className="text-sm font-bold text-text-dark mb-3 flex items-center gap-2">
+        <span className="w-1 h-4 rounded-full bg-primary inline-block shrink-0" />
+        Thông tin bảo hành
+      </h2>
+      <p className="text-sm text-[#475569] leading-relaxed whitespace-pre-wrap">
+        {product.warrantyInfo}
+      </p>
+    </div>
+  ) : null;
+
+  
 
   const cardSeller = (
     <Link
@@ -356,25 +370,11 @@ export default async function KhoSellerProductDetailPage({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-3xl font-black text-[#e11d48]">{formatVnd(Number(product.price))}</p>
-          <p className="text-[11px] text-[#94a3b8]">/ Tài khoản</p>
         </div>
         <div className={`flex items-center gap-1.5 text-sm font-semibold ${isOutOfStock ? "text-danger" : "text-[#10b981]"}`}>
           {isOutOfStock ? <XCircle size={16} strokeWidth={2} /> : <CheckCircle size={16} strokeWidth={2} />}
           {isOutOfStock ? "Hết hàng" : "Còn hàng"}
         </div>
-      </div>
-
-      {/* Trust icons */}
-      <div className="grid grid-cols-3 gap-2 py-3 border-y border-[#f1f5f9]">
-        {TRUST_ICONS.map(({ Icon, color, label, sub }) => (
-          <div key={label} className="text-center">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center mx-auto mb-1.5" style={{ background: `${color}14` }}>
-              <Icon size={18} strokeWidth={1.75} style={{ color }} />
-            </div>
-            <p className="text-[10px] font-bold text-[#374151]">{label}</p>
-            <p className="text-[9px] text-[#94a3b8] leading-tight mt-0.5 hidden sm:block">{sub}</p>
-          </div>
-        ))}
       </div>
 
       {/* Buy button */}
@@ -641,6 +641,7 @@ export default async function KhoSellerProductDetailPage({
       <div className="space-y-4 lg:hidden">
         {sectionImage}
         {sectionDescription}
+        {sectionIntroduction}
         {cardSeller}
         {cardProductInfo}
         {cardCommitments}
@@ -657,6 +658,7 @@ export default async function KhoSellerProductDetailPage({
         <div className="col-span-7 space-y-5">
           {sectionImage}
           {sectionDescription}
+          {sectionIntroduction}
           {sectionHowItWorks}
           {sectionReviews}
           {sectionRelated}

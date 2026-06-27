@@ -509,6 +509,7 @@ model MmoProduct {
   categoryGroup String    @map("category_group")
   price         Decimal   @db.Decimal(18, 2)
   description   String?
+  warrantyInfo  String    @default("") @map("warranty_info") @db.Text
   rating        Float     @default(0)
   totalOrders   Int       @default(0) @map("total_orders")
   totalViews    Int       @default(0) @map("total_views")
@@ -769,6 +770,7 @@ model SellerProduct {
   subCategory     SellerSubCategory? @relation(fields: [subCategoryId], references: [id], onDelete: SetNull)
   name            String
   price           Decimal   @db.Decimal(18, 2)
+  warrantyInfo    String    @default("") @map("warranty_info") @db.Text
   description     String?
   imageUrl        String?   @map("image_url")
   // quantity tính qua VIEW

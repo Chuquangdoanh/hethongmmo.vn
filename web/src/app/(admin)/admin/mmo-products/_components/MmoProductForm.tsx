@@ -14,6 +14,7 @@ interface MmoProductData {
   categoryGroup?: string;
   price?: number;
   description?: string;
+  warrantyInfo?: string;
   thumbnail?: string;
   isActive?: boolean;
   isFeatured?: boolean;
@@ -33,6 +34,7 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
     categoryGroup: initial?.categoryGroup ?? "",
     price: initial?.price?.toString() ?? "",
     description: initial?.description ?? "",
+    warrantyInfo: initial?.warrantyInfo ?? "",
     thumbnail: initial?.thumbnail ?? "",
     isActive: initial?.isActive ?? true,
     isFeatured: initial?.isFeatured ?? false,
@@ -124,6 +126,10 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
       setError("Giá không hợp lệ.");
       return;
     }
+    if (!form.warrantyInfo.trim()) {
+      setError("Vui lòng nhập thông tin bảo hành.");
+      return;
+    }
 
     const body = {
       name: form.name,
@@ -133,6 +139,7 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
       price,
       ...(form.thumbnail ? { thumbnail: form.thumbnail } : {}),
       ...(form.description ? { description: form.description } : {}),
+      warrantyInfo: form.warrantyInfo.trim(),
       isActive: form.isActive,
       isFeatured: form.isFeatured,
       displayOrder: parseInt(form.displayOrder, 10) || 0,
@@ -311,16 +318,37 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
                 <p className="text-[11px] text-gray-400 mt-0.5">Giá hiển thị khi không có gói biến thể</p>
               </div>
 
-              <div>
-                <label className="block text-xs text-gray-500 mb-1.5">Thứ tự hiển thị</label>
-                <input type="number" min="0" value={form.displayOrder} onChange={(e) => set("displayOrder", e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none" />
-              </div>
 
               <div className="sm:col-span-2">
                 <label className="block text-xs text-gray-500 mb-1.5">Mô tả</label>
                 <textarea rows={4} value={form.description} onChange={(e) => set("description", e.target.value)}
                   className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none resize-none" />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs mb-1.5 font-medium text-red-500">
+                  Thông tin bảo hành <span className="font-bold">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={form.warrantyInfo}
+                  onChange={(e) => set("warrantyInfo", e.target.value)}
+                  maxLength={2000}
+                  placeholder="Nhập chính sách bảo hành, hỗ trợ sau mua, thời hạn đổi trả..."
+                  className={`w-full rounded-lg border px-3 py-2 text-sm text-gray-900 focus:outline-none resize-none transition-colors ${
+                    !form.warrantyInfo.trim()
+                      ? "border-red-400 bg-red-50 focus:border-red-500"
+                      : "border-gray-200 bg-white focus:border-[#7C3AED]"
+                  }`}
+                />
+                <div className="flex items-center justify-between mt-1">
+                  {!form.warrantyInfo.trim() ? (
+                    <p className="text-[11px] text-red-500 font-medium">Bắt buộc nhập</p>
+                  ) : (
+                    <p className="text-[11px] text-emerald-500">✓ Đã nhập</p>
+                  )}
+                  <p className="text-[11px] text-gray-400">{form.warrantyInfo.length} / 2000</p>
+                </div>
               </div>
             </div>
 
@@ -415,40 +443,6 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
             )}
 
             {thumbError && <p className="text-xs text-red-500">{thumbError}</p>}
-
-            {/* SGVL.APP import */}
-            <div>
-              <label className="block text-xs text-gray-500 mb-1.5">Import ảnh từ URL (SGVL.APP hoặc URL khác)</label>
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  value={sgvlUrl}
-                  onChange={(e) => setSgvlUrl(e.target.value)}
-                  placeholder="https://sgvl.app/... hoặc URL ảnh"
-                  className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={() => void handleSgvlImport()}
-                  disabled={sgvlImporting || !sgvlUrl.trim()}
-                  className="px-3 py-2 rounded-lg bg-[#7C3AED] text-white text-xs font-medium hover:bg-[#A855F7] disabled:opacity-50 transition-colors whitespace-nowrap"
-                >
-                  {sgvlImporting ? "Đang tải..." : "Import"}
-                </button>
-              </div>
-            </div>
-
-            {/* URL thủ công */}
-            <div>
-              <label className="block text-xs text-gray-500 mb-1.5">Hoặc nhập URL ảnh trực tiếp</label>
-              <input
-                type="url"
-                value={form.thumbnail}
-                onChange={(e) => set("thumbnail", e.target.value)}
-                placeholder="https://..."
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none"
-              />
-            </div>
           </div>
 
           {!isEdit && (

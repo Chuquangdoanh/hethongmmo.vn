@@ -41,11 +41,15 @@ interface PurchaseParams {
   variantId?: string;
   warrantyVariant?: string;
   customerNote?: string;
+  quantity?: number;      // số lượng mua (default 1)
 }
 
 interface PurchaseResult {
   order: Order;
-  deliveredContent?: string;
+  orders?: Order[];           // tất cả orders khi quantity > 1
+  deliveredContent?: string;  // nội dung khi quantity = 1
+  deliveredContents?: string[]; // tất cả nội dung khi quantity > 1
+  quantity?: number;
   tutTrickDocs?: string;
   isDeposit?: boolean;
   depositAmount?: number;
@@ -65,6 +69,12 @@ function generateOrderCode(): string {
 export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseResult> {
   const { userId, orderType, itemId, itemName, catalogPrice, finalPrice, discountPercent, idempotencyKey, variantId, warrantyVariant, customerNote } =
     params;
+  const quantity = params.quantity ?? 1;
+
+  // Delegate to batch handler when buying multiple units
+  if (quantity > 1) {
+    return purchaseProductBatch({ ...params, quantity });
+  }
 
   // Idempotency: return existing order if already processed
   const existingOrder = await prisma.order.findUnique({
@@ -107,6 +117,8 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
     let sellerId: string | undefined;
     let tutTrickContentUrlEncRaw: Buffer | undefined;
     let tutTrickDocs: string | undefined;
+    // Pre-generated so stock item and order share the same UUID
+    let preGeneratedOrderId: string | undefined;
 
     if (orderType === "MMO_PRODUCT") {
       const items = await tx.$queryRaw<Array<{ id: string; value_enc: Buffer }>>`
@@ -117,11 +129,12 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
       const item = items[0];
       if (!item) throw new OutOfStockError();
 
-      const orderId = crypto.randomUUID();
+      // Pre-generate order ID so stock row and order share the same UUID
+      preGeneratedOrderId = crypto.randomUUID();
       await tx.$executeRaw`
         UPDATE mmo_product_items
         SET status = 'SOLD', sold_to_user_id = ${userId}::uuid,
-            order_id = ${orderId}::uuid, sold_at = now(), updated_at = now()
+            order_id = ${preGeneratedOrderId}::uuid, sold_at = now(), updated_at = now()
         WHERE id = ${item.id}::uuid
       `;
       await tx.$executeRaw`
@@ -144,11 +157,12 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
       const item = items[0];
       if (!item) throw new OutOfStockError();
 
-      const orderId = crypto.randomUUID();
+      // Pre-generate order ID so stock row and order share the same UUID
+      preGeneratedOrderId = crypto.randomUUID();
       await tx.$executeRaw`
         UPDATE seller_product_stock
         SET status = 'SOLD', sold_to_user_id = ${userId}::uuid,
-            order_id = ${orderId}::uuid, sold_at = now()
+            order_id = ${preGeneratedOrderId}::uuid, sold_at = now()
         WHERE id = ${item.id}::uuid
       `;
       deliveredItemId = item.id;
@@ -221,7 +235,12 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
       orderData.sellerId = sellerId;
     }
 
-    const order = await tx.order.create({ data: orderData });
+    const order = await tx.order.create({
+      data: {
+        ...(preGeneratedOrderId ? { id: preGeneratedOrderId } : {}),
+        ...orderData,
+      },
+    });
 
     // ── 5. Create transaction record ──────────────────────────────────
     await tx.transaction.create({
@@ -467,6 +486,198 @@ export async function purchaseCourseRemainder(orderId: string, userId: string): 
 
   logger.info({ userId, orderId }, "Course final payment processed");
   return updated;
+}
+
+// ── Batch purchase (quantity > 1) ─────────────────────────────────────────────
+
+interface BatchPurchaseParams extends PurchaseParams {
+  quantity: number; // guaranteed > 1 when this function is called
+}
+
+async function purchaseProductBatch(params: BatchPurchaseParams): Promise<PurchaseResult> {
+  const { userId, orderType, itemId, itemName, catalogPrice, finalPrice, discountPercent, idempotencyKey, warrantyVariant, customerNote, quantity } = params;
+
+  if (orderType !== "MMO_PRODUCT" && orderType !== "SELLER_PRODUCT") {
+    throw new AppError("Chỉ hỗ trợ mua nhiều cho sản phẩm MMO và Seller.", "BATCH_NOT_SUPPORTED", 400);
+  }
+
+  // Idempotency: first order in batch carries the user's idempotencyKey
+  const existingOrder = await prisma.order.findUnique({ where: { idempotencyKey } });
+  if (existingOrder) {
+    logger.info({ idempotencyKey }, "Duplicate batch purchase — returning existing order");
+    return { order: existingOrder, quantity };
+  }
+
+  const txType = ORDER_TYPE_TO_TX[orderType];
+  const unitPrice = new Decimal(finalPrice);
+  const totalPrice = unitPrice.mul(quantity);
+
+  const result = await prisma.$transaction(async (tx) => {
+    // ── 1. Lock user balance ──────────────────────────────────────────
+    const userRows = await tx.$queryRaw<Array<{ balance: string; total_spent: string }>>`
+      SELECT balance, total_spent FROM users WHERE id = ${userId}::uuid FOR UPDATE
+    `;
+    const userRow = userRows[0];
+    if (!userRow) throw new NotFoundError("User");
+
+    const balanceBefore = new Decimal(userRow.balance);
+    if (balanceBefore.lt(totalPrice)) {
+      throw new InsufficientBalanceError(balanceBefore.toNumber(), totalPrice.toNumber());
+    }
+    const balanceAfter = balanceBefore.sub(totalPrice);
+    const newTotalSpent = new Decimal(userRow.total_spent).add(totalPrice);
+
+    // ── 2. Claim N stock items and pre-assign order IDs ───────────────
+    type ClaimedItem = { stockItemId: string; orderId: string; content: string; sellerId?: string };
+    const claimed: ClaimedItem[] = [];
+
+    if (orderType === "MMO_PRODUCT") {
+      const items = await tx.$queryRaw<Array<{ id: string; value_enc: Buffer }>>`
+        SELECT id, value_enc FROM mmo_product_items
+        WHERE product_id = ${itemId}::uuid AND status = 'AVAILABLE'
+        LIMIT ${quantity} FOR UPDATE SKIP LOCKED
+      `;
+      if (items.length < quantity) throw new OutOfStockError();
+
+      for (const item of items) {
+        const orderId = crypto.randomUUID();
+        await tx.$executeRaw`
+          UPDATE mmo_product_items
+          SET status = 'SOLD', sold_to_user_id = ${userId}::uuid,
+              order_id = ${orderId}::uuid, sold_at = now(), updated_at = now()
+          WHERE id = ${item.id}::uuid
+        `;
+        claimed.push({ stockItemId: item.id, orderId, content: decrypt(item.value_enc) });
+      }
+      await tx.$executeRaw`
+        UPDATE mmo_products SET total_orders = total_orders + ${quantity}, updated_at = now()
+        WHERE id = ${itemId}::uuid
+      `;
+    } else {
+      // SELLER_PRODUCT
+      const items = await tx.$queryRaw<Array<{ id: string; content_enc: Buffer; seller_id: string }>>`
+        SELECT sp.id, sp.content_enc, p.seller_id
+        FROM seller_product_stock sp
+        JOIN seller_products p ON p.id = sp.product_id
+        WHERE sp.product_id = ${itemId}::uuid AND sp.status = 'AVAILABLE'
+        LIMIT ${quantity} FOR UPDATE SKIP LOCKED
+      `;
+      if (items.length < quantity) throw new OutOfStockError();
+
+      const sellerRevenue = unitPrice.mul(0.7).mul(quantity);
+      for (const item of items) {
+        const orderId = crypto.randomUUID();
+        await tx.$executeRaw`
+          UPDATE seller_product_stock
+          SET status = 'SOLD', sold_to_user_id = ${userId}::uuid,
+              order_id = ${orderId}::uuid, sold_at = now()
+          WHERE id = ${item.id}::uuid
+        `;
+        claimed.push({ stockItemId: item.id, orderId, content: decrypt(item.content_enc), sellerId: item.seller_id });
+      }
+      await tx.$executeRaw`
+        UPDATE seller_products
+        SET sales_count = sales_count + ${quantity},
+            revenue = revenue + ${sellerRevenue.toFixed(2)}::numeric,
+            updated_at = now()
+        WHERE id = ${itemId}::uuid
+      `;
+    }
+
+    // ── 3. Deduct balance ─────────────────────────────────────────────
+    await tx.$executeRaw`
+      UPDATE users
+      SET balance     = ${balanceAfter.toFixed(2)}::numeric,
+          total_spent = ${newTotalSpent.toFixed(2)}::numeric,
+          updated_at  = now()
+      WHERE id = ${userId}::uuid
+    `;
+
+    // ── 4. Create N orders ────────────────────────────────────────────
+    const orders: Order[] = [];
+    let orderIndex = 0;
+    for (const c of claimed) {
+      const orderCode = generateOrderCode();
+      const isFirst = orderIndex === 0;
+
+      const orderData: Parameters<typeof tx.order.create>[0]["data"] = {
+        id: c.orderId,
+        orderCode,
+        userId,
+        orderType,
+        itemName,
+        originalPrice: new Decimal(catalogPrice).toFixed(2),
+        finalPrice: unitPrice.toFixed(2),
+        warrantyVariant,
+        customerNote,
+        status: "DONE",
+        deliveredItemId: c.stockItemId,
+        idempotencyKey: isFirst ? idempotencyKey : undefined,
+        completedAt: new Date(),
+      };
+
+      if (orderType === "MMO_PRODUCT") orderData.mmoProductId = itemId;
+      else if (orderType === "SELLER_PRODUCT") {
+        orderData.sellerProductId = itemId;
+        orderData.sellerId = c.sellerId;
+      }
+
+      const order = await tx.order.create({ data: orderData });
+      orders.push(order);
+      orderIndex++;
+    }
+
+    // ── 5. Create N transaction records ───────────────────────────────
+    let txIndex = 0;
+    for (const order of orders) {
+      const txBalanceBefore = balanceBefore.sub(unitPrice.mul(txIndex));
+      const txBalanceAfter = txBalanceBefore.sub(unitPrice);
+      await tx.transaction.create({
+        data: {
+          userId,
+          orderId: order.id,
+          type: txType as never,
+          amount: unitPrice.neg().toFixed(2),
+          description: discountPercent > 0
+            ? `Mua (${txIndex + 1}/${quantity}): ${itemName} (giảm ${discountPercent}%)`
+            : `Mua (${txIndex + 1}/${quantity}): ${itemName}`,
+          balanceBefore: txBalanceBefore.toFixed(2),
+          balanceAfter: txBalanceAfter.toFixed(2),
+        },
+      });
+      txIndex++;
+    }
+
+    // ── 6. Notification (1 for the batch) ────────────────────────────
+    const firstOrder = orders[0];
+    if (!firstOrder) throw new AppError("Không tạo được đơn hàng.", "ORDER_CREATE_FAILED", 500);
+
+    await tx.notification.create({
+      data: {
+        userId,
+        title: `Mua hàng thành công (x${quantity})`,
+        body: `Đã mua ${quantity} sản phẩm ${itemName}. Mã đơn đầu tiên: ${firstOrder.orderCode}.`,
+        type: "PURCHASE",
+        meta: { orderCode: firstOrder.orderCode, orderType, amount: totalPrice.toFixed(2), quantity },
+      },
+    });
+
+    return { orders, deliveredContents: claimed.map((c) => c.content) };
+  });
+
+  const firstResultOrder = result.orders[0];
+  if (!firstResultOrder) throw new AppError("Lỗi xử lý đơn hàng.", "ORDER_CREATE_FAILED", 500);
+
+  logger.info({ userId, orderType, itemId, quantity, firstOrderId: firstResultOrder.id }, "Batch purchase processed");
+
+  const firstContent = result.deliveredContents[0] ?? "";
+  return {
+    order: firstResultOrder,
+    orders: result.orders,
+    deliveredContent: firstContent,
+    deliveredContents: result.deliveredContents,
+    quantity,
+  };
 }
 
 async function checkItemActive(

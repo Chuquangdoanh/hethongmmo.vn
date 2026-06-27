@@ -106,7 +106,7 @@ export default async function KhoMmoProductDetailPage({
       select: {
         id: true, name: true, slug: true, thumbnail: true,
         category: true, categoryGroup: true, price: true,
-        description: true, totalOrders: true, createdAt: true,
+        description: true, warrantyInfo: true, totalOrders: true, createdAt: true,
         _count: { select: { items: { where: { status: "AVAILABLE" } } } },
         variants: {
           where: { isActive: true, deletedAt: null },
@@ -236,6 +236,18 @@ export default async function KhoMmoProductDetailPage({
       </div>
     </div>
   );
+
+  const sectionWarranty = product.warrantyInfo ? (
+    <div className="rounded-2xl border border-border bg-white p-5">
+      <h2 className="text-sm font-bold text-text-dark mb-3 flex items-center gap-2">
+        <span className="w-1 h-4 rounded-full bg-primary inline-block shrink-0" />
+        Thông tin bảo hành
+      </h2>
+      <p className="text-sm text-[#475569] leading-relaxed whitespace-pre-wrap">
+        {product.warrantyInfo}
+      </p>
+    </div>
+  ) : null;
 
   const sectionDescription = (
     <div className="rounded-2xl border border-border bg-white p-5">
@@ -570,6 +582,7 @@ export default async function KhoMmoProductDetailPage({
       <div className="space-y-4 lg:hidden">
         {sectionImage}
         {sectionDescription}
+        {sectionWarranty}
         {cardSystem}
         {cardProductInfo}
         {cardCommitments}
@@ -585,6 +598,7 @@ export default async function KhoMmoProductDetailPage({
         <div className="col-span-7 space-y-5">
           {sectionImage}
           {sectionDescription}
+          {sectionWarranty}
           {sectionHowItWorks}
           {sectionReviews}
         </div>

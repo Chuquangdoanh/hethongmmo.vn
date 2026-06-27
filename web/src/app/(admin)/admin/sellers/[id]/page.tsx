@@ -11,6 +11,7 @@ import SellerCategoryManager from "./SellerCategoryManager";
 import BankChangeRequestAdmin from "./BankChangeRequestAdmin";
 import { getSellerBankChangeRequests } from "@/lib/services/bank-change-request.service";
 import { decrypt } from "@/lib/security/encryption";
+import AdminEscrowAdjust from "@/app/(admin)/admin/users/[id]/AdminEscrowAdjust";
 
 export const metadata: Metadata = { title: "Duyệt Seller" };
 
@@ -89,7 +90,7 @@ export default async function AdminSellerDetailPage({
     getSellerBankChangeRequests(request.userId),
     prisma.user.findUnique({
       where: { id: request.userId },
-      select: { bankNameEnc: true, bankAccountNumberEnc: true, bankAccountHolderEnc: true },
+      select: { bankNameEnc: true, bankAccountNumberEnc: true, bankAccountHolderEnc: true, sellerEscrow: true },
     }),
   ]);
   const currentBankName          = sellerUser?.bankNameEnc          ? decrypt(sellerUser.bankNameEnc          as unknown as Buffer) : null;
@@ -234,6 +235,17 @@ export default async function AdminSellerDetailPage({
               currentTier={request.user.sellerTier}
               tiers={allTiers}
             />
+          )}
+
+          {/* Ký quỹ seller */}
+          {request.status === "APPROVED" && (
+            <div className="rounded-xl border border-gray-200 bg-white p-5">
+              <h2 className="text-sm font-semibold text-gray-900 mb-1">Ký quỹ</h2>
+              <AdminEscrowAdjust
+                userId={request.userId}
+                sellerEscrow={Number(sellerUser?.sellerEscrow ?? 0)}
+              />
+            </div>
           )}
 
           {/* Bank info & change requests */}

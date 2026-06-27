@@ -25,7 +25,7 @@ export default async function SuaSanPhamPage({
     prisma.sellerProduct.findFirst({
       where: { id, sellerId: me.id, deletedAt: null },
       select: {
-        id: true, name: true, price: true, description: true,
+        id: true, name: true, price: true, warrantyInfo: true, description: true,
         imageUrl: true, isActive: true, isHidden: true,
         isRestricted: true, sellerCategory: true, subCategoryId: true,
       },
@@ -100,6 +100,7 @@ export default async function SuaSanPhamPage({
               id: product.id,
               name: product.name,
               price: Number(product.price),
+              warrantyInfo: product.warrantyInfo ?? "",
               description: product.description ?? "",
               imageUrl: product.imageUrl ?? "",
               isActive: product.isActive,
@@ -111,6 +112,7 @@ export default async function SuaSanPhamPage({
           {/* Biến thể sản phẩm — chỉ hiện khi sản phẩm không bị khóa */}
           {!product.isRestricted && (
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            
               <VariantManager productId={product.id} />
             </div>
           )}

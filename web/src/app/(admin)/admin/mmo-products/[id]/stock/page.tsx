@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { formatDate } from "@/lib/utils/format";
 import { decrypt } from "@/lib/security/encryption";
-import StockUploadForm from "./StockUploadForm";
-import StockImportForm from "./StockImportForm";
+import StockKhoHangSection from "./_components/StockKhoHangSection";
+import StockRowActions from "./_components/StockRowActions";
 import Pagination from "@/components/shared/Pagination";
 
 export const metadata: Metadata = { title: "Admin — Quản lý kho MMO" };
@@ -89,11 +89,8 @@ export default async function AdminMmoStockPage({
         ))}
       </div>
 
-      {/* Import form (file upload, check trùng chi tiết) */}
-      <StockImportForm productId={id} />
-
-      {/* Quick add form (textarea, nhập nhanh số lượng nhỏ) */}
-      <StockUploadForm productId={id} />
+      {/* Kho hàng: tab Upload TXT / Nhập tay */}
+      <StockKhoHangSection productId={id} />
 
       {/* Filter */}
       <div className="flex items-center gap-2">
@@ -123,12 +120,13 @@ export default async function AdminMmoStockPage({
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Người mua</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Ngày nhập</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Ngày bán</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Hành động</th>
             </tr>
           </thead>
           <tbody>
             {itemsWithContent.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">Không có items</td>
+                <td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-500">Không có items</td>
               </tr>
             )}
             {itemsWithContent.map((item, i) => (
@@ -157,6 +155,14 @@ export default async function AdminMmoStockPage({
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-500">{formatDate(item.createdAt)}</td>
                 <td className="px-4 py-3 text-xs text-gray-500">{item.soldAt ? formatDate(item.soldAt) : <span className="text-gray-300">—</span>}</td>
+                <td className="px-4 py-3">
+                  <StockRowActions
+                    itemId={item.id}
+                    productId={id}
+                    content={item.content}
+                    status={item.status}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>

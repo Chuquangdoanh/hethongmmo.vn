@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -57,38 +57,41 @@ export default function StockUploadForm({ productId }: Props) {
     }
   }
 
+  const lineCount = text.split("\n").filter((l) => l.trim()).length;
+
   return (
-    <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-4">
-      <h2 className="text-sm font-semibold text-gray-900">Nhập kho mới</h2>
-      <p className="text-xs text-gray-500">Mỗi dòng = 1 item (tài khoản/mã). Tối đa 500 items/lần. Dữ liệu sẽ được mã hóa AES-GCM.</p>
+    <div className="space-y-3">
+      <p className="text-[11px] text-gray-400">
+        Mỗi dòng = 1 item (tài khoản/mã). Tối đa 500 items/lần. Dữ liệu sẽ được mã hóa AES-GCM.
+      </p>
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          rows={8}
+          rows={10}
           placeholder={"user1:pass1\nuser2:pass2\n..."}
-          className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none resize-none font-mono"
+          className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:border-[#e11d48]/60 focus:bg-white focus:outline-none resize-none font-mono transition-colors"
         />
         <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-500">
-            {text.split("\n").filter((l) => l.trim()).length} dòng
+          <p className="text-xs text-gray-400">
+            {lineCount.toLocaleString("vi-VN")} dòng
           </p>
           <button
             type="submit"
             disabled={loading || !text.trim()}
-            className="px-4 py-2 rounded-lg bg-[#10B981] text-white text-sm font-medium hover:bg-green-500 disabled:opacity-60 transition-colors"
+            className="px-4 py-2 rounded-lg bg-[#e11d48] text-white text-sm font-medium hover:bg-[#be123c] disabled:opacity-60 transition-colors"
           >
             {loading ? "Đang nhập..." : "Nhập kho"}
           </button>
         </div>
       </form>
 
-      {error && <p className="text-xs text-[#EF4444]">{error}</p>}
+      {error && <p className="text-xs text-red-500">{error}</p>}
 
       {result && (
-        <div className="p-3 rounded-lg bg-[#10B981]/10 border border-[#10B981]/30">
-          <p className="text-xs text-[#10B981] font-medium">
+        <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+          <p className="text-xs text-emerald-700 font-medium">
             Thành công: +{result.inserted} items · Bỏ qua trùng: {result.skipped} · Tổng có sẵn: {result.totalAvailable}
           </p>
         </div>

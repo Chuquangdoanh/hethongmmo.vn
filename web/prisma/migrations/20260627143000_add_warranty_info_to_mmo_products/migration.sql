@@ -1,0 +1,1 @@
+ALTER TABLE mmo_products ADD COLUMN IF NOT EXISTS warranty_info TEXT NOT NULL DEFAULT '';

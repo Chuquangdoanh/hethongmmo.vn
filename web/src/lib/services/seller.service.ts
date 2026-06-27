@@ -101,6 +101,7 @@ interface AddProductParams {
   sellerId: string;
   name: string;
   price: number;
+  warrantyInfo: string;
   description?: string;
   imageUrl?: string;
   sellerCategory: string;
@@ -110,7 +111,7 @@ interface AddProductParams {
 
 /** Adds a new product with encrypted stock items. Enforces product limit. */
 export async function addSellerProduct(params: AddProductParams): Promise<string> {
-  const { sellerId, name, price, description, imageUrl, sellerCategory, subCategoryId, stockItems } = params;
+  const { sellerId, name, price, warrantyInfo, description, imageUrl, sellerCategory, subCategoryId, stockItems } = params;
 
   const productCount = await checkProductLimit(sellerId);
   const [seller, sellerRequest] = await Promise.all([
@@ -151,6 +152,7 @@ export async function addSellerProduct(params: AddProductParams): Promise<string
       storeType,
       name,
       price: new Decimal(price).toFixed(2),
+      warrantyInfo,
       description,
       imageUrl,
       stockItems: {

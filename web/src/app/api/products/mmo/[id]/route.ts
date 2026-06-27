@@ -18,6 +18,7 @@ const mmoPatchSchema = z.object({
   categoryGroup: z.string().min(1).max(100).optional(),
   price: z.number().positive().max(100_000_000).optional(),
   description: z.string().max(10_000).optional(),
+  warrantyInfo: z.string().max(2000).optional(),
   displayOrder: z.number().int().min(0).optional(),
   isFeatured: z.boolean().optional(),
   isActive: z.boolean().optional(),

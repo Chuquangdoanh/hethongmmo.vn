@@ -18,7 +18,7 @@ export default async function AdminMmoProductEditPage({
     where: { id, deletedAt: null },
     select: {
       id: true, name: true, slug: true, category: true, categoryGroup: true,
-      price: true, description: true, thumbnail: true,
+      price: true, description: true, warrantyInfo: true, thumbnail: true,
       isActive: true, isFeatured: true, displayOrder: true, section: true,
     },
   });
@@ -42,6 +42,7 @@ export default async function AdminMmoProductEditPage({
           categoryGroup: product.categoryGroup,
           price: Number(product.price),
           description: product.description ?? undefined,
+          warrantyInfo: product.warrantyInfo ?? undefined,
           thumbnail: product.thumbnail ?? undefined,
           isActive: product.isActive,
           isFeatured: product.isFeatured,
@@ -67,7 +68,7 @@ export default async function AdminMmoProductEditPage({
 
       {/* Gói biến thể — Bảo hành & Giá */}
       <div id="variants-section" className="rounded-xl border border-[#7C3AED]/30 bg-[#faf8ff] p-5">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4">Gói biến thể (Bảo hành &amp; Giá) — Bước 2</h2>
+        <h2 className="text-sm font-semibold text-gray-900 mb-4">Gói sản phẩm (ví dụ: Gói 1 tháng, Gói 3 tháng...) — Bước 2</h2>
         <VariantManager productId={product.id} isAdmin apiBase="/api/products/mmo" />
         <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
           <p className="text-xs text-gray-500">Sau khi thêm đủ gói, tiếp tục nhập kho bên dưới.</p>

@@ -7,8 +7,8 @@ import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import { decrypt } from "@/lib/security/encryption";
 import {
-  ArrowLeft, Package, User, FileText, Clock,
-  CheckCircle, AlertTriangle, XCircle, Snowflake, ReceiptText,
+  ArrowLeft, Package, FileText, Clock,
+  CheckCircle, XCircle, AlertTriangle, Snowflake,
 } from "lucide-react";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
 
@@ -82,7 +82,7 @@ export default async function SellerOrderDetailPage({
     <>
       <SellerProfileHero userId={me.id} activeTab="orders" />
       <div className="bg-gray-50 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-6 min-h-[60vh]">
-        <div className="max-w-2xl space-y-5">
+        <div className="space-y-5">
 
           {/* Breadcrumb + back */}
           <div className="flex items-center gap-2">
@@ -94,11 +94,11 @@ export default async function SellerOrderDetailPage({
             </Link>
           </div>
 
-          {/* Header card */}
+          {/* Header card — mã đơn, tên, trạng thái, giá, thời gian */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div>
-                <p className="text-[11px] font-mono text-gray-400 mb-1">#{order.orderCode}</p>
+                <p className="text-[11px] font-mono text-gray-400 mb-1">Mã đơn: #{order.orderCode}</p>
                 <h1 className="text-lg font-bold text-gray-900 leading-tight">{order.itemName}</h1>
                 {order.warrantyVariant && (
                   <p className="text-xs text-gray-500 mt-0.5">Phân loại: {order.warrantyVariant}</p>
@@ -110,11 +110,11 @@ export default async function SellerOrderDetailPage({
               </span>
             </div>
 
-            {/* Price */}
+            {/* Giá */}
             <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-3 gap-3 text-center">
               <div>
-                <p className="text-[10px] text-gray-400 mb-0.5">Giá gốc</p>
-                <p className="text-sm font-semibold text-gray-600">{formatVnd(Number(order.originalPrice))}</p>
+                <p className="text-[10px] text-gray-400 mb-0.5">Giá bán</p>
+                <p className="text-sm font-semibold text-gray-700">{formatVnd(Number(order.originalPrice))}</p>
               </div>
               <div>
                 <p className="text-[10px] text-gray-400 mb-0.5">Phí nền tảng</p>
@@ -125,46 +125,42 @@ export default async function SellerOrderDetailPage({
                 <p className="text-sm font-bold text-emerald-600">{formatVnd(Number(order.finalPrice))}</p>
               </div>
             </div>
-          </div>
 
-          {/* Thông tin người mua */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <User size={14} className="text-gray-400" />
-              <h2 className="text-sm font-semibold text-gray-800">Thông tin người mua</h2>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Email</span>
-                <span className="font-medium text-gray-800">{order.user.email}</span>
+            {/* Thời gian mua */}
+            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+              <div className="flex items-center gap-1.5 text-gray-500">
+                <Clock size={13} className="text-gray-400" />
+                <span>Đặt hàng:</span>
+                <span className="font-medium text-gray-800">{formatDate(order.createdAt)}</span>
               </div>
-              {order.user.fullName && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Tên</span>
-                  <span className="font-medium text-gray-800">{order.user.fullName}</span>
+              {order.completedAt && (
+                <div className="flex items-center gap-1.5 text-gray-500">
+                  <CheckCircle size={13} className="text-emerald-500" />
+                  <span>Hoàn thành:</span>
+                  <span className="font-medium text-emerald-700">{formatDate(order.completedAt)}</span>
                 </div>
               )}
-              {order.customerNote && (
-                <div className="flex justify-between gap-3">
-                  <span className="text-gray-500 shrink-0">Ghi chú</span>
-                  <span className="font-medium text-gray-800 text-right">{order.customerNote}</span>
-                </div>
-              )}
+              <div className="flex items-center gap-1.5 text-gray-500 ml-auto">
+                <span>Doanh thu:</span>
+                <span className={order.withdrawn ? "font-medium text-emerald-700" : "text-gray-400"}>
+                  {order.withdrawn ? "Đã rút" : "Chưa rút"}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Nội dung đã giao */}
+          {/* Nội dung sản phẩm đã giao */}
           {(order.status === "DONE" || order.status === "FROZEN" || order.status === "DISPUTED") && (
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Package size={14} className="text-gray-400" />
-                <h2 className="text-sm font-semibold text-gray-800">Nội dung đã giao</h2>
+                <h2 className="text-sm font-semibold text-gray-800">Nội dung sản phẩm đã giao</h2>
                 {stockItem?.soldAt && (
                   <span className="ml-auto text-[11px] text-gray-400">{formatDate(stockItem.soldAt)}</span>
                 )}
               </div>
               {deliveredContent ? (
-                <pre className="text-xs text-gray-700 bg-gray-50 rounded-xl p-4 whitespace-pre-wrap break-all font-mono leading-relaxed max-h-60 overflow-y-auto border border-gray-100">
+                <pre className="text-xs text-gray-700 bg-gray-50 rounded-xl p-4 whitespace-pre-wrap break-all font-mono leading-relaxed max-h-96 overflow-y-auto border border-gray-100">
                   {deliveredContent}
                 </pre>
               ) : (
@@ -172,36 +168,6 @@ export default async function SellerOrderDetailPage({
               )}
             </div>
           )}
-
-          {/* Timeline */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <ReceiptText size={14} className="text-gray-400" />
-              <h2 className="text-sm font-semibold text-gray-800">Thời gian</h2>
-            </div>
-            <div className="space-y-2.5">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Đặt hàng</span>
-                <span className="text-gray-800">{formatDate(order.createdAt)}</span>
-              </div>
-              {order.completedAt && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Hoàn thành</span>
-                  <span className="text-emerald-700">{formatDate(order.completedAt)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Cập nhật cuối</span>
-                <span className="text-gray-800">{formatDate(order.updatedAt)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Doanh thu đã rút</span>
-                <span className={order.withdrawn ? "text-emerald-700 font-medium" : "text-gray-400"}>
-                  {order.withdrawn ? "Đã rút" : "Chưa rút"}
-                </span>
-              </div>
-            </div>
-          </div>
 
           {/* Xem sản phẩm */}
           {order.sellerProduct && (

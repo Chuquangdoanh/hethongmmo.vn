@@ -9,6 +9,7 @@ import {
   AlertTriangle, CheckCircle, Copy, Check, Zap, ShieldCheck,
 } from "lucide-react";
 import { FaReact } from "react-icons/fa";
+import QuantitySelector from "@/components/shared/QuantitySelector";
 
 export interface ProductVariant {
   id: string;
@@ -38,7 +39,11 @@ interface OrderResult {
   orderId: string;
   orderCode: string;
   deliveredContent?: string;
+  deliveredContents?: string[];
+  quantity?: number;
 }
+
+// ── Star row for confirm popup ────────────────────────────────────────────────
 
 function StarRow({ rating, count }: { rating: number; count: number }) {
   return (
@@ -61,14 +66,26 @@ function StarRow({ rating, count }: { rating: number; count: number }) {
   );
 }
 
+// ── Delivery modal — handles single or multiple items ─────────────────────────
+
 function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () => void }) {
   const router = useRouter();
-  const [copied, setCopied] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | "all" | null>(null);
 
-  async function handleCopy() {
-    await navigator.clipboard.writeText(result.deliveredContent ?? "");
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const items = result.deliveredContents ?? (result.deliveredContent ? [result.deliveredContent] : []);
+  const isBatch = items.length > 1;
+
+  async function copyItem(text: string, index: number | "all") {
+    await navigator.clipboard.writeText(text);
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
+  }
+
+  function handleCopyAll() {
+    const allText = items
+      .map((content, i) => `--- Sản phẩm ${i + 1}/${items.length} ---\n${content}`)
+      .join("\n\n");
+    void copyItem(allText, "all");
   }
 
   function handleClose() {
@@ -82,12 +99,15 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
       style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
     >
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden">
+        {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500">
               <Check size={11} className="text-white" strokeWidth={3} />
             </span>
-            <span className="text-sm font-semibold text-gray-800">Nhận hàng thành công!</span>
+            <span className="text-sm font-semibold text-gray-800">
+              {isBatch ? `Nhận hàng thành công — ${items.length} sản phẩm!` : "Nhận hàng thành công!"}
+            </span>
           </div>
           <button
             onClick={handleClose}
@@ -96,7 +116,9 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
             <X size={13} />
           </button>
         </div>
-        <div className="px-5 py-5 space-y-4">
+
+        <div className="px-5 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
+          {/* Icon + title */}
           <div className="text-center">
             <div className="flex justify-center mb-2">
               <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
@@ -104,41 +126,67 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
               </div>
             </div>
             <p className="text-base font-bold text-emerald-600">Giao hàng tự động!</p>
-            <p className="text-xs text-gray-500 mt-1">Sản phẩm của bạn đã được giao thành công. Lưu thông tin bên dưới.</p>
+            <p className="text-xs text-gray-500 mt-1">
+              {isBatch
+                ? `${items.length} sản phẩm đã được giao thành công. Lưu thông tin bên dưới.`
+                : "Sản phẩm của bạn đã được giao thành công. Lưu thông tin bên dưới."}
+            </p>
           </div>
-          <div className="rounded-xl bg-white border border-gray-200 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200">
-              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Nội dung nhận được</span>
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-medium transition-colors whitespace-nowrap"
-              >
-                {copied ? (
-                  <>
-                    <Check size={11} className="text-emerald-500" />
-                    Đã chép
-                  </>
-                ) : (
-                  <>
-                    <Copy size={11} />
-                    Sao chép
-                  </>
-                )}
-              </button>
+
+          {/* Copy all button (batch only) */}
+          {isBatch && (
+            <button
+              onClick={handleCopyAll}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-100 transition-colors"
+            >
+              {copiedIndex === "all" ? (
+                <><Check size={13} className="text-emerald-600" /> Đã sao chép tất cả!</>
+              ) : (
+                <><Copy size={13} /> Sao chép tất cả {items.length} sản phẩm</>
+              )}
+            </button>
+          )}
+
+          {/* Content items */}
+          {items.map((content, idx) => (
+            <div key={idx} className="rounded-xl bg-white border border-gray-200 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+                <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">
+                  {isBatch ? `Sản phẩm ${idx + 1} / ${items.length}` : "Nội dung nhận được"}
+                </span>
+                <button
+                  onClick={() => void copyItem(content, idx)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-medium transition-colors whitespace-nowrap"
+                >
+                  {copiedIndex === idx ? (
+                    <><Check size={11} className="text-emerald-500" /> Đã chép</>
+                  ) : (
+                    <><Copy size={11} /> Sao chép</>
+                  )}
+                </button>
+              </div>
+              <div className="min-h-11 max-h-36 overflow-y-auto px-4 py-3">
+                <p className="text-sm font-mono text-gray-900 break-all leading-relaxed whitespace-pre-wrap">
+                  {content}
+                </p>
+              </div>
             </div>
-            <div className="min-h-22 max-h-48 overflow-y-auto px-4 py-3">
-              <p className="text-sm font-mono text-gray-900 break-all leading-relaxed whitespace-pre-wrap">{result.deliveredContent}</p>
-            </div>
-          </div>
+          ))}
+
+          {/* Warning */}
           <div className="flex gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-3">
             <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-amber-800 leading-relaxed">
               Vui lòng lưu thông tin này ngay. Bạn có thể xem lại trong mục{" "}
-              <span className="font-semibold underline cursor-pointer" onClick={() => router.push("/don-hang")}>
+              <span
+                className="font-semibold underline cursor-pointer"
+                onClick={() => router.push("/don-hang")}
+              >
                 Lịch sử đơn hàng
               </span>.
             </p>
           </div>
+
           <button
             onClick={handleClose}
             className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
@@ -151,9 +199,12 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
   );
 }
 
+// ── Confirm popup ─────────────────────────────────────────────────────────────
+
 function BuyConfirmPopup({
   props,
   selectedVariant,
+  quantity,
   onConfirm,
   onClose,
   loading,
@@ -161,6 +212,7 @@ function BuyConfirmPopup({
 }: {
   props: ProductBuyButtonProps;
   selectedVariant: ProductVariant | null;
+  quantity: number;
   onConfirm: () => void;
   onClose: () => void;
   loading: boolean;
@@ -176,7 +228,8 @@ function BuyConfirmPopup({
     };
   }, [onClose]);
 
-  const displayPrice = selectedVariant ? selectedVariant.variantPrice : props.price;
+  const unitPrice = selectedVariant ? selectedVariant.variantPrice : props.price;
+  const totalPrice = unitPrice * quantity;
 
   return (
     <div
@@ -193,17 +246,6 @@ function BuyConfirmPopup({
           <div className="flex-1 min-w-0 pr-2">
             <p className="text-[10px] text-gray-400 mb-1 uppercase tracking-wide">Xác nhận mua hàng</p>
             <h3 className="text-base font-bold text-gray-900 leading-snug">{props.itemName}</h3>
-            {props.sellerName && (
-              <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[10px] font-medium text-blue-600">
-                <Store size={10} /> {props.sellerName}
-              </span>
-            )}
-            {selectedVariant && (
-              <div className="mt-2 flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 rounded-lg px-2.5 py-1.5">
-                <ShieldCheck size={12} />
-                <span>Bảo hành: <strong>{selectedVariant.warranty}</strong></span>
-              </div>
-            )}
           </div>
           <button
             onClick={onClose}
@@ -234,11 +276,30 @@ function BuyConfirmPopup({
           </div>
         </div>
 
-        {/* Price */}
+        {/* Price breakdown */}
         <div className="px-5 pb-4">
-          <div className="rounded-xl bg-gray-50 px-4 py-3 flex items-center justify-between">
-            <span className="text-xs text-gray-500">Giá thanh toán</span>
-            <span className="text-xl font-bold text-[#E53E3E]">{formatVnd(displayPrice)}</span>
+          <div className="rounded-xl bg-gray-50 px-4 py-3 space-y-1.5">
+            {quantity > 1 ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">Đơn giá</span>
+                  <span className="text-sm text-gray-700">{formatVnd(unitPrice)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">Số lượng</span>
+                  <span className="text-sm font-semibold text-gray-700">× {quantity}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-gray-200 pt-2 mt-1">
+                  <span className="text-xs font-semibold text-gray-600">Thành tiền</span>
+                  <span className="text-xl font-bold text-[#E53E3E]">{formatVnd(totalPrice)}</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Giá thanh toán</span>
+                <span className="text-xl font-bold text-[#E53E3E]">{formatVnd(unitPrice)}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -268,6 +329,8 @@ function BuyConfirmPopup({
   );
 }
 
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function ProductBuyButton(props: ProductBuyButtonProps) {
   const router = useRouter();
   const [showPopup, setShowPopup] = useState(false);
@@ -276,6 +339,7 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
   const [result, setResult] = useState<OrderResult | null>(null);
   const [mounted, setMounted] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
 
@@ -283,14 +347,21 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
   const hasVariants = activeVariants.length > 0;
   const selectedVariant = activeVariants.find((v) => v.id === selectedVariantId) ?? null;
 
-  // Displayed price: variant price if selected, else min variant price, else product price
   const minVariantPrice = hasVariants ? Math.min(...activeVariants.map((v) => v.variantPrice)) : null;
-  const displayPrice = selectedVariant ? selectedVariant.variantPrice : (minVariantPrice ?? props.price);
+  const unitPrice = selectedVariant ? selectedVariant.variantPrice : (minVariantPrice ?? props.price);
   const priceLabel = selectedVariant
-    ? formatVnd(selectedVariant.variantPrice)
+    ? formatVnd(selectedVariant.variantPrice * quantity)
     : hasVariants
       ? `Từ ${formatVnd(minVariantPrice!)}`
-      : formatVnd(props.price);
+      : formatVnd(props.price * quantity);
+
+  // Quantity is only meaningful when there are items in stock to buy
+  const maxQuantity = Math.min(props.available, 100);
+  const showQuantitySelector = props.available > 1;
+
+  function handleQuantityChange(newQty: number) {
+    setQuantity(newQty);
+  }
 
   function handleClick() {
     if (!props.isLoggedIn) {
@@ -313,6 +384,7 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
         orderType: props.orderType,
         itemId: props.itemId,
         idempotencyKey: crypto.randomUUID(),
+        quantity,
       };
       if (selectedVariantId) body.variantId = selectedVariantId;
 
@@ -328,7 +400,7 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
         return;
       }
       setShowPopup(false);
-      if (json.data.deliveredContent) {
+      if (json.data.deliveredContent ?? json.data.deliveredContents?.length) {
         setResult(json.data);
       } else {
         router.push("/don-hang");
@@ -342,15 +414,16 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
 
   return (
     <>
-      {mounted && result?.deliveredContent && createPortal(
+      {mounted && result && (result.deliveredContent ?? result.deliveredContents?.length) && createPortal(
         <DeliveryModal result={result} onClose={() => setResult(null)} />,
         document.body
       )}
 
       {mounted && showPopup && createPortal(
         <BuyConfirmPopup
-          props={{ ...props, price: displayPrice }}
+          props={{ ...props, price: unitPrice }}
           selectedVariant={selectedVariant}
+          quantity={quantity}
           onConfirm={handleConfirm}
           onClose={() => { if (!loading) setShowPopup(false); }}
           loading={loading}
@@ -413,15 +486,45 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
           </div>
         )}
 
+        {/* Quantity selector */}
+        {showQuantitySelector && (
+          <div className="flex items-center justify-between px-1 py-1">
+            <span className="text-sm font-medium text-gray-700">Số lượng</span>
+            <QuantitySelector
+              value={quantity}
+              onChange={handleQuantityChange}
+              min={1}
+              max={maxQuantity}
+            />
+          </div>
+        )}
+
         {/* Price summary */}
         {hasVariants && (
-          <div className="rounded-xl bg-gray-50 px-4 py-2.5 flex items-center justify-between">
-            <span className="text-xs text-gray-500">
-              {selectedVariant ? "Giá thanh toán" : "Giá"}
-            </span>
-            <span className={`text-lg font-bold ${selectedVariant ? "text-[#E53E3E]" : "text-gray-400"}`}>
-              {selectedVariant ? formatVnd(selectedVariant.variantPrice) : "Chọn gói để xem giá"}
-            </span>
+          <div className="rounded-xl bg-gray-50 px-4 py-2.5">
+            {selectedVariant ? (
+              <div className="space-y-1">
+                {quantity > 1 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Đơn giá</span>
+                    <span className="text-sm text-gray-600">{formatVnd(selectedVariant.variantPrice)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">
+                    {quantity > 1 ? `Thành tiền (×${quantity})` : "Giá thanh toán"}
+                  </span>
+                  <span className="text-lg font-bold text-[#E53E3E]">
+                    {formatVnd(selectedVariant.variantPrice * quantity)}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Giá</span>
+                <span className="text-lg font-bold text-gray-400">Chọn gói để xem giá</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -438,7 +541,9 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
           {props.compact
             ? (props.isLoggedIn ? "MUA NGAY" : "ĐĂNG NHẬP")
             : (props.isLoggedIn
-                ? (hasVariants && !selectedVariantId ? "Chọn gói để mua" : `Mua ngay — ${priceLabel}`)
+                ? (hasVariants && !selectedVariantId
+                    ? "Chọn gói để mua"
+                    : `Mua ngay — ${priceLabel}`)
                 : "Đăng nhập để mua")}
         </button>
 

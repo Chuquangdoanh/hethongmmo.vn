@@ -20,6 +20,7 @@ const purchaseSchema = z.object({
   deviceVariant: z.string().max(200).optional(),
   customerNote: z.string().max(5000).optional(),
   idempotencyKey: z.string().uuid("idempotencyKey phải là UUID"),
+  quantity: z.coerce.number().int().min(1).max(100).default(1),
 });
 
 const listQuerySchema = z.object({
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const parsed = purchaseSchema.safeParse(body);
     if (!parsed.success) return apiValidationError(parsed.error.issues);
 
-    const { itemId, orderType, variantId, warrantyVariant, deviceVariant, customerNote, idempotencyKey } = parsed.data;
+    const { itemId, orderType, variantId, warrantyVariant, deviceVariant, customerNote, idempotencyKey, quantity } = parsed.data;
 
     // Resolve catalog price server-side (không tin client)
     const { itemName, catalogPrice, resolvedWarranty } = await resolveItem(orderType, itemId, deviceVariant, warrantyVariant, variantId);
@@ -125,6 +126,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       variantId,
       warrantyVariant: resolvedWarranty ?? warrantyVariant,
       customerNote,
+      quantity,
     });
 
     return apiOk(
@@ -135,7 +137,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         itemName: result.order.itemName,
         finalPrice: result.order.finalPrice,
         status: result.order.status,
+        quantity: result.quantity ?? 1,
         deliveredContent: result.deliveredContent,
+        deliveredContents: result.deliveredContents ?? null,
         tutTrickDocs: result.tutTrickDocs ?? null,
         isDeposit: result.isDeposit ?? false,
         depositAmount: result.depositAmount ?? null,

@@ -22,6 +22,7 @@ interface ProductFormProps {
     id: string;
     name: string;
     price: number;
+    warrantyInfo: string;
     description: string;
     imageUrl: string;
     isActive: boolean;
@@ -38,6 +39,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
   const [form, setForm] = useState({
     name: initialData?.name ?? "",
     price: initialData?.price?.toString() ?? "",
+    warrantyInfo: initialData?.warrantyInfo ?? "",
     description: initialData?.description ?? "",
     imageUrl: initialData?.imageUrl ?? "",
     isActive: initialData?.isActive ?? true,
@@ -159,6 +161,8 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
 
     if (!form.imageUrl.trim()) { setError("Vui lòng thêm ảnh sản phẩm."); return; }
 
+    if (!form.warrantyInfo.trim()) { setError("Vui lòng nhập thông tin bảo hành."); return; }
+
     if (subCategories.length > 0 && !subCategoryId) { setError("Vui lòng chọn danh mục con."); return; }
 
     if (descWordCount() < 20) { setError("Mô tả sản phẩm phải có ít nhất 20 từ."); return; }
@@ -193,6 +197,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
       const body: Record<string, unknown> = {
         name: form.name.trim(),
         price,
+        warrantyInfo: form.warrantyInfo.trim(),
         description: form.description.trim() || null,
         imageUrl: form.imageUrl.trim() || null,
         isActive: form.isActive,
@@ -226,6 +231,36 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
       {form.name.trim().length > 0 && form.name.trim().length < 3 && (
         <p className="text-[10px] text-amber-500 mt-1">Cần ít nhất 3 ký tự</p>
       )}
+    </div>
+  );
+
+  const warrantyInfoField = (
+    <div>
+      <label className="block text-xs font-medium mb-1.5 text-red-500">
+        Thông tin bảo hành <span className="font-bold">*</span>
+      </label>
+      <textarea
+        value={form.warrantyInfo}
+        onChange={set("warrantyInfo")}
+        rows={4}
+        maxLength={2000}
+        required
+        className={`w-full rounded-lg border px-3 py-2.5 text-sm text-gray-900 focus:outline-none transition-colors resize-none ${
+          !form.warrantyInfo.trim()
+            ? "border-red-400 bg-red-50 focus:border-red-500"
+            : "border-gray-200 bg-gray-50 focus:bg-white focus:border-[#e11d48]/60"
+        }`}
+        placeholder="Nhập chính sách bảo hành, hỗ trợ sau mua, thời hạn đổi trả..."
+        suppressHydrationWarning
+      />
+      <div className="flex items-center justify-between mt-1">
+        {!form.warrantyInfo.trim() ? (
+          <p className="text-[10px] text-red-500 font-medium">Bắt buộc nhập</p>
+        ) : (
+          <p className="text-[10px] text-emerald-500">✓ Đã nhập</p>
+        )}
+        <p className="text-[10px] text-gray-400">{form.warrantyInfo.length} / 2000</p>
+      </div>
     </div>
   );
 
@@ -499,7 +534,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
           <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
           <div>
             <p className="text-sm font-semibold text-emerald-700">Sản phẩm đã được tạo thành công!</p>
-            <p className="text-xs text-emerald-600 mt-0.5">Hãy Thêm gói bảo hành của bạn để đạt được nhiều kết quả tốt hơn. </p>
+            <p className="text-xs text-emerald-600 mt-0.5">Thêm gói sản phẩm (ví dụ: Gói 1 tháng, Gói 3 tháng...) để khách hàng có thêm lựa chọn.</p>
           </div>
         </div>
 
@@ -513,7 +548,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
             onClick={() => router.push("/san-pham")}
             className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
           >
-            Không bảo hành <ArrowRight size={15} />
+            Bỏ qua, thêm sau <ArrowRight size={15} />
           </button>
         </div>
       </div>
@@ -531,6 +566,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
               <div className="p-6 space-y-5">
                 <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Thông tin sản phẩm</p>
                 {nameField}
+                {warrantyInfoField}
                 {priceField}
                 {subCategoryField}
                 {imageUpload}
@@ -552,10 +588,11 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
                 {checkboxes}
               </div>
 
-              {/* EDIT — phải: ảnh + mô tả + buttons */}
+              {/* EDIT — phải: ảnh + giới thiệu + mô tả + buttons */}
               <div className="p-6 space-y-5">
                 <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Hình ảnh & Mô tả</p>
                 {imageUpload}
+                {warrantyInfoField}
                 {descField}
                 {error && <p className="text-xs text-red-500">{error}</p>}
                 {actionButtons}
