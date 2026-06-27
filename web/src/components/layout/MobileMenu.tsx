@@ -542,11 +542,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
                     <span>Ticket hỗ trợ</span>
                     <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
-                  <Link href="/not-found" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                    <span className="mnav-acc-icon-badge"><Heart size={16} /></span>
-                    <span>Sản phẩm yêu thích</span>
-                    <ChevronRight size={14} className="mnav-acc-chevron" />
-                  </Link>
+                
                   <Link href="/thong-bao" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
                     <span className="mnav-acc-icon-badge" style={{ position: "relative" }}>
                       <Bell size={16} />

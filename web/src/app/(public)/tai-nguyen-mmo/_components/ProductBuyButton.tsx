@@ -5,9 +5,10 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { formatVnd } from "@/lib/utils/format";
 import {
-  X, Store, Package, ShoppingCart, PartyPopper,
+  X, Store, Package, ShoppingCart,
   AlertTriangle, CheckCircle, Copy, Check, Zap, ShieldCheck,
 } from "lucide-react";
+import { FaReact } from "react-icons/fa";
 
 export interface ProductVariant {
   id: string;
@@ -80,7 +81,7 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
       style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500">
@@ -99,22 +100,22 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
           <div className="text-center">
             <div className="flex justify-center mb-2">
               <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
-                <PartyPopper size={24} className="text-emerald-500" />
+                <FaReact size={24} className="text-emerald-500" />
               </div>
             </div>
             <p className="text-base font-bold text-emerald-600">Giao hàng tự động!</p>
             <p className="text-xs text-gray-500 mt-1">Sản phẩm của bạn đã được giao thành công. Lưu thông tin bên dưới.</p>
           </div>
-          <div className="rounded-xl bg-gray-900 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
-              <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Nội dung nhận được</span>
+          <div className="rounded-xl bg-white border border-gray-200 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200">
+              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Nội dung nhận được</span>
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-[11px] font-medium transition-colors whitespace-nowrap"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-medium transition-colors whitespace-nowrap"
               >
                 {copied ? (
                   <>
-                    <Check size={11} className="text-emerald-400" />
+                    <Check size={11} className="text-emerald-500" />
                     Đã chép
                   </>
                 ) : (
@@ -125,8 +126,8 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
                 )}
               </button>
             </div>
-            <div className="max-h-48 overflow-y-auto px-4 py-3">
-              <p className="text-sm font-mono text-white break-all leading-relaxed whitespace-pre-wrap">{result.deliveredContent}</p>
+            <div className="min-h-22 max-h-48 overflow-y-auto px-4 py-3">
+              <p className="text-sm font-mono text-gray-900 break-all leading-relaxed whitespace-pre-wrap">{result.deliveredContent}</p>
             </div>
           </div>
           <div className="flex gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-3">

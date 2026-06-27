@@ -91,8 +91,7 @@ export function CategoryFilter({ categories, basePath }: Props) {
         <div className="px-4 pt-3.5 pb-1">
           <p className="text-[13px] font-bold text-[#1e293b] tracking-wide uppercase opacity-50">Danh mục</p>
         </div>
-        {/* mobile: scroll ngang 1 hàng; sm+: flex-wrap nhiều hàng */}
-        <div className="flex overflow-x-auto sm:flex-wrap gap-2 px-4 pb-3 sm:pb-3.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none">
+        <div className="flex flex-wrap gap-2 px-4 pb-3 sm:pb-3.5">
 
           {/* Tất cả */}
           <button
@@ -147,7 +146,7 @@ export function CategoryFilter({ categories, basePath }: Props) {
             </span>
             <span className="text-[11px] text-[#94a3b8]">/ Danh mục con</span>
           </div>
-          <div className="flex overflow-x-auto sm:flex-wrap gap-1.5 px-4 pb-3 sm:pb-3.5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-none">
+          <div className="flex flex-wrap gap-1.5 px-4 pb-3 sm:pb-3.5">
 
             {/* Tất cả subcategory */}
             <button

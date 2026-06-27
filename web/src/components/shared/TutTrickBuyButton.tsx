@@ -7,8 +7,9 @@ import { formatVnd } from "@/lib/utils/format";
 import SafeHtml from "@/components/shared/SafeHtml";
 import {
   X, CheckCircle, Copy, Check, AlertTriangle,
-  PartyPopper, LogIn, Star, Download,
+  LogIn, Star, Download,
 } from "lucide-react";
+import { FaReact } from "react-icons/fa";
 
 export interface TutTrickItem {
   id: string;
@@ -102,7 +103,7 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
       style={{ backgroundColor: "rgba(0,0,0,0.60)" }}
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col" style={{ maxHeight: "90dvh" }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col" style={{ maxHeight: "90dvh" }}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-2">
@@ -119,33 +120,33 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
         <div className="overflow-y-auto flex-1 px-5 py-5 space-y-4">
           <div className="text-center">
             <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-2">
-              <PartyPopper size={26} className="text-emerald-500" />
+              <FaReact size={26} className="text-emerald-500" />
             </div>
             <p className="text-base font-bold text-emerald-600">Giao hàng tự động!</p>
             <p className="text-xs text-gray-500 mt-1">Sản phẩm đã được giao. Lưu thông tin bên dưới.</p>
           </div>
 
           {deliveredContent && (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 overflow-hidden">
-              <div className="flex items-center gap-2 px-3.5 py-2 border-b border-emerald-200 bg-emerald-100">
+            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+              <div className="flex items-center gap-2 px-3.5 py-2 border-b border-gray-200 bg-gray-50">
                 <span className="text-base leading-none">{isUrl ? "📁" : "🔑"}</span>
-                <span className="text-xs font-semibold text-emerald-800">
+                <span className="text-xs font-semibold text-gray-700">
                   {isUrl ? "Link nhận hàng" : "Nội dung nhận hàng"}
                 </span>
               </div>
-              <div className="flex items-center gap-2 px-3.5 py-3">
+              <div className="flex items-start gap-2 px-3.5 py-3 min-h-22">
                 {isUrl ? (
                   <a href={deliveredContent} target="_blank" rel="noopener noreferrer"
                     className="flex-1 text-sm text-blue-600 hover:underline break-all font-medium leading-snug">
                     {deliveredContent}
                   </a>
                 ) : (
-                  <span className="flex-1 text-sm text-gray-800 break-all font-medium leading-snug select-all">
+                  <span className="flex-1 text-sm text-gray-900 break-all font-medium leading-snug select-all whitespace-pre-wrap">
                     {deliveredContent}
                   </span>
                 )}
                 <button onClick={handleCopy}
-                  className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-[11px] font-semibold transition-colors whitespace-nowrap">
+                  className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-[11px] font-semibold transition-colors whitespace-nowrap">
                   {copied ? <><Check size={11} /> Đã chép</> : <><Copy size={11} /> Sao chép</>}
                 </button>
               </div>

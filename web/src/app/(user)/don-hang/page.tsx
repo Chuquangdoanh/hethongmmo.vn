@@ -245,6 +245,7 @@ export default async function DonHangPage({
                             <OrderActions
                               orderId={order.id}
                               itemName={order.itemName}
+                              orderType={order.orderType}
                               isDone={isDone}
                               hasComplaint={hasComplaint}
                               allowComplaint={activeTab === "tainguyen"}
@@ -290,6 +291,7 @@ export default async function DonHangPage({
                             <OrderActions
                               orderId={order.id}
                               itemName={order.itemName}
+                              orderType={order.orderType}
                               isDone={isDone}
                               hasComplaint={hasComplaint}
                               allowComplaint={activeTab === "tainguyen"}

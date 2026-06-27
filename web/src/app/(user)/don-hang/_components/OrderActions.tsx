@@ -4,22 +4,35 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Download, Copy, Check, Flag, CheckCircle,
-  X, Info, AlertTriangle, Send,
+  X, Info, AlertTriangle, Send, Eye,
 } from "lucide-react";
+import SafeHtml from "@/components/shared/SafeHtml";
+import { FaReact } from "react-icons/fa";
 
 interface Props {
   orderId: string;
   itemName: string;
+  orderType: string;
   isDone: boolean;
   hasComplaint: boolean;
   allowComplaint: boolean;
   orderCreatedAt: string;
 }
 
-async function fetchDelivered(orderId: string): Promise<string | null> {
+interface DeliveredData {
+  deliveredContent: string | null;
+  tutTrickDocs: string | null;
+  orderCode: string;
+}
+
+async function fetchDeliveredData(orderId: string): Promise<DeliveredData> {
   const res = await fetch(`/api/orders/${orderId}`, { credentials: "include" });
-  const json = await res.json() as { success: boolean; data?: { deliveredContent?: string } };
-  return json.data?.deliveredContent ?? null;
+  const json = await res.json() as { success: boolean; data?: { deliveredContent?: string; tutTrickDocs?: string; orderCode?: string } };
+  return {
+    deliveredContent: json.data?.deliveredContent ?? null,
+    tutTrickDocs: json.data?.tutTrickDocs ?? null,
+    orderCode: json.data?.orderCode ?? orderId.slice(0, 8).toUpperCase(),
+  };
 }
 
 const COMPLAINT_REASONS = [
@@ -178,47 +191,205 @@ function ComplaintPopup({
   );
 }
 
-export default function OrderActions({ orderId, itemName, isDone, hasComplaint, allowComplaint, orderCreatedAt }: Props) {
+function DetailModal({ orderId, itemName, orderType, onClose }: {
+  orderId: string;
+  itemName: string;
+  orderType: string;
+  onClose: () => void;
+}) {
+  const [data, setData] = useState<DeliveredData | null>(null);
+  const [loadingContent, setLoadingContent] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const [copiedAll, setCopiedAll] = useState(false);
+
+  useEffect(() => {
+    fetchDeliveredData(orderId).then((d) => { setData(d); setLoadingContent(false); });
+  }, [orderId]);
+
+  const content = data?.deliveredContent ?? null;
+  const docs = data?.tutTrickDocs ?? null;
+  const orderCode = data?.orderCode ?? "";
+  const isTutTrick = orderType === "TUTTRICK";
+  const isUrl = !!content && (content.startsWith("http://") || content.startsWith("https://"));
+
+  function stripHtml(html: string): string {
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    return (div.innerText ?? div.textContent ?? "").trim();
+  }
+
+  function buildFullText(): string {
+    const parts: string[] = [`=== ĐƠN HÀNG: ${orderCode} ===`];
+    if (content) parts.push(`[LINK NHẬN HÀNG]\n${content}`);
+    if (docs) parts.push(`[NỘI DUNG HƯỚNG DẪN]\n${stripHtml(docs)}`);
+    return parts.join("\n\n");
+  }
+
+  function handleDownload() {
+    const text = isTutTrick ? buildFullText() : (content ?? "");
+    if (!text) return;
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${itemName.replace(/[/\\?%*:|"<>]/g, "-")}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleCopyContent() {
+    if (!content) return;
+    await navigator.clipboard.writeText(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleCopyAll() {
+    await navigator.clipboard.writeText(buildFullText());
+    setCopiedAll(true);
+    setTimeout(() => setCopiedAll(false), 2000);
+  }
+
+  const hasAnyContent = !!content || !!docs;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col"
+        style={{ maxHeight: "90dvh" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center">
+              <FaReact size={14} className="text-emerald-500" />
+            </div>
+            <span className="text-sm font-semibold text-gray-800">Nội dung nhận hàng</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+          >
+            <X size={13} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 px-5 py-5 space-y-4">
+          {loadingContent ? (
+            <div className="space-y-3">
+              <div className="h-6 w-32 rounded bg-gray-100 animate-pulse" />
+              <div className="h-20 rounded-xl bg-gray-100 animate-pulse" />
+            </div>
+          ) : !hasAnyContent ? (
+            <p className="text-sm text-gray-500 text-center py-4">Không có nội dung giao hàng.</p>
+          ) : (
+            <>
+              {/* Nội dung sau giao */}
+              {content && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-2">
+                    {isUrl ? "Link hướng dẫn" : " Chi tiết đơn hàng"}
+                  </p>
+                  <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                    <div className="min-h-22 max-h-48 overflow-y-auto px-4 py-3 flex items-start gap-2">
+                      {isUrl ? (
+                        <a
+                          href={content}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 text-sm text-blue-600 hover:underline break-all font-medium leading-relaxed"
+                        >
+                          {content}
+                        </a>
+                      ) : (
+                        <p className="flex-1 text-sm font-mono text-gray-900 break-all leading-relaxed whitespace-pre-wrap select-all">
+                          {content}
+                        </p>
+                      )}
+                      <button
+                        onClick={handleCopyContent}
+                        className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 text-[11px] font-medium transition-colors whitespace-nowrap"
+                      >
+                        {copied ? <><Check size={10} className="text-emerald-500" /> Đã chép</> : <><Copy size={10} /> Sao chép</>}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Nội dung docs */}
+              {isTutTrick && docs && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-600 mb-2">📄 Nội dung hướng dẫn</p>
+                  <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                    <div className="max-h-64 overflow-y-auto px-4 py-3">
+                      <SafeHtml
+                        html={docs}
+                        className="prose prose-sm max-w-none text-gray-900 text-sm [&_a]:text-blue-600 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1.5"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Nút hành động */}
+        {hasAnyContent && !loadingContent && (
+          <div className="px-5 pb-5 pt-1 flex gap-2 shrink-0 border-t border-gray-100">
+            {isTutTrick && (content || docs) ? (
+              <>
+                <button
+                  onClick={handleCopyAll}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-semibold transition-colors"
+                >
+                  {copiedAll ? <><Check size={13} className="text-emerald-500" /> Đã sao chép</> : <><Copy size={13} /> Sao chép tất cả</>}
+                </button>
+                <button
+                  onClick={handleDownload}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-semibold transition-colors"
+                >
+                  <Download size={13} /> Tải file .txt
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={handleCopyContent}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-semibold transition-colors"
+                >
+                  {copied ? <><Check size={13} className="text-emerald-500" /> Đã sao chép</> : <><Copy size={13} /> Sao chép</>}
+                </button>
+                <button
+                  onClick={handleDownload}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-semibold transition-colors"
+                >
+                  <Download size={13} /> Tải file .txt
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function OrderActions({ orderId, itemName, orderType, isDone, hasComplaint, allowComplaint, orderCreatedAt }: Props) {
   const [isWithin24h, setIsWithin24h] = useState(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsWithin24h(Date.now() - new Date(orderCreatedAt).getTime() < 24 * 60 * 60 * 1000);
   }, [orderCreatedAt]);
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [localHasComplaint, setLocalHasComplaint] = useState(hasComplaint);
-
-  async function handleDownload() {
-    setBusy(true);
-    try {
-      const content = await fetchDelivered(orderId);
-      if (!content) return;
-      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${itemName.replace(/[/\\?%*:|"<>]/g, "-")}.txt`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleCopy() {
-    setBusy(true);
-    try {
-      const content = await fetchDelivered(orderId);
-      if (!content) return;
-      await navigator.clipboard.writeText(content);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   function handleComplaintSuccess() {
     setShowPopup(false);
@@ -236,28 +407,23 @@ export default function OrderActions({ orderId, itemName, isDone, hasComplaint, 
           onSuccess={handleComplaintSuccess}
         />
       )}
+      {showDetail && (
+        <DetailModal
+          orderId={orderId}
+          itemName={itemName}
+          orderType={orderType}
+          onClose={() => setShowDetail(false)}
+        />
+      )}
 
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center justify-center gap-1.5 flex-wrap">
         {isDone && (
-          <>
-            <button
-              onClick={handleDownload}
-              disabled={busy}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-medium hover:bg-blue-100 transition-colors disabled:opacity-50 whitespace-nowrap"
-            >
-              <Download size={11} /> Tải TXT
-            </button>
-            <button
-              onClick={handleCopy}
-              disabled={busy}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-gray-700 text-[11px] font-medium hover:bg-gray-100 transition-colors disabled:opacity-50 whitespace-nowrap"
-            >
-              {copied
-                ? <><Check size={11} className="text-emerald-600" /> <span className="text-emerald-600">Đã sao chép</span></>
-                : <><Copy size={11} /> Sao chép</>
-              }
-            </button>
-          </>
+          <button
+            onClick={() => setShowDetail(true)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-medium hover:bg-blue-100 transition-colors whitespace-nowrap"
+          >
+            <Eye size={11} /> Xem chi tiết
+          </button>
         )}
         {allowComplaint && (
           localHasComplaint ? (
