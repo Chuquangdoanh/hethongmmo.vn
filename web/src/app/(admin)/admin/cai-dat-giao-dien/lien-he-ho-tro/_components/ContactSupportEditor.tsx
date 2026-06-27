@@ -1,8 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FieldText, FieldGrid, FieldSectionLabel } from "../../trang-chu/_components/FieldInput";
 import { SITE_CONTENT_KEYS } from "@/lib/services/site-content.keys";
+
+function InfoPopup({ lines }: { lines: string[] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+  return (
+    <div ref={ref} className="relative inline-flex">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-5 h-5 rounded-full border border-gray-300 bg-white text-gray-500 text-[11px] font-bold flex items-center justify-center hover:border-blue-400 hover:text-blue-600 transition-colors"
+        title="Thông tin"
+      >
+        i
+      </button>
+      {open && (
+        <div className="absolute left-7 top-0 z-50 w-72 bg-white border border-gray-200 rounded-xl shadow-xl p-4 space-y-1.5">
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide mb-2">Hiển thị tại</p>
+          {lines.map((line, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <span className="mt-0.5 w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+              <p className="text-xs text-gray-700 leading-snug">{line}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface ContactItem {
   platform: string;
@@ -162,7 +198,13 @@ export default function ContactSupportEditor({ initialData }: { initialData: Rec
 
       {/* Button label */}
       <div className={cardClass}>
-        <h2 className="text-base font-bold text-gray-800">Nút kích hoạt</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-bold text-gray-800">Nút kích hoạt</h2>
+          <InfoPopup lines={[
+            "Nút tròn cố định góc dưới phải màn hình trên toàn bộ trang public",
+            "Khi click mở popup danh sách kênh liên hệ bên dưới",
+          ]} />
+        </div>
         <FieldText
           label="Nhãn nút (text hiển thị)"
           value={data.buttonLabel}
@@ -174,9 +216,23 @@ export default function ContactSupportEditor({ initialData }: { initialData: Rec
 
       {/* Quick Buttons */}
       <div className={cardClass}>
-        <h2 className="text-base font-bold text-gray-800">Nút liên hệ nhanh trên trang</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-bold text-gray-800">Nút liên hệ nhanh trên trang</h2>
+          <InfoPopup lines={[
+            'ID "product" → sidebar trang sản phẩm tài nguyên MMO (/tai-nguyen-mmo/[slug])',
+            'ID "product" → sidebar trang sản phẩm kho tài nguyên (/kho-tai-nguyen/[slug])',
+            'ID "product" → trang chi tiết sản phẩm (/tai-nguyen-mmo/san-pham/[id])',
+            'ID "product" → trang chi tiết sản phẩm kho (/kho-tai-nguyen/san-pham/[id])',
+            'ID "course" → sidebar trang khóa học (/khoa-hoc/[slug])',
+            'ID "telegram" → Sidebar menu "Telegram cộng đồng" (user đã đăng nhập)',
+            'ID "telegram" → Trang chính sách nhà bán hàng (/chinh-sach-nha-ban-hang)',
+            'ID "telegram" → Trang điều khoản dịch vụ (/dieu-khoan)',
+            'ID "telegram" → Trang giới thiệu — nhóm cộng đồng (/gioi-thieu)',
+            'ID "telegram" → Popup sau đăng ký dịch vụ Networks (/NetWorks)',
+          ]} />
+        </div>
         <p className="text-xs text-gray-500 -mt-2">
-          Hiển thị trong sidebar trang sản phẩm, danh mục, khóa học. Dùng <code className="bg-gray-100 px-1 rounded">id</code> để phân biệt vị trí (vd: <code className="bg-gray-100 px-1 rounded">product</code>, <code className="bg-gray-100 px-1 rounded">course</code>).
+          Dùng <code className="bg-gray-100 px-1 rounded">id</code> để phân biệt vị trí. Nhấn <span className="font-bold">i</span> để xem ID nào áp dụng cho trang nào.
         </p>
 
         {data.quickButtons.length === 0 && (
@@ -234,7 +290,14 @@ export default function ContactSupportEditor({ initialData }: { initialData: Rec
 
       {/* Items */}
       <div className={cardClass}>
-        <h2 className="text-base font-bold text-gray-800">Danh sách kênh liên hệ</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-bold text-gray-800">Danh sách kênh liên hệ</h2>
+          <InfoPopup lines={[
+            "Hiển thị trong popup khi user click nút kích hoạt (góc dưới phải màn hình)",
+            "Áp dụng trên toàn bộ trang public — mỗi kênh là 1 dòng trong popup",
+            "Thứ tự hiển thị theo thứ tự danh sách bên dưới",
+          ]} />
+        </div>
         <p className="text-xs text-gray-500 -mt-2">Mỗi kênh hiển thị 1 dòng trong popup. Kéo để sắp xếp.</p>
 
         {data.items.length === 0 && (

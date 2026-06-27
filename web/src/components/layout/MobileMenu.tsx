@@ -299,7 +299,8 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
             <img src="/images/Tuttrick.jpg" alt="" className="mnav-res-banner-bg" aria-hidden="true" />
             <div className="mnav-res-banner-text">
               <p className="mnav-res-banner-title">
-                Tài nguyên <ChevronRight size={14} className="mnav-res-banner-arrow" />
+                Hệ Thống Tài Nguyên
+ <ChevronRight size={14} className="mnav-res-banner-arrow" />
               </p>
               <p className="mnav-res-banner-desc">Khám phá, học hỏi và phát triển kỹ năng MMO mỗi ngày.</p>
             </div>
