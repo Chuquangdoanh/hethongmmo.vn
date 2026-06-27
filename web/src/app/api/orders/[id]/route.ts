@@ -188,7 +188,7 @@ export async function PATCH(
 
         await tx.user.update({
           where: { id: order.userId },
-          data: { balance: { increment: refundAmount } },
+          data: { balance: balanceAfter },
         });
 
         await tx.transaction.create({

@@ -86,29 +86,32 @@ async function autoResolve(complaintId: string, orderId: string | null, resoluti
     });
     if (orderId) {
       // Trả tiền cho seller khi khiếu nại kết thúc có lợi cho seller
+      // Lock order row trước để tránh race condition
+      await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`;
       const order = await tx.order.findUnique({
         where: { id: orderId },
         select: { finalPrice: true, sellerId: true },
       });
       if (order?.sellerId) {
         const payAmt = Number(order.finalPrice);
-        const seller = await tx.user.findUnique({ where: { id: order.sellerId }, select: { balance: true } });
-        if (seller) {
-          const balanceBefore = Number(seller.balance);
-          const balanceAfter = balanceBefore + payAmt;
-          await tx.user.update({ where: { id: order.sellerId }, data: { balance: balanceAfter } });
-          await tx.transaction.create({
-            data: {
-              userId: order.sellerId,
-              orderId,
-              type: "SELLER_PAYOUT",
-              amount: payAmt,
-              description: "Thanh toán đơn hàng — người mua không xác nhận trong 60 phút",
-              balanceBefore,
-              balanceAfter,
-            },
-          });
-        }
+        // Lock seller row và đọc balance
+        const sellerRows = await tx.$queryRaw<Array<{ balance: string }>>`
+          SELECT balance::text FROM users WHERE id = ${order.sellerId}::uuid FOR UPDATE
+        `;
+        const balanceBefore = parseFloat(sellerRows[0]?.balance ?? "0");
+        const balanceAfter = balanceBefore + payAmt;
+        await tx.user.update({ where: { id: order.sellerId }, data: { balance: balanceAfter } });
+        await tx.transaction.create({
+          data: {
+            userId: order.sellerId,
+            orderId,
+            type: "SELLER_PAYOUT",
+            amount: payAmt,
+            description: "Thanh toán đơn hàng — người mua không xác nhận trong 60 phút",
+            balanceBefore,
+            balanceAfter,
+          },
+        });
       }
       await tx.order.update({ where: { id: orderId }, data: { status: "DONE", withdrawn: true } });
     }
@@ -132,6 +135,8 @@ async function autoReject(complaintId: string, orderId: string | null, userId: s
 
     if (!orderId) return;
 
+    // Lock order row trước để tránh race condition
+    await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`;
     const order = await tx.order.findUnique({
       where: { id: orderId },
       select: { id: true, status: true, finalPrice: true },
@@ -141,12 +146,14 @@ async function autoReject(complaintId: string, orderId: string | null, userId: s
     // Giữ order ở REFUNDED — seller không thể rút tiền từ đơn này
     await tx.order.update({ where: { id: orderId }, data: { status: "REFUNDED" } });
 
-    // Hoàn tiền về ví user
+    // Lock user row và hoàn tiền về ví user
     const refundAmt = Number(order.finalPrice);
-    const user = await tx.user.findUnique({ where: { id: userId }, select: { balance: true } });
-    if (!user) return;
+    const userRows = await tx.$queryRaw<Array<{ balance: string }>>`
+      SELECT balance::text FROM users WHERE id = ${userId}::uuid FOR UPDATE
+    `;
+    if (!userRows[0]) return;
 
-    const balanceBefore = Number(user.balance);
+    const balanceBefore = parseFloat(userRows[0].balance);
     const balanceAfter = balanceBefore + refundAmt;
 
     await tx.user.update({ where: { id: userId }, data: { balance: balanceAfter } });

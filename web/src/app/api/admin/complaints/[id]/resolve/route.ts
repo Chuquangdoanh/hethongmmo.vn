@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
 import { apiOk, apiCatch, apiError } from "@/lib/api-response";
+import { ValidationError } from "@/lib/errors";
 
 export const runtime = "nodejs";
 
@@ -16,7 +17,7 @@ export async function POST(
     const { id } = await params;
     const session = await auth();
     const me = requireStaff(session);
- await requirePermission(session, "complaints:close");
+    await requirePermission(session, "complaints:close");
 
     const complaint = await prisma.complaint.findUnique({
       where: { id },
@@ -42,56 +43,62 @@ export async function POST(
 
       if (!complaint.orderId) return;
 
+      // Lock order row trước khi đọc withdrawn flag — tránh race với withdrawal process
+      await tx.$queryRaw`SELECT id FROM orders WHERE id = ${complaint.orderId}::uuid FOR UPDATE`;
       const order = await tx.order.findUnique({
         where: { id: complaint.orderId },
         select: { id: true, finalPrice: true, sellerId: true, withdrawn: true },
       });
-      if (!order) return;
+      if (!order) throw new ValidationError("Đơn hàng không tồn tại — không thể hoàn tiền");
 
       const refundAmt = Number(order.finalPrice);
       refundedAmount = refundAmt;
 
-      // Đặt order về REFUNDED
       await tx.order.update({ where: { id: order.id }, data: { status: "REFUNDED" } });
 
-      // Hoàn tiền về ví người mua
-      const buyer = await tx.user.findUnique({ where: { id: complaint.userId }, select: { balance: true } });
-      if (buyer) {
-        const balanceBefore = Number(buyer.balance);
-        const balanceAfter  = balanceBefore + refundAmt;
-        await tx.user.update({ where: { id: complaint.userId }, data: { balance: balanceAfter } });
+      // Lock buyer row và hoàn tiền về ví người mua
+      const buyerRows = await tx.$queryRaw<Array<{ balance: string }>>`
+        SELECT balance::text FROM users WHERE id = ${complaint.userId}::uuid FOR UPDATE
+      `;
+      const buyerBalanceBefore = parseFloat(buyerRows[0]?.balance ?? "0");
+      const buyerBalanceAfter  = buyerBalanceBefore + refundAmt;
+      await tx.user.update({ where: { id: complaint.userId }, data: { balance: buyerBalanceAfter } });
+      await tx.transaction.create({
+        data: {
+          userId:        complaint.userId,
+          orderId:       complaint.orderId,
+          type:          "REFUND",
+          amount:        refundAmt,
+          description:   "Hoàn tiền khiếu nại — admin phán quyết người mua thắng",
+          balanceBefore: buyerBalanceBefore,
+          balanceAfter:  buyerBalanceAfter,
+        },
+      });
+
+      // Nếu seller đã rút tiền trước đó → lock và trừ lại từ ví seller
+      if (order.withdrawn && order.sellerId) {
+        const sellerRows = await tx.$queryRaw<Array<{ balance: string }>>`
+          SELECT balance::text FROM users WHERE id = ${order.sellerId}::uuid FOR UPDATE
+        `;
+        const sellerBalanceBefore = parseFloat(sellerRows[0]?.balance ?? "0");
+        if (sellerBalanceBefore < refundAmt) {
+          throw new ValidationError(
+            `Ví seller không đủ để hoàn tiền (cần ${refundAmt}, hiện có ${sellerBalanceBefore}). Vui lòng xử lý thủ công.`,
+          );
+        }
+        const sellerBalanceAfter = sellerBalanceBefore - refundAmt;
+        await tx.user.update({ where: { id: order.sellerId }, data: { balance: sellerBalanceAfter } });
         await tx.transaction.create({
           data: {
-            userId:        complaint.userId,
-            orderId:       complaint.orderId,
-            type:          "REFUND",
-            amount:        refundAmt,
-            description:   "Hoàn tiền khiếu nại — admin phán quyết người mua thắng",
-            balanceBefore,
-            balanceAfter,
+            userId:        order.sellerId,
+            orderId:       order.id,
+            type:          "COMPLAINT_DEDUCTION",
+            amount:        -refundAmt,
+            description:   "Trừ tiền do admin phán quyết khiếu nại — người mua thắng",
+            balanceBefore: sellerBalanceBefore,
+            balanceAfter:  sellerBalanceAfter,
           },
         });
-      }
-
-      // Nếu seller đã rút tiền trước đó → trừ lại từ ví seller
-      if (order.withdrawn && order.sellerId) {
-        const seller = await tx.user.findUnique({ where: { id: order.sellerId }, select: { balance: true } });
-        if (seller) {
-          const balanceBefore = Number(seller.balance);
-          const balanceAfter  = balanceBefore - refundAmt;
-          await tx.user.update({ where: { id: order.sellerId }, data: { balance: balanceAfter } });
-          await tx.transaction.create({
-            data: {
-              userId:      order.sellerId,
-              orderId:     order.id,
-              type:        "COMPLAINT_DEDUCTION",
-              amount:      -refundAmt,
-              description: "Trừ tiền do admin phán quyết khiếu nại — người mua thắng",
-              balanceBefore,
-              balanceAfter,
-            },
-          });
-        }
       }
     });
 
