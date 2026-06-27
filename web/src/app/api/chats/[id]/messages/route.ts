@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
 import { checkAutoResolution } from "@/lib/services/complaint-auto-resolve";
+import { sendSellerFirstReplyEmail } from "@/lib/services/email.service";
 
 export const runtime = "nodejs";
 
@@ -124,7 +125,14 @@ export async function POST(
         firstSellerMsgAt: true,
         sellerConfirmed: true,
         userDone: true,
-        complaint: { select: { status: true } },
+        complaint: {
+          select: {
+            status: true,
+            subject: true,
+            orderId: true,
+            user: { select: { email: true } },
+          },
+        },
       },
     });
 
@@ -187,6 +195,15 @@ export async function POST(
     ]);
 
     const quota = makeQuota(newTotalMsgCount, newUserTurnCount, senderLabel);
+
+    // Gửi email thông báo cho user khi seller phản hồi lần đầu tiên
+    if (isSeller && !room.firstSellerMsgAt && room.complaint?.user?.email && room.complaint.orderId) {
+      sendSellerFirstReplyEmail({
+        to: room.complaint.user.email,
+        subject: room.complaint.subject ?? "Khiếu nại đơn hàng",
+        orderId: room.complaint.orderId,
+      }).catch(() => {});
+    }
 
     return apiOk(
       { ...message, createdAt: message.createdAt.toISOString(), quota },

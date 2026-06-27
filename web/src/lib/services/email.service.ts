@@ -471,6 +471,40 @@ export async function sendComplaintCreatedToUserEmail({
   );
 }
 
+export async function sendSellerFirstReplyEmail({
+  to,
+  subject,
+  orderId,
+}: {
+  to: string;
+  subject: string;
+  orderId: string;
+}): Promise<EmailResult> {
+  const content = `
+    <h2 style="margin:0 0 16px;font-size:20px;color:#18181B;font-weight:700;">💬 Nhà bán hàng đã phản hồi khiếu nại của bạn</h2>
+    <p style="color:#71717A;font-size:14px;line-height:1.7;margin:0 0 16px;">
+      Nhà bán hàng vừa gửi phản hồi về khiếu nại <strong style="color:#18181B;">"${escapeHtml(subject)}"</strong>.
+    </p>
+    <p style="color:#71717A;font-size:14px;line-height:1.7;margin:0 0 24px;">
+      Vui lòng vào chi tiết đơn hàng để xem tin nhắn và phản hồi kịp thời.
+    </p>
+    <div style="margin:0 0 24px;padding:14px 20px;background:#FFFBEB;border-radius:8px;border-left:3px solid #F59E0B;">
+      <p style="margin:0;font-size:13px;color:#92400E;line-height:1.7;">
+        Bạn có <strong>2 giờ</strong> để phản hồi trước khi hệ thống tự động xác nhận đơn hàng.
+      </p>
+    </div>
+    <a href="${APP_URL}/don-hang/${encodeURIComponent(orderId)}"
+       style="display:inline-block;padding:12px 24px;background:#7C3AED;color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;">
+      Xem khiếu nại →
+    </a>`;
+
+  return sendEmail(
+    to,
+    `Nhà bán hàng đã phản hồi khiếu nại "${subject.slice(0, 40)}"`,
+    baseTemplate(content, `Nhà bán hàng vừa gửi phản hồi — hãy vào xem ngay`),
+  );
+}
+
 export async function sendComplaintCreatedToSellerEmail({
   to,
   subject,
