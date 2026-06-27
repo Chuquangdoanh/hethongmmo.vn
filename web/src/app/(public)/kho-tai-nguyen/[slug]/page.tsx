@@ -330,7 +330,7 @@ export default async function KhoMmoProductDetailPage({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-3xl font-black text-[#e11d48]">{formatVnd(Number(product.price))}</p>
-          <p className="text-[11px] text-[#94a3b8]">/ Tài khoản</p>
+         
         </div>
         <div className={`flex items-center gap-1.5 text-sm font-semibold ${isOutOfStock ? "text-danger" : "text-[#10b981]"}`}>
           {isOutOfStock ? <XCircle size={16} strokeWidth={2} /> : <CheckCircle size={16} strokeWidth={2} />}

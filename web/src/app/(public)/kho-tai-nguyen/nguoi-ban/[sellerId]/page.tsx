@@ -284,20 +284,7 @@ export default async function KhoSellerProfilePage({
           </div>
 
           {/* Seller Telegram (nếu có) */}
-          {seller.telegramUsername && (
-            <div className="rounded-2xl border border-[#e2e8f0] bg-white p-4">
-              <p className="text-xs font-bold text-[#0f172a] mb-3">Liên hệ nhà bán hàng</p>
-              <a
-                href={`https://t.me/${seller.telegramUsername.replace(/^@/, "")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-xs text-[#0088cc] hover:underline"
-              >
-                <FaTelegramPlane size={14} className="shrink-0" />
-                @{seller.telegramUsername.replace(/^@/, "")}
-              </a>
-            </div>
-          )}
+          
 
           {/* Platform contact */}
           <div className="rounded-2xl border border-[#e2e8f0] bg-white p-4">
