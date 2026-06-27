@@ -11,7 +11,6 @@
 
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
-import sharp from "sharp";
 
 // ---------------------------------------------------------------------------
 // MIME whitelist
@@ -204,6 +203,8 @@ export async function uploadToR2(params: {
   let finalBuffer = buffer;
   let finalMime   = mimeType as AllowedMimeType;
   if (mimeType !== "image/svg+xml" && mimeType !== "image/gif") {
+    // Lazy import — tránh top-level import fail khi native binary chưa sẵn sàng ở standalone mode
+    const sharp = (await import("sharp")).default;
     finalBuffer = await sharp(buffer)
       .resize({ width: 1600, withoutEnlargement: true })
       .webp({ quality: 82 })

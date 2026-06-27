@@ -107,6 +107,7 @@ enum TxType {
   WITHDRAWAL_FEE
   ADMIN_ADJUSTMENT
   COMPLAINT_DEDUCTION
+  ESCROW_DEPOSIT
 }
 
 enum WithdrawalStatus {
@@ -178,6 +179,7 @@ model User {
   balance              Decimal       @default(0) @db.Decimal(18, 2)
   totalDeposited       Decimal       @default(0) @db.Decimal(18, 2) @map("total_deposited")
   totalSpent           Decimal       @default(0) @db.Decimal(18, 2) @map("total_spent")
+  sellerEscrow         Decimal       @default(0) @db.Decimal(18, 2) @map("seller_escrow")
 
   // Giảm giá khi mua Service/Course/TutTrick
   // 0 = dùng tier tự động theo totalDeposited; > 0 = admin override cứng

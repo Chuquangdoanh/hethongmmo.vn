@@ -113,6 +113,7 @@ export default async function SellerDonHangPage({
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Giá</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Trạng thái</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Ngày</th>
+                      <th className="px-4 py-3 w-10" />
                     </tr>
                   </thead>
                   <tbody>
@@ -130,6 +131,14 @@ export default async function SellerDonHangPage({
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${st.cls}`}>{st.label}</span>
                           </td>
                           <td className="px-4 py-3 text-xs text-gray-400">{formatDate(order.createdAt)}</td>
+                          <td className="px-4 py-3">
+                            <Link
+                              href={`/ban-hang/don-hang/${order.id}`}
+                              className="flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 hover:bg-violet-100 hover:text-violet-700 text-gray-400 transition-colors"
+                            >
+                              <ChevronRight size={14} />
+                            </Link>
+                          </td>
                         </tr>
                       );
                     })}

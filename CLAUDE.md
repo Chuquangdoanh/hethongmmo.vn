@@ -3,6 +3,19 @@
 Hướng dẫn cho AI assistant khi làm việc với dự án này.
 Đọc tài liệu trong `.claude/` trước khi bắt đầu bất kỳ task nào.
 
+---
+
+## ⚠️ ĐỌC TRƯỚC TIÊN — BẮT BUỘC MỌI PHIÊN
+
+> **[Freeze & Precision Rules](.claude/rules/freeze-and-precision.md) — ĐỌC FILE NÀY TRƯỚC KHI LÀM BẤT KỲ VIỆC GÌ**
+>
+> Tóm tắt bắt buộc ghi nhớ:
+> 1. **KHÔNG sửa chức năng đang hoạt động** — trừ khi có bug xác nhận hoặc lỗ hổng bảo mật
+> 2. **KHÔNG xóa code cũ** khi thêm chức năng mới — chỉ được thêm, không được thay thế
+> 3. **ĐỌC TOÀN BỘ file** trước khi sửa — không đoán mò, không sửa ngoài phạm vi yêu cầu
+
+---
+
 ## Tài liệu tham khảo
 
 ### Architecture
@@ -10,6 +23,8 @@ Hướng dẫn cho AI assistant khi làm việc với dự án này.
 - [Tech Stack](.claude/architecture/stack.md) — Tất cả công nghệ, versions, và lưu ý quan trọng
 
 ### Rules
+- [**Freeze & Precision**](.claude/rules/freeze-and-precision.md) — **ĐỌC TRƯỚC TIÊN** — Đóng băng chức năng, không xóa code cũ, đọc kỹ trước khi sửa
+- [**Clean Code & Tree Structure**](.claude/rules/clean-code.md) — **ĐỌC KHI TẠO / SỬA BẤT KỲ FILE NÀO** — Đặt tên, cấu trúc file, thứ tự code, tree thư mục chuẩn
 - [Coding Conventions](.claude/rules/coding-conventions.md) — TypeScript, naming, comments policy
 - [No Duplication](.claude/rules/no-duplication.md) — DRY rules, list abstractions đã có
 - [Test Policy](.claude/rules/test-policy.md) — Test ngay sau khi fix/update, checklist theo loại thay đổi
@@ -57,7 +72,9 @@ Hethongmmo/
 ## Phiên làm việc mới
 
 Khi bắt đầu task mới, AI nên:
-1. Đọc phase file tương ứng để hiểu trạng thái hiện tại
-2. Đọc `.claude/security/security-rules.md` nếu task liên quan đến auth/money/data
-3. Đọc `.claude/rules/no-duplication.md` trước khi tạo component/service mới
-4. Đọc `.claude/rules/feature-workflow.md` nếu task liên quan đến **thêm trường DB, thêm chức năng, thêm API, thêm UI, sửa giao diện**
+1. **ĐỌC `.claude/rules/freeze-and-precision.md`** — bắt buộc, mọi phiên, mọi task
+2. **ĐỌC `.claude/rules/clean-code.md`** — bắt buộc khi tạo mới hoặc sửa bất kỳ file nào
+3. Đọc phase file tương ứng để hiểu trạng thái hiện tại
+4. Đọc `.claude/security/security-rules.md` nếu task liên quan đến auth/money/data
+5. Đọc `.claude/rules/no-duplication.md` trước khi tạo component/service mới
+6. Đọc `.claude/rules/feature-workflow.md` nếu task liên quan đến **thêm trường DB, thêm chức năng, thêm API, thêm UI, sửa giao diện**

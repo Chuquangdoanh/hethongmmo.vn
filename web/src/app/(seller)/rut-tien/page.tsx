@@ -6,13 +6,15 @@ import { formatVnd, formatDate } from "@/lib/utils/format";
 import { getSellerTierConfig } from "@/lib/services/seller.service";
 import {
   ArrowDownToLine, Lock, Clock, TrendingUp, Wallet,
-  ReceiptText, AlertTriangle, PackageX,
+  ReceiptText, AlertTriangle, PackageX, Shield,
 } from "lucide-react";
 import WithdrawalForm from "./WithdrawalForm";
 import BankChangeRequestForm from "./BankChangeRequestForm";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
 import { decrypt } from "@/lib/security/encryption";
 import { getSellerBankChangeRequests } from "@/lib/services/bank-change-request.service";
+import { SELLER_ESCROW_MINIMUM } from "@/lib/services/wallet.service";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "Rút tiền" };
 
@@ -24,11 +26,15 @@ export default async function RutTienPage() {
     where: { id: me.id },
     select: {
       sellerTier:           true,
+      sellerEscrow:         true,
       bankNameEnc:          true,
       bankAccountNumberEnc: true,
       bankAccountHolderEnc: true,
     },
   });
+
+  const sellerEscrow = Number(sellerRow?.sellerEscrow ?? 0);
+  const escrowMet    = sellerEscrow >= SELLER_ESCROW_MINIMUM;
 
   const tierCfg = await getSellerTierConfig(sellerRow?.sellerTier ?? "STANDARD");
   const holdDays = tierCfg.hold_days;
@@ -201,6 +207,30 @@ export default async function RutTienPage() {
                 <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>
               </div>
             ))}
+          </div>
+
+          {/* Escrow status — luôn hiển thị */}
+          <div className={`rounded-xl border p-4 flex items-center gap-3 ${escrowMet ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200"}`}>
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${escrowMet ? "bg-emerald-100" : "bg-amber-100"}`}>
+              <Shield size={16} className={escrowMet ? "text-emerald-600" : "text-amber-600"} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-semibold ${escrowMet ? "text-emerald-700" : "text-amber-700"}`}>
+                Ký quỹ: {formatVnd(sellerEscrow)} / {formatVnd(SELLER_ESCROW_MINIMUM)} tối thiểu
+              </p>
+              <p className={`text-xs mt-0.5 ${escrowMet ? "text-emerald-600" : "text-amber-600"}`}>
+                {escrowMet
+                  ? "Đủ điều kiện rút tiền bán hàng."
+                  : `Cần nạp thêm ${formatVnd(SELLER_ESCROW_MINIMUM - sellerEscrow)} để được rút tiền.`
+                }
+              </p>
+            </div>
+            <Link
+              href="/ban-hang/vi?tab=escrow"
+              className={`shrink-0 text-xs font-semibold whitespace-nowrap hover:underline ${escrowMet ? "text-emerald-700" : "text-amber-700"}`}
+            >
+              Chi tiết →
+            </Link>
           </div>
 
           {/* Pending withdrawal notice */}

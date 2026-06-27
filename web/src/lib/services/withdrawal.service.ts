@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import Decimal from "decimal.js";
 import { getSellerTierConfig } from "@/lib/services/seller.service";
+import { SELLER_ESCROW_MINIMUM } from "@/lib/services/wallet.service";
 import {
   InsufficientBalanceError,
   NotFoundError,
@@ -39,6 +40,7 @@ export async function requestWithdrawal(
     const userRows = await tx.$queryRaw<
       Array<{
         balance: string;
+        seller_escrow: string;
         bank_name_enc: Buffer | null;
         bank_account_number_enc: Buffer | null;
         bank_account_holder_enc: Buffer | null;
@@ -46,13 +48,23 @@ export async function requestWithdrawal(
         seller_tier: string;
       }>
     >`
-      SELECT balance, bank_name_enc, bank_account_number_enc, bank_account_holder_enc, seller_status, seller_tier
+      SELECT balance, seller_escrow, bank_name_enc, bank_account_number_enc, bank_account_holder_enc, seller_status, seller_tier
       FROM users WHERE id = ${sellerId}::uuid FOR UPDATE
     `;
     const user = userRows[0];
     if (!user) throw new NotFoundError("User");
     if (user.seller_status !== "APPROVED") {
       throw new ValidationError("Tài khoản chưa được duyệt làm seller");
+    }
+
+    // Kiểm tra ký quỹ tối thiểu
+    const sellerEscrow = Number(user.seller_escrow ?? 0);
+    if (sellerEscrow < SELLER_ESCROW_MINIMUM) {
+      throw new ValidationError(
+        `Bạn cần ký quỹ tối thiểu ${SELLER_ESCROW_MINIMUM.toLocaleString("vi")}đ để được rút tiền. ` +
+        `Ký quỹ hiện tại: ${sellerEscrow.toLocaleString("vi")}đ. ` +
+        `Vui lòng vào Ví Seller → Ký quỹ để nạp thêm.`,
+      );
     }
 
     const tierKey = user.seller_tier ?? "STANDARD";

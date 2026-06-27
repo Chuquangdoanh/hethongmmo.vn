@@ -5,7 +5,7 @@ import { getCachedPageVisibility } from "@/lib/services/public-page-config.servi
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { r2Url } from "@/lib/utils/image-url";
 import { formatVnd } from "@/lib/utils/format";
-import { CheckCircle, Plus, Store, Wallet, Package, TicketCheck, Send, Settings, MessageCircleWarning, Rocket } from "lucide-react";
+import { CheckCircle, Plus, Store, Wallet, Package, TicketCheck, Send, Settings, MessageCircleWarning, Rocket, Banknote } from "lucide-react";
 import { NAV_LINKS, NAV_ICONS } from "./nav-links";
 import SidebarNav, { type SidebarNavGroup, type SidebarNavItem } from "./SidebarNav";
 import SidebarServiceAccordion from "./SidebarServiceAccordion";
@@ -119,8 +119,13 @@ export default async function Sidebar() {
     groups.push({
       title: "TÀI CHÍNH",
       items: [
-        { href: "/nap-tien", label: "Ví & Nạp tiền", icon: <span className="sb-icon-badge"><Wallet size={15} strokeWidth={1.75} /></span> },
-        { href: "/don-hang", label: "Đơn hàng",       icon: <span className="sb-icon-badge"><Package size={15} strokeWidth={1.75} /></span> },
+        { href: "/nap-tien",    label: "Ví & Nạp tiền", icon: <span className="sb-icon-badge"><Wallet   size={15} strokeWidth={1.75} /></span> },
+        { href: "/don-hang",    label: "Đơn hàng",       icon: <span className="sb-icon-badge"><Package  size={15} strokeWidth={1.75} /></span> },
+        ...(isSeller ? [{
+          href: "/ban-hang/vi",
+          label: "Ví Seller",
+          icon: <span className="sb-icon-badge"><Banknote size={15} strokeWidth={1.75} /></span>,
+        }] : []),
       ],
     });
   }
