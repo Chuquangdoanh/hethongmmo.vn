@@ -31,8 +31,9 @@ export async function POST(
     let refundedAmount = 0;
 
     await prisma.$transaction(async (tx) => {
-      await tx.complaint.update({
-        where: { id },
+      // Atomic guard — ngăn 2 admin bấm đồng thời gây double refund
+      const guard = await tx.complaint.updateMany({
+        where: { id, status: { notIn: ["RESOLVED", "REJECTED"] } },
         data: {
           status: "REJECTED",
           resolvedByUserId: me.id,
@@ -40,6 +41,7 @@ export async function POST(
           resolution: "Admin phán quyết: người mua thắng khiếu nại. Tiền hoàn về ví người mua.",
         },
       });
+      if (guard.count === 0) throw new ValidationError("Khiếu nại đã được xử lý");
 
       if (!complaint.orderId) return;
 

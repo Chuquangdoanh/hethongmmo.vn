@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { requireUser } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { apiOk, apiCatch, apiValidationError, apiError } from "@/lib/api-response";
+import { ValidationError } from "@/lib/errors";
 import { writeAuditLog } from "@/lib/security/audit";
 
 export const runtime = "nodejs";
@@ -116,7 +117,12 @@ export async function POST(
       if (done) {
         // User đồng ý → RESOLVED (seller thắng) + trả tiền seller
         await prisma.$transaction(async (tx) => {
-          await tx.chatRoom.update({ where: { id: roomId }, data: { userDone: true } });
+          // Atomic guard — ngăn user bấm done 2 lần đồng thời gây double payment seller
+          const guard = await tx.chatRoom.updateMany({
+            where: { id: roomId, userDone: null },
+            data: { userDone: true },
+          });
+          if (guard.count === 0) throw new ValidationError("Bạn đã xác nhận rồi");
           await tx.complaint.update({
             where: { id: complaint.id },
             data: { status: "RESOLVED", resolvedAt: new Date(), resolution: "Người mua xác nhận đã nhận hàng." },
@@ -219,10 +225,12 @@ export async function POST(
 
 async function resolveComplaint(complaintId: string, orderId: string | null) {
   await prisma.$transaction(async (tx) => {
-    await tx.complaint.update({
-      where: { id: complaintId },
+    // Atomic guard — ngăn resolve chạy 2 lần (seller confirm + user đã done trước đó)
+    const guard = await tx.complaint.updateMany({
+      where: { id: complaintId, status: { notIn: ["RESOLVED", "REJECTED"] } },
       data: { status: "RESOLVED", resolvedAt: new Date(), resolution: "Cả hai bên đã xác nhận hoàn thành." },
     });
+    if (guard.count === 0) return;
     if (orderId) {
       // Lock order row trước để tránh race condition
       await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`;

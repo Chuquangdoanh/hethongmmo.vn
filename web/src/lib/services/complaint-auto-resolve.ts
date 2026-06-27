@@ -49,7 +49,7 @@ export async function checkAutoResolution(roomId: string): Promise<void> {
     return;
   }
 
-  // ── Case 3: Seller đã reply, user không phản hồi trong 24h → seller thắng (RESOLVED) ──
+  // ── Case 3: Seller đã reply, user không phản hồi trong 2h → seller thắng (RESOLVED) ──
   // userTurnCount = 0 nghĩa là buyer chưa gửi tin nào kể từ lần seller reply cuối
   if (
     room.firstSellerMsgAt &&
@@ -61,7 +61,7 @@ export async function checkAutoResolution(roomId: string): Promise<void> {
     await autoResolve(
       complaint.id,
       complaint.orderId,
-      "Người mua không phản hồi trong 24 giờ sau khi nhà bán hàng trả lời. Hệ thống tự động xác nhận đơn hàng.",
+      "Người mua không phản hồi trong 2 giờ sau khi nhà bán hàng trả lời. Hệ thống tự động xác nhận đơn hàng.",
     );
     return;
   }
@@ -80,10 +80,12 @@ export async function checkAutoResolution(roomId: string): Promise<void> {
 
 async function autoResolve(complaintId: string, orderId: string | null, resolution: string) {
   await prisma.$transaction(async (tx) => {
-    await tx.complaint.update({
-      where: { id: complaintId },
+    // Atomic guard — ngăn scheduler trigger 2 lần đồng thời gây double payment seller
+    const guard = await tx.complaint.updateMany({
+      where: { id: complaintId, status: { notIn: ["RESOLVED", "REJECTED"] } },
       data: { status: "RESOLVED", resolution, resolvedAt: new Date() },
     });
+    if (guard.count === 0) return;
     if (orderId) {
       // Trả tiền cho seller khi khiếu nại kết thúc có lợi cho seller
       // Lock order row trước để tránh race condition
@@ -128,10 +130,12 @@ async function autoResolve(complaintId: string, orderId: string | null, resoluti
 
 async function autoReject(complaintId: string, orderId: string | null, userId: string, resolution: string) {
   await prisma.$transaction(async (tx) => {
-    await tx.complaint.update({
-      where: { id: complaintId },
+    // Atomic guard — ngăn scheduler trigger 2 lần đồng thời gây double refund buyer
+    const guard = await tx.complaint.updateMany({
+      where: { id: complaintId, status: { notIn: ["RESOLVED", "REJECTED"] } },
       data: { status: "REJECTED", resolution, resolvedAt: new Date() },
     });
+    if (guard.count === 0) return;
 
     if (!orderId) return;
 

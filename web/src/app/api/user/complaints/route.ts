@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { requireUser } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
+import { ValidationError } from "@/lib/errors";
 import { sendComplaintCreatedToSellerEmail } from "@/lib/services/email.service";
 
 export const runtime = "nodejs";
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const { subject, content, orderId } = parsed.data;
 
-    // Validate order: phải thuộc user, phải là SELLER_PRODUCT, chưa quá 24h
+    // Validate order: phải thuộc user, phải là SELLER_PRODUCT, chưa quá 2h
     const order = await prisma.order.findUnique({
       where: { id: orderId, userId: me.id },
       select: {
@@ -142,7 +143,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Transaction: tạo complaint + freeze order + tạo chat room ngay
     const complaint = await prisma.$transaction(async (tx) => {
-      // Treo tiền ngay
+      // Lock order và validate status trong transaction — tránh freeze order đã cancelled/refunded
+      const orderRows = await tx.$queryRaw<Array<{ status: string }>>`
+        SELECT status FROM orders WHERE id = ${orderId}::uuid FOR UPDATE
+      `;
+      if (orderRows[0]?.status !== "DONE") {
+        throw new ValidationError("Đơn hàng không ở trạng thái hợp lệ để khiếu nại");
+      }
       await tx.order.update({ where: { id: orderId }, data: { status: "FROZEN" } });
 
       // Tạo complaint trực tiếp với IN_REVIEW

@@ -6,7 +6,7 @@ import { AppAuthError } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { decrypt } from "@/lib/security/encryption";
 import { writeAuditLog } from "@/lib/security/audit";
-import { toApiError } from "@/lib/errors";
+import { toApiError, ValidationError } from "@/lib/errors";
 
 export const runtime = "nodejs";
 
@@ -179,6 +179,14 @@ export async function PATCH(
       });
     } else if (newStatus === "REFUNDED") {
       updated = await prisma.$transaction(async (tx) => {
+        // Lock order và re-validate status — ngăn 2 staff refund cùng lúc
+        const orderRows = await tx.$queryRaw<Array<{ status: string }>>`
+          SELECT status FROM orders WHERE id = ${id}::uuid FOR UPDATE
+        `;
+        const lockedStatus = orderRows[0]?.status;
+        if (!lockedStatus || !(ALLOWED_TRANSITIONS[lockedStatus] ?? []).includes("REFUNDED")) {
+          throw new ValidationError("Đơn hàng không thể hoàn tiền ở trạng thái hiện tại");
+        }
         const rows = await tx.$queryRaw<Array<{ balance: string }>>`
           SELECT balance::text FROM users WHERE id = ${order.userId}::uuid FOR UPDATE
         `;
