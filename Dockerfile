@@ -60,6 +60,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modul
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/sharp ./node_modules/sharp
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@img ./node_modules/@img
 
+# fetch-cache cần writeable — Next.js tạo thư mục này lúc runtime
+RUN mkdir -p /app/.next/cache && chown nextjs:nodejs /app/.next/cache
+
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
