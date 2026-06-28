@@ -23,6 +23,7 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
   },
   home_djmedia: {
     companyTitle: "CÔNG TY TNHH DJ MEDIA &\nSUPPORT MẠNG XÃ HỘI",
+    images: [] as string[],
     imageUrl: "/images/dj-media-classroom.jpg",
     yearsExpValue: "7+",
     yearsExpLabel: "Năm Kinh Nghiệm Thực Chiến",

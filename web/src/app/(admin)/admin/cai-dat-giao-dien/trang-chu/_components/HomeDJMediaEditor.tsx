@@ -2,6 +2,7 @@
 import SectionSaveClient from "./SectionSaveClient";
 import { FieldText, FieldGrid, FieldSectionLabel } from "./FieldInput";
 import { ImageUpload } from "../../_components/ImageUpload";
+import { MultiImageUpload } from "../../_components/MultiImageUpload";
 
 interface Props { initialData: Record<string, unknown>; }
 
@@ -17,16 +18,29 @@ export default function HomeDJMediaEditor({ initialData }: Props) {
             textarea
             rows={2}
           />
+
+          <FieldSectionLabel label="Ảnh carousel (tự động lướt, hỗ trợ 2+ ảnh)" />
+          <MultiImageUpload
+            label="Danh sách ảnh carousel"
+            values={Array.isArray(data["images"]) ? (data["images"] as string[]) : []}
+            onChange={(urls) => onChange("images", urls)}
+            uploadType="cms-djmedia"
+            hint="Thêm 2 ảnh trở lên để bật chế độ tự động lướt. Hover vào ảnh để sắp xếp hoặc xóa."
+            maxImages={8}
+          />
+
+          <FieldSectionLabel label="Ảnh đơn (fallback nếu chưa có carousel)" />
           <ImageUpload
-            label="Ảnh DJ Media"
+            label="Ảnh DJ Media (legacy)"
             value={String(data["imageUrl"] ?? "")}
             onChange={(url) => onChange("imageUrl", url)}
             uploadType="cms-djmedia"
-            hint="Ảnh lớp học / văn phòng DJ Media"
+            hint="Chỉ hiển thị khi danh sách carousel trống"
           />
+
           <FieldGrid cols={2}>
-            <FieldText label="Badge kinh nghiệm — Giá trị" value={String(data["yearsExpValue"] ?? "")} onChange={(v) => onChange("yearsExpValue", v)} placeholder="7+" />
-            <FieldText label="Badge kinh nghiệm — Nhãn" value={String(data["yearsExpLabel"] ?? "")} onChange={(v) => onChange("yearsExpLabel", v)} placeholder="Năm Kinh Nghiệm Thực Chiến" />
+            <FieldText label="Badge kinh nghiệm - Giá trị" value={String(data["yearsExpValue"] ?? "")} onChange={(v) => onChange("yearsExpValue", v)} placeholder="7+" />
+            <FieldText label="Badge kinh nghiệm - Nhãn" value={String(data["yearsExpLabel"] ?? "")} onChange={(v) => onChange("yearsExpLabel", v)} placeholder="Năm Kinh Nghiệm Thực Chiến" />
           </FieldGrid>
           <FieldText
             label="Mô tả công ty"

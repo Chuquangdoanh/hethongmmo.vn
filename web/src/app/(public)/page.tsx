@@ -19,6 +19,7 @@ import { r2Url } from "@/lib/utils/image-url";
 import { getAllSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import HeroScrollObserver from "@/components/home/HeroScrollObserver";
 import HomeDriftObserver from "@/components/home/HomeDriftObserver";
+import DJMediaCarousel from "@/components/home/DJMediaCarousel";
 import CourseSlider from "@/components/home/CourseSlider";
 import FaqAccordion from "@/components/home/FaqAccordion";
 import {
@@ -167,7 +168,7 @@ export default async function HomePage() {
 
   // ── CMS content ──────────────────────────────────────────────────
   type HeroContent   = { badge: string; title: string; description: string; imageUrl: string; chip1Value: string; chip1Label: string; chip2Value: string; chip2Label: string; btn1Text: string; btn1Href: string; btn2Text: string; btn2Href: string; };
-  type DJContent     = { companyTitle: string; imageUrl: string; yearsExpValue: string; yearsExpLabel: string; description: string; hotlineLabel: string; hotlineNumber: string; socialFacebook: string; socialTiktok: string; socialInstagram: string; socialZalo: string; socialYoutube: string; };
+  type DJContent     = { companyTitle: string; images?: string[]; imageUrl: string; yearsExpValue: string; yearsExpLabel: string; description: string; hotlineLabel: string; hotlineNumber: string; socialFacebook: string; socialTiktok: string; socialInstagram: string; socialZalo: string; socialYoutube: string; };
   type TeamMember    = { name: string; title: string; imageUrl: string; badgeValue: string; badgeLabel: string; badgeColor: string; bio1: string; bio2: string; quote: string; };
   type TeamContent   = { sectionLabel: string; sectionTitle: string; members: TeamMember[]; };
   type StatItem      = { value: string; count: number | null; suffix: string; label: string; };
@@ -222,13 +223,16 @@ export default async function HomePage() {
               </h2>
             </div>
 
-            {/* ── 2: Image ── */}
+            {/* ── 2: Image carousel ── */}
             <div style={{ position: "relative" }} className="dj-media-img anim-scale-in" data-d="2">
-              <div style={{ borderRadius: "24px", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,.16)", aspectRatio: "4/3", background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={r2Url(djContent.imageUrl) || "/images/dj-media-classroom.jpg"} alt="DJ Media Agency – Lớp học thực chiến" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              <div style={{ borderRadius: "24px", overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,.16)" }}>
+                <DJMediaCarousel
+                  images={Array.isArray(djContent.images) ? djContent.images : []}
+                  fallbackUrl={r2Url(djContent.imageUrl) || "/images/dj-media-classroom.jpg"}
+                  alt="DJ Media Agency"
+                />
               </div>
-              <div style={{ position: "absolute", bottom: "24px", left: "24px", background: "#fff", borderRadius: "16px", padding: "14px 20px", boxShadow: "0 12px 32px rgba(0,0,0,.14)", zIndex: 2, animation: "float 5s ease-in-out infinite" }}>
+              <div style={{ position: "absolute", bottom: "24px", left: "24px", background: "#fff", borderRadius: "16px", padding: "14px 20px", boxShadow: "0 12px 32px rgba(0,0,0,.14)", zIndex: 4, animation: "float 5s ease-in-out infinite" }}>
                 <div style={{ fontSize: "1.8rem", fontWeight: "900", color: "#f59e0b", lineHeight: 1 }}>{djContent.yearsExpValue}</div>
                 <div style={{ fontSize: ".73rem", color: "#334155", fontWeight: "600", marginTop: "4px" }}>{djContent.yearsExpLabel}</div>
               </div>

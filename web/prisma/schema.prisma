@@ -188,7 +188,7 @@ model User {
   sellerStatus         SellerStatus  @default(NONE) @map("seller_status")
   sellerTier           String        @default("STANDARD") @map("seller_tier") @db.VarChar(50)
   sellerCategory       String?       @map("seller_category")
-  maxSellerProducts    Int           @default(3) @map("max_seller_products")
+  maxSellerProducts    Int           @default(10) @map("max_seller_products")
 
   bankNameEnc          Bytes?        @map("bank_name_enc")
   bankAccountNumberEnc Bytes?        @map("bank_account_number_enc")
