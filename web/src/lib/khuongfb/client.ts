@@ -64,6 +64,9 @@ async function khuongfbGet<T>(endpoint: string, params: Record<string, string> =
       throw new Error(`Khuongfb HTTP ${res.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
     }
     const text = await res.text();
+    if (text.includes("IP bị chặn") || text.includes("IP b&#7883;") || text.includes("b&#7883; ch&#7863;n")) {
+      throw new Error("IP server bị chặn bởi Khuongfb. Vào tài khoản Khuongfb → Cài đặt → Whitelist IP → thêm IP VPS, sau đó thử lại.");
+    }
     try {
       return JSON.parse(text) as T;
     } catch {
