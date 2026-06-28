@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import DashboardCharts from "./DashboardCharts";
 import type { ChartPoint } from "./DashboardCharts";
+import DashboardFilter from "./DashboardFilter";
 
 export const metadata: Metadata = { title: "Admin Dashboard" };
 
@@ -253,13 +254,7 @@ export default async function AdminDashboardPage({
     }
   }
 
-  const periodDepositTotal = chartData.reduce((s, d) => s + d.deposits, 0);
-
   // ── Revenue breakdown ────────────────────────────────────────────────
-  const periodLabel = orderedFrom === orderedTo
-    ? `Ngày ${orderedFrom.split("-").reverse().join("/")}`
-    : `${orderedFrom.split("-").reverse().slice(0, 2).join("/")} — ${orderedTo.split("-").reverse().slice(0, 2).join("/")}`;
-
   const typeRevMap = new Map(
     revenueByType.map((r) => [r.orderType, { amount: Number(r._sum.finalPrice ?? 0), count: r._count.id }])
   );
@@ -278,31 +273,31 @@ export default async function AdminDashboardPage({
       color: "text-gray-900",
     },
     {
+      label: "Nạp tiền",
+      value: formatVnd(Number(depositsPeriod._sum.amount ?? 0)),
+      sub:   `All-time: ${formatVnd(Number(totalDeposits._sum.amount ?? 0))}`,
+      color: "text-[#10B981]",
+    },
+    {
       label: "Tổng đơn hàng",
       value: totalOrders.toLocaleString("vi-VN"),
       sub:   `+${ordersToday} hôm nay`,
       color: "text-[#A855F7]",
     },
     {
-      label: `Nạp tiền — ${periodLabel}`,
-      value: formatVnd(Number(depositsPeriod._sum.amount ?? 0)),
-      sub:   `All-time: ${formatVnd(Number(totalDeposits._sum.amount ?? 0))}`,
-      color: "text-[#10B981]",
-    },
-    {
-      label: `Rút chờ duyệt — ${periodLabel}`,
+      label: "Rút chờ duyệt",
       value: pendingWithdrawals.toString(),
       sub:   `${formatVnd(Number(pendingWithdrawalAmount._sum.amount ?? 0))} · ${openComplaints} KN`,
       color: pendingWithdrawals > 0 ? "text-[#F59E0B]" : "text-gray-500",
     },
     {
-      label: `Rút tiền — ${periodLabel}`,
+      label: "Rút tiền",
       value: formatVnd(Number(withdrawalPeriod._sum.amount ?? 0)),
       sub:   `Sau phí: ${formatVnd(Number(withdrawalPeriod._sum.netAmount ?? 0))}`,
       color: "text-blue-600",
     },
     {
-      label: `Doanh số seller — ${periodLabel}`,
+      label: "Doanh số seller",
       value: formatVnd(Number(sellerRevenuePeriod._sum.finalPrice ?? 0)),
       sub:   `${sellerRevenuePeriod._count.id} đơn · ${approvedSellerCount} seller`,
       color: "text-emerald-600",
@@ -312,6 +307,9 @@ export default async function AdminDashboardPage({
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+
+      {/* Filter — vị trí 2 */}
+      <DashboardFilter rawFrom={orderedFrom} rawTo={orderedTo} />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -328,7 +326,7 @@ export default async function AdminDashboardPage({
       <div className="rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between flex-wrap gap-2">
           <div>
-            <h2 className="text-sm font-semibold text-gray-900">Doanh thu theo loại — {periodLabel}</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Doanh thu theo loại</h2>
             <p className="text-[10px] text-gray-400 mt-0.5">Chỉ tính đơn hoàn thành (DONE)</p>
           </div>
           <div className="flex items-center gap-4">
@@ -376,7 +374,6 @@ export default async function AdminDashboardPage({
         rawFrom={orderedFrom}
         rawTo={orderedTo}
         isSingleDay={isSingleDay}
-        periodDepositTotal={periodDepositTotal}
       />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
