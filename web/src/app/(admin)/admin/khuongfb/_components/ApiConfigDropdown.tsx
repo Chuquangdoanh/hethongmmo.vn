@@ -55,8 +55,8 @@ export default function ApiConfigDropdown() {
         body:    JSON.stringify({ baseUrl: baseUrl.trim(), apiKey: apiKey.trim() }),
         credentials: "include",
       });
-      const json = await res.json() as { success: boolean; error?: string };
-      if (!res.ok || !json.success) {
+      const json = await res.json() as { data?: { saved: boolean }; error?: string };
+      if (!res.ok || !json.data?.saved) {
         setMsg({ type: "err", text: json.error ?? "Lưu thất bại" });
         return;
       }

@@ -4,8 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import InlineStatusCell from "./_components/InlineStatusCell";
-import DateFilter from "./_components/DateFilter";
-import OrderSearchInput from "./_components/OrderSearchInput";
+import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
 
 export const metadata: Metadata = { title: "Admin — Đơn hàng" };
 
@@ -235,8 +234,13 @@ export default async function AdminOrdersPage({
         })}
       </div>
 
-      {/* Date filter */}
-      <DateFilter />
+      {/* Search + Date filter */}
+      <AdminFilterBar
+        basePath="/admin/orders"
+        search={{ placeholder: "Tìm mã đơn, email người mua..." }}
+        dateRange={{ showQuickDates: true }}
+        preserveParams={["status", "orderType", "limit"]}
+      />
 
       {/* Status filter chips */}
       <div className="flex items-center gap-2 flex-wrap">
@@ -294,7 +298,6 @@ export default async function AdminOrdersPage({
                 {n}
               </Link>
             ))}
-            <OrderSearchInput />
           </div>
         </div>
         <div className="overflow-x-auto">

@@ -2,6 +2,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
+import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
 
 export const metadata: Metadata = { title: "Admin — Đánh giá" };
 
@@ -47,21 +48,17 @@ export default async function AdminReviewsPage({
       </div>
 
       {/* Type filter */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {[{ key: "", label: "Tất cả" }, ...types.map(({ productType }) => ({ key: productType, label: productType }))].map(({ key, label }) => (
-          <a
-            key={key}
-            href={key ? `/admin/reviews?type=${key}` : "/admin/reviews"}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              type === key || (!type && !key)
-                ? "bg-[#7C3AED] text-white"
-                : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
-            }`}
-          >
-            {label}
-          </a>
-        ))}
-      </div>
+      <AdminFilterBar
+        basePath="/admin/reviews"
+        selects={[
+          {
+            paramKey: "type",
+            label: "Loại",
+            placeholder: "Tất cả loại",
+            options: types.map(({ productType }) => ({ value: productType, label: productType })),
+          },
+        ]}
+      />
 
       <div className="rounded-xl border border-gray-200 overflow-x-auto">
         <table className="w-full min-w-[560px]">

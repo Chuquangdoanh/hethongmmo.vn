@@ -3,7 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
-import { DateRangeFilter } from "./_components/DateRangeFilter";
+import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
 
 export const metadata: Metadata = { title: "Admin — Rút tiền" };
 
@@ -40,19 +40,6 @@ function getDateFrom(range: string | undefined): Date | undefined {
   return undefined;
 }
 
-function buildUrl(params: { status?: string; dateRange?: string; from?: string; to?: string }): string {
-  const qs = new URLSearchParams();
-  if (params.status) qs.set("status", params.status);
-  // dateRange and custom from/to are mutually exclusive — dateRange wins if both present
-  if (params.dateRange) {
-    qs.set("dateRange", params.dateRange);
-  } else {
-    if (params.from) qs.set("from", params.from);
-    if (params.to) qs.set("to", params.to);
-  }
-  const str = qs.toString();
-  return `/admin/withdrawals${str ? `?${str}` : ""}`;
-}
 
 function getDateLabel(dateRange: string | undefined, from: string | undefined, to: string | undefined): string {
   if (from || to) {
@@ -155,47 +142,27 @@ export default async function AdminWithdrawalsPage({
           <p className="text-xs text-gray-400 mt-1.5">
             {getDateLabel(dateRange, from, to)} · Đã duyệt + Hoàn thành
           </p>
-          <div className="flex items-center gap-1 mt-2.5 flex-wrap">
-            {(["", "today", "week", "month"] as const).map((key) => (
-              <Link
-                key={key}
-                href={buildUrl({ status, dateRange: key || undefined })}
-                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${
-                  !hasCustomRange && (dateRange ?? "") === key
-                    ? "bg-[#A855F7] text-white"
-                    : "bg-white border border-[#A855F7]/30 text-[#A855F7] hover:bg-[#A855F7]/10"
-                }`}
-              >
-                {key === "" ? "Tất cả" : DATE_RANGE_LABELS[key]}
-              </Link>
-            ))}
-          </div>
-          <DateRangeFilter initialFrom={from ?? ""} initialTo={to ?? ""} status={status} />
         </div>
       </div>
 
-      {/* Status filter */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {[
-          { key: "", label: "Tất cả" },
-          { key: "PENDING", label: "Chờ duyệt" },
-          { key: "APPROVED", label: "Đã duyệt" },
-          { key: "COMPLETED", label: "Hoàn thành" },
-          { key: "REJECTED", label: "Từ chối" },
-        ].map(({ key, label }) => (
-          <Link
-            key={key}
-            href={buildUrl({ status: key || undefined, dateRange, from, to })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-              status === key || (!status && !key)
-                ? "bg-[#7C3AED] text-white"
-                : "bg-white border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-[#7C3AED]"
-            }`}
-          >
-            {label}
-          </Link>
-        ))}
-      </div>
+      {/* Status + Date filter */}
+      <AdminFilterBar
+        basePath="/admin/withdrawals"
+        selects={[
+          {
+            paramKey: "status",
+            label: "Trạng thái",
+            placeholder: "Tất cả trạng thái",
+            options: [
+              { value: "PENDING", label: "Chờ duyệt" },
+              { value: "APPROVED", label: "Đã duyệt" },
+              { value: "COMPLETED", label: "Hoàn thành" },
+              { value: "REJECTED", label: "Từ chối" },
+            ],
+          },
+        ]}
+        dateRange={{ fromKey: "from", toKey: "to", showQuickDates: true }}
+      />
 
       {/* Table */}
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/auth";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
@@ -7,8 +6,7 @@ import { formatVnd } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import CreateUserModal from "./_components/CreateUserModal";
 import UsersTableClient from "./_components/UsersTableClient";
-import DepositFilter from "./_components/DepositFilter";
-import UsersSearchInput from "./_components/UsersSearchInput";
+import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
 
 export const metadata: Metadata = { title: "Quản lý người dùng" };
 
@@ -120,34 +118,24 @@ export default async function AdminUsersPage({
         </div>
       </div>
 
-      {/* Deposit filter */}
-      <DepositFilter />
-
       {/* Search + role filter */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <UsersSearchInput />
-        <div className="flex items-center gap-2 flex-wrap">
-          {[
-            { key: "", label: "Tất cả" },
-            { key: "USER", label: "Người dùng" },
-            { key: "SELLER", label: "Nhà bán" },
-            { key: "STAFF", label: "Nhân viên" },
-            { key: "ADMIN", label: "Admin" },
-          ].map(({ key, label }) => (
-            <Link
-              key={key}
-              href={key ? `/admin/users?role=${key}${q ? `&q=${encodeURIComponent(q)}` : ""}` : `/admin/users${q ? `?q=${encodeURIComponent(q)}` : ""}`}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                role === key || (!role && !key)
-                  ? "bg-[#7C3AED] text-white"
-                  : "bg-white border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-[#7C3AED]"
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-      </div>
+      <AdminFilterBar
+        basePath="/admin/users"
+        search={{ placeholder: "Tìm theo email, tên, mã user (#a1b2c3d4)..." }}
+        selects={[
+          {
+            paramKey: "role",
+            label: "Vai trò",
+            placeholder: "Tất cả vai trò",
+            options: [
+              { value: "USER", label: "Người dùng" },
+              { value: "SELLER", label: "Nhà bán" },
+              { value: "STAFF", label: "Nhân viên" },
+              { value: "ADMIN", label: "Admin" },
+            ],
+          },
+        ]}
+      />
 
       {/* Table — serialize Decimal → number before passing to Client Component */}
       <UsersTableClient

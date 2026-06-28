@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import ResolveUnmatchedButton from "./_components/ResolveUnmatchedButton";
 import ManualDepositPanel from "./_components/ManualDepositPanel";
-import DepositsSearchBar from "./_components/DepositsSearchBar";
+import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
 
 export const metadata: Metadata = { title: "Admin — Nạp tiền" };
 
@@ -71,14 +70,6 @@ export default async function AdminDepositsPage({
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  // Build href helpers that preserve current params
-  function typeHref(key: string) {
-    const params = new URLSearchParams();
-    if (key)    params.set("type", key);
-    if (search) params.set("q", search);
-    return `/admin/deposits${params.size ? `?${params}` : ""}`;
-  }
-
   const paginationParams: Record<string, string> = {};
   if (type)   paginationParams.type = type;
   if (search) paginationParams.q    = search;
@@ -108,31 +99,22 @@ export default async function AdminDepositsPage({
       {/* Unmatched transfers */}
       <UnmatchedTransfersSection />
 
-      {/* Search + Type filter row */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <DepositsSearchBar currentType={type ?? ""} currentQ={search} />
-
-        {/* Type filter */}
-        <div className="flex items-center gap-2 shrink-0">
-          {[
-            { key: "", label: "Tất cả" },
-            { key: "AUTO", label: "Tự động" },
-            { key: "MANUAL", label: "Thủ công" },
-          ].map(({ key, label }) => (
-            <Link
-              key={key}
-              href={typeHref(key)}
-              className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                type === key || (!type && !key)
-                  ? "bg-[#7C3AED] text-white"
-                  : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
-      </div>
+      {/* Search + Type filter */}
+      <AdminFilterBar
+        basePath="/admin/deposits"
+        search={{ placeholder: "Tìm theo email, tên, mã giao dịch..." }}
+        selects={[
+          {
+            paramKey: "type",
+            label: "Loại nạp",
+            placeholder: "Tất cả loại",
+            options: [
+              { value: "AUTO", label: "Tự động" },
+              { value: "MANUAL", label: "Thủ công" },
+            ],
+          },
+        ]}
+      />
 
       {/* Search result summary */}
       {search && (

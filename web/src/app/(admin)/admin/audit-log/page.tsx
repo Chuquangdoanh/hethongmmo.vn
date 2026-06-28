@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db/prisma";
 import { formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
+import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
 
 export const metadata: Metadata = { title: "Nhật ký hoạt động" };
 
@@ -211,6 +212,11 @@ export default async function AdminAuditLogPage({
         </div>
         <span className="text-sm text-gray-500">{total.toLocaleString("vi-VN")} bản ghi</span>
       </div>
+
+      <AdminFilterBar
+        basePath="/admin/audit-log"
+        search={{ placeholder: "Tìm theo tên hành động (vd: DEPOSIT, ORDER...)...", paramKey: "action" }}
+      />
 
       <div className="rounded-xl border border-gray-200 overflow-hidden">
         <table className="w-full">

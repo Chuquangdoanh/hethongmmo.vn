@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
 import { r2Url } from "@/lib/utils/image-url";
 import Pagination from "@/components/shared/Pagination";
+import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
 
 export const metadata: Metadata = { title: "Admin — Tài nguyên MMO" };
 
@@ -190,23 +191,11 @@ export default async function AdminMmoProductsPage({
       </div>
 
       {/* Search */}
-      <form className="flex gap-2">
-        <input
-          type="search" name="q" defaultValue={q}
-          placeholder="Tìm theo tên sản phẩm..."
-          className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
-        />
-        {group && <input type="hidden" name="group" value={group} />}
-        {activeSection && <input type="hidden" name="section" value={activeSection} />}
-        <button type="submit" className="px-4 py-2 rounded-lg bg-[#7C3AED] text-white text-sm font-medium hover:bg-[#A855F7] transition-colors">
-          Tìm
-        </button>
-        {(q || group || activeSection) && (
-          <Link href="/admin/mmo-products" className="px-4 py-2 rounded-lg border border-gray-200 text-gray-500 text-sm hover:border-gray-300 transition-colors">
-            Xóa lọc
-          </Link>
-        )}
-      </form>
+      <AdminFilterBar
+        basePath="/admin/mmo-products"
+        search={{ placeholder: "Tìm theo tên sản phẩm..." }}
+        preserveParams={["section", "group"]}
+      />
 
       {/* Group filter */}
       <div className="flex items-center gap-2 flex-wrap">

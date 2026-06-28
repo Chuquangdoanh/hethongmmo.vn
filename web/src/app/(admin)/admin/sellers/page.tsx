@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/db/prisma";
 import Pagination from "@/components/shared/Pagination";
 import SellersTableClient, { type SellerRowData } from "./SellersTableClient";
+import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
 
 export const metadata: Metadata = { title: "Admin — Sellers" };
 
@@ -277,70 +278,32 @@ export default async function AdminSellersPage({
       </div>
 
       {/* ── Search + Filters ── */}
-      <form method="get" action="/admin/sellers" className="flex items-center gap-2 flex-wrap">
-        {month && <input type="hidden" name="month" value={month} />}
-        {year  && <input type="hidden" name="year"  value={year} />}
-
-        {/* Search */}
-        <div className="relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-          </svg>
-          <input
-            name="q"
-            defaultValue={search ?? ""}
-            placeholder="Tìm tên hoặc email người bán..."
-            className="w-64 rounded-lg border border-gray-200 bg-white pl-9 pr-4 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-violet-500 focus:outline-none transition-colors"
-          />
-        </div>
-
-        {/* Tier select */}
-        <select
-          name="tier"
-          defaultValue={tier ?? ""}
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-violet-400 focus:outline-none transition-colors"
-        >
-          <option value="">Tất cả hạng</option>
-          {tierDefs.map(({ key, label }) => (
-            <option key={key} value={key}>{label}</option>
-          ))}
-        </select>
-
-        {/* Status select */}
-        <select
-          name="status"
-          defaultValue={status ?? ""}
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-violet-400 focus:outline-none transition-colors"
-        >
-          <option value="">Tất cả trạng thái</option>
-          <option value="PENDING">Chờ duyệt</option>
-          <option value="APPROVED">Đã duyệt</option>
-          <option value="REJECTED">Từ chối</option>
-        </select>
-
-        {/* Store type select */}
-        <select
-          name="storeType"
-          defaultValue={storeType ?? ""}
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-violet-400 focus:outline-none transition-colors"
-        >
-          <option value="">Tất cả loại cửa hàng</option>
-          <option value="TAI_NGUYEN_MMO">Tài Nguyên MMO</option>
-          <option value="KHO_TAI_NGUYEN">Kho Tài Nguyên</option>
-        </select>
-
-        <button type="submit" className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors">
-          Tìm kiếm
-        </button>
-        {(search || tier || status || storeType) && (
-          <a
-            href={buildHref({ month, year })}
-            className="px-3 py-2 rounded-lg border border-gray-200 text-xs text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors"
-          >
-            Xóa lọc
-          </a>
-        )}
-      </form>
+      <AdminFilterBar
+        basePath="/admin/sellers"
+        search={{ placeholder: "Tìm theo tên, email người bán..." }}
+        selects={[
+          {
+            paramKey: "status",
+            label: "Trạng thái",
+            placeholder: "Tất cả trạng thái",
+            options: [
+              { value: "PENDING", label: "Chờ duyệt" },
+              { value: "APPROVED", label: "Đã duyệt" },
+              { value: "REJECTED", label: "Từ chối" },
+            ],
+          },
+          {
+            paramKey: "storeType",
+            label: "Loại gian hàng",
+            placeholder: "Tất cả loại",
+            options: [
+              { value: "TAI_NGUYEN_MMO", label: "Tài nguyên MMO" },
+              { value: "KHO_TAI_NGUYEN", label: "Kho tài nguyên" },
+            ],
+          },
+        ]}
+        preserveParams={["month", "year", "sort", "tier"]}
+      />
 
       {/* ── Date filter indicator ── */}
       {hasDateFilter && (

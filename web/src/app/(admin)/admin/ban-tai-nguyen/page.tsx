@@ -4,8 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import InlineStatusCell from "@/app/(admin)/admin/orders/_components/InlineStatusCell";
-import DateFilter from "@/app/(admin)/admin/orders/_components/DateFilter";
-import OrderSearchInput from "@/app/(admin)/admin/orders/_components/OrderSearchInput";
+import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
 
 export const metadata: Metadata = { title: "Admin — Bán tài nguyên" };
 
@@ -295,8 +294,13 @@ export default async function BanTaiNguyenPage({
         ))}
       </div>
 
-      {/* Date filter */}
-      <DateFilter />
+      {/* Search + Date filter */}
+      <AdminFilterBar
+        basePath="/admin/ban-tai-nguyen"
+        search={{ placeholder: "Tìm mã đơn, Trans ID, email người mua..." }}
+        dateRange={{ showQuickDates: true }}
+        preserveParams={["status", "orderType", "section", "limit"]}
+      />
 
       {/* Status filter chips */}
       <div className="flex items-center gap-2 flex-wrap">
@@ -361,10 +365,6 @@ export default async function BanTaiNguyenPage({
                 {n}
               </Link>
             ))}
-            <OrderSearchInput
-              basePath="/admin/ban-tai-nguyen"
-              placeholder="Mã đơn / Trans ID / Email..."
-            />
           </div>
         </div>
         <div className="overflow-x-auto">

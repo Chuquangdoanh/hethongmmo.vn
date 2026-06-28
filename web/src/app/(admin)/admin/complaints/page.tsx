@@ -1,6 +1,5 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { requireStaff } from "@/lib/auth/rbac";
@@ -9,7 +8,7 @@ import { prisma } from "@/lib/db/prisma";
 import { formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import CloseComplaintButton from "./_components/CloseComplaintButton";
-import ComplaintsSearchInput from "./_components/ComplaintsSearchInput";
+import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
 
 export const metadata: Metadata = { title: "Admin — Khiếu nại" };
 
@@ -92,26 +91,25 @@ export default async function AdminComplaintsPage({
           <h1 className="text-2xl font-bold text-gray-900">Khiếu nại</h1>
           <span className="text-sm text-gray-500">{total.toLocaleString("vi-VN")} khiếu nại</span>
         </div>
-        <Suspense fallback={<div className="w-64 h-9 rounded-lg bg-gray-100 animate-pulse" />}>
-          <ComplaintsSearchInput defaultValue={search ?? ""} />
-        </Suspense>
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
-        {(["", "OPEN", "IN_REVIEW", "RESOLVED", "REJECTED"] as const).map((s) => (
-          <Link
-            key={s}
-            href={s ? `/admin/complaints?status=${s}` : "/admin/complaints"}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              status === s || (!status && !s)
-                ? "bg-[#7C3AED] text-white"
-                : "border border-gray-200 text-gray-500 hover:border-[#7C3AED] hover:text-gray-900"
-            }`}
-          >
-            {s ? (STATUS_LABELS[s] ?? s) : "Tất cả"}
-          </Link>
-        ))}
-      </div>
+      <AdminFilterBar
+        basePath="/admin/complaints"
+        search={{ placeholder: "Tìm theo tiêu đề, email, mã khiếu nại (#KN-...)..." }}
+        selects={[
+          {
+            paramKey: "status",
+            label: "Trạng thái",
+            placeholder: "Tất cả trạng thái",
+            options: [
+              { value: "OPEN", label: "Mở" },
+              { value: "IN_REVIEW", label: "Đang xem xét" },
+              { value: "RESOLVED", label: "Đã giải quyết" },
+              { value: "REJECTED", label: "Từ chối" },
+            ],
+          },
+        ]}
+      />
 
       <div className="rounded-xl border border-gray-200 overflow-hidden">
         <table className="w-full">

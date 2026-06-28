@@ -110,7 +110,7 @@ export default function DashboardCharts({ data, rawFrom, rawTo, isSingleDay, per
     <div className="space-y-5">
 
       {/* ── Filter bar ── */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
+      <div className="rounded-xl border border-gray-200 bg-white p-6 space-y-4">
 
         {/* Row 1: tổng nạp + preset buttons */}
         <div className="flex flex-wrap items-center gap-3">
@@ -130,10 +130,10 @@ export default function DashboardCharts({ data, rawFrom, rawTo, isSingleDay, per
                 key={key}
                 type="button"
                 onClick={() => goPreset(key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                className={`h-10 px-3 text-sm font-medium rounded-[10px] transition-colors border ${
                   presetActive === key
-                    ? "bg-violet-600 text-white"
-                    : "border border-gray-200 text-gray-500 hover:border-violet-400 hover:text-violet-700"
+                    ? "bg-[#7C3AED] text-white border-[#7C3AED]"
+                    : "border-gray-200 text-gray-600 hover:border-[#7C3AED] hover:text-[#7C3AED] bg-white"
                 }`}
               >
                 {label}
@@ -143,32 +143,30 @@ export default function DashboardCharts({ data, rawFrom, rawTo, isSingleDay, per
         </div>
 
         {/* Row 2: custom date range */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-gray-500 font-medium">Từ ngày</span>
+        <div className="flex items-center gap-3 flex-wrap">
           <input
             type="date"
             value={fromInput}
             max={toInput}
             onChange={(e) => setFromInput(e.target.value)}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-violet-500 focus:outline-none"
+            className="h-10 px-3 text-sm border border-gray-200 rounded-[10px] bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 focus:border-[#7C3AED] transition-colors"
           />
-          <span className="text-xs text-gray-400">—</span>
-          <span className="text-xs text-gray-500 font-medium">đến ngày</span>
+          <span className="text-gray-400 text-sm">—</span>
           <input
             type="date"
             value={toInput}
             min={fromInput}
             max={todayISO()}
             onChange={(e) => setToInput(e.target.value)}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-violet-500 focus:outline-none"
+            className="h-10 px-3 text-sm border border-gray-200 rounded-[10px] bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 focus:border-[#7C3AED] transition-colors"
           />
           <button
             type="button"
             disabled={!fromInput || !toInput}
             onClick={() => go(fromInput, toInput)}
-            className="px-4 py-1.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 disabled:opacity-40 transition-colors"
+            className="h-10 px-4 text-sm font-semibold rounded-[10px] bg-[#7C3AED] text-white hover:bg-violet-700 disabled:opacity-40 transition-colors"
           >
-            Lọc
+            Áp dụng
           </button>
         </div>
       </div>

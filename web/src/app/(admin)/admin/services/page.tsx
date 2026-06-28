@@ -7,6 +7,7 @@ import { getUserPermissions } from "@/lib/services/permission.service";
 import { prisma } from "@/lib/db/prisma";
 import Pagination from "@/components/shared/Pagination";
 import ServicesTable from "./_components/ServicesTable";
+import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
 
 export const metadata: Metadata = { title: "Admin — Dịch vụ" };
 
@@ -126,22 +127,11 @@ export default async function AdminServicesPage({
       </div>
 
       {/* Search */}
-      <form className="flex gap-2">
-        <input
-          type="search" name="q" defaultValue={q}
-          placeholder="Tìm theo tên dịch vụ..."
-          className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#7C3AED] focus:outline-none"
-        />
-        {category && <input type="hidden" name="category" value={category} />}
-        <button type="submit" className="px-4 py-2 rounded-lg bg-[#7C3AED] text-white text-sm font-medium hover:bg-[#A855F7] transition-colors">
-          Tìm
-        </button>
-        {(q ?? category) && (
-          <Link href="/admin/services" className="px-4 py-2 rounded-lg border border-gray-200 text-gray-500 text-sm hover:border-gray-300 transition-colors">
-            Xóa lọc
-          </Link>
-        )}
-      </form>
+      <AdminFilterBar
+        basePath="/admin/services"
+        search={{ placeholder: "Tìm theo tên dịch vụ..." }}
+        preserveParams={["category"]}
+      />
 
       {/* Category filter */}
       {categories.length > 0 && (
