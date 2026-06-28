@@ -8,6 +8,8 @@ import { auth } from "@/auth";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ReviewSection from "@/components/shared/ReviewSection";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
+import { getFavoriteStatus } from "@/lib/services/favorite.service";
+import FavoriteButton from "@/components/shared/FavoriteButton";
 import ProductBuyButton from "@/app/(public)/tai-nguyen-mmo/_components/ProductBuyButton";
 import type { ProductVariant } from "@/app/(public)/tai-nguyen-mmo/_components/ProductBuyButton";
 import {
@@ -142,7 +144,7 @@ export default async function KhoSellerProductDetailPage({
     isActive: v.isActive,
   }));
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, tierDef, relatedProducts, contactCms] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, tierDef, relatedProducts, contactCms, favoriteStatus] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "SELLER_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -196,6 +198,7 @@ export default async function KhoSellerProductDetailPage({
       },
     }),
     getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT),
+    getFavoriteStatus(me?.id, "SELLER_PRODUCT", product.id),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
@@ -220,7 +223,7 @@ export default async function KhoSellerProductDetailPage({
   // ── JSX SECTIONS ──────────────────────────────────────────────
 
   const sectionImage = (
-    <div className="rounded-2xl bg-[#f1f5f9] overflow-hidden relative" style={{ aspectRatio: "4/3" }}>
+    <div className="rounded-2xl bg-[#f1f5f9] overflow-hidden relative aspect-video">
       {product.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -240,9 +243,22 @@ export default async function KhoSellerProductDetailPage({
           </span>
         </div>
       )}
+      {/* Nút yêu thích — cuối DOM + z-index cao nhất, luôn đứng trên mọi ảnh */}
+      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 9999 }}>
+        <FavoriteButton
+          productId={product.id}
+          productType="SELLER_PRODUCT"
+          initialIsFavorite={favoriteStatus.isFavorite}
+          initialCount={favoriteStatus.favoriteCount}
+          isLoggedIn={!!me}
+          showCount
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white border border-white shadow-md hover:shadow-lg transition-shadow"
+          iconSize={18}
+        />
+      </div>
     </div>
   );
-  
+
   const sectionDescription = (
     <div className="rounded-2xl border border-border bg-white p-5">
       <h2 className="text-sm font-bold text-text-dark mb-4 flex items-center gap-2">

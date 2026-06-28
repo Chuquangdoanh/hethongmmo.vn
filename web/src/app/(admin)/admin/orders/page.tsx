@@ -22,19 +22,17 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const ORDER_TYPES = [
-  { key: "SERVICE",        label: "Dịch vụ",   icon: "⚙️",  color: "#2563eb",  bg: "#2563eb" },
-  { key: "COURSE",         label: "Khóa học",  icon: "🎓",  color: "#7C3AED",  bg: "#7C3AED" },
-  { key: "TUTTRICK",       label: "Tut & Trick",icon: "📖", color: "#F59E0B",  bg: "#F59E0B" },
-  { key: "MMO_PRODUCT",    label: "Tài nguyên", icon: "💎", color: "#10B981",  bg: "#10B981" },
-  { key: "SELLER_PRODUCT", label: "Nhà bán",   icon: "🏪",  color: "#A855F7",  bg: "#A855F7" },
+  { key: "SERVICE",  label: "Dịch vụ",    icon: "⚙️", color: "#2563eb", bg: "#2563eb" },
+  { key: "COURSE",   label: "Khóa học",   icon: "🎓", color: "#7C3AED", bg: "#7C3AED" },
+  { key: "TUTTRICK", label: "Tut & Trick", icon: "📖", color: "#F59E0B", bg: "#F59E0B" },
 ] as const;
 
+const SERVICE_TYPE_KEYS = ["SERVICE", "COURSE", "TUTTRICK"] as const;
+
 const TYPE_COLORS: Record<string, string> = {
-  SERVICE:        "bg-[#2563eb]/10 text-[#2563eb]",
-  COURSE:         "bg-[#7C3AED]/10 text-[#A855F7]",
-  TUTTRICK:       "bg-[#F59E0B]/10 text-[#F59E0B]",
-  MMO_PRODUCT:    "bg-[#10B981]/10 text-[#10B981]",
-  SELLER_PRODUCT: "bg-[#A855F7]/10 text-[#A855F7]",
+  SERVICE:  "bg-[#2563eb]/10 text-[#2563eb]",
+  COURSE:   "bg-[#7C3AED]/10 text-[#A855F7]",
+  TUTTRICK: "bg-[#F59E0B]/10 text-[#F59E0B]",
 };
 
 export default async function AdminOrdersPage({
@@ -61,9 +59,11 @@ export default async function AdminOrdersPage({
     },
   };
 
+  const validOrderType = orderType && (SERVICE_TYPE_KEYS as readonly string[]).includes(orderType) ? orderType : undefined;
+
   const where = {
+    orderType: validOrderType ? (validOrderType as never) : { in: SERVICE_TYPE_KEYS as never },
     ...(status ? { status: status as never } : {}),
-    ...(orderType ? { orderType: orderType as never } : {}),
     ...(q ? { OR: [
       { orderCode: { contains: q, mode: "insensitive" as const } },
       { user: { email: { contains: q, mode: "insensitive" as const } } },
@@ -73,6 +73,7 @@ export default async function AdminOrdersPage({
 
   // Card counts respect date filter + status filter but not orderType
   const typeCountsWhere = {
+    orderType: { in: SERVICE_TYPE_KEYS as never },
     ...(status ? { status: status as never } : {}),
     ...dateFilter,
   };
@@ -91,11 +92,11 @@ export default async function AdminOrdersPage({
       },
     }),
     prisma.order.count({ where }),
-    prisma.order.count({ where: { status: "PENDING" } }),
-    prisma.order.count({ where: { status: "PROCESSING" } }),
-    prisma.order.count({ where: { status: "DONE", ...dateFilter, ...(orderType ? { orderType: orderType as never } : {}) } }),
+    prisma.order.count({ where: { status: "PENDING", orderType: { in: SERVICE_TYPE_KEYS as never } } }),
+    prisma.order.count({ where: { status: "PROCESSING", orderType: { in: SERVICE_TYPE_KEYS as never } } }),
+    prisma.order.count({ where: { status: "DONE", orderType: validOrderType ? (validOrderType as never) : { in: SERVICE_TYPE_KEYS as never }, ...dateFilter } }),
     prisma.order.aggregate({
-      where: { status: "DONE", ...dateFilter, ...(orderType ? { orderType: orderType as never } : {}) },
+      where: { status: "DONE", orderType: validOrderType ? (validOrderType as never) : { in: SERVICE_TYPE_KEYS as never }, ...dateFilter },
       _sum: { finalPrice: true },
     }),
     prisma.order.groupBy({
@@ -121,7 +122,7 @@ export default async function AdminOrdersPage({
     : dateFromParam === dateToParam
     ? dateFromParam.split("-").reverse().join("/")
     : `${dateFromParam.split("-").reverse().join("/")} — ${(dateToParam ?? todayStr).split("-").reverse().join("/")}`;
-  const selectedTypeLabel = orderType ? ORDER_TYPES.find((t) => t.key === orderType)?.label : undefined;
+  const selectedTypeLabel = validOrderType ? ORDER_TYPES.find((t) => t.key === validOrderType)?.label : undefined;
   const periodCardLabel = selectedTypeLabel ? `${periodLabel} · ${selectedTypeLabel}` : periodLabel;
 
   // Build URL preserving current date + other filters
@@ -142,7 +143,7 @@ export default async function AdminOrdersPage({
   function limitUrl(n: number) {
     const sp = new URLSearchParams();
     if (status) sp.set("status", status);
-    if (orderType) sp.set("orderType", orderType);
+    if (validOrderType) sp.set("orderType", validOrderType);
     if (dateFromParam) sp.set("dateFrom", dateFromParam);
     if (dateToParam) sp.set("dateTo", dateToParam);
     if (q) sp.set("q", q);
@@ -189,12 +190,12 @@ export default async function AdminOrdersPage({
       </div>
 
       {/* Order type tabs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {/* All tab */}
         <Link
           href={tabUrl({ orderType: undefined })}
           className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border transition-all ${
-            !orderType
+            !validOrderType
               ? "bg-gray-900 border-gray-900 text-white shadow-sm"
               : "bg-white border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-gray-50"
           }`}
@@ -202,7 +203,7 @@ export default async function AdminOrdersPage({
           <span className="text-lg leading-none">📋</span>
           <div className="min-w-0">
             <p className="text-xs font-semibold truncate">Tất cả</p>
-            <p className={`text-sm font-bold ${!orderType ? "text-white" : "text-gray-800"}`}>
+            <p className={`text-sm font-bold ${!validOrderType ? "text-white" : "text-gray-800"}`}>
               {grandTotal.toLocaleString("vi-VN")}
             </p>
           </div>
@@ -210,7 +211,7 @@ export default async function AdminOrdersPage({
 
         {ORDER_TYPES.map((t) => {
           const count = typeCountMap[t.key] ?? 0;
-          const isActive = orderType === t.key;
+          const isActive = validOrderType === t.key;
           return (
             <Link
               key={t.key}
@@ -267,14 +268,14 @@ export default async function AdminOrdersPage({
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-sm font-semibold text-gray-700">
               {total.toLocaleString("vi-VN")} đơn hàng
-              {orderType ? ` · ${ORDER_TYPES.find((t) => t.key === orderType)?.label ?? orderType}` : ""}
+              {validOrderType ? ` · ${ORDER_TYPES.find((t) => t.key === validOrderType)?.label ?? validOrderType}` : ""}
               {status ? ` · ${STATUS_LABELS[status] ?? status}` : ""}
               {q ? ` · "${q}"` : ""}
             </span>
-            {orderType && (
-              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${TYPE_COLORS[orderType] ?? ""}`}>
-                {ORDER_TYPES.find((t) => t.key === orderType)?.icon}{" "}
-                {ORDER_TYPES.find((t) => t.key === orderType)?.label}
+            {validOrderType && (
+              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${TYPE_COLORS[validOrderType] ?? ""}`}>
+                {ORDER_TYPES.find((t) => t.key === validOrderType)?.icon}{" "}
+                {ORDER_TYPES.find((t) => t.key === validOrderType)?.label}
               </span>
             )}
           </div>
@@ -380,7 +381,7 @@ export default async function AdminOrdersPage({
           basePath="/admin/orders"
           searchParams={{
             ...(status ? { status } : {}),
-            ...(orderType ? { orderType } : {}),
+            ...(validOrderType ? { orderType: validOrderType } : {}),
             ...(dateFromParam ? { dateFrom: dateFromParam } : {}),
             ...(dateToParam ? { dateTo: dateToParam } : {}),
             ...(q ? { q } : {}),

@@ -9,7 +9,7 @@ import {
   Gamepad2, Tags, BookMarked, Tag, FolderOpen, ShieldCheck, Star,
   AlertTriangle, Radio, Wallet, ArrowDownCircle, ArrowUpCircle,
   Store, Settings, Users, Search, ChevronDown, Home, X, Lock,
-  Inbox, Monitor,
+  Inbox, Monitor, Globe,
   type LucideIcon,
 } from "lucide-react";
 import type { PermissionCode } from "@/lib/constants/modules";
@@ -65,6 +65,7 @@ const SECTIONS: NavSection[] = [
       { href: "/admin/courses",      label: "Khóa học",     Icon: BookOpen, color: "#94a3b8", permission: "courses:read"    },
       { href: "/admin/tut-tricks",   label: "Tut / Tricks", Icon: FileText, color: "#94a3b8", permission: "tut_tricks:read" },
       { href: "/admin/mmo-products", label: "Tài nguyên",   Icon: Gamepad2, color: "#94a3b8", permission: "resources:read"  },
+      { href: "/admin/khuongfb",     label: "Khuongfb",     Icon: Globe,    color: "#94a3b8", adminOnly: true                },
     ],
   },
   {
@@ -237,8 +238,9 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
     return section.links.some((l) => l.badge && hasBadge(l.badge));
   }
 
-  const orderActive       = isActive("/admin/orders");
-  const orderBadgeVisible = hasBadge("orders");
+  const orderActive        = isActive("/admin/orders");
+  const orderBadgeVisible  = hasBadge("orders");
+  const productSaleActive  = isActive("/admin/ban-tai-nguyen");
 
   const totalUnread = (["orders", "complaints", "withdrawals", "deposits"] as BadgeKey[])
     .filter((k) => hasBadge(k))
@@ -352,6 +354,26 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
               </div>
               <span className="flex-1">Đơn hàng</span>
               {orderBadgeVisible && <BadgeCount count={badges.orders} />}
+            </Link>
+          )}
+
+          {/* Bán tài nguyên */}
+          {canSeeOrders && (
+            <Link
+              href="/admin/ban-tai-nguyen"
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                productSaleActive
+                  ? "bg-[#f0fdf4] text-[#065f46]"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              }`}
+            >
+              <div
+                className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                style={{ background: productSaleActive ? "#bbf7d0" : "#f1f5f9" }}
+              >
+                <Package size={13} strokeWidth={1.75} style={{ color: productSaleActive ? "#059669" : "#94a3b8" }} />
+              </div>
+              <span className="flex-1">Bán tài nguyên</span>
             </Link>
           )}
 

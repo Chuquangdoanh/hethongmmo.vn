@@ -45,6 +45,7 @@ export async function GET(
         deliveredItemId: true,
         tutTrickContentUrlEnc: true,
         tutTrickDocs: true,
+        externalOrderId: true,
       },
     });
 
@@ -84,6 +85,7 @@ export async function GET(
         deliveredContent,
         tutTrickDocs: order.orderType === "TUTTRICK" ? (order.tutTrickDocs ?? null) : null,
         orderCode: order.orderCode,
+        externalOrderId: order.orderType === "KHUONGFB_PRODUCT" ? (order.externalOrderId ?? null) : null,
       },
     });
   } catch (err) {

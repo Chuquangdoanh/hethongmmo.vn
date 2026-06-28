@@ -105,8 +105,31 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
       setForm((f) => ({ ...f, [field]: e.target.value }));
   }
 
+  function checkImageAspectRatio(file: File): Promise<boolean> {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const ratio = img.width / img.height;
+        const target = 16 / 9;
+        // Cho phép sai lệch tối đa 5%
+        resolve(img.width >= img.height && Math.abs(ratio - target) / target < 0.05);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(false); };
+      img.src = url;
+    });
+  }
+
   async function handleImageFile(file: File) {
     setUploadError("");
+
+    const isValid = await checkImageAspectRatio(file);
+    if (!isValid) {
+      setUploadError("Ảnh phải có tỷ lệ 16:9 khổ ngang (ví dụ: 1920×1080, 1280×720). Vui lòng chọn lại ảnh.");
+      return;
+    }
+
     setUploading(true);
     try {
       const formData = new FormData();
@@ -448,7 +471,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
         {form.imageUrl ? (
           <div className="flex items-center gap-4 p-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={r2Url(form.imageUrl)} alt="preview" className="w-20 h-20 object-cover rounded-lg border border-gray-200 shrink-0" />
+            <img src={r2Url(form.imageUrl)} alt="preview" className="w-40 aspect-video object-cover rounded-lg border border-gray-200 shrink-0" />
             <div className="flex gap-3">
               <button type="button" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }} className="text-xs font-medium text-violet-600 hover:text-violet-700 transition-colors">Đổi ảnh</button>
               <button type="button" onClick={(e) => { e.stopPropagation(); setForm((f) => ({ ...f, imageUrl: "" })); }} className="text-xs font-medium text-red-500 hover:text-red-600 transition-colors">Xóa</button>
@@ -467,7 +490,8 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <p className="text-xs text-gray-500 font-medium">Nhấn để chọn ảnh hoặc kéo thả</p>
-                <p className="text-[10px] text-gray-400">JPEG · PNG · WebP · GIF · Tối đa 5MB</p>
+                <p className="text-[10px] text-gray-400">Tỷ lệ 16:9 khổ ngang · JPEG · PNG · WebP · GIF · Tối đa 5MB</p>
+                <p className="text-[10px] text-amber-500 font-medium">Ví dụ: 1920×1080, 1280×720</p>
               </>
             )}
           </div>
@@ -482,7 +506,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
       <label className="block text-xs font-medium text-gray-500 mb-1.5">
         Mô tả sản phẩm <span className="text-red-500">*</span>
       </label>
-      <textarea value={form.description} onChange={set("description")} rows={6} maxLength={5000}
+      <textarea value={form.description} onChange={set("description")} rows={3} maxLength={5000}
         className={`w-full rounded-lg border bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:bg-white focus:outline-none transition-colors resize-none ${
           form.description && descWordCount() < 20
             ? "border-amber-300 focus:border-amber-400"
@@ -522,8 +546,12 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
 
   const stockSection = (
     <div className="p-6 space-y-4 flex flex-col">
+      {/* ── Ảnh sản phẩm ── */}
+      <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Kho hàng</p>
+      {imageUpload}
+
       <div>
-        <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider mb-1">Kho hàng *</p>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Kho hàng *</p>
         <p className="text-[11px] text-gray-400">
           Thêm kho từ file TXT hoặc nhập tay. Hệ thống tự loại bỏ dòng trùng trong file.
         </p>
@@ -636,6 +664,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
         </div>
       )}
 
+      {checkboxes}
       {error && <p className="text-xs text-red-500">{error}</p>}
       {actionButtons}
     </div>
@@ -681,15 +710,13 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
               <div className="p-6 space-y-5">
                 <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Thông tin sản phẩm</p>
                 {nameField}
-                {warrantyInfoField}
                 {priceField}
                 {categorySelector}
-                {imageUpload}
                 {descField}
-                {checkboxes}
+                {warrantyInfoField}
               </div>
 
-              {/* CREATE — phải: kho hàng */}
+              {/* CREATE — phải: ảnh + kho hàng */}
               {stockSection}
             </>
           ) : (

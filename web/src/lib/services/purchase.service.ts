@@ -22,11 +22,12 @@ export function isCourseDepositEligible(price: number): boolean {
 }
 
 const ORDER_TYPE_TO_TX: Record<OrderType, string> = {
-  SERVICE: "BUY_SERVICE",
-  COURSE: "BUY_COURSE",
-  TUTTRICK: "BUY_TUTTRICK",
-  MMO_PRODUCT: "BUY_MMO_PRODUCT",
-  SELLER_PRODUCT: "BUY_SELLER_PRODUCT",
+  SERVICE:          "BUY_SERVICE",
+  COURSE:           "BUY_COURSE",
+  TUTTRICK:         "BUY_TUTTRICK",
+  MMO_PRODUCT:      "BUY_MMO_PRODUCT",
+  SELLER_PRODUCT:   "BUY_SELLER_PRODUCT",
+  KHUONGFB_PRODUCT: "BUY_KHUONGFB_PRODUCT",
 };
 
 interface PurchaseParams {

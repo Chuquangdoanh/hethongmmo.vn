@@ -70,6 +70,7 @@ enum OrderType {
   TUTTRICK
   MMO_PRODUCT
   SELLER_PRODUCT
+  KHUONGFB_PRODUCT
 }
 
 enum FavoriteProductType {
@@ -78,6 +79,7 @@ enum FavoriteProductType {
   TUTTRICK
   MMO_PRODUCT
   SELLER_PRODUCT
+  KHUONGFB_PRODUCT
 }
 
 enum OrderStatus {
@@ -98,6 +100,7 @@ enum TxType {
   BUY_TUTTRICK
   BUY_MMO_PRODUCT
   BUY_SELLER_PRODUCT
+  BUY_KHUONGFB_PRODUCT
   COURSE_DEPOSIT
   COURSE_FINAL_PAYMENT
   REFUND
@@ -582,7 +585,8 @@ model ResourceCategory {
   createdAt            DateTime            @default(now()) @map("created_at")
   updatedAt            DateTime            @updatedAt @map("updated_at")
 
-  subCategories SellerSubCategory[]
+  subCategories    SellerSubCategory[]
+  khuongfbProducts KhuongfbProduct[]
 
   @@index([name])
   @@map("resource_categories")
@@ -602,9 +606,10 @@ model SellerSubCategory {
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
-  category  ResourceCategory  @relation(fields: [categoryName], references: [name], onDelete: Cascade)
-  users     UserSubCategory[]
-  products  SellerProduct[]
+  category         ResourceCategory  @relation(fields: [categoryName], references: [name], onDelete: Cascade)
+  users            UserSubCategory[]
+  products         SellerProduct[]
+  khuongfbProducts KhuongfbProduct[]
 
   @@unique([categoryName, name])
   @@index([categoryName, isActive])
@@ -652,9 +657,13 @@ model Order {
   tutTrick        TutTrick?      @relation(fields: [tutTrickId], references: [id])
   mmoProductId    String?        @map("mmo_product_id") @db.Uuid
   mmoProduct      MmoProduct?    @relation(fields: [mmoProductId], references: [id])
-  sellerProductId String?        @map("seller_product_id") @db.Uuid
-  sellerProduct   SellerProduct? @relation(fields: [sellerProductId], references: [id])
-  sellerId        String?        @map("seller_id") @db.Uuid
+  sellerProductId    String?          @map("seller_product_id") @db.Uuid
+  sellerProduct      SellerProduct?   @relation(fields: [sellerProductId], references: [id])
+  sellerId           String?          @map("seller_id") @db.Uuid
+  khuongfbProductId  String?          @map("khuongfb_product_id") @db.Uuid
+  khuongfbProduct    KhuongfbProduct? @relation(fields: [khuongfbProductId], references: [id])
+  externalOrderId    String?          @map("external_order_id")
+  externalSource     String?          @map("external_source") @db.VarChar(50)
 
   itemName        String         @map("item_name")
   originalPrice   Decimal        @db.Decimal(18, 2) @map("original_price")
@@ -1307,6 +1316,39 @@ model SiteContent {
   updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@map("site_content")
+}
+
+// ====================================================================
+// 30. KHUONGFB_PRODUCTS (Sản phẩm nhập từ khuongfb.com)
+// ====================================================================
+model KhuongfbProduct {
+  id                 String             @id @default(uuid()) @db.Uuid
+  externalId         String             @unique @map("external_id")
+  externalCategory   String             @map("external_category")
+  name               String
+  description        String?
+  thumbnail          String?
+  originalPrice      Decimal            @db.Decimal(18, 2) @map("original_price")
+  salePrice          Decimal            @db.Decimal(18, 2) @map("sale_price")
+  isEnabled          Boolean            @default(false) @map("is_enabled")
+  warrantyInfo       String?            @map("warranty_info")
+  displaySection     StoreType          @default(TAI_NGUYEN_MMO) @map("display_section")
+  resourceCategoryId String?            @map("resource_category_id") @db.Uuid
+  resourceCategory   ResourceCategory?  @relation(fields: [resourceCategoryId], references: [id], onDelete: SetNull)
+  subCategoryId      String?            @map("sub_category_id") @db.Uuid
+  subCategory        SellerSubCategory? @relation(fields: [subCategoryId], references: [id], onDelete: SetNull)
+  rawData            Json?              @map("raw_data")
+  syncedAt           DateTime?          @map("synced_at")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  orders Order[]
+
+  @@index([isEnabled])
+  @@index([displaySection])
+  @@index([resourceCategoryId])
+  @@index([subCategoryId])
+  @@map("khuongfb_products")
 }
 
 // ====================================================================

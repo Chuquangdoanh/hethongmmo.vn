@@ -380,6 +380,27 @@ function DetailModal({ orderId, itemName, orderType, onClose }: {
   );
 }
 
+function SupportNoticeButton() {
+  const [show, setShow] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => { setShow(true); setTimeout(() => setShow(false), 3000); }}
+        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 border border-red-200 text-red-700 text-[11px] font-medium hover:bg-red-100 transition-colors whitespace-nowrap"
+      >
+        <Flag size={11} /> Khiếu nại
+      </button>
+      {show && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 whitespace-nowrap rounded-lg bg-red-600 text-white text-[11px] font-semibold px-3 py-1.5 shadow-lg pointer-events-none">
+          Liên hệ bộ phận hỗ trợ
+          <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-red-600" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function OrderActions({ orderId, itemName, orderType, isDone, hasComplaint, allowComplaint, orderCreatedAt }: Props) {
   const [isWithin2h, setIsWithin2h] = useState(false);
   useEffect(() => {
@@ -426,7 +447,15 @@ export default function OrderActions({ orderId, itemName, orderType, isDone, has
           </button>
         )}
         {allowComplaint && (
-          localHasComplaint ? (
+          orderType !== "SELLER_PRODUCT" ? (
+            isWithin2h ? (
+              <SupportNoticeButton />
+            ) : (
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-gray-400 text-[11px] font-medium whitespace-nowrap" title="Chỉ có thể khiếu nại trong 2 giờ đầu sau khi mua">
+                <Flag size={11} /> Hết hạn KN
+              </span>
+            )
+          ) : localHasComplaint ? (
             <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-medium whitespace-nowrap">
               <CheckCircle size={11} /> Đã khiếu nại
             </span>

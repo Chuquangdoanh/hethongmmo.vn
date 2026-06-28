@@ -140,7 +140,7 @@ export default async function KhoTaiNguyenPage({
     ...priceFilter,
   };
 
-  const [allStatProducts, filteredProducts, resourceCategories, reviewStats, allMmoStat, filteredMmoProducts, mmoReviewStats] = await Promise.all([
+  const [allStatProducts, filteredProducts, resourceCategories, reviewStats, allMmoStat, filteredMmoProducts, mmoReviewStats, kfbProducts] = await Promise.all([
     prisma.sellerProduct.findMany({
       where: baseWhere,
       select: { id: true, sellerCategory: true, sellerId: true, subCategoryId: true, subCategory: { select: { name: true, showInKhoTaiNguyen: true } } },
@@ -199,6 +199,25 @@ export default async function KhoTaiNguyenPage({
       where: { productType: "MMO_PRODUCT" },
       _count: { id: true },
       _avg: { rating: true },
+    }),
+    prisma.khuongfbProduct.findMany({
+      where: {
+        isEnabled:      true,
+        displaySection: "KHO_TAI_NGUYEN",
+        ...(selectedCategories.length > 0 ? { resourceCategory: { name: { in: selectedCategories } } } : {}),
+        ...(selectedSubcatNames.length > 0 ? { subCategory: { name: { in: selectedSubcatNames } } } : {}),
+        ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
+        ...(minPrice !== undefined || maxPrice !== undefined
+          ? { salePrice: { ...(minPrice !== undefined ? { gte: minPrice } : {}), ...(maxPrice !== undefined ? { lte: maxPrice } : {}) } }
+          : {}),
+      },
+      select: {
+        id: true, name: true, thumbnail: true, salePrice: true,
+        externalCategory: true, description: true, createdAt: true,
+        resourceCategory: { select: { name: true } },
+        subCategory:      { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
     }),
   ]);
 
@@ -317,11 +336,26 @@ export default async function KhoTaiNguyenPage({
   // Build unified product list
   type KhoProduct =
     | { kind: "seller"; id: string; name: string; imageUrl: string | null; category: string; description: string | null; price: number; salesCount: number; createdAt: Date; sellerPrefix: string; available: number; isNew: boolean; isHot: boolean; href: string; bought: boolean; rated: boolean; review: { count: number; avg: number } | undefined; orderType: "SELLER_PRODUCT"; favoriteCount: number; isFavorite: boolean }
-    | { kind: "mmo"; id: string; name: string; imageUrl: string | null; category: string; description: string | null; price: number; salesCount: number; createdAt: Date; sellerPrefix: string; available: number; isNew: boolean; isHot: boolean; href: string; bought: boolean; rated: boolean; review: { count: number; avg: number } | undefined; orderType: "MMO_PRODUCT"; slug: string; favoriteCount: number; isFavorite: boolean };
+    | { kind: "mmo"; id: string; name: string; imageUrl: string | null; category: string; description: string | null; price: number; salesCount: number; createdAt: Date; sellerPrefix: string; available: number; isNew: boolean; isHot: boolean; href: string; bought: boolean; rated: boolean; review: { count: number; avg: number } | undefined; orderType: "MMO_PRODUCT"; slug: string; favoriteCount: number; isFavorite: boolean }
+    | { kind: "kfb"; id: string; name: string; imageUrl: string | null; category: string; description: string | null; price: number; salesCount: number; createdAt: Date; sellerPrefix: string; available: number; isNew: boolean; isHot: boolean; href: string; bought: boolean; rated: boolean; review: undefined; orderType: "KHUONGFB_PRODUCT"; favoriteCount: number; isFavorite: boolean };
 
   const minRating = ratingParam ? Number(ratingParam) : 0;
 
   const allUnified: KhoProduct[] = [
+    ...kfbProducts
+      .filter(() => minRating === 0)
+      .map((p): KhoProduct => ({
+        kind: "kfb", id: p.id, name: p.name, imageUrl: p.thumbnail,
+        category: p.resourceCategory?.name ?? p.externalCategory,
+        description: stripHtml(p.description ?? null),
+        price: Number(p.salePrice), salesCount: 0, createdAt: p.createdAt,
+        sellerPrefix: "Nguồn ngoài", available: 999,
+        isNew: false, isHot: false,
+        href: `/kfb/${p.id}`,
+        bought: false, rated: false, review: undefined,
+        orderType: "KHUONGFB_PRODUCT",
+        favoriteCount: 0, isFavorite: false,
+      })),
     ...filteredProducts
       .filter((sp) => minRating === 0 || (reviewMap.get(sp.id)?.avg ?? 0) >= minRating)
       .map((sp): KhoProduct => ({

@@ -36,7 +36,7 @@ type SortId = "noi-bat" | "ban-chay" | "moi-nhat" | "gia-cao" | "gia-thap";
 
 type UnifiedProduct = {
   id: string;
-  kind: "mmo" | "seller";
+  kind: "mmo" | "seller" | "kfb";
   name: string;
   description: string | null;
   imageUrl: string | null;
@@ -121,6 +121,7 @@ export default async function TaiNguyenMmoPage({
     sellerReviewStats,
     allSellerCats,
     resourceCategories,
+    kfbProducts,
   ] = await Promise.all([
     prisma.mmoProduct.findMany({
       where: {
@@ -199,6 +200,24 @@ export default async function TaiNguyenMmoPage({
           select: { id: true, name: true },
         },
       },
+    }),
+    prisma.khuongfbProduct.findMany({
+      where: {
+        isEnabled:      true,
+        displaySection: "TAI_NGUYEN_MMO",
+        ...(category ? { resourceCategory: { name: category } } : {}),
+        ...(selectedSubcatNames.length > 0 ? { subCategory: { name: { in: selectedSubcatNames } } } : {}),
+        ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
+        ...((minPrice !== undefined || maxPrice !== undefined)
+          ? { salePrice: { ...(minPrice !== undefined ? { gte: minPrice } : {}), ...(maxPrice !== undefined ? { lte: maxPrice } : {}) } }
+          : {}),
+      },
+      select: {
+        id: true, name: true, thumbnail: true, salePrice: true,
+        externalCategory: true, description: true, createdAt: true,
+        resourceCategory: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
     }),
   ]);
 
@@ -319,6 +338,17 @@ export default async function TaiNguyenMmoPage({
     html ? html.replace(/<[^>]*>/g, "").trim() || null : null;
 
   const allProducts: UnifiedProduct[] = [
+    ...kfbProducts.map((p): UnifiedProduct => ({
+      id: p.id, kind: "kfb", name: p.name,
+      description: stripHtml(p.description ?? null), imageUrl: p.thumbnail,
+      price: Number(p.salePrice), rating: 0, reviewCount: 0, salesCount: 0,
+      available: 999, category: p.resourceCategory?.name ?? p.externalCategory,
+      isNew: false, isHot: false,
+      href: `/kfb/${p.id}`, shopHref: "#",
+      createdAt: p.createdAt, sellerName: "Nguồn ngoài",
+      purchasedByMe: false, reviewedByMe: false,
+      favoriteCount: 0, isFavorite: false,
+    })),
     ...mmoProducts.map((p) => {
       const review = mmoReviewMap.get(p.id);
       return {

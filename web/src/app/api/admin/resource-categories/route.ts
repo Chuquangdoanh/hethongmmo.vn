@@ -9,15 +9,26 @@ import { writeAuditLog } from "@/lib/security/audit";
 
 export const runtime = "nodejs";
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
     requireStaff(session);
 
     await requirePermission(session, "categories:read");
+    const withSubs = req.nextUrl.searchParams.get("withSubs") === "true";
     const categories = await prisma.resourceCategory.findMany({
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
-      select: { id: true, name: true, iconUrl: true, displayOrder: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
+      select: {
+        id: true, name: true, iconUrl: true, displayOrder: true,
+        showInKhoTaiNguyen: true, showInTaiNguyenMmo: true,
+        ...(withSubs ? {
+          subCategories: {
+            where: { isActive: true },
+            orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+            select: { id: true, name: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
+          },
+        } : {}),
+      },
     });
     return apiOk(categories);
   } catch (err) {

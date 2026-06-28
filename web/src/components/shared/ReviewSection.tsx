@@ -10,7 +10,7 @@ interface ReviewStat {
 }
 
 interface Props {
-  productType: "MMO_PRODUCT" | "SELLER_PRODUCT";
+  productType: "MMO_PRODUCT" | "SELLER_PRODUCT" | "KHUONGFB_PRODUCT";
   productId: string;
   orderId: string | null;  // null = user hasn't purchased this product
   avgRating: number;

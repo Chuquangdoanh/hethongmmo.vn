@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { NotFoundError, ValidationError, DuplicateError } from "@/lib/errors";
 
-const REVIEWABLE_TYPES = new Set(["SELLER_PRODUCT", "MMO_PRODUCT"]);
+const REVIEWABLE_TYPES = new Set(["SELLER_PRODUCT", "MMO_PRODUCT", "KHUONGFB_PRODUCT"]);
 
 export async function createReview(input: {
   userId: string;
@@ -11,15 +11,16 @@ export async function createReview(input: {
 }) {
   const order = await prisma.order.findFirst({
     where: { id: input.orderId, userId: input.userId },
-    select: { id: true, status: true, orderType: true, sellerProductId: true, mmoProductId: true },
+    select: { id: true, status: true, orderType: true, sellerProductId: true, mmoProductId: true, khuongfbProductId: true },
   });
   if (!order) throw new NotFoundError("Đơn hàng");
   if (order.status !== "DONE") throw new ValidationError("Chỉ có thể đánh giá đơn hàng đã hoàn thành");
   if (!REVIEWABLE_TYPES.has(order.orderType)) throw new ValidationError("Sản phẩm này không hỗ trợ đánh giá");
 
   const productId =
-    order.orderType === "SELLER_PRODUCT" ? order.sellerProductId :
-    order.orderType === "MMO_PRODUCT"    ? order.mmoProductId    : null;
+    order.orderType === "SELLER_PRODUCT"   ? order.sellerProductId :
+    order.orderType === "MMO_PRODUCT"      ? order.mmoProductId    :
+    order.orderType === "KHUONGFB_PRODUCT" ? order.khuongfbProductId : null;
   if (!productId) throw new ValidationError("Không xác định được sản phẩm");
 
   try {
