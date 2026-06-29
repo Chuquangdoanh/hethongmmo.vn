@@ -193,12 +193,16 @@ jobs:
               docker compose run --rm migrate migrate resolve \
                 --rolled-back 20260629000001_rename_khuongfb_to_external 2>/dev/null || true
 
-              # Chạy migrate trước — nếu fail, in logs và dừng ngay
-              docker compose up migrate || {
-                echo "❌ Migration failed — logs:"
-                docker logs hethongmmo-migrate --tail 50 2>/dev/null || echo "(no migrate logs)"
+              # Chạy migrate — in logs cả khi thành công lẫn thất bại
+              docker compose up migrate
+              MIGRATE_EXIT=$?
+              echo "--- Migration logs ---"
+              docker compose logs migrate 2>/dev/null | tail -80 || echo "(no migrate logs)"
+              if [ "$MIGRATE_EXIT" != "0" ]; then
+                echo "❌ Migration failed with exit code $MIGRATE_EXIT"
                 exit 1
-              }
+              fi
+              echo "✅ Migration succeeded"
 
               docker compose up -d
               docker image prune -f

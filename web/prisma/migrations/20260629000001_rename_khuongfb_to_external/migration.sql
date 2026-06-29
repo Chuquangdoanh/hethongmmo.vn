@@ -1,7 +1,7 @@
 -- Migration: khuongfb_products → external_products
--- Each step is a separate idempotent DO block — simple, debuggable.
+-- Fully idempotent — each block handles its own state independently.
 
--- Step 1: Add provider column to khuongfb_products if table still has old name
+-- Step 1: Add provider column to khuongfb_products (before rename)
 DO $$
 BEGIN
   IF EXISTS (
@@ -9,14 +9,13 @@ BEGIN
     WHERE table_schema = 'public' AND table_name = 'khuongfb_products'
   ) AND NOT EXISTS (
     SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'khuongfb_products' AND column_name = 'provider'
+    WHERE table_schema = 'public' AND table_name = 'khuongfb_products' AND column_name = 'provider'
   ) THEN
-    ALTER TABLE khuongfb_products
-      ADD COLUMN provider VARCHAR(50) NOT NULL DEFAULT 'khuongfb';
+    ALTER TABLE khuongfb_products ADD COLUMN provider VARCHAR(50) NOT NULL DEFAULT 'khuongfb';
   END IF;
 END $$;
 
--- Step 2: Rename table khuongfb_products → external_products (if not yet renamed)
+-- Step 2: Rename khuongfb_products → external_products
 DO $$
 BEGIN
   IF EXISTS (
@@ -30,8 +29,8 @@ BEGIN
   END IF;
 END $$;
 
--- Step 3: Add provider column to external_products if missing
---         (handles case where table was manually renamed without adding provider)
+-- Step 3: Add provider column to external_products if still missing
+--         (handles the case where table was renamed manually without adding the column)
 DO $$
 BEGIN
   IF EXISTS (
@@ -39,14 +38,13 @@ BEGIN
     WHERE table_schema = 'public' AND table_name = 'external_products'
   ) AND NOT EXISTS (
     SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'external_products' AND column_name = 'provider'
+    WHERE table_schema = 'public' AND table_name = 'external_products' AND column_name = 'provider'
   ) THEN
-    ALTER TABLE external_products
-      ADD COLUMN provider VARCHAR(50) NOT NULL DEFAULT 'khuongfb';
+    ALTER TABLE external_products ADD COLUMN provider VARCHAR(50) NOT NULL DEFAULT 'khuongfb';
   END IF;
 END $$;
 
--- Step 4: Create provider index (idempotent via IF NOT EXISTS)
+-- Step 4: Create provider index on external_products
 DO $$
 BEGIN
   IF EXISTS (
@@ -54,7 +52,7 @@ BEGIN
     WHERE table_schema = 'public' AND table_name = 'external_products'
   ) AND NOT EXISTS (
     SELECT 1 FROM pg_indexes
-    WHERE tablename = 'external_products'
+    WHERE schemaname = 'public' AND tablename = 'external_products'
       AND indexname IN (
         'khuongfb_products_provider_idx',
         'external_products_provider_idx',
@@ -65,7 +63,7 @@ BEGIN
   END IF;
 END $$;
 
--- Step 5: Create provider + is_enabled composite index (idempotent)
+-- Step 5: Create (provider, is_enabled) composite index on external_products
 DO $$
 BEGIN
   IF EXISTS (
@@ -73,37 +71,55 @@ BEGIN
     WHERE table_schema = 'public' AND table_name = 'external_products'
   ) AND NOT EXISTS (
     SELECT 1 FROM pg_indexes
-    WHERE tablename = 'external_products'
+    WHERE schemaname = 'public' AND tablename = 'external_products'
       AND indexname IN (
         'khuongfb_products_provider_is_enabled_idx',
         'external_products_provider_is_enabled_idx',
-        'idx_khuongfb_products_provider_ext_id'
+        'idx_khuongfb_products_provider_ext_id',
+        'idx_khuongfb_products_provider_is_enabled'
       )
   ) THEN
-    CREATE INDEX khuongfb_products_provider_is_enabled_idx
-      ON external_products(provider, is_enabled);
+    CREATE INDEX khuongfb_products_provider_is_enabled_idx ON external_products(provider, is_enabled);
   END IF;
 END $$;
 
--- Step 6: Rename column khuongfb_product_id → external_product_id in orders
+-- Step 6: Rename khuongfb_product_id → external_product_id in orders
 DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'orders' AND column_name = 'khuongfb_product_id'
+    WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'khuongfb_product_id'
   ) THEN
     ALTER TABLE orders RENAME COLUMN khuongfb_product_id TO external_product_id;
   END IF;
 END $$;
 
--- Step 7: Rename FK constraint (drop old, add new pointing to renamed column + table)
+-- Step 7a: Drop old FK constraint if it still exists
 DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.table_constraints
-    WHERE table_name = 'orders' AND constraint_name = 'orders_khuongfb_product_id_fkey'
+    WHERE constraint_schema = 'public' AND table_name = 'orders'
+      AND constraint_name = 'orders_khuongfb_product_id_fkey'
   ) THEN
     ALTER TABLE orders DROP CONSTRAINT orders_khuongfb_product_id_fkey;
+  END IF;
+END $$;
+
+-- Step 7b: Add new FK constraint if it doesn't exist yet
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE constraint_schema = 'public' AND table_name = 'orders'
+      AND constraint_name = 'orders_external_product_id_fkey'
+  ) AND EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'external_product_id'
+  ) AND EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'external_products'
+  ) THEN
     ALTER TABLE orders
       ADD CONSTRAINT orders_external_product_id_fkey
       FOREIGN KEY (external_product_id) REFERENCES external_products(id)
