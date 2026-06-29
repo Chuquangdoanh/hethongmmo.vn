@@ -138,21 +138,16 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           if (!captchaOk) throw new CaptchaFailedError();
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email },
-          select: {
-            id: true,
-            email: true,
-            fullName: true,
-            passwordHash: true,
-            role: true,
-            status: true,
-            sellerStatus: true,
-            failedLoginCount: true,
-            lockedUntil: true,
-            twoFactorEnabled: true,
-          },
-        });
+        // Hỗ trợ đăng nhập bằng email hoặc SĐT
+        const isPhone = /^(0|\+84)[3-9]\d{8}$/.test(email);
+        const userSelect = {
+          id: true, email: true, fullName: true, passwordHash: true,
+          role: true, status: true, sellerStatus: true,
+          failedLoginCount: true, lockedUntil: true, twoFactorEnabled: true,
+        };
+        const user = await (isPhone
+          ? prisma.user.findFirst({ where: { phone: email }, select: userSelect })
+          : prisma.user.findUnique({ where: { email }, select: userSelect }));
 
         const recordAttempt = (success: boolean, reason?: string) =>
           prisma.loginAttempt

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
-import CaptchaWidget from "@/components/shared/CaptchaWidget";
+import CaptchaWidget, { type CaptchaWidgetRef } from "@/components/shared/CaptchaWidget";
 
 export default function LoginForm() {
   const router       = useRouter();
@@ -16,6 +16,7 @@ export default function LoginForm() {
   const [password, setPassword]     = useState("");
   const [showPassword, setShow]     = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
+  const captchaRef = useRef<CaptchaWidgetRef>(null);
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState("");
   const [emailError, setEmailError]         = useState("");
@@ -36,12 +37,7 @@ export default function LoginForm() {
   }
 
   function validatePassword(value: string): string {
-    if (!value) return "";
-    if (value.length < 12)           return "Mật khẩu phải có ít nhất 12 ký tự";
-    if (!/[A-Z]/.test(value))        return "Mật khẩu cần ít nhất 1 chữ hoa (A-Z)";
-    if (!/[a-z]/.test(value))        return "Mật khẩu cần ít nhất 1 chữ thường (a-z)";
-    if (!/[0-9]/.test(value))        return "Mật khẩu cần ít nhất 1 chữ số (0-9)";
-    if (!/[^A-Za-z0-9]/.test(value)) return "Mật khẩu cần ít nhất 1 ký tự đặc biệt (!@#$%...)";
+    if (!value) return "Vui lòng nhập mật khẩu";
     return "";
   }
 
@@ -75,13 +71,17 @@ export default function LoginForm() {
         }
         if (code === "CAPTCHA_FAILED") {
           setCaptchaToken("");
-          setError("Xác minh captcha thất bại. Vui lòng thử lại.");
+          captchaRef.current?.reset();
+          setError("Xác minh captcha thất bại. Vui lòng xác minh lại.");
           return;
         }
         if (code === "PASSWORD_RESET_REQUIRED") {
           router.push("/quen-mat-khau?reason=reset_required");
           return;
         }
+        // Reset captcha sau mỗi lần đăng nhập thất bại để user có thể thử lại
+        setCaptchaToken("");
+        captchaRef.current?.reset();
         setError("Email hoặc mật khẩu không đúng.");
         return;
       }
@@ -155,7 +155,8 @@ export default function LoginForm() {
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
-              if (passwordTouched) setPasswordError(validatePassword(e.target.value));
+              if (passwordTouched && !e.target.value) setPasswordError("Vui lòng nhập mật khẩu");
+              else if (passwordTouched) setPasswordError("");
             }}
             onBlur={() => {
               setPasswordTouched(true);
@@ -185,7 +186,7 @@ export default function LoginForm() {
         )}
       </div>
 
-      <CaptchaWidget onVerify={setCaptchaToken} onExpire={() => setCaptchaToken("")} />
+      <CaptchaWidget ref={captchaRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken("")} />
 
       {/* Error */}
       {error && (

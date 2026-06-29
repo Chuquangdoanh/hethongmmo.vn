@@ -29,10 +29,8 @@ export default function RegisterForm() {
     e.preventDefault();
     if (!agreed) { setError("Bạn cần đồng ý với Điều khoản dịch vụ."); return; }
     if (captchaEnabled && !captchaToken) { setError("Vui lòng xác minh captcha."); return; }
-    if (form.password.length < 12)          { setError("Mật khẩu phải có ít nhất 12 ký tự."); return; }
+    if (form.password.length < 8)            { setError("Mật khẩu phải có ít nhất 8 ký tự."); return; }
     if (!/[A-Z]/.test(form.password))       { setError("Mật khẩu cần ít nhất 1 chữ hoa (A-Z)."); return; }
-    if (!/[a-z]/.test(form.password))       { setError("Mật khẩu cần ít nhất 1 chữ thường (a-z)."); return; }
-    if (!/[0-9]/.test(form.password))       { setError("Mật khẩu cần ít nhất 1 chữ số (0-9)."); return; }
     if (!/[^A-Za-z0-9]/.test(form.password)){ setError("Mật khẩu cần ít nhất 1 ký tự đặc biệt (!@#$%...)."); return; }
     if (form.password !== form.confirmPassword) { setError("Mật khẩu xác nhận không khớp."); return; }
     if (!/^(0|\+84)[3-9]\d{8}$/.test(form.phone.trim())) {
@@ -144,7 +142,7 @@ export default function RegisterForm() {
             type={showPassword ? "text" : "password"} autoComplete="new-password"
             value={form.password} onChange={set("password")} required minLength={8}
             className={inputCls} style={{ paddingLeft: 38, paddingRight: 40 }}
-            placeholder="Tối thiểu 12 ký tự"
+            placeholder="Tối thiểu 8 ký tự"
             suppressHydrationWarning
           />
           <button
@@ -159,7 +157,7 @@ export default function RegisterForm() {
           </button>
         </div>
         <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 5, lineHeight: 1.5 }}>
-          Yêu cầu: ≥ 12 ký tự, 1 chữ hoa, 1 chữ thường, 1 số, 1 ký tự đặc biệt
+          Yêu cầu: ≥ 8 ký tự, 1 chữ hoa (A-Z), 1 ký tự đặc biệt (!@#$%...)
         </p>
       </div>
 

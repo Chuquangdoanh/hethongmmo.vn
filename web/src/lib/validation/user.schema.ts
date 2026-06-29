@@ -6,25 +6,21 @@ export const registerSchema = z.object({
   phone: z.string().regex(/^(0|\+84)[3-9]\d{8}$/, "Số điện thoại không hợp lệ"),
   password: z
     .string()
-    .min(12, "Mật khẩu tối thiểu 12 ký tự")
+    .min(8, "Mật khẩu tối thiểu 8 ký tự")
     .regex(/[A-Z]/, "Cần ít nhất 1 chữ hoa (A-Z)")
-    .regex(/[a-z]/, "Cần ít nhất 1 chữ thường (a-z)")
-    .regex(/[0-9]/, "Cần ít nhất 1 chữ số (0-9)")
     .regex(/[^A-Za-z0-9]/, "Cần ít nhất 1 ký tự đặc biệt (!@#$%...)"),
 });
 
 export const loginSchema = z.object({
-  email: z.string().email().toLowerCase().trim(),
+  email: z.string().min(1).trim().toLowerCase(),
   password: z.string().min(1),
   captchaToken: z.string().optional(),
 });
 
 const newPasswordRules = z
   .string()
-  .min(12, "Mật khẩu tối thiểu 12 ký tự")
+  .min(8, "Mật khẩu tối thiểu 8 ký tự")
   .regex(/[A-Z]/, "Cần ít nhất 1 chữ hoa (A-Z)")
-  .regex(/[a-z]/, "Cần ít nhất 1 chữ thường (a-z)")
-  .regex(/[0-9]/, "Cần ít nhất 1 chữ số (0-9)")
   .regex(/[^A-Za-z0-9]/, "Cần ít nhất 1 ký tự đặc biệt (!@#$%...)");
 
 export const changePasswordSchema = z
@@ -87,10 +83,8 @@ export const resetPasswordSchema = z
     token: z.string().min(1),
     newPassword: z
       .string()
-      .min(12, "Mật khẩu tối thiểu 12 ký tự")
+      .min(8, "Mật khẩu tối thiểu 8 ký tự")
       .regex(/[A-Z]/, "Cần ít nhất 1 chữ hoa (A-Z)")
-      .regex(/[a-z]/, "Cần ít nhất 1 chữ thường (a-z)")
-      .regex(/[0-9]/, "Cần ít nhất 1 chữ số (0-9)")
       .regex(/[^A-Za-z0-9]/, "Cần ít nhất 1 ký tự đặc biệt (!@#$%...)"),
     confirmPassword: z.string(),
   })

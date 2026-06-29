@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 
 declare global {
   interface Window {
@@ -20,6 +20,10 @@ declare global {
   }
 }
 
+export interface CaptchaWidgetRef {
+  reset: () => void;
+}
+
 interface CaptchaWidgetProps {
   onVerify: (token: string) => void;
   onExpire?: () => void;
@@ -28,20 +32,29 @@ interface CaptchaWidgetProps {
 
 const TURNSTILE_SCRIPT_ID = "cf-turnstile-script";
 
-export default function CaptchaWidget({
-  onVerify,
-  onExpire,
-  siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "",
-}: CaptchaWidgetProps) {
+const CaptchaWidget = forwardRef<CaptchaWidgetRef, CaptchaWidgetProps>(function CaptchaWidget(
+  {
+    onVerify,
+    onExpire,
+    siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "",
+  },
+  ref,
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
 
-  // Keep callback refs in sync so the widget always calls the latest version
-  // without needing to re-render the widget when callbacks change
   const onVerifyRef = useRef(onVerify);
   const onExpireRef = useRef(onExpire);
   useEffect(() => { onVerifyRef.current = onVerify; });
   useEffect(() => { onExpireRef.current = onExpire; });
+
+  useImperativeHandle(ref, () => ({
+    reset() {
+      if (widgetIdRef.current !== null && window.turnstile) {
+        window.turnstile.reset(widgetIdRef.current);
+      }
+    },
+  }));
 
   useEffect(() => {
     if (!siteKey) return;
@@ -93,4 +106,6 @@ export default function CaptchaWidget({
   if (!siteKey) return null;
 
   return <div ref={containerRef} className="mt-2" />;
-}
+});
+
+export default CaptchaWidget;
