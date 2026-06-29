@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, X, Check, CheckCircle, Copy, AlertTriangle, Package, RotateCcw } from "lucide-react";
+import { ShoppingCart, X, Check, CheckCircle, Copy, RotateCcw } from "lucide-react";
 import { formatVnd } from "@/lib/utils/format";
 import QuantitySelector from "@/components/shared/QuantitySelector";
 
@@ -93,11 +93,10 @@ function RefundModal({ reason, onClose }: { reason: string; onClose: () => void 
 
 // ── Delivery modal ────────────────────────────────────────────────────────────
 
-function DeliveryModal({ detail, finalPrice, onClose }: { detail: OrderDetail; finalPrice: number; onClose: () => void }) {
+function DeliveryModal({ detail, onClose }: { detail: OrderDetail; finalPrice: number; onClose: () => void }) {
   const router = useRouter();
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
-  // Flatten kfbData thành các dòng hiển thị nếu có
   const kfbRows: { label: string; value: string }[] = detail.kfbData
     ? Object.entries(detail.kfbData)
         .filter(([, v]) => v != null && v !== "")
@@ -105,11 +104,9 @@ function DeliveryModal({ detail, finalPrice, onClose }: { detail: OrderDetail; f
     : [];
 
   const items = [
-    { label: "Mã đơn hàng",  value: detail.orderCode },
-    // ...(detail.externalOrderId ? [{ label: "Mã đơn ngoài", value: detail.externalOrderId }] : []),
+    { label: "Mã đơn hàng", value: detail.orderCode },
     ...(detail.deliveredContent ? [{ label: "Nội dung nhận được", value: detail.deliveredContent }] : []),
     ...kfbRows,
-    // { label: "Tổng tiền", value: formatVnd(finalPrice) },
   ];
 
   async function copyItem(text: string, idx: number) {
@@ -128,59 +125,78 @@ function DeliveryModal({ detail, finalPrice, onClose }: { detail: OrderDetail; f
       className="fixed inset-0 z-9999 flex items-center justify-center p-4"
       style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500">
               <Check size={11} className="text-white" strokeWidth={3} />
             </span>
-            <span className="text-sm font-semibold text-gray-800">Đặt hàng thành công!</span>
+            <span className="text-sm font-semibold text-gray-800">Nhận hàng thành công!</span>
           </div>
-          <button onClick={handleClose} className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors">
+          <button
+            onClick={handleClose}
+            className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors text-xs font-bold"
+          >
             <X size={13} />
           </button>
         </div>
 
-        <div className="px-5 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
+        {/* Body */}
+        <div className="px-5 py-5 space-y-4">
+          {/* Icon + title */}
           <div className="text-center">
-            <div className="flex justify-center mb-2">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
-                <Package size={24} className="text-emerald-500" />
-              </div>
-            </div>
-            <p className="text-base font-bold text-emerald-600">Đơn hàng đang được xử lý!</p>
-            <p className="text-xs text-gray-500 mt-1">Khuongfb đã nhận đơn. Lưu thông tin bên dưới để theo dõi trạng thái.</p>
-          </div>
-
-          {items.map((item, idx) => (
-            <div key={idx} className="rounded-xl bg-white border border-gray-200 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
-                <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">{item.label}</span>
-                <button
-                  onClick={() => void copyItem(item.value, idx)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-medium transition-colors whitespace-nowrap"
-                >
-                  {copiedIdx === idx ? <><Check size={11} className="text-emerald-500" /> Đã chép</> : <><Copy size={11} /> Sao chép</>}
-                </button>
-              </div>
-              <div className="px-4 py-3">
-                <p className="text-sm font-mono text-gray-900 break-all leading-relaxed whitespace-pre-wrap">{item.value}</p>
-              </div>
-            </div>
-          ))}
-
-          <div className="flex gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-3">
-            <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-amber-800 leading-relaxed">
-              Sản phẩm sẽ được Khuongfb xử lý trong thời gian sớm nhất. Bạn có thể xem lại trong mục{" "}
-              <span className="font-semibold underline cursor-pointer" onClick={() => router.push("/lich-su-don-hang")}>
-                Lịch sử đơn hàng
-              </span>.
+            <div className="text-4xl mb-2">🎉</div>
+            <p className="text-base font-bold text-emerald-600">Giao hàng tự động!</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Sản phẩm của bạn đã được giao thành công. Lưu thông tin bên dưới.
             </p>
           </div>
 
-          <button onClick={handleClose} className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2">
-            <CheckCircle size={15} /> Đã lưu, đóng lại
+          {/* Dark content box */}
+          <div className="rounded-xl bg-gray-900 overflow-hidden max-h-64 overflow-y-auto">
+            {items.map((item, idx) => (
+              <div key={idx} className={idx > 0 ? "border-t border-gray-700" : ""}>
+                <div className="flex items-center justify-between px-4 py-2">
+                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">{item.label}</span>
+                  <button
+                    onClick={() => void copyItem(item.value, idx)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-[11px] font-medium transition-colors whitespace-nowrap"
+                  >
+                    {copiedIdx === idx ? (
+                      <><Check size={11} className="text-emerald-400" /> Đã chép</>
+                    ) : (
+                      <><Copy size={11} /> Sao chép</>
+                    )}
+                  </button>
+                </div>
+                <div className="px-4 pb-3">
+                  <p className="text-sm font-mono text-white break-all leading-relaxed whitespace-pre-wrap">
+                    {item.value}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Warning note */}
+          <div className="flex gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-3">
+            <span className="text-amber-500 shrink-0 mt-0.5">⚠</span>
+            <p className="text-[11px] text-amber-800 leading-relaxed">
+              Vui lòng lưu thông tin này ngay. Bạn có thể xem lại trong mục{" "}
+              <span className="font-semibold underline cursor-pointer" onClick={() => router.push("/don-hang")}>
+                Lịch sử đơn hàng
+              </span>{" "}
+              tại trang cá nhân.
+            </p>
+          </div>
+
+          {/* Close button */}
+          <button
+            onClick={handleClose}
+            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
+          >
+            ✓ Đã lưu, đóng lại
           </button>
         </div>
       </div>
