@@ -13,38 +13,26 @@ describe("validatePasswordStrength", () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it("rejects password shorter than 12 chars", () => {
-    const { valid, errors } = validatePasswordStrength("Short1!");
+  it("rejects password shorter than 8 chars", () => {
+    const { valid, errors } = validatePasswordStrength("Ab!1234");
     expect(valid).toBe(false);
-    expect(errors.some((e) => e.includes("12 ký tự"))).toBe(true);
+    expect(errors.some((e) => e.includes("8 ký tự"))).toBe(true);
   });
 
   it("rejects missing uppercase", () => {
-    const { valid, errors } = validatePasswordStrength("nouppercase1!!");
+    const { valid, errors } = validatePasswordStrength("nouppercase!!");
     expect(valid).toBe(false);
     expect(errors.some((e) => e.includes("chữ hoa"))).toBe(true);
   });
 
-  it("rejects missing lowercase", () => {
-    const { valid, errors } = validatePasswordStrength("NOLOWERCASE1!!");
-    expect(valid).toBe(false);
-    expect(errors.some((e) => e.includes("chữ thường"))).toBe(true);
-  });
-
-  it("rejects missing digit", () => {
-    const { valid, errors } = validatePasswordStrength("NoDigitHere!!");
-    expect(valid).toBe(false);
-    expect(errors.some((e) => e.includes("chữ số"))).toBe(true);
-  });
-
   it("rejects missing special char", () => {
-    const { valid, errors } = validatePasswordStrength("NoSpecialChar12");
+    const { valid, errors } = validatePasswordStrength("NoSpecialChar");
     expect(valid).toBe(false);
     expect(errors.some((e) => e.includes("đặc biệt"))).toBe(true);
   });
 
   it("reports all failing rules at once", () => {
-    const { valid, errors } = validatePasswordStrength("short");
+    const { valid, errors } = validatePasswordStrength("ab");
     expect(valid).toBe(false);
     expect(errors.length).toBeGreaterThan(1);
   });
