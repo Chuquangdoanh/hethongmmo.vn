@@ -21,10 +21,24 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       section === "TAI_NGUYEN_MMO" || section === "KHO_TAI_NGUYEN"
         ? (section as StoreType)
         : undefined;
-    const providerFilter = req.nextUrl.searchParams.get("provider");
+    const providerFilter  = req.nextUrl.searchParams.get("provider");
+    const kfbCategory     = req.nextUrl.searchParams.get("kfbCategory");
+    const categoriesOnly  = req.nextUrl.searchParams.get("categoriesOnly") === "1";
+
+    // Return distinct externalCategory list for filter UI
+    if (categoriesOnly) {
+      const cats = await prisma.externalProduct.findMany({
+        select:   { externalCategory: true },
+        distinct: ["externalCategory"],
+        orderBy:  { externalCategory: "asc" },
+      });
+      return apiOk(cats.map((c) => c.externalCategory));
+    }
+
     const where = {
       ...(validSection   ? { displaySection: validSection }     : {}),
       ...(providerFilter ? { provider: providerFilter }         : {}),
+      ...(kfbCategory    ? { externalCategory: kfbCategory }    : {}),
     };
 
     const [raw, total] = await Promise.all([

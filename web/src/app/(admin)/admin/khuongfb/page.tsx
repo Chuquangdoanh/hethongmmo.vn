@@ -62,20 +62,38 @@ export default function KhuongfbAdminPage() {
   const [page,            setPage]            = useState(1);
   const [section,         setSection]         = useState<string>("");
   const [activeProvider,  setActiveProvider]  = useState<string>("");
+  const [kfbCategory,     setKfbCategory]     = useState<string>("");
+  const [kfbCategories,   setKfbCategories]   = useState<string[]>([]);
 
-  const fetchProducts = useCallback(async (p: number, sec: string, provId: string) => {
+  const fetchProducts = useCallback(async (p: number, sec: string, provId: string, kfbCat: string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(p), limit: "50" });
-      if (sec)   params.set("section",  sec);
-      if (provId) params.set("provider", provId);
+      if (sec)    params.set("section",     sec);
+      if (provId) params.set("provider",    provId);
+      if (kfbCat) params.set("kfbCategory", kfbCat);
       const res  = await fetch(`/api/admin/khuongfb/products?${params.toString()}`);
       const json = await res.json() as { data?: KhuongfbProduct[]; meta?: Meta };
-      setProducts(json.data ?? []);
+
+      // Sản phẩm còn hàng (stockAmount > 0) lên đầu, giữ thứ tự gốc cho phần còn lại
+      const raw = json.data ?? [];
+      const sorted = [...raw].sort((a, b) => {
+        const aInStock = (a.stockAmount ?? 0) > 0 ? 1 : 0;
+        const bInStock = (b.stockAmount ?? 0) > 0 ? 1 : 0;
+        return bInStock - aInStock;
+      });
+
+      setProducts(sorted);
       if (json.meta) setMeta(json.meta);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const fetchKfbCategories = useCallback(async () => {
+    const res  = await fetch("/api/admin/khuongfb/products?categoriesOnly=1");
+    const json = await res.json() as { data?: string[] };
+    setKfbCategories(json.data ?? []);
   }, []);
 
   const fetchCategories = useCallback(async () => {
@@ -93,11 +111,12 @@ export default function KhuongfbAdminPage() {
   useEffect(() => {
     void fetchProviders();
     void fetchCategories();
-  }, [fetchProviders, fetchCategories]);
+    void fetchKfbCategories();
+  }, [fetchProviders, fetchCategories, fetchKfbCategories]);
 
   useEffect(() => {
-    void fetchProducts(page, section, activeProvider);
-  }, [page, section, activeProvider, fetchProducts]);
+    void fetchProducts(page, section, activeProvider, kfbCategory);
+  }, [page, section, activeProvider, kfbCategory, fetchProducts]);
 
   function handleSectionChange(val: string) {
     setSection(val);
@@ -106,6 +125,11 @@ export default function KhuongfbAdminPage() {
 
   function handleProviderChange(val: string) {
     setActiveProvider(val);
+    setPage(1);
+  }
+
+  function handleKfbCategoryChange(val: string) {
+    setKfbCategory(val);
     setPage(1);
   }
 
@@ -136,7 +160,7 @@ export default function KhuongfbAdminPage() {
       }
 
       setSyncMsg({ type: hasError ? "err" : "ok", text: lines.join(" | ") });
-      await fetchProducts(1, section, activeProvider);
+      await fetchProducts(1, section, activeProvider, kfbCategory);
       setPage(1);
     } catch {
       setSyncMsg({ type: "err", text: "Đồng bộ thất bại — không kết nối được server" });
@@ -164,7 +188,7 @@ export default function KhuongfbAdminPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ProviderManager onProvidersChanged={() => { void fetchProviders(); void fetchProducts(1, section, activeProvider); }} />
+          <ProviderManager onProvidersChanged={() => { void fetchProviders(); void fetchProducts(1, section, activeProvider, kfbCategory); }} />
           <button
             onClick={() => void handleSync()}
             disabled={syncing}
@@ -230,6 +254,31 @@ export default function KhuongfbAdminPage() {
         ))}
       </div>
 
+      {/* KFB category filter */}
+      {kfbCategories.length > 0 && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Danh mục KFB:</span>
+          <select
+            value={kfbCategory}
+            onChange={(e) => handleKfbCategoryChange(e.target.value)}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white text-gray-700 focus:outline-none focus:border-amber-400 min-w-50"
+          >
+            <option value="">— Tất cả danh mục —</option>
+            {kfbCategories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          {kfbCategory && (
+            <button
+              onClick={() => handleKfbCategoryChange("")}
+              className="text-xs text-gray-400 hover:text-gray-600 underline"
+            >
+              Xóa lọc
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Bảng sản phẩm */}
       {loading ? (
         <div className="text-center py-16 text-gray-400">Đang tải...</div>
@@ -237,7 +286,7 @@ export default function KhuongfbAdminPage() {
         <KhuongfbProductTable
           products={products}
           categories={categories}
-          onRefresh={() => void fetchProducts(page, section, activeProvider)}
+          onRefresh={() => void fetchProducts(page, section, activeProvider, kfbCategory)}
         />
       )}
 
