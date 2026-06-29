@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { formatVnd, formatDate } from "@/lib/utils/format";
-import { Trash2 } from "lucide-react";
+import { Trash2, ArrowDownUp, ArrowDown } from "lucide-react";
 import InlineRoleCell from "./InlineRoleCell";
 import InlineUserStatusCell from "./InlineUserStatusCell";
 
@@ -40,12 +40,28 @@ interface Props {
   total: number;
   role?: string;
   q?: string;
+  sort?: string;
 }
 
-export default function UsersTableClient({ users, currentUserId, total, role, q }: Props) {
+export default function UsersTableClient({ users, currentUserId, total, role, q, sort }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
+
+  const isSortedByDeposit = sort === "deposit";
+
+  function handleDepositSort() {
+    const params = new URLSearchParams(searchParams.toString());
+    if (isSortedByDeposit) {
+      params.delete("sort");
+    } else {
+      params.set("sort", "deposit");
+      params.delete("page");
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  }
 
   const deletableIds = users
     .filter((u) => u.id !== currentUserId && u.role !== "ADMIN")
@@ -128,7 +144,19 @@ export default function UsersTableClient({ users, currentUserId, total, role, q 
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Trạng thái</th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Số dư</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Tổng nạp</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide">
+                <button
+                  onClick={handleDepositSort}
+                  className={`inline-flex items-center gap-1 transition-colors hover:text-violet-600 ${isSortedByDeposit ? "text-violet-600" : "text-gray-500"}`}
+                >
+                  Tổng nạp
+                  {isSortedByDeposit ? (
+                    <ArrowDown size={13} strokeWidth={2.5} />
+                  ) : (
+                    <ArrowDownUp size={12} strokeWidth={2} className="opacity-40" />
+                  )}
+                </button>
+              </th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Giảm giá</th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Đơn hàng</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Ngày tạo</th>

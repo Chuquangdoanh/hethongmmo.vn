@@ -19,15 +19,16 @@ const ROLE_LABELS: Record<string, string> = {
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string; role?: string; depositMin?: string; depositMax?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; role?: string; depositMin?: string; depositMax?: string; sort?: string }>;
 }) {
   const session = await auth();
   const me = session?.user as AuthenticatedUser;
 
-  const { page, q, role, depositMin, depositMax } = await searchParams;
+  const { page, q, role, depositMin, depositMax, sort } = await searchParams;
   const currentPage  = Math.max(1, parseInt(page ?? "1", 10));
   const depositMinNum = depositMin ? parseInt(depositMin, 10) : undefined;
   const depositMaxNum = depositMax ? parseInt(depositMax, 10) : undefined;
+  const sortByDeposit = sort === "deposit";
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -56,7 +57,7 @@ export default async function AdminUsersPage({
   const [users, total, allTotal, newToday, sellerCount, staffAdminCount] = await Promise.all([
     prisma.user.findMany({
       where,
-      orderBy: depositMinNum !== undefined || depositMaxNum !== undefined
+      orderBy: sortByDeposit || depositMinNum !== undefined || depositMaxNum !== undefined
         ? { totalDeposited: "desc" }
         : { createdAt: "desc" },
       skip: (currentPage - 1) * PAGE_SIZE,
@@ -149,6 +150,7 @@ export default async function AdminUsersPage({
         total={total}
         role={role}
         q={q}
+        sort={sort}
       />
 
       {totalPages > 1 && (
@@ -161,6 +163,7 @@ export default async function AdminUsersPage({
             ...(role ? { role } : {}),
             ...(depositMin ? { depositMin } : {}),
             ...(depositMax ? { depositMax } : {}),
+            ...(sort ? { sort } : {}),
           }}
         />
       )}
