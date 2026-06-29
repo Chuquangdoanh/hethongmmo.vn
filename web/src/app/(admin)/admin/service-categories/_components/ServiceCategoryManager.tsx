@@ -3,6 +3,14 @@
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { r2Url } from "@/lib/utils/image-url";
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 
 const SVGL = (name: string) => `https://svgl.app/library/${name}.svg`;
 
@@ -40,28 +48,80 @@ interface Props {
 const inputCls =
   "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none";
 
+function SortableItem({
+  cat, onEdit, onDelete, loading,
+}: {
+  cat: Category;
+  onEdit: (cat: Category) => void;
+  onDelete: (id: string, name: string) => void;
+  loading: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cat.id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 px-4 py-3 transition-colors ${isDragging ? "bg-violet-50 shadow-md z-10 relative" : "hover:bg-gray-50"}`}
+    >
+      <button type="button" {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0 touch-none">
+        <GripVertical size={15} />
+      </button>
+      <div className="w-7 h-7 rounded-full bg-[#7C3AED]/10 border border-[#7C3AED]/25 flex items-center justify-center shrink-0">
+        <span className="text-[11px] font-bold text-[#7C3AED]">{cat.displayOrder}</span>
+      </div>
+      <div className="w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center shrink-0 p-1.5">
+        {cat.iconUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={r2Url(cat.iconUrl)} alt={cat.name} className="w-full h-full object-contain" />
+        ) : (
+          <span className="text-base">📁</span>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900">{cat.name}</p>
+        <p className="text-[10px] text-gray-400 truncate">{cat.iconUrl ?? "Chưa có icon"}</p>
+      </div>
+      <div className="flex gap-3 shrink-0">
+        <button type="button" onClick={() => onEdit(cat)} className="text-xs text-[#7C3AED] hover:text-[#A855F7] transition-colors">
+          Sửa
+        </button>
+        <button type="button" onClick={() => onDelete(cat.id, cat.name)} disabled={loading} className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors">
+          Xóa
+        </button>
+      </div>
+    </li>
+  );
+}
+
 export default function ServiceCategoryManager({ initialCategories }: Props) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [categories, setCategories] = useState<Category[]>(
+    [...initialCategories].sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name))
+  );
   const [name, setName] = useState("");
   const [iconUrl, setIconUrl] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
+  const [reordering, setReordering] = useState(false);
   const [error, setError] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const [importUrl, setImportUrl] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [presetImporting, setPresetImporting] = useState<string | null>(null);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const nextOrder = categories.length > 0
     ? Math.max(...categories.map((c) => c.displayOrder)) + 1
     : 1;
-  const [importing, setImporting] = useState(false);
-  const [presetImporting, setPresetImporting] = useState<string | null>(null); // preset name đang import
 
   async function handlePresetClick(preset: { name: string; icon: string }) {
     setUploadError("");
@@ -111,11 +171,8 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
       });
       const json = (await res.json()) as { data?: Category; error?: string };
       if (!res.ok) { setError(json.error ?? "Lưu thất bại"); return; }
-
       if (editingId) {
-        setCategories((prev) =>
-          prev.map((c) => c.id === editingId ? (json.data ?? c) : c)
-        );
+        setCategories((prev) => prev.map((c) => c.id === editingId ? (json.data ?? c) : c));
       } else {
         setCategories((prev) => [...prev, json.data!]);
       }
@@ -143,14 +200,8 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
   const uploadFile = useCallback(async (file: File) => {
     setUploadError("");
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
-    if (!allowed.includes(file.type)) {
-      setUploadError("Chỉ chấp nhận JPG, PNG, WebP, GIF, SVG");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError("File quá lớn, tối đa 5 MB");
-      return;
-    }
+    if (!allowed.includes(file.type)) { setUploadError("Chỉ chấp nhận JPG, PNG, WebP, GIF, SVG"); return; }
+    if (file.size > 5 * 1024 * 1024) { setUploadError("File quá lớn, tối đa 5 MB"); return; }
     const fd = new FormData();
     fd.append("file", file);
     setUploading(true);
@@ -196,6 +247,28 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
     }
   }
 
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = categories.findIndex((c) => c.id === active.id);
+    const newIndex = categories.findIndex((c) => c.id === over.id);
+    const reordered = arrayMove(categories, oldIndex, newIndex).map((c, i) => ({ ...c, displayOrder: i + 1 }));
+    setCategories(reordered);
+
+    setReordering(true);
+    try {
+      await fetch("/api/admin/service-categories/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: reordered.map(({ id, displayOrder }) => ({ id, displayOrder })) }),
+      });
+      router.refresh();
+    } finally {
+      setReordering(false);
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 items-start">
       {/* ── Cột trái: Form thêm / sửa (6/10) ── */}
@@ -215,25 +288,16 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
 
         <div>
           <label className="block text-xs text-gray-500 mb-1.5">Tên danh mục *</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="vd: Tăng follow, Tăng view, Tăng like..."
-            className={inputCls}
-          />
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+            placeholder="vd: Tăng follow, Tăng view, Tăng like..." className={inputCls} />
         </div>
 
         {iconUrl && (
           <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={r2Url(iconUrl)} alt="icon preview" className="w-10 h-10 object-contain rounded border border-gray-200 bg-gray-50 p-1 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-gray-500 truncate">{iconUrl}</p>
-            </div>
-            <button type="button" onClick={() => setIconUrl("")} className="text-xs text-red-500 hover:text-red-700 shrink-0 transition-colors">
-              Xóa
-            </button>
+            <div className="flex-1 min-w-0"><p className="text-xs text-gray-500 truncate">{iconUrl}</p></div>
+            <button type="button" onClick={() => setIconUrl("")} className="text-xs text-red-500 hover:text-red-700 shrink-0 transition-colors">Xóa</button>
           </div>
         )}
 
@@ -248,9 +312,7 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
               isDragging ? "border-[#7C3AED] bg-[#7C3AED]/5" : "border-gray-200 hover:border-[#7C3AED]/50"
             }`}
           >
-            {uploading ? (
-              <p className="text-xs text-gray-500">Đang upload...</p>
-            ) : (
+            {uploading ? <p className="text-xs text-gray-500">Đang upload...</p> : (
               <>
                 <svg className="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -265,19 +327,10 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
         <div>
           <label className="block text-xs text-gray-500 mb-1.5">Import từ URL (svgl.app, URL ảnh...)</label>
           <div className="flex gap-2">
-            <input
-              type="url"
-              value={importUrl}
-              onChange={(e) => setImportUrl(e.target.value)}
-              placeholder="https://svgl.app/library/facebook-icon.svg"
-              className={inputCls}
-            />
-            <button
-              type="button"
-              onClick={() => void handleImportUrl()}
-              disabled={importing || !importUrl.trim()}
-              className="px-3 py-2 rounded-lg bg-gray-800 text-white text-xs font-medium hover:bg-gray-900 disabled:opacity-50 transition-colors whitespace-nowrap"
-            >
+            <input type="url" value={importUrl} onChange={(e) => setImportUrl(e.target.value)}
+              placeholder="https://svgl.app/library/facebook-icon.svg" className={inputCls} />
+            <button type="button" onClick={() => void handleImportUrl()} disabled={importing || !importUrl.trim()}
+              className="px-3 py-2 rounded-lg bg-gray-800 text-white text-xs font-medium hover:bg-gray-900 disabled:opacity-50 transition-colors whitespace-nowrap">
               {importing ? "..." : "Import"}
             </button>
           </div>
@@ -287,13 +340,8 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
         <div>
           <label className="block text-xs text-gray-500 mb-1.5">Hoặc nhập URL icon trực tiếp</label>
           <div className="flex gap-2 items-center">
-            <input
-              type="url"
-              value={iconUrl}
-              onChange={(e) => setIconUrl(e.target.value)}
-              placeholder="https://..."
-              className={inputCls}
-            />
+            <input type="url" value={iconUrl} onChange={(e) => setIconUrl(e.target.value)}
+              placeholder="https://..." className={inputCls} />
             {iconUrl && iconUrl.startsWith("http") && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={r2Url(iconUrl)} alt="preview" className="w-8 h-8 object-contain shrink-0 rounded border border-gray-200 bg-white p-1" />
@@ -307,18 +355,11 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
             {SVGL_PRESETS.map((p) => {
               const isImporting = presetImporting === p.name;
               return (
-                <button
-                  key={p.name}
-                  type="button"
-                  title={p.name}
-                  onClick={() => void handlePresetClick(p)}
-                  disabled={presetImporting !== null}
+                <button key={p.name} type="button" title={p.name}
+                  onClick={() => void handlePresetClick(p)} disabled={presetImporting !== null}
                   className={`relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all disabled:opacity-60 ${
-                    isImporting
-                      ? "border-[#7C3AED] bg-[#7C3AED]/10 ring-1 ring-[#7C3AED]/40"
-                      : "border-gray-200 bg-white hover:border-[#7C3AED]/50"
-                  }`}
-                >
+                    isImporting ? "border-[#7C3AED] bg-[#7C3AED]/10 ring-1 ring-[#7C3AED]/40" : "border-gray-200 bg-white hover:border-[#7C3AED]/50"
+                  }`}>
                   {isImporting ? (
                     <svg className="w-6 h-6 animate-spin text-[#7C3AED]" viewBox="0 0 24 24" fill="none">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -340,20 +381,13 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
         {error && <p className="text-xs text-red-500">{error}</p>}
 
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={loading}
-            className="px-4 py-2 rounded-lg bg-[#7C3AED] text-white text-sm font-medium hover:bg-[#A855F7] disabled:opacity-60 transition-colors"
-          >
+          <button type="button" onClick={() => void handleSave()} disabled={loading}
+            className="px-4 py-2 rounded-lg bg-[#7C3AED] text-white text-sm font-medium hover:bg-[#A855F7] disabled:opacity-60 transition-colors">
             {loading ? "Đang lưu..." : editingId ? "Cập nhật" : "Thêm danh mục"}
           </button>
           {editingId && (
-            <button
-              type="button"
-              onClick={cancelEdit}
-              className="px-4 py-2 rounded-lg border border-gray-200 text-gray-500 text-sm hover:bg-gray-100 transition-colors"
-            >
+            <button type="button" onClick={cancelEdit}
+              className="px-4 py-2 rounded-lg border border-gray-200 text-gray-500 text-sm hover:bg-gray-100 transition-colors">
               Hủy
             </button>
           )}
@@ -364,49 +398,22 @@ export default function ServiceCategoryManager({ initialCategories }: Props) {
       {/* ── Cột phải: Danh sách (4/10) ── */}
       <div className="lg:col-span-4 lg:sticky lg:top-4">
       <section className="rounded-xl border border-gray-200 overflow-hidden">
-        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
           <p className="text-sm font-semibold text-gray-900">Danh sách danh mục ({categories.length})</p>
+          {reordering && <span className="text-[10px] text-violet-500 animate-pulse">Đang lưu...</span>}
         </div>
         {categories.length === 0 ? (
           <div className="px-4 py-8 text-center text-sm text-gray-500">Chưa có danh mục nào</div>
         ) : (
-          <ul className="divide-y divide-gray-100">
-            {categories
-              .slice()
-              .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name))
-              .map((cat) => (
-                <li key={cat.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
-                  <div className="w-7 h-7 rounded-full bg-[#7C3AED]/10 border border-[#7C3AED]/25 flex items-center justify-center shrink-0">
-                    <span className="text-[11px] font-bold text-[#7C3AED]">{cat.displayOrder}</span>
-                  </div>
-                  <div className="w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center shrink-0 p-1.5">
-                    {cat.iconUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={r2Url(cat.iconUrl)} alt={cat.name} className="w-full h-full object-contain" />
-                    ) : (
-                      <span className="text-base">📁</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{cat.name}</p>
-                    <p className="text-[10px] text-gray-400 truncate">{cat.iconUrl ?? "Chưa có icon"}</p>
-                  </div>
-                  <div className="flex gap-3 shrink-0">
-                    <button type="button" onClick={() => startEdit(cat)} className="text-xs text-[#7C3AED] hover:text-[#A855F7] transition-colors">
-                      Sửa
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleDelete(cat.id, cat.name)}
-                      disabled={loading}
-                      className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 transition-colors"
-                    >
-                      Xóa
-                    </button>
-                  </div>
-                </li>
-              ))}
-          </ul>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => void handleDragEnd(e)}>
+            <SortableContext items={categories.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+              <ul className="divide-y divide-gray-100">
+                {categories.map((cat) => (
+                  <SortableItem key={cat.id} cat={cat} onEdit={startEdit} onDelete={handleDelete} loading={loading} />
+                ))}
+              </ul>
+            </SortableContext>
+          </DndContext>
         )}
       </section>
       </div>

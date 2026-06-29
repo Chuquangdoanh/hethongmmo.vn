@@ -5,6 +5,7 @@ import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import InlineStatusCell from "./_components/InlineStatusCell";
 import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
+import type { TxType } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Admin — Đơn hàng" };
 
@@ -49,7 +50,7 @@ export default async function AdminOrdersPage({
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
 
-  // Default to today unless "all" is explicitly requested
+  // Default = hôm nay; "all" = tất cả; date range = theo khoảng chọn
   const isAllTime = dateFromParam === "all";
   const dateFilter = isAllTime ? {} : {
     createdAt: {
@@ -58,7 +59,8 @@ export default async function AdminOrdersPage({
     },
   };
 
-  const validOrderType = orderType && (SERVICE_TYPE_KEYS as readonly string[]).includes(orderType) ? orderType : undefined;
+  const isSellerPaymentsTab = orderType === "SELLER_PAYMENTS";
+  const validOrderType = !isSellerPaymentsTab && orderType && (SERVICE_TYPE_KEYS as readonly string[]).includes(orderType) ? orderType : undefined;
 
   const where = {
     orderType: validOrderType ? (validOrderType as never) : { in: SERVICE_TYPE_KEYS as never },
@@ -75,6 +77,13 @@ export default async function AdminOrdersPage({
     orderType: { in: SERVICE_TYPE_KEYS as never },
     ...(status ? { status: status as never } : {}),
     ...dateFilter,
+  };
+
+  const SELLER_TX_TYPES: TxType[] = ["SELLER_REGISTRATION", "SELLER_SLOT_PURCHASE", "ESCROW_DEPOSIT"];
+  const SELLER_TX_META: Record<string, { label: string; icon: string; color: string }> = {
+    SELLER_REGISTRATION:  { label: "Đăng ký bán hàng",  icon: "🏪", color: "text-[#7C3AED]" },
+    SELLER_SLOT_PURCHASE: { label: "Mua slot gian hàng", icon: "🛒", color: "text-[#2563eb]" },
+    ESCROW_DEPOSIT:       { label: "Seller kí quỹ",      icon: "🔒", color: "text-[#F59E0B]" },
   };
 
   const [orders, total, pendingCount, processingCount, doneToday, revenueToday, typeCounts] = await Promise.all([
@@ -104,6 +113,22 @@ export default async function AdminOrdersPage({
       _count: { id: true },
     }),
   ]);
+
+  const sellerPayments = isSellerPaymentsTab
+    ? await prisma.transaction.findMany({
+        where: { type: { in: SELLER_TX_TYPES }, ...dateFilter },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: {
+          id: true, type: true, amount: true, description: true, createdAt: true,
+          user: { select: { email: true, fullName: true } },
+        },
+      })
+    : [];
+
+  const sellerPaymentsCount = await prisma.transaction.count({
+    where: { type: { in: SELLER_TX_TYPES }, ...dateFilter },
+  });
 
   const typeCountMap: Record<string, number> = {};
   for (const row of typeCounts) {
@@ -189,12 +214,12 @@ export default async function AdminOrdersPage({
       </div>
 
       {/* Order type tabs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
         {/* All tab */}
         <Link
           href={tabUrl({ orderType: undefined })}
           className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border transition-all ${
-            !validOrderType
+            !validOrderType && !isSellerPaymentsTab
               ? "bg-gray-900 border-gray-900 text-white shadow-sm"
               : "bg-white border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-gray-50"
           }`}
@@ -202,7 +227,7 @@ export default async function AdminOrdersPage({
           <span className="text-lg leading-none">📋</span>
           <div className="min-w-0">
             <p className="text-xs font-semibold truncate">Tất cả</p>
-            <p className={`text-sm font-bold ${!validOrderType ? "text-white" : "text-gray-800"}`}>
+            <p className={`text-sm font-bold ${!validOrderType && !isSellerPaymentsTab ? "text-white" : "text-gray-800"}`}>
               {grandTotal.toLocaleString("vi-VN")}
             </p>
           </div>
@@ -232,6 +257,24 @@ export default async function AdminOrdersPage({
             </Link>
           );
         })}
+
+        {/* Hạng mục thanh toán tab */}
+        <Link
+          href={tabUrl({ orderType: "SELLER_PAYMENTS" })}
+          className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border transition-all ${
+            isSellerPaymentsTab
+              ? "bg-[#10B981] border-[#10B981] text-white shadow-sm"
+              : "bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+          }`}
+        >
+          <span className="text-lg leading-none">💳</span>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold truncate">Hạng mục TT</p>
+            <p className={`text-sm font-bold ${isSellerPaymentsTab ? "text-white" : "text-gray-800"}`}>
+              {sellerPaymentsCount}
+            </p>
+          </div>
+        </Link>
       </div>
 
       {/* Search + Date filter */}
@@ -242,8 +285,8 @@ export default async function AdminOrdersPage({
         preserveParams={["status", "orderType", "limit"]}
       />
 
-      {/* Status filter chips */}
-      <div className="flex items-center gap-2 flex-wrap">
+      {/* Status filter chips — chỉ hiện khi không ở tab Hạng mục TT */}
+      {!isSellerPaymentsTab && <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-gray-400 font-medium mr-1">Trạng thái:</span>
         {[
           { key: "", label: "Tất cả" },
@@ -264,10 +307,10 @@ export default async function AdminOrdersPage({
             {label}
           </Link>
         ))}
-      </div>
+      </div>}
 
-      {/* Table */}
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+      {/* Bảng đơn hàng thường */}
+      {!isSellerPaymentsTab && <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
         <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-sm font-semibold text-gray-700">
@@ -375,9 +418,9 @@ export default async function AdminOrdersPage({
             </tbody>
           </table>
         </div>
-      </div>
+      </div>}
 
-      {totalPages > 1 && (
+      {!isSellerPaymentsTab && totalPages > 1 && (
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -392,6 +435,68 @@ export default async function AdminOrdersPage({
           }}
         />
       )}
+
+      {/* Bảng hạng mục thanh toán — chỉ hiện khi chọn tab Hạng mục TT */}
+      {isSellerPaymentsTab && <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">Hạng mục thanh toán</h2>
+            <p className="text-[10px] text-gray-400 mt-0.5">Đăng ký bán hàng · Mua slot gian hàng · Seller kí quỹ — {periodLabel}</p>
+          </div>
+          <span className="px-2.5 py-1 rounded-lg bg-gray-100 text-xs font-semibold text-gray-600">
+            {sellerPayments.length} giao dịch
+          </span>
+        </div>
+        {sellerPayments.length === 0 ? (
+          <div className="px-5 py-12 text-center">
+            <p className="text-3xl mb-2">💳</p>
+            <p className="text-sm text-gray-500">Không có giao dịch nào trong khoảng thời gian này</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px]">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Hạng mục</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Người dùng</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Mô tả</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Số tiền</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Thời gian</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {sellerPayments.map((tx) => {
+                  const meta = SELLER_TX_META[tx.type] ?? { label: tx.type, icon: "💳", color: "text-gray-600" };
+                  return (
+                    <tr key={tx.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3.5">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                          tx.type === "SELLER_REGISTRATION"  ? "bg-[#7C3AED]/10 text-[#7C3AED]" :
+                          tx.type === "SELLER_SLOT_PURCHASE" ? "bg-[#2563eb]/10 text-[#2563eb]" :
+                          "bg-[#F59E0B]/10 text-[#F59E0B]"
+                        }`}>
+                          {meta.icon} {meta.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <p className="text-xs font-medium text-gray-700 truncate max-w-[160px]">{tx.user.fullName || "—"}</p>
+                        <p className="text-[10px] text-gray-400 font-mono truncate max-w-[160px]">{tx.user.email}</p>
+                      </td>
+                      <td className="px-4 py-3.5 max-w-[240px]">
+                        <p className="text-xs text-gray-600 truncate">{tx.description || "—"}</p>
+                      </td>
+                      <td className="px-4 py-3.5 text-right">
+                        <p className={`text-sm font-bold ${meta.color}`}>{formatVnd(Math.abs(Number(tx.amount)))}</p>
+                      </td>
+                      <td className="px-4 py-3.5 text-xs text-gray-500">{formatDate(tx.createdAt)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>}
     </div>
   );
 }

@@ -3,6 +3,14 @@
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { r2Url } from "@/lib/utils/image-url";
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 
 const SVGL_PRESETS = [
   { name: "Facebook",    icon: "https://svgl.app/library/facebook-icon.svg" },
@@ -38,21 +46,73 @@ interface Props {
 
 const inputCls = "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none";
 
+function SortableItem({
+  cat, onEdit, onDelete, loading,
+}: {
+  cat: Category;
+  onEdit: (cat: Category) => void;
+  onDelete: (id: string, name: string) => void;
+  loading: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: cat.id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 px-4 py-3 transition-colors ${isDragging ? "bg-violet-50 shadow-md z-10 relative" : "hover:bg-gray-50"}`}
+    >
+      <button type="button" {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0 touch-none">
+        <GripVertical size={15} />
+      </button>
+      <div className="w-7 h-7 rounded-full bg-[#7C3AED]/10 border border-[#7C3AED]/25 flex items-center justify-center shrink-0">
+        <span className="text-[11px] font-bold text-[#7C3AED]">{cat.displayOrder}</span>
+      </div>
+      <div className="w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center shrink-0 p-1">
+        {cat.icon && cat.icon.startsWith("http") ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={r2Url(cat.icon)} alt={cat.name} className="w-full h-full object-contain" />
+        ) : (
+          <span className="text-lg">📁</span>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900">{cat.name}</p>
+        <p className="text-[10px] text-gray-400 truncate">{cat.icon || "Chưa có icon"}</p>
+      </div>
+      <div className="flex gap-2 shrink-0">
+        <button type="button" onClick={() => onEdit(cat)} className="text-xs text-[#7C3AED] hover:text-[#A855F7] transition-colors">
+          Sửa
+        </button>
+        <button type="button" onClick={() => onDelete(cat.id, cat.name)} disabled={loading} className="text-xs text-[#EF4444] hover:text-red-700 disabled:opacity-50 transition-colors">
+          Xóa
+        </button>
+      </div>
+    </li>
+  );
+}
+
 export default function CourseCategoryManager({ initialCategories }: Props) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const [categories, setCategories] = useState<Category[]>(
+    [...initialCategories].sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name))
+  );
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [reordering, setReordering] = useState(false);
   const [error, setError] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   function startEdit(cat: Category) {
     setEditingId(cat.id);
@@ -73,14 +133,8 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
   const uploadFile = useCallback(async (file: File) => {
     setUploadError("");
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
-    if (!allowed.includes(file.type)) {
-      setUploadError("Chỉ chấp nhận JPG, PNG, WebP, GIF, SVG");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError("File quá lớn, tối đa 5 MB");
-      return;
-    }
+    if (!allowed.includes(file.type)) { setUploadError("Chỉ chấp nhận JPG, PNG, WebP, GIF, SVG"); return; }
+    if (file.size > 5 * 1024 * 1024) { setUploadError("File quá lớn, tối đa 5 MB"); return; }
     const fd = new FormData();
     fd.append("file", file);
     setUploading(true);
@@ -142,7 +196,6 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
       if (!res.ok || !json.success) { setError(json.error ?? "Lưu thất bại"); return; }
       router.refresh();
       cancelEdit();
-      // Optimistic update
       if (editingId) {
         setCategories((prev) => prev.map((c) => c.id === editingId ? (json.data ?? c) : c));
       } else {
@@ -164,6 +217,28 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
       router.refresh();
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = categories.findIndex((c) => c.id === active.id);
+    const newIndex = categories.findIndex((c) => c.id === over.id);
+    const reordered = arrayMove(categories, oldIndex, newIndex).map((c, i) => ({ ...c, displayOrder: i + 1 }));
+    setCategories(reordered);
+
+    setReordering(true);
+    try {
+      await fetch("/api/admin/course-categories/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: reordered.map(({ id, displayOrder }) => ({ id, displayOrder })) }),
+      });
+      router.refresh();
+    } finally {
+      setReordering(false);
     }
   }
 
@@ -199,7 +274,6 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
           />
         </div>
 
-        {/* Icon preview */}
         {icon && (
           <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -213,7 +287,6 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
           </div>
         )}
 
-        {/* Upload ảnh */}
         <div>
           <label className="block text-xs text-gray-500 mb-1.5">Upload ảnh icon</label>
           <div
@@ -239,7 +312,6 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
           <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" className="hidden" onChange={handleFileChange} />
         </div>
 
-        {/* Import từ URL */}
         <div>
           <label className="block text-xs text-gray-500 mb-1.5">Import từ URL (svgl.app, URL ảnh...)</label>
           <div className="flex gap-2">
@@ -262,7 +334,6 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
           <p className="mt-1 text-[10px] text-gray-400">Hệ thống sẽ tải ảnh về server, không dùng URL ngoài trực tiếp.</p>
         </div>
 
-        {/* Icon URL trực tiếp */}
         <div>
           <label className="block text-xs text-gray-500 mb-1.5">Hoặc nhập URL icon trực tiếp</label>
           <div className="flex gap-2 items-center">
@@ -282,7 +353,6 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
 
         {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
 
-        {/* Preset icons từ svgl.app */}
         <div>
           <p className="text-xs text-gray-500 mb-2">Chọn nhanh icon svgl.app:</p>
           <div className="flex flex-wrap gap-2">
@@ -300,7 +370,7 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={r2Url(p.icon)} alt={p.name} className="w-6 h-6 object-contain" />
-                <span className="text-[9px] text-gray-500 max-w-[48px] truncate">{p.name}</span>
+                <span className="text-[9px] text-gray-500 max-w-12 truncate">{p.name}</span>
               </button>
             ))}
           </div>
@@ -333,55 +403,22 @@ export default function CourseCategoryManager({ initialCategories }: Props) {
       {/* ── Cột phải: Danh sách (4/10) ── */}
       <div className="lg:col-span-4 lg:sticky lg:top-4">
       <section className="rounded-xl border border-gray-200 overflow-hidden">
-        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
           <p className="text-sm font-semibold text-gray-900">Danh sách danh mục ({categories.length})</p>
+          {reordering && <span className="text-[10px] text-violet-500 animate-pulse">Đang lưu...</span>}
         </div>
         {categories.length === 0 ? (
           <div className="px-4 py-8 text-center text-sm text-gray-500">Chưa có danh mục nào</div>
         ) : (
-          <ul className="divide-y divide-gray-100">
-            {categories
-              .slice()
-              .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name))
-              .map((cat) => (
-                <li key={cat.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
-                  {/* Số thứ tự */}
-                  <div className="w-7 h-7 rounded-full bg-[#7C3AED]/10 border border-[#7C3AED]/25 flex items-center justify-center shrink-0">
-                    <span className="text-[11px] font-bold text-[#7C3AED]">{cat.displayOrder}</span>
-                  </div>
-                  {/* Icon */}
-                  <div className="w-8 h-8 rounded-lg border border-gray-200 bg-white flex items-center justify-center shrink-0 p-1">
-                    {cat.icon && cat.icon.startsWith("http") ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={r2Url(cat.icon)} alt={cat.name} className="w-full h-full object-contain" />
-                    ) : (
-                      <span className="text-lg">📁</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{cat.name}</p>
-                    <p className="text-[10px] text-gray-400 truncate">{cat.icon || "Chưa có icon"}</p>
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => startEdit(cat)}
-                      className="text-xs text-[#7C3AED] hover:text-[#A855F7] transition-colors"
-                    >
-                      Sửa
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(cat.id, cat.name)}
-                      disabled={loading}
-                      className="text-xs text-[#EF4444] hover:text-red-700 disabled:opacity-50 transition-colors"
-                    >
-                      Xóa
-                    </button>
-                  </div>
-                </li>
-              ))}
-          </ul>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => void handleDragEnd(e)}>
+            <SortableContext items={categories.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+              <ul className="divide-y divide-gray-100">
+                {categories.map((cat) => (
+                  <SortableItem key={cat.id} cat={cat} onEdit={startEdit} onDelete={handleDelete} loading={loading} />
+                ))}
+              </ul>
+            </SortableContext>
+          </DndContext>
         )}
       </section>
       </div>

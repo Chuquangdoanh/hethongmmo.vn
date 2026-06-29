@@ -61,19 +61,18 @@ export default async function AdminDashboardPage({
 
   // ── Queries ─────────────────────────────────────────────────────────
   const [
-    totalUsers, newUsersToday, totalOrders, ordersToday,
+    totalOrders, ordersToday,
     pendingWithdrawals, openComplaints,
     totalDeposits, depositsPeriod,
-    recentOrders, recentUsers,
+    recentOrders,
     withdrawalPeriod,
     sellerRevenuePeriod,
     approvedSellerCount,
     pendingWithdrawalAmount,
     revenueByType,
     refundPeriod,
+    totalBalanceOnWeb,
   ] = await Promise.all([
-    prisma.user.count({ where: { deletedAt: null } }),
-    prisma.user.count({ where: { createdAt: { gte: todayDate }, deletedAt: null } }),
     prisma.order.count(),
     prisma.order.count({ where: { createdAt: { gte: todayDate } } }),
     prisma.sellerWithdrawal.count({ where: { status: "PENDING", createdAt: { gte: periodStart, lt: periodEnd } } }),
@@ -93,10 +92,6 @@ export default async function AdminDashboardPage({
         status: true, createdAt: true,
         user: { select: { email: true } },
       },
-    }),
-    prisma.user.findMany({
-      orderBy: { createdAt: "desc" }, take: 5, where: { deletedAt: null },
-      select: { id: true, email: true, fullName: true, role: true, createdAt: true },
     }),
     prisma.sellerWithdrawal.aggregate({
       where: {
@@ -129,6 +124,10 @@ export default async function AdminDashboardPage({
       where: { type: "REFUND", createdAt: { gte: periodStart, lt: periodEnd } },
       _sum: { amount: true },
       _count: { id: true },
+    }),
+    prisma.user.aggregate({
+      where: { deletedAt: null },
+      _sum: { balance: true },
     }),
   ]);
 
@@ -267,10 +266,10 @@ export default async function AdminDashboardPage({
   // ── Stats cards ──────────────────────────────────────────────────────
   const STATS = [
     {
-      label: "Tổng người dùng",
-      value: totalUsers.toLocaleString("vi-VN"),
-      sub:   `+${newUsersToday} hôm nay`,
-      color: "text-gray-900",
+      label: "Tổng đơn hàng",
+      value: totalOrders.toLocaleString("vi-VN"),
+      sub:   `+${ordersToday} hôm nay`,
+      color: "text-[#A855F7]",
     },
     {
       label: "Nạp tiền",
@@ -279,10 +278,10 @@ export default async function AdminDashboardPage({
       color: "text-[#10B981]",
     },
     {
-      label: "Tổng đơn hàng",
-      value: totalOrders.toLocaleString("vi-VN"),
-      sub:   `+${ordersToday} hôm nay`,
-      color: "text-[#A855F7]",
+      label: "Tổng tiền trên web",
+      value: formatVnd(Number(totalBalanceOnWeb._sum.balance ?? 0)),
+      sub:   "Tổng balance user hiện tại",
+      color: "text-[#2563eb]",
     },
     {
       label: "Rút chờ duyệt",
@@ -376,43 +375,22 @@ export default async function AdminDashboardPage({
         isSingleDay={isSingleDay}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Recent orders */}
-        <div className="rounded-xl border border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-900">Đơn hàng gần đây</h2>
-            <Link href="/admin/orders" className="text-xs text-[#7C3AED] hover:text-[#A855F7]">Tất cả →</Link>
-          </div>
-          {recentOrders.map((order, i) => (
-            <div key={order.id} className={`flex items-center gap-3 px-5 py-3 ${i !== 0 ? "border-t border-gray-200" : ""}`}>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-900 truncate">{order.itemName}</p>
-                <p className="text-[10px] text-gray-500">{order.user.email} · {formatDate(order.createdAt)}</p>
-              </div>
-              <span className="text-xs text-[#A855F7] shrink-0">{formatVnd(Number(order.finalPrice))}</span>
-            </div>
-          ))}
+      {/* Recent orders — full width */}
+      <div className="rounded-xl border border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+          <h2 className="text-sm font-semibold text-gray-900">Đơn hàng gần đây</h2>
+          <Link href="/admin/orders" className="text-xs text-[#7C3AED] hover:text-[#A855F7]">Tất cả →</Link>
         </div>
+        {recentOrders.map((order, i) => (
+          <div key={order.id} className={`flex items-center gap-3 px-5 py-3 ${i !== 0 ? "border-t border-gray-200" : ""}`}>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-900 truncate">{order.itemName}</p>
+              <p className="text-[10px] text-gray-500">{order.user.email} · {formatDate(order.createdAt)}</p>
+            </div>
+            <span className="text-xs text-[#A855F7] shrink-0">{formatVnd(Number(order.finalPrice))}</span>
+          </div>
+        ))}
 
-        {/* Recent users */}
-        <div className="rounded-xl border border-gray-200 bg-gray-50">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-            <h2 className="text-sm font-semibold text-gray-900">Người dùng mới</h2>
-            <Link href="/admin/users" className="text-xs text-[#7C3AED] hover:text-[#A855F7]">Tất cả →</Link>
-          </div>
-          {recentUsers.map((u, i) => (
-            <div key={u.id} className={`flex items-center gap-3 px-5 py-3 ${i !== 0 ? "border-t border-gray-200" : ""}`}>
-              <div className="h-7 w-7 rounded-full bg-[#7C3AED]/20 flex items-center justify-center text-[#A855F7] text-xs font-bold shrink-0">
-                {(u.fullName || u.email).slice(0, 2).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-900 truncate">{u.fullName}</p>
-                <p className="text-[10px] text-gray-500 truncate">{u.email}</p>
-              </div>
-              <span className="text-[10px] text-gray-500 shrink-0">{formatDate(u.createdAt)}</span>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
