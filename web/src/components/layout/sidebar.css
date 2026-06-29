@@ -245,6 +245,20 @@ html.sb-collapsed .sb-collapse-btn { justify-content: center; }
   align-items: center;
   justify-content: center;
 }
+.sb-hot-badge {
+  flex-shrink: 0;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* ── Service accordion toggle ─────────────────────────────────── */
 .sb-svc-toggle {

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { PUBLIC_PAGES } from "@/lib/page-registry";
+import { invalidateVisibilityCache } from "@/lib/utils/public-page-guard";
 
 export interface PublicPageConfigEntry {
   pageKey: string;
@@ -69,4 +70,8 @@ export async function savePublicPageConfigs(
       }),
     ),
   );
+  // Xóa cache guardPublicPage để trang hiện ngay khi bật lại — không cần chờ 5 phút
+  for (const cfg of configs) {
+    invalidateVisibilityCache(cfg.pageKey);
+  }
 }

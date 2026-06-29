@@ -22,8 +22,10 @@ export default async function Sidebar() {
   const telegramCommunityUrl = contactCms.quickButtons?.find((b) => b.id === "telegram")?.href ?? "https://t.me/BossMeta789";
   const sessionUser = session?.user as AuthenticatedUser | undefined;
 
-  const hiddenSet = new Set(pageConfigs.filter((p) => !p.isVisible).map((p) => p.pageKey));
-  const isPageVisible = (href: string) => !hiddenSet.has(href.replace(/^\//, ""));
+  const hiddenSet   = new Set(pageConfigs.filter((p) => !p.isVisible).map((p) => p.pageKey));
+  const featuredSet = new Set(pageConfigs.filter((p) => p.isFeatured).map((p) => p.pageKey));
+  const isPageVisible  = (href: string) => !hiddenSet.has(href.replace(/^\//, ""));
+  const isFeaturedPage = (href: string) => featuredSet.has(href.replace(/^\//, ""));
   const navLabel = (href: string) => NAV_LINKS.find((l) => l.href === href)?.label ?? href;
 
   const isSeller = !!sessionUser && (
@@ -95,12 +97,12 @@ export default async function Sidebar() {
   };
 
   const systemItems: SidebarNavItem[] = [
-    ...(isPageVisible("khoa-hoc")       ? [{ href: "/khoa-hoc",       label: navLabel("/khoa-hoc"),       icon: iconBadge("/khoa-hoc") }] : []),
-    ...(isPageVisible("tut-tricks")     ? [{ href: "/tut-tricks",     label: navLabel("/tut-tricks"),     icon: iconBadge("/tut-tricks") }] : []),
-    ...(isPageVisible("kho-tai-nguyen") ? [{ href: "/kho-tai-nguyen", label: navLabel("/kho-tai-nguyen"), icon: iconBadge("/kho-tai-nguyen") }] : []),
-    ...(isPageVisible("tai-nguyen-mmo") ? [{ href: "/tai-nguyen-mmo", label: navLabel("/tai-nguyen-mmo"), icon: iconBadge("/tai-nguyen-mmo") }] : []),
-    ...(isPageVisible("quang-cao")      ? [{ href: "/quang-cao",      label: navLabel("/quang-cao"),      icon: iconBadge("/quang-cao") }] : []),
-    ...(isPageVisible("NetWorks")       ? [{ href: "/NetWorks",       label: navLabel("/NetWorks"),       icon: iconBadge("/NetWorks") }] : []),
+    ...(isPageVisible("khoa-hoc")       ? [{ href: "/khoa-hoc",       label: navLabel("/khoa-hoc"),       icon: iconBadge("/khoa-hoc"),       isFeatured: isFeaturedPage("/khoa-hoc") }]       : []),
+    ...(isPageVisible("tut-tricks")     ? [{ href: "/tut-tricks",     label: navLabel("/tut-tricks"),     icon: iconBadge("/tut-tricks"),     isFeatured: isFeaturedPage("/tut-tricks") }]     : []),
+    ...(isPageVisible("kho-tai-nguyen") ? [{ href: "/kho-tai-nguyen", label: navLabel("/kho-tai-nguyen"), icon: iconBadge("/kho-tai-nguyen"), isFeatured: isFeaturedPage("/kho-tai-nguyen") }] : []),
+    ...(isPageVisible("tai-nguyen-mmo") ? [{ href: "/tai-nguyen-mmo", label: navLabel("/tai-nguyen-mmo"), icon: iconBadge("/tai-nguyen-mmo"), isFeatured: isFeaturedPage("/tai-nguyen-mmo") }] : []),
+    ...(isPageVisible("quang-cao")      ? [{ href: "/quang-cao",      label: navLabel("/quang-cao"),      icon: iconBadge("/quang-cao"),      isFeatured: isFeaturedPage("/quang-cao") }]      : []),
+    ...(isPageVisible("NetWorks")       ? [{ href: "/NetWorks",       label: navLabel("/NetWorks"),       icon: iconBadge("/NetWorks"),       isFeatured: isFeaturedPage("/NetWorks") }]       : []),
     ...(sessionUser ? [{
       href: isSeller ? "/ban-hang" : "/dang-ky-ban-hang",
       label: "Mở Gian Hàng",

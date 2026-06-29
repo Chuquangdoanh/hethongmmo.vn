@@ -12,6 +12,7 @@ export interface SidebarNavItem {
   badge?: number;
   external?: boolean;
   exact?: boolean;
+  isFeatured?: boolean;
 }
 
 export interface SidebarNavGroup {
@@ -66,6 +67,7 @@ export default function SidebarNav({ homeItem, groups, serviceAccordion }: Props
               >
                 {item.icon && <span className="sb-link-icon">{item.icon}</span>}
                 <span className="sb-label sb-link-text">{item.label}</span>
+                {item.isFeatured && <span className="sb-hot-badge sb-label">HOT</span>}
                 {!!item.badge && <span className="sb-badge sb-label">{item.badge}</span>}
               </Link>
             ))}
