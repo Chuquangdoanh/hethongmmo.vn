@@ -216,6 +216,11 @@ jobs:
               done
               echo "✅ Container healthy sau ${ELAPSED}s"
 
+              # Reload nginx để flush DNS cache về container web mới
+              # (nginx cache upstream IP lúc start — sau docker rm -f + recreate web, IP đổi)
+              docker compose up -d --force-recreate nginx
+              sleep 3
+
               # Smoke test qua 127.0.0.1 → nginx → Next.js (bypass Cloudflare)
               echo "🔍 Smoke test..."
 
@@ -264,9 +269,14 @@ jobs:
 
             # Recreate nginx để bind mount lấy inode mới từ SCP (sed -i / scp tạo inode mới,
             # nginx -s reload đọc inode cũ — phải force-recreate để fix)
+            # Nếu app thay đổi: nginx đã được recreate trước smoke test → chỉ cần recreate khi infra thay đổi
             echo "=== nginx.conf frame-src hiện tại trên server ==="
             grep "frame-src" /opt/hethongmmo/infra/nginx/nginx.conf || echo "(không tìm thấy frame-src)"
-            docker compose up -d --force-recreate nginx
-            echo "✅ Nginx recreated: $(date)"
+            if [ "${{ needs.changes.outputs.app }}" != "true" ]; then
+              docker compose up -d --force-recreate nginx
+              echo "✅ Nginx recreated: $(date)"
+            else
+              echo "✅ Nginx đã recreate trước smoke test"
+            fi
 
             echo "✅ Deploy xong: $(date)"
