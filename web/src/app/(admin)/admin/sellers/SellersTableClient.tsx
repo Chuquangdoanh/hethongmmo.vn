@@ -19,6 +19,7 @@ export interface SellerRowData {
   productUsed: number;
   productMax: number;
   revenue: number;
+  escrowAmount: number;
   avgRating: number;
   reviewCount: number;
   shopLocked: boolean;
@@ -147,6 +148,7 @@ export default function SellersTableClient({ rows, revenueSortHref, ratingSortHr
                     </span>
                   </Link>
                 </th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 whitespace-nowrap">Kí quỹ</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">
                   <Link
                     href={ratingSortHref}
@@ -165,7 +167,7 @@ export default function SellersTableClient({ rows, revenueSortHref, ratingSortHr
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-4 py-16 text-center">
+                  <td colSpan={12} className="px-4 py-16 text-center">
                     <p className="text-sm text-gray-500">Không có dữ liệu</p>
                   </td>
                 </tr>
@@ -238,6 +240,15 @@ export default function SellersTableClient({ rows, revenueSortHref, ratingSortHr
                     <td className="px-4 py-3 text-right">
                       {isApproved ? (
                         <span className="text-sm font-semibold text-emerald-700">{formatVnd(r.revenue)}</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {isApproved ? (
+                        <span className={`text-sm font-semibold ${r.escrowAmount > 0 ? "text-[#F59E0B]" : "text-gray-400"}`}>
+                          {r.escrowAmount > 0 ? formatVnd(r.escrowAmount) : "—"}
+                        </span>
                       ) : (
                         <span className="text-xs text-gray-400">—</span>
                       )}

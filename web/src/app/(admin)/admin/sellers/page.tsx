@@ -79,14 +79,14 @@ export default async function AdminSellersPage({
 
   // Revenue sort: fetch ALL matching requests, sort in-memory, then paginate
   let requests: Awaited<ReturnType<typeof prisma.sellerRequest.findMany<{
-    include: { user: { select: { id: true; email: true; fullName: true; sellerTier: true } } }
+    include: { user: { select: { id: true; email: true; fullName: true; sellerTier: true; sellerEscrow: true } } }
   }>>>;
   let total: number;
 
   if (activeSort) {
     const allRequests = await prisma.sellerRequest.findMany({
       where,
-      include: { user: { select: { id: true, email: true, fullName: true, sellerTier: true } } },
+      include: { user: { select: { id: true, email: true, fullName: true, sellerTier: true, sellerEscrow: true } } },
     });
     const allUserIds = allRequests.map((r) => r.userId);
 
@@ -132,7 +132,7 @@ export default async function AdminSellersPage({
         orderBy: { createdAt: "desc" },
         skip: (currentPage - 1) * PAGE_SIZE,
         take: PAGE_SIZE,
-        include: { user: { select: { id: true, email: true, fullName: true, sellerTier: true } } },
+        include: { user: { select: { id: true, email: true, fullName: true, sellerTier: true, sellerEscrow: true } } },
       }),
       prisma.sellerRequest.count({ where }),
     ]);
@@ -209,6 +209,7 @@ export default async function AdminSellersPage({
       productUsed:  productCountMap.get(r.userId) ?? 0,
       productMax:   maxProductsMap.get(r.userId) ?? 3,
       revenue:      revenueMap.get(r.userId) ?? 0,
+      escrowAmount: Number(r.user.sellerEscrow ?? 0),
       avgRating:    rt?.avg ?? 0,
       reviewCount:  rt?.count ?? 0,
       shopLocked:   shopLockMap.get(r.userId) ?? false,

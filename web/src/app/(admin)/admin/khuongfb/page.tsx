@@ -279,8 +279,8 @@ export default function KhuongfbAdminPage() {
         </div>
       )}
 
-      {/* Bảng sản phẩm */}
-      {loading ? (
+      {/* Bảng sản phẩm — chỉ unmount khi load lần đầu (products rỗng), còn refresh giữ nguyên để không mất expandedId */}
+      {loading && products.length === 0 ? (
         <div className="text-center py-16 text-gray-400">Đang tải...</div>
       ) : (
         <KhuongfbProductTable

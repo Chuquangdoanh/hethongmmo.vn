@@ -47,11 +47,17 @@ pnpm prisma migrate dev --name <mô-tả-ngắn>
 # Ví dụ: pnpm prisma migrate dev --name add-avatar-url-to-users
 ```
 
+> ⚠️ **BẮT BUỘC dùng `migrate dev`, KHÔNG dùng `db push`**
+> - `prisma db push` chỉ apply vào local DB, KHÔNG tạo migration file
+> - Nếu dùng `db push`: VPS production sẽ thiếu column/table → lỗi INTERNAL_ERROR khi deploy
+> - `migrate dev` = tạo file + apply local + generate client — commit file này lên git là VPS tự chạy khi deploy
+
 > **KHÔNG** dùng `migrate dev` trên production. Dùng `migrate deploy`.
 
 ### Bước 3: Regenerate Prisma Client
 ```bash
 pnpm prisma generate
+# (migrate dev đã tự chạy generate — bước này chỉ cần khi dùng migrate resolve)
 ```
 
 ### Bước 4: TypeScript check
