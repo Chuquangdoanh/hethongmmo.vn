@@ -17,8 +17,9 @@ export async function GET(
     const me = requireUser(session);
     const { id } = await params;
 
+    const isStaff = me.role === "STAFF" || me.role === "ADMIN";
     const order = await prisma.order.findFirst({
-      where: { id, userId: me.id },
+      where: isStaff ? { id } : { id, userId: me.id },
       select: { orderType: true, externalOrderId: true, status: true },
     });
 

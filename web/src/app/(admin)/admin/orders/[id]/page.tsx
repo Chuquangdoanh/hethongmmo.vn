@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import OrderStatusForm from "./OrderStatusForm";
+import KfbStatusChecker from "./KfbStatusChecker";
 
 export const metadata: Metadata = { title: "Chi tiết đơn hàng" };
 
@@ -40,7 +41,7 @@ export default async function AdminOrderDetailPage({
       id: true, orderCode: true, orderType: true, itemName: true,
       originalPrice: true, finalPrice: true, warrantyVariant: true,
       paymentMethod: true, status: true, customerNote: true,
-      createdAt: true, completedAt: true,
+      createdAt: true, completedAt: true, externalOrderId: true,
       user: { select: { id: true, email: true, fullName: true } },
       transactions: {
         orderBy: { createdAt: "desc" },
@@ -148,6 +149,21 @@ export default async function AdminOrderDetailPage({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+          {/* Nội dung đơn Khuongfb */}
+          {order.orderType === "KHUONGFB_PRODUCT" && (
+            <div className="rounded-xl border border-emerald-200 bg-white overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-emerald-100 bg-emerald-50">
+                <h2 className="text-sm font-semibold text-emerald-700">Chi tiết đơn Khuongfb</h2>
+              </div>
+              <div className="px-5 py-4">
+                {order.externalOrderId ? (
+                  <KfbStatusChecker orderId={order.id} transId={order.externalOrderId} />
+                ) : (
+                  <p className="text-xs text-gray-500">Chưa có mã giao dịch Khuongfb — đơn có thể đang xử lý hoặc đã bị hoàn tiền.</p>
+                )}
               </div>
             </div>
           )}

@@ -28,7 +28,7 @@ const STATUS_STYLES: Record<string, { label: string; cls: string }> = {
 const TAB_TYPES = {
   khoahoc:   ["COURSE"] as never[],
   tuttrick:  ["TUTTRICK"] as never[],
-  tainguyen: ["MMO_PRODUCT", "SELLER_PRODUCT"] as never[],
+  tainguyen: ["MMO_PRODUCT", "SELLER_PRODUCT", "KHUONGFB_PRODUCT"] as never[],
   dichvu:    ["SERVICE"] as never[],
 };
 
@@ -94,7 +94,7 @@ export default async function DonHangPage({
     prisma.order.count({ where: { userId: me.id, orderType: "COURSE" as never } }),
     prisma.order.count({ where: { userId: me.id, orderType: "SERVICE" as never } }),
     prisma.order.count({ where: { userId: me.id, orderType: "TUTTRICK" as never, createdAt: { gte: sevenDaysAgo } } }),
-    prisma.order.count({ where: { userId: me.id, orderType: { in: ["MMO_PRODUCT", "SELLER_PRODUCT"] as never[] }, createdAt: { gte: sevenDaysAgo } } }),
+    prisma.order.count({ where: { userId: me.id, orderType: { in: ["MMO_PRODUCT", "SELLER_PRODUCT", "KHUONGFB_PRODUCT"] as never[] }, createdAt: { gte: sevenDaysAgo } } }),
   ]);
 
   if (!user) redirect("/");
