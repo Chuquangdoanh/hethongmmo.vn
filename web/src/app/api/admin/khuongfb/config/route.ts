@@ -6,6 +6,7 @@ import { writeAuditLog } from "@/lib/security/audit";
 import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
 import { z } from "zod";
 import { invalidateKhuongfbConfigCache } from "@/lib/khuongfb/client";
+import { KHUONGFB_BASE_URL } from "@/lib/khuongfb/constants";
 
 export const runtime = "nodejs";
 
@@ -25,7 +26,7 @@ export async function GET(): Promise<NextResponse> {
     const val = record?.value as { baseUrl?: string; apiKey?: string } | null;
 
     return apiOk({
-      baseUrl: val?.baseUrl ?? process.env.KHUONGFB_BASE_URL ?? "https://tainguyentesla.com/api",
+      baseUrl: val?.baseUrl ?? process.env.KHUONGFB_BASE_URL ?? KHUONGFB_BASE_URL,
       // Mask API key — chỉ trả về 8 ký tự đầu
       apiKeyMasked: val?.apiKey
         ? val.apiKey.slice(0, 8) + "••••••••"

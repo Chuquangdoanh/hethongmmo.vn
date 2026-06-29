@@ -4,9 +4,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import { decrypt } from "@/lib/security/encryption";
-import { khuongfbGetOrder } from "@/lib/khuongfb/client";
 import OrderStatusForm from "@/app/(admin)/admin/orders/[id]/OrderStatusForm";
 import CopyButton from "@/components/shared/CopyButton";
+import KfbLiveStatus from "./KfbLiveStatus";
 
 export const metadata: Metadata = { title: "Chi tiết đơn — Bán tài nguyên" };
 
@@ -31,16 +31,6 @@ const TX_TYPE_LABELS: Record<string, string> = {
   REFUND:               "Hoàn tiền",
 };
 
-const KFB_STATUS_LABELS: Record<string, string> = {
-  pending:     "Chờ xử lý",
-  processing:  "Đang xử lý",
-  in_progress: "Đang thực hiện",
-  completed:   "Hoàn thành",
-  partial:     "Hoàn thành một phần",
-  canceled:    "Đã hủy",
-  cancelled:   "Đã hủy",
-  error:       "Lỗi",
-};
 
 export default async function BanTaiNguyenDetailPage({
   params,
@@ -56,7 +46,7 @@ export default async function BanTaiNguyenDetailPage({
       originalPrice: true, finalPrice: true,
       status: true, customerNote: true, externalOrderId: true, externalSource: true,
       createdAt: true, completedAt: true,
-      deliveredItemId: true,
+      deliveredItemId: true, kfbData: true,
       user: { select: { id: true, email: true, fullName: true } },
       transactions: {
         orderBy: { createdAt: "desc" },
@@ -68,9 +58,8 @@ export default async function BanTaiNguyenDetailPage({
 
   if (!order) notFound();
 
-  // ── Fetch nội dung đã giao ────────────────────────────────────────────────
+  // ── Fetch nội dung đã giao (MMO / Seller) ────────────────────────────────
   let deliveredContent: string | null = null;
-  let kfbStatus: { status?: string; remains?: number; charge?: string | number } | null = null;
 
   if (order.status === "DONE" && order.deliveredItemId) {
     if (order.orderType === "MMO_PRODUCT") {
@@ -85,15 +74,6 @@ export default async function BanTaiNguyenDetailPage({
         select: { contentEnc: true },
       });
       if (stock) deliveredContent = decrypt(stock.contentEnc as unknown as Buffer);
-    }
-  }
-
-  if (order.status === "DONE" && order.orderType === "KHUONGFB_PRODUCT" && order.externalOrderId) {
-    try {
-      const res = await khuongfbGetOrder(order.externalOrderId);
-      kfbStatus = res.data ?? null;
-    } catch {
-      // silent — hiển thị fallback
     }
   }
 
@@ -159,52 +139,76 @@ export default async function BanTaiNguyenDetailPage({
           )}
 
           {/* Nội dung đã giao — KFB */}
-          {order.orderType === "KHUONGFB_PRODUCT" && order.externalOrderId && (
+          {order.orderType === "KHUONGFB_PRODUCT" && (
             <div className="rounded-xl border border-[#0891b2]/25 bg-white overflow-hidden">
               <div className="px-5 py-3.5 border-b border-[#0891b2]/15 bg-[#0891b2]/5">
                 <h2 className="text-sm font-semibold text-[#0891b2]">Thông tin đơn Khuongfb</h2>
               </div>
-              <div className="px-5 py-4 space-y-4">
-                {/* Trans ID */}
-                <div>
-                  <p className="text-[11px] text-gray-400 mb-1.5">Mã giao dịch (trans_id)</p>
-                  <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
-                    <span className="flex-1 text-sm font-mono text-gray-800 break-all select-all">
-                      {order.externalOrderId}
-                    </span>
-                    <CopyButton text={order.externalOrderId} />
-                  </div>
-                </div>
+              <div className="px-5 py-4 space-y-3">
+                {order.kfbData && typeof order.kfbData === "object" &&
+                  Object.keys(order.kfbData as Record<string, unknown>).length > 0 ? (
+                  <>
+                    {/* Mã đơn hàng */}
+                    <div className="rounded-xl bg-white border border-gray-200 overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+                        <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Mã đơn hàng</span>
+                        <CopyButton text={order.orderCode} />
+                      </div>
+                      <div className="px-4 py-3">
+                        <p className="text-sm font-mono text-gray-900 break-all">{order.orderCode}</p>
+                      </div>
+                    </div>
+                    {/* Mã đơn ngoài (trans_id) — chỉ hiển thị cho admin */}
+                    {order.externalOrderId && (
+                      <div className="rounded-xl bg-white border border-gray-200 overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+                          <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Mã đơn ngoài</span>
+                          <CopyButton text={order.externalOrderId} />
+                        </div>
+                        <div className="px-4 py-3">
+                          <p className="text-sm font-mono text-gray-900 break-all">{order.externalOrderId}</p>
+                        </div>
+                      </div>
+                    )}
+                    {/* kfbData rows — map numeric keys to "Nội dung" */}
+                    {(() => {
+                      const entries = Object.entries(order.kfbData as Record<string, unknown>).filter(([, v]) => v != null && v !== "");
+                      const numericKeys = entries.filter(([k]) => /^\d+$/.test(k)).length;
+                      return entries.map(([k, v]) => {
+                        const label = /^\d+$/.test(k) ? (numericKeys > 1 ? `Chi tiết đơn hàng ${Number(k) + 1}` : "Chi tiết đơn hàng") : k;
+                        return (
+                          <div key={k} className="rounded-xl bg-white border border-gray-200 overflow-hidden">
+                            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+                              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">{label}</span>
+                              <CopyButton text={String(v)} />
+                            </div>
+                            <div className="px-4 py-3">
+                              <p className="text-sm font-mono text-gray-900 break-all leading-relaxed whitespace-pre-wrap">{String(v)}</p>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                    {/* Tổng tiền */}
+                    <div className="rounded-xl bg-white border border-gray-200 overflow-hidden">
+                      <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
+                        <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">Tổng tiền</span>
+                      </div>
+                      <div className="px-4 py-3">
+                        <p className="text-sm font-mono text-gray-900">{formatVnd(Number(order.finalPrice))}</p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs text-gray-400 italic">Chưa có dữ liệu nhận hàng từ Khuongfb.</p>
+                )}
 
-                {/* Live status từ Khuongfb */}
-                {kfbStatus ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {kfbStatus.status && (
-                      <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Trạng thái KFB</p>
-                        <p className="text-sm font-semibold text-gray-800">
-                          {KFB_STATUS_LABELS[kfbStatus.status.toLowerCase()] ?? kfbStatus.status}
-                        </p>
-                      </div>
-                    )}
-                    {kfbStatus.remains !== undefined && (
-                      <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Còn lại</p>
-                        <p className="text-sm font-semibold text-gray-800">
-                          {kfbStatus.remains.toLocaleString("vi-VN")}
-                        </p>
-                      </div>
-                    )}
-                    {kfbStatus.charge !== undefined && (
-                      <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
-                        <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-1">Chi phí</p>
-                        <p className="text-sm font-semibold text-gray-800">{kfbStatus.charge}</p>
-                      </div>
-                    )}
+                {/* Live status — client-side, không hiển thị trans_id */}
+                {order.externalOrderId && (
+                  <div className="pt-1 border-t border-gray-100">
+                    <KfbLiveStatus orderId={order.id} />
                   </div>
-                ) : order.status === "DONE" ? (
-                  <p className="text-xs text-gray-400 italic">Không lấy được trạng thái từ Khuongfb lúc này.</p>
-                ) : null}
+                )}
               </div>
             </div>
           )}

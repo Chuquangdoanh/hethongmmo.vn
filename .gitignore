@@ -52,3 +52,4 @@ redis_data/
 
 # Generated Prisma client
 web/src/generated/
+.claude/worktrees/

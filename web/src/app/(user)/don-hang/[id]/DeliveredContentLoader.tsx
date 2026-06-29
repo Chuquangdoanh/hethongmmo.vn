@@ -1,23 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Copy, Check, Download, RefreshCw } from "lucide-react";
+import { Copy, Check, Download, XCircle, CheckCircle2 } from "lucide-react";
+import { formatVnd } from "@/lib/utils/format";
 import CopyButton from "@/components/shared/CopyButton";
 import SafeHtml from "@/components/shared/SafeHtml";
 
 interface Props {
-  orderId: string;
-  orderType?: string;
+  orderId:     string;
+  orderType?:  string;
+  orderStatus?: string;
 }
 
 interface OrderData {
   deliveredContent?: string | null;
-  tutTrickDocs?: string | null;
-  orderCode?: string;
-  externalOrderId?: string | null;
+  tutTrickDocs?:     string | null;
+  orderCode?:        string;
+  externalOrderId?:  string | null;
+  kfbData?:          Record<string, unknown> | null;
+  finalPrice?:       number | null;
 }
 
-export default function DeliveredContentLoader({ orderId, orderType }: Props) {
+export default function DeliveredContentLoader({ orderId, orderType, orderStatus }: Props) {
   const [data, setData] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [copiedAll, setCopiedAll] = useState(false);
@@ -39,9 +43,15 @@ export default function DeliveredContentLoader({ orderId, orderType }: Props) {
   const content = data?.deliveredContent ?? null;
   const orderCode = data?.orderCode ?? orderId.slice(0, 8).toUpperCase();
 
-  // KhuongFB: hiển thị trans_id + nút tra cứu live
   if (orderType === "KHUONGFB_PRODUCT") {
-    return <KfbStatusBlock orderId={orderId} transId={data?.externalOrderId ?? null} orderCode={orderCode} />;
+    return (
+      <KfbStatusBlock
+        orderCode={orderCode}
+        storedKfbData={data?.kfbData ?? null}
+        finalPrice={data?.finalPrice ?? null}
+        orderStatus={orderStatus}
+      />
+    );
   }
 
   // TutTrick: link + docs
@@ -162,115 +172,90 @@ export default function DeliveredContentLoader({ orderId, orderType }: Props) {
   );
 }
 
-// ── KFB live status block ────────────────────────────────────────────────────
+// ── KFB order content block ──────────────────────────────────────────────────
 
-interface KfbData {
-  transId: string;
-  orderStatus: string;
-  kfb: {
-    status: string;
-    data?: {
-      trans_id?: string;
-      status?: string;
-      remains?: number;
-      start_count?: number;
-      charge?: string | number;
-    };
-  };
-}
+function KfbStatusBlock({
+  orderCode, storedKfbData, finalPrice, orderStatus,
+}: {
+  orderCode:     string;
+  storedKfbData: Record<string, unknown> | null;
+  finalPrice:    number | null;
+  orderStatus?:  string;
+}) {
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
-const KFB_STATUS_LABELS: Record<string, string> = {
-  pending:    "Chờ xử lý",
-  processing: "Đang xử lý",
-  in_progress:"Đang thực hiện",
-  completed:  "Hoàn thành",
-  partial:    "Hoàn thành một phần",
-  canceled:   "Đã hủy",
-  cancelled:  "Đã hủy",
-  error:      "Lỗi",
-};
-
-function KfbStatusBlock({ orderId, transId, orderCode }: { orderId: string; transId: string | null; orderCode: string }) {
-  const [kfbData, setKfbData]   = useState<KfbData | null>(null);
-  const [checking, setChecking] = useState(false);
-  const [err, setErr]           = useState<string | null>(null);
-
-  async function checkStatus() {
-    setChecking(true);
-    setErr(null);
-    try {
-      const res  = await fetch(`/api/orders/${orderId}/kfb-status`, { credentials: "include" });
-      const json = await res.json() as { success: boolean; data?: KfbData; error?: string };
-      if (!res.ok || !json.data) {
-        setErr(json.error ?? "Không thể tra cứu trạng thái");
-        return;
-      }
-      setKfbData(json.data);
-    } catch {
-      setErr("Lỗi kết nối, thử lại sau.");
-    } finally {
-      setChecking(false);
-    }
+  async function copyItem(text: string, idx: number) {
+    await navigator.clipboard.writeText(text);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 2000);
   }
 
-  if (!transId) {
-    return <p className="text-xs text-gray-500">Đang xử lý — mã giao dịch sẽ xuất hiện khi hoàn thành.</p>;
+  const kfbRows = (() => {
+    if (!storedKfbData) return [];
+    const entries = Object.entries(storedKfbData).filter(([, v]) => v != null && v !== "");
+    const numericKeys = entries.filter(([k]) => /^\d+$/.test(k)).length;
+    return entries.map(([k, v]) => ({
+      label: /^\d+$/.test(k) ? (numericKeys > 1 ? `Chi tiết đơn hàng ${Number(k) + 1}` : "Chi tiết đơn hàng") : k,
+      value: String(v),
+    }));
+  })();
+
+  // REFUNDED: hiển thị block lỗi đỏ
+  if (orderStatus === "REFUNDED") {
+    return (
+      <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-4">
+        <XCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-bold text-red-700">Đặt hàng thất bại</p>
+          <p className="text-xs text-red-600 mt-1 leading-relaxed">
+            Kiểm tra lại tiền trong ví trước khi đặt hàng.
+          </p>
+        </div>
+      </div>
+    );
   }
 
-  const kfbStatus = kfbData?.kfb?.data?.status ?? null;
-  const kfbLabel  = kfbStatus ? (KFB_STATUS_LABELS[kfbStatus.toLowerCase()] ?? kfbStatus) : null;
-  const remains   = kfbData?.kfb?.data?.remains;
-  const charge    = kfbData?.kfb?.data?.charge;
+  // DONE + không có kfbData: success message
+  if (kfbRows.length === 0) {
+    return (
+      <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4">
+        <CheckCircle2 size={20} className="text-emerald-500 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-bold text-emerald-700">Giao hàng tự động!</p>
+          <p className="text-xs text-emerald-600 mt-1 leading-relaxed">
+            Sản phẩm của bạn đã được giao thành công. Lưu thông tin bên dưới.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const items: { label: string; value: string }[] = [
+    { label: "Mã đơn hàng", value: orderCode },
+    ...kfbRows,
+    ...(finalPrice != null ? [{ label: "Tổng tiền", value: formatVnd(finalPrice) }] : []),
+  ];
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-gray-500 leading-relaxed">
-        Đơn đã gửi đến Khuongfb. Nhấn <strong>Kiểm tra</strong> để xem trạng thái xử lý thực tế.
-      </p>
-
-      {/* Trans ID */}
-      <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-white px-3 py-2.5">
-        <span className="text-base shrink-0">🔗</span>
-        <span className="flex-1 text-sm font-mono text-gray-800 break-all select-all">{transId}</span>
-        <CopyButton text={transId} />
-      </div>
-
-      {/* Live status */}
-      {kfbData && (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-2 text-sm">
-          {kfbLabel && (
-            <div className="flex justify-between">
-              <span className="text-gray-500 text-xs">Trạng thái Khuongfb</span>
-              <span className="font-semibold text-gray-800 text-xs">{kfbLabel}</span>
-            </div>
-          )}
-          {remains !== undefined && (
-            <div className="flex justify-between">
-              <span className="text-gray-500 text-xs">Còn lại</span>
-              <span className="font-semibold text-gray-800 text-xs">{remains.toLocaleString("vi-VN")}</span>
-            </div>
-          )}
-          {charge !== undefined && (
-            <div className="flex justify-between">
-              <span className="text-gray-500 text-xs">Chi phí</span>
-              <span className="font-semibold text-gray-800 text-xs">{charge}</span>
-            </div>
-          )}
+      {items.map((item, idx) => (
+        <div key={idx} className="rounded-xl bg-white border border-gray-200 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+            <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">{item.label}</span>
+            <button
+              onClick={() => void copyItem(item.value, idx)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-medium transition-colors whitespace-nowrap"
+            >
+              {copiedIdx === idx
+                ? <><Check size={11} className="text-emerald-500" /> Đã chép</>
+                : <><Copy size={11} /> Sao chép</>}
+            </button>
+          </div>
+          <div className="px-4 py-3">
+            <p className="text-sm font-mono text-gray-900 break-all leading-relaxed whitespace-pre-wrap">{item.value}</p>
+          </div>
         </div>
-      )}
-
-      {err && <p className="text-xs text-red-500">{err}</p>}
-
-      <button
-        onClick={checkStatus}
-        disabled={checking}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-700 text-xs font-semibold transition-colors disabled:opacity-60"
-      >
-        <RefreshCw size={13} className={checking ? "animate-spin" : ""} />
-        {checking ? "Đang kiểm tra..." : "Kiểm tra trạng thái Khuongfb"}
-      </button>
-
-      <p className="text-[11px] text-gray-400">Mã đơn: <span className="font-mono">{orderCode}</span></p>
+      ))}
     </div>
   );
 }

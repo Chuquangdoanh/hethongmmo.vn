@@ -34,6 +34,7 @@ export interface KhuongfbProduct {
   resourceCategory: { id: string; name: string } | null;
   subCategory:      { id: string; name: string } | null;
   syncedAt:         string | null;
+  stockAmount:      number | null;
 }
 
 interface Meta {
@@ -48,7 +49,7 @@ export default function KhuongfbAdminPage() {
   const [meta,       setMeta]       = useState<Meta>({ total: 0, page: 1, totalPages: 1 });
   const [syncing,    setSyncing]    = useState(false);
   const [loading,    setLoading]    = useState(true);
-  const [syncMsg,    setSyncMsg]    = useState<string | null>(null);
+  const [syncMsg,    setSyncMsg]    = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [page,       setPage]       = useState(1);
   const [section,    setSection]    = useState<string>("");
 
@@ -87,15 +88,20 @@ export default function KhuongfbAdminPage() {
     setSyncMsg(null);
     try {
       const res  = await fetch("/api/admin/khuongfb/sync", { method: "POST" });
-      const json = await res.json() as { data?: { created: number; updated: number; total: number } };
-      const d    = json.data;
+      const json = await res.json() as { data?: { created: number; updated: number; deactivated: number; total: number }; error?: string };
+      if (!res.ok) {
+        setSyncMsg({ type: "err", text: `Lỗi: ${json.error ?? `HTTP ${res.status}`}` });
+        return;
+      }
+      const d = json.data;
       if (d) {
-        setSyncMsg(`Đồng bộ xong: ${d.total} sản phẩm (mới: ${d.created}, cập nhật: ${d.updated})`);
+        const deactivatedNote = d.deactivated > 0 ? `, tắt: ${d.deactivated}` : "";
+        setSyncMsg({ type: "ok", text: `Đồng bộ xong: ${d.total} sản phẩm (mới: ${d.created}, cập nhật: ${d.updated}${deactivatedNote})` });
         await fetchProducts(1, section);
         setPage(1);
       }
     } catch {
-      setSyncMsg("Đồng bộ thất bại — kiểm tra API key");
+      setSyncMsg({ type: "err", text: "Đồng bộ thất bại — không kết nối được server" });
     } finally {
       setSyncing(false);
     }
@@ -139,8 +145,12 @@ export default function KhuongfbAdminPage() {
       </div>
 
       {syncMsg && (
-        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-sm">
-          {syncMsg}
+        <div className={`px-4 py-3 rounded-lg text-sm border ${
+          syncMsg.type === "ok"
+            ? "bg-green-50 border-green-200 text-green-800"
+            : "bg-red-50 border-red-200 text-red-700"
+        }`}>
+          {syncMsg.text}
         </div>
       )}
 

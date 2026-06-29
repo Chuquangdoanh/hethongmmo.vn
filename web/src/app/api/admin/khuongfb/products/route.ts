@@ -23,7 +23,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         : undefined;
     const where = validSection ? { displaySection: validSection } : {};
 
-    const [data, total] = await Promise.all([
+    const [raw, total] = await Promise.all([
       prisma.khuongfbProduct.findMany({
         where,
         skip:    (page - 1) * limit,
@@ -46,10 +46,21 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           subCategoryId:       true,
           subCategory:         { select: { id: true, name: true } },
           syncedAt:            true,
+          rawData:             true,
         },
       }),
       prisma.khuongfbProduct.count({ where }),
     ]);
+
+    const data = raw.map((p) => {
+      const rd = p.rawData as Record<string, unknown> | null;
+      const stockAmount: number | null =
+        rd != null
+          ? (typeof rd["amount"] === "number" ? rd["amount"] : typeof rd["số tiền"] === "number" ? rd["số tiền"] : null)
+          : null;
+      const { rawData: _rawData, ...rest } = p;
+      return { ...rest, stockAmount };
+    });
 
     return apiList(data, { total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (err) {

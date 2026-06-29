@@ -42,10 +42,12 @@ export async function GET(
         orderCode: true,
         orderType: true,
         status: true,
+        finalPrice: true,
         deliveredItemId: true,
         tutTrickContentUrlEnc: true,
         tutTrickDocs: true,
         externalOrderId: true,
+        kfbData: true,
       },
     });
 
@@ -83,9 +85,11 @@ export async function GET(
       success: true,
       data: {
         deliveredContent,
-        tutTrickDocs: order.orderType === "TUTTRICK" ? (order.tutTrickDocs ?? null) : null,
-        orderCode: order.orderCode,
+        tutTrickDocs:    order.orderType === "TUTTRICK" ? (order.tutTrickDocs ?? null) : null,
+        orderCode:       order.orderCode,
         externalOrderId: order.orderType === "KHUONGFB_PRODUCT" ? (order.externalOrderId ?? null) : null,
+        kfbData:         order.orderType === "KHUONGFB_PRODUCT" ? (order.kfbData ?? null) : null,
+        finalPrice:      order.orderType === "KHUONGFB_PRODUCT" ? Number(order.finalPrice) : null,
       },
     });
   } catch (err) {

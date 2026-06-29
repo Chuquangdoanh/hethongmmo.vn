@@ -119,7 +119,7 @@ export default function ApiConfigDropdown() {
                 type="text"
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
-                placeholder="https://tainguyentesla.com/api"
+                placeholder="https://khuongfb.com/api"
                 className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-800/20 focus:border-gray-400 font-mono"
               />
             </div>

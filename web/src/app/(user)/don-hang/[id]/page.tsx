@@ -232,7 +232,7 @@ export default async function DonHangDetailPage({
 
             {/* Delivered content */}
             {(order.status === "DONE" || order.status === "REFUNDED") && (
-              <DeliveredContentSection orderId={order.id} orderType={order.orderType} />
+              <DeliveredContentSection orderId={order.id} orderType={order.orderType} orderStatus={order.status} />
             )}
 
             {/* Review section */}
@@ -300,13 +300,14 @@ export default async function DonHangDetailPage({
   );
 }
 
-function DeliveredContentSection({ orderId, orderType }: { orderId: string; orderType: string }) {
+function DeliveredContentSection({ orderId, orderType, orderStatus }: { orderId: string; orderType: string; orderStatus: string }) {
+  const isRefunded = orderStatus === "REFUNDED";
   return (
-    <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5">
-      <h2 className="text-sm font-semibold text-emerald-700 mb-3">
-        {orderType === "TUTTRICK" ? "Nội dung giao — Tut & Trick" : "Thông tin tài khoản / Nội dung giao"}
+    <div className={`rounded-xl border p-5 ${isRefunded ? "border-red-200 bg-red-50/50" : "border-emerald-200 bg-emerald-50/50"}`}>
+      <h2 className={`text-sm font-semibold mb-3 ${isRefunded ? "text-red-700" : "text-emerald-700"}`}>
+        {isRefunded ? "Trạng thái đơn hàng" : orderType === "TUTTRICK" ? "Nội dung giao — Tut & Trick" : "Thông tin tài khoản / Nội dung giao"}
       </h2>
-      <DeliveredContentLoader orderId={orderId} orderType={orderType} />
+      <DeliveredContentLoader orderId={orderId} orderType={orderType} orderStatus={orderStatus} />
     </div>
   );
 }

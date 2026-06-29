@@ -1,14 +1,15 @@
 import { prisma } from "@/lib/db/prisma";
-import { khuongfbGetProducts } from "./client";
+import { khuongfbGetProducts, khuongfbGetProductDetail } from "./client";
 import type { KhuongfbRawProduct } from "./types";
 import type { Prisma } from "@prisma/client";
 import Decimal from "decimal.js";
 
 export interface SyncResult {
-  created: number;
-  updated: number;
-  total: number;
-  syncedAt: Date;
+  created:     number;
+  updated:     number;
+  deactivated: number;
+  total:       number;
+  syncedAt:    Date;
 }
 
 function normalizeProduct(raw: KhuongfbRawProduct) {
@@ -35,12 +36,24 @@ export async function syncKhuongfbProducts(): Promise<SyncResult> {
   let created = 0;
   let updated = 0;
 
+  const incomingIds = rawProducts.map((r) => String(r.id));
+
+  // Gọi detail từng sản phẩm tuần tự (tránh rate limit Khuongfb)
+  // rawData = merge(list data, detail data) để bắt được field trạng thái nếu có
+  async function enrichWithDetail(raw: KhuongfbRawProduct): Promise<KhuongfbRawProduct> {
+    const detail = await khuongfbGetProductDetail(String(raw.id));
+    if (!detail) return raw;
+    // Merge: detail overrides list data cho cùng field, giữ inject fields (categoryId/categoryName)
+    return { ...raw, ...detail, categoryId: raw.categoryId, categoryName: raw.categoryName };
+  }
+
   for (const raw of rawProducts) {
-    const data = normalizeProduct(raw);
+    const enriched = await enrichWithDetail(raw);
+    const data = normalizeProduct(enriched);
 
     const existing = await prisma.khuongfbProduct.findUnique({
       where: { externalId: data.externalId },
-      select: { id: true, salePrice: true },
+      select: { id: true },
     });
 
     if (existing) {
@@ -62,14 +75,25 @@ export async function syncKhuongfbProducts(): Promise<SyncResult> {
       await prisma.khuongfbProduct.create({
         data: {
           ...data,
-          // Mặc định salePrice = originalPrice; admin có thể đổi sau
-          salePrice:  data.originalPrice,
-          isEnabled:  false,
+          salePrice: data.originalPrice,
+          isEnabled: false,
         },
       });
       created++;
     }
   }
 
-  return { created, updated, total: rawProducts.length, syncedAt: new Date() };
+  // Tắt sản phẩm không còn tồn tại trong API (đổi API hoặc nhà cung cấp xóa)
+  // Không hard-delete để giữ lịch sử đơn hàng
+  const { count: deactivated } = incomingIds.length > 0
+    ? await prisma.khuongfbProduct.updateMany({
+        where: {
+          externalId: { notIn: incomingIds },
+          isEnabled:  true,
+        },
+        data: { isEnabled: false },
+      })
+    : { count: 0 };
+
+  return { created, updated, deactivated, total: rawProducts.length, syncedAt: new Date() };
 }

@@ -162,7 +162,9 @@ export function KhuongfbProductTable({ products, categories, onRefresh }: Props)
             <th className="px-4 py-3 text-left">Danh mục KFB</th>
             <th className="px-4 py-3 text-right">Giá gốc</th>
             <th className="px-4 py-3 text-right">Giá bán</th>
+            <th className="px-4 py-3 text-center">Tồn kho</th>
             <th className="px-4 py-3 text-left">Phân loại</th>
+            <th className="px-4 py-3 text-center">Tình trạng</th>
             <th className="px-4 py-3 text-center">Hiển thị</th>
             <th className="px-4 py-3 text-center">Chi tiết</th>
           </tr>
@@ -220,6 +222,22 @@ export function KhuongfbProductTable({ products, categories, onRefresh }: Props)
                     {Number(p.salePrice).toLocaleString("vi-VN")}đ
                   </td>
 
+                  {/* Tồn kho */}
+                  <td className="px-4 py-3 text-center">
+                    {p.stockAmount == null ? (
+                      <span className="text-xs text-gray-400">—</span>
+                    ) : p.stockAmount === 0 ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-600 border border-red-200">
+                        Hết hàng
+                      </span>
+                    ) : (
+                      <span className="inline-flex flex-col items-center gap-0.5">
+                        <span className="text-sm font-semibold text-gray-700">{p.stockAmount.toLocaleString("vi-VN")}</span>
+                        <span className="text-[10px] text-green-600 font-medium">còn hàng</span>
+                      </span>
+                    )}
+                  </td>
+
                   {/* Phân loại */}
                   <td className="px-4 py-3 text-xs text-gray-500">
                     <div className="space-y-0.5">
@@ -227,6 +245,19 @@ export function KhuongfbProductTable({ products, categories, onRefresh }: Props)
                       {p.resourceCategory && <div className="text-gray-400">{p.resourceCategory.name}</div>}
                       {p.subCategory && <div className="text-gray-400">{p.subCategory.name}</div>}
                     </div>
+                  </td>
+
+                  {/* Tình trạng bán hàng website chính */}
+                  <td className="px-4 py-3 text-center">
+                    {p.isEnabled ? (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Đang bán
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold bg-red-50 text-red-600 border border-red-200">
+                        Ngừng bán
+                      </span>
+                    )}
                   </td>
 
                   {/* Toggle hiển thị */}
@@ -258,7 +289,7 @@ export function KhuongfbProductTable({ products, categories, onRefresh }: Props)
                 {/* ── Panel chỉnh sửa ── */}
                 {isExpanded && (
                   <tr key={`${p.id}-edit`} className="bg-indigo-50/60 border-t border-indigo-100">
-                    <td colSpan={8} className="px-6 py-5">
+                    <td colSpan={10} className="px-6 py-5">
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                         {/* CỘT 1: ẢNH */}

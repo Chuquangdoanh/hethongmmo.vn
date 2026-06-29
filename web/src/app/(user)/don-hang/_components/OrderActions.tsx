@@ -9,6 +9,7 @@ import {
 import SafeHtml from "@/components/shared/SafeHtml";
 import { FaReact } from "react-icons/fa";
 
+
 interface Props {
   orderId: string;
   itemName: string;
@@ -21,17 +22,30 @@ interface Props {
 
 interface DeliveredData {
   deliveredContent: string | null;
-  tutTrickDocs: string | null;
-  orderCode: string;
+  tutTrickDocs:     string | null;
+  orderCode:        string;
+  kfbData:          Record<string, unknown> | null;
+  finalPrice:       number | null;
 }
 
 async function fetchDeliveredData(orderId: string): Promise<DeliveredData> {
   const res = await fetch(`/api/orders/${orderId}`, { credentials: "include" });
-  const json = await res.json() as { success: boolean; data?: { deliveredContent?: string; tutTrickDocs?: string; orderCode?: string } };
+  const json = await res.json() as {
+    success: boolean;
+    data?: {
+      deliveredContent?: string;
+      tutTrickDocs?: string;
+      orderCode?: string;
+      kfbData?: Record<string, unknown> | null;
+      finalPrice?: number | null;
+    };
+  };
   return {
     deliveredContent: json.data?.deliveredContent ?? null,
-    tutTrickDocs: json.data?.tutTrickDocs ?? null,
-    orderCode: json.data?.orderCode ?? orderId.slice(0, 8).toUpperCase(),
+    tutTrickDocs:     json.data?.tutTrickDocs ?? null,
+    orderCode:        json.data?.orderCode ?? orderId.slice(0, 8).toUpperCase(),
+    kfbData:          json.data?.kfbData ?? null,
+    finalPrice:       json.data?.finalPrice ?? null,
   };
 }
 
@@ -201,16 +215,33 @@ function DetailModal({ orderId, itemName, orderType, onClose }: {
   const [loadingContent, setLoadingContent] = useState(true);
   const [copied, setCopied] = useState(false);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   useEffect(() => {
     fetchDeliveredData(orderId).then((d) => { setData(d); setLoadingContent(false); });
   }, [orderId]);
 
-  const content = data?.deliveredContent ?? null;
-  const docs = data?.tutTrickDocs ?? null;
-  const orderCode = data?.orderCode ?? "";
+  const content    = data?.deliveredContent ?? null;
+  const docs       = data?.tutTrickDocs ?? null;
+  const orderCode  = data?.orderCode ?? "";
+  const kfbData    = data?.kfbData ?? null;
   const isTutTrick = orderType === "TUTTRICK";
-  const isUrl = !!content && (content.startsWith("http://") || content.startsWith("https://"));
+  const isKfb      = orderType === "KHUONGFB_PRODUCT";
+  const isUrl      = !!content && (content.startsWith("http://") || content.startsWith("https://"));
+
+  const kfbRows = (() => {
+    if (!kfbData) return [];
+    const entries = Object.entries(kfbData).filter(([, v]) => v != null && v !== "");
+    const numericKeys = entries.filter(([k]) => /^\d+$/.test(k)).length;
+    return entries.map(([k, v]) => ({
+      label: /^\d+$/.test(k) ? (numericKeys > 1 ? `Chi tiết đơn hàng ${Number(k) + 1}` : "Chi tiết đơn hàng") : k,
+      value: String(v),
+    }));
+  })();
+
+  const kfbItems: { label: string; value: string }[] = isKfb ? [...kfbRows] : [];
+
+  const hasAnyContent = !!content || !!docs || kfbRows.length > 0;
 
   function stripHtml(html: string): string {
     const div = document.createElement("div");
@@ -250,7 +281,11 @@ function DetailModal({ orderId, itemName, orderType, onClose }: {
     setTimeout(() => setCopiedAll(false), 2000);
   }
 
-  const hasAnyContent = !!content || !!docs;
+  async function copyKfbItem(text: string, idx: number) {
+    await navigator.clipboard.writeText(text);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 2000);
+  }
 
   return (
     <div
@@ -278,17 +313,39 @@ function DetailModal({ orderId, itemName, orderType, onClose }: {
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-5 py-5 space-y-4">
+        <div className="overflow-y-auto flex-1 px-5 py-5 space-y-3">
           {loadingContent ? (
             <div className="space-y-3">
               <div className="h-6 w-32 rounded bg-gray-100 animate-pulse" />
               <div className="h-20 rounded-xl bg-gray-100 animate-pulse" />
             </div>
           ) : !hasAnyContent ? (
-            <p className="text-sm text-gray-500 text-center py-4">Không có nội dung giao hàng.</p>
+            <p className="text-sm text-gray-500 text-center py-4">Đơn đang được xử lý — nội dung sẽ hiển thị sau khi hoàn thành.</p>
+          ) : isKfb ? (
+            /* ── KHUONGFB: popup card-style, giống DeliveryModal sau mua ── */
+            <>
+              {kfbItems.map((item, idx) => (
+                <div key={idx} className="rounded-xl bg-white border border-gray-200 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+                    <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">{item.label}</span>
+                    <button
+                      onClick={() => void copyKfbItem(item.value, idx)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-medium transition-colors whitespace-nowrap"
+                    >
+                      {copiedIdx === idx
+                        ? <><Check size={11} className="text-emerald-500" /> Đã chép</>
+                        : <><Copy size={11} /> Sao chép</>}
+                    </button>
+                  </div>
+                  <div className="px-4 py-3">
+                    <p className="text-sm font-mono text-gray-900 break-all leading-relaxed whitespace-pre-wrap">{item.value}</p>
+                  </div>
+                </div>
+              ))}
+            </>
           ) : (
             <>
-              {/* Nội dung sau giao */}
+              {/* Nội dung sau giao — MMO / Seller */}
               {content && (
                 <div>
                   <p className="text-xs font-semibold text-gray-600 mb-2">
@@ -321,7 +378,7 @@ function DetailModal({ orderId, itemName, orderType, onClose }: {
                 </div>
               )}
 
-              {/* Nội dung docs */}
+              {/* Nội dung docs — TutTrick */}
               {isTutTrick && docs && (
                 <div>
                   <p className="text-xs font-semibold text-gray-600 mb-2">📄 Nội dung hướng dẫn</p>
@@ -339,8 +396,8 @@ function DetailModal({ orderId, itemName, orderType, onClose }: {
           )}
         </div>
 
-        {/* Nút hành động */}
-        {hasAnyContent && !loadingContent && (
+        {/* Nút hành động — không hiển thị cho KFB (mỗi card đã có copy riêng) */}
+        {hasAnyContent && !loadingContent && !isKfb && (
           <div className="px-5 pb-5 pt-1 flex gap-2 shrink-0 border-t border-gray-100">
             {isTutTrick && (content || docs) ? (
               <>

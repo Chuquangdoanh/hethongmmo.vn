@@ -118,10 +118,15 @@ export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): P
       throw new Error(errMsg);
     }
 
-    // Lưu trans_id + chuyển trạng thái DONE
+    // Lưu trans_id + data từ Khuongfb + chuyển trạng thái DONE
     await prisma.order.update({
       where: { id: order.id },
-      data:  { externalOrderId: transId, status: "DONE", completedAt: new Date() },
+      data:  {
+        externalOrderId: transId,
+        status:          "DONE",
+        completedAt:     new Date(),
+        kfbData:         buyRes.data != null ? (buyRes.data as import("@prisma/client").Prisma.InputJsonValue) : undefined,
+      },
     });
 
     return {

@@ -676,6 +676,7 @@ model Order {
   deliveredItemId       String?        @map("delivered_item_id") @db.Uuid
   tutTrickContentUrlEnc Bytes?         @map("tut_trick_content_url_enc")
   tutTrickDocs          String?        @map("tut_trick_docs")
+  kfbData               Json?          @map("kfb_data")
   idempotencyKey        String?        @unique @map("idempotency_key")
   withdrawn             Boolean        @default(false)
 

@@ -1,3 +1,4 @@
+import { setDefaultResultOrder } from "dns";
 import { KHUONGFB_BASE_URL, KHUONGFB_ENDPOINTS, KHUONGFB_TIMEOUT_MS } from "./constants";
 import type {
   KhuongfbProfile,
@@ -5,6 +6,9 @@ import type {
   KhuongfbBuyResponse,
   KhuongfbOrderResponse,
 } from "./types";
+
+// Ép IPv4 trước để tránh bị chặn bởi Khuongfb khi ISP cấp IPv6 mặc định
+setDefaultResultOrder("ipv4first");
 
 // ── Config cache (đọc từ DB, fallback sang env) ──────────────────────────────
 
@@ -97,7 +101,18 @@ async function khuongfbPost<T>(endpoint: string, body: Record<string, string>): 
       body: form.toString(),
       cache: "no-store",
     });
-    if (!res.ok) throw new Error(`Khuongfb HTTP ${res.status}`);
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      // Ưu tiên lấy msg từ JSON response nếu có
+      try {
+        const json = JSON.parse(text) as { msg?: string; message?: string };
+        const msg = json.msg ?? json.message;
+        if (msg) throw new Error(msg);
+      } catch (parseErr) {
+        if (parseErr instanceof Error && parseErr.message !== text) throw parseErr;
+      }
+      throw new Error(`Khuongfb HTTP ${res.status}${text ? `: ${text.slice(0, 200)}` : ""}`);
+    }
     return (await res.json()) as T;
   } finally {
     clearTimeout(timer);
@@ -126,10 +141,23 @@ export async function khuongfbGetProducts(): Promise<KhuongfbRawProduct[]> {
   return [];
 }
 
+export async function khuongfbGetProductDetail(productId: string): Promise<KhuongfbRawProduct | null> {
+  try {
+    const res = await khuongfbGet<Record<string, unknown>>(KHUONGFB_ENDPOINTS.product, { product: productId });
+    // API có thể trả về { status, data: {...} } hoặc trực tiếp product object
+    if (res["data"] && typeof res["data"] === "object") return res["data"] as KhuongfbRawProduct;
+    if (res["id"] !== undefined) return res as unknown as KhuongfbRawProduct;
+    return null;
+  } catch {
+    // Không để lỗi 1 sản phẩm phá cả sync
+    return null;
+  }
+}
+
 export async function khuongfbBuyProduct(externalId: string, amount: number): Promise<KhuongfbBuyResponse> {
   return khuongfbPost<KhuongfbBuyResponse>(KHUONGFB_ENDPOINTS.buy, {
     action: "buyProduct",
-    id: String(externalId),
+    id:     String(externalId),
     amount: String(amount),
   });
 }

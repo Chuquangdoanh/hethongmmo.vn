@@ -1,4 +1,4 @@
-export const KHUONGFB_BASE_URL = "https://tainguyentesla.com/api";
+export const KHUONGFB_BASE_URL = "https://khuongfb.com/api";
 export const KHUONGFB_TIMEOUT_MS = 15_000;
 
 export const KHUONGFB_ENDPOINTS = {

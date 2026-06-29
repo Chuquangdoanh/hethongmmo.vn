@@ -19,7 +19,7 @@ export async function POST(): Promise<NextResponse> {
       actorId:    me.id,
       action:     "KHUONGFB_MANUAL_SYNC",
       targetType: "KhuongfbProduct",
-      after:      { created: result.created, updated: result.updated, total: result.total },
+      after:      { created: result.created, updated: result.updated, deactivated: result.deactivated, total: result.total },
     });
 
     return apiOk(result);
