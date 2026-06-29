@@ -12,7 +12,7 @@ import { KfbBuyButton } from "./_components/KfbBuyButton";
 import {
   CheckCircle, ShieldCheck, Zap, ArrowLeft,
   ShoppingCart, Headphones, RotateCcw, BadgeCheck, Lock,
-  ExternalLink, Globe, ChevronLeft, ChevronRight,
+  ExternalLink, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 export async function generateMetadata({
@@ -55,7 +55,7 @@ const PLEDGES = [
 ];
 
 const COMMITMENTS = [
-  { Icon: BadgeCheck,  color: "#10b981", title: "Nguồn ngoài kiểm duyệt",  desc: "Được hệ thống xác minh trước khi bán" },
+  { Icon: BadgeCheck,  color: "#10b981", title: "Hệ Thống MMO kiểm duyệt", desc: "Được hệ thống xác minh trước khi bán" },
   { Icon: ShieldCheck, color: "#0066ff", title: "Bảo hành uy tín",         desc: "Hỗ trợ bảo hành theo chính sách" },
   { Icon: Lock,        color: "#7c3aed", title: "Thanh toán an toàn",      desc: "Bảo mật thông tin tuyệt đối" },
   { Icon: Headphones,  color: "#f59e0b", title: "Hỗ trợ 24/7",            desc: "Đội ngũ hỗ trợ chuyên nghiệp" },
@@ -230,33 +230,30 @@ export default async function KfbProductDetailPage({
 
   const cardSource = (
     <div className="rounded-2xl border border-border bg-white p-4 flex items-center gap-4">
-      <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-[#6d28d9] to-primary flex items-center justify-center shrink-0 shadow-sm">
-        <Globe size={26} strokeWidth={1.75} className="text-white" />
+      <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-[#0052cc] to-[#0066ff] flex items-center justify-center shrink-0 shadow-sm">
+        <ShieldCheck size={26} strokeWidth={1.75} className="text-white" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-          <p className="text-sm font-extrabold text-text-dark truncate">Nguồn ngoài</p>
-          <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/20">
-            Được kiểm duyệt
+          <p className="text-sm font-extrabold text-text-dark truncate">Hệ Thống MMO</p>
+          <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-primary/10 text-primary border border-primary/20">
+            Chính thức
           </span>
         </div>
-        <p className="text-[11px] text-text-muted">Sản phẩm từ nhà cung cấp đối tác</p>
-        <div className="flex items-center gap-4 mt-2">
-          <div>
-            <p className="text-sm font-bold text-text-dark">{categoryName}</p>
-            <p className="text-[10px] text-[#94a3b8]">Danh mục</p>
-          </div>
-          {product.subCategory && (
-            <div>
-              <p className="text-sm font-bold text-text-dark">{product.subCategory.name}</p>
-              <p className="text-[10px] text-[#94a3b8]">Phân loại</p>
-            </div>
-          )}
+        <p className="text-[11px] text-text-muted">Sản phẩm được kiểm duyệt kỹ lưỡng</p>
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-sm font-bold text-[#10b981]">100%</span>
+          <span className="text-[10px] text-[#94a3b8]">Đánh giá tích cực</span>
         </div>
       </div>
-      <div className="flex flex-col items-center gap-1 shrink-0 text-[#94a3b8]">
-        <ExternalLink size={14} strokeWidth={2} />
-        <span className="text-[10px]">{sectionName}</span>
+      <div className="shrink-0">
+        <Link
+          href={sectionHref}
+          className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:text-[#0052cc] transition-colors whitespace-nowrap"
+        >
+          <ExternalLink size={12} strokeWidth={2} />
+          Xem sản phẩm
+        </Link>
       </div>
     </div>
   );
@@ -273,8 +270,8 @@ export default async function KfbProductDetailPage({
             {product.subCategory.name}
           </span>
         )}
-        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#fefce8] text-[#ca8a04] border border-[#fde68a]">
-          Nguồn ngoài
+        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
+          Hệ Thống MMO
         </span>
       </div>
 
