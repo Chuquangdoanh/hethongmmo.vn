@@ -21,16 +21,21 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       section === "TAI_NGUYEN_MMO" || section === "KHO_TAI_NGUYEN"
         ? (section as StoreType)
         : undefined;
-    const where = validSection ? { displaySection: validSection } : {};
+    const providerFilter = req.nextUrl.searchParams.get("provider");
+    const where = {
+      ...(validSection   ? { displaySection: validSection }     : {}),
+      ...(providerFilter ? { provider: providerFilter }         : {}),
+    };
 
     const [raw, total] = await Promise.all([
-      prisma.khuongfbProduct.findMany({
+      prisma.externalProduct.findMany({
         where,
         skip:    (page - 1) * limit,
         take:    limit,
         orderBy: [{ isEnabled: "desc" }, { externalCategory: "asc" }],
         select: {
           id:                  true,
+          provider:            true,
           externalId:          true,
           externalCategory:    true,
           name:                true,
@@ -49,7 +54,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           rawData:             true,
         },
       }),
-      prisma.khuongfbProduct.count({ where }),
+      prisma.externalProduct.count({ where }),
     ]);
 
     const data = raw.map((p) => {
@@ -93,12 +98,12 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     const parsed = patchSchema.safeParse(body);
     if (!parsed.success) return apiValidationError(parsed.error.issues);
 
-    const before = await prisma.khuongfbProduct.findUnique({
+    const before = await prisma.externalProduct.findUnique({
       where:  { id },
       select: { isEnabled: true, salePrice: true, resourceCategoryId: true, subCategoryId: true, displaySection: true },
     });
 
-    const updated = await prisma.khuongfbProduct.update({
+    const updated = await prisma.externalProduct.update({
       where:  { id },
       data:   parsed.data,
       select: { id: true, name: true, isEnabled: true, salePrice: true, resourceCategoryId: true, subCategoryId: true, displaySection: true },
@@ -107,7 +112,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     await writeAuditLog({
       actorId:    me.id,
       action:     "UPDATE_KHUONGFB_PRODUCT",
-      targetType: "KhuongfbProduct",
+      targetType: "ExternalProduct",
       targetId:   id,
       before:     before ?? undefined,
       after:      parsed.data,

@@ -78,13 +78,13 @@ export default async function BanTaiNguyenPage({
     } else if (validOrderType === "SELLER_PRODUCT") {
       andConditions.push({ sellerProduct: { storeType: validSection as never } });
     } else if (validOrderType === "KHUONGFB_PRODUCT") {
-      andConditions.push({ khuongfbProduct: { displaySection: validSection as never } });
+      andConditions.push({ externalProduct: { displaySection: validSection as never } });
     } else {
       andConditions.push({
         OR: [
           { orderType: "MMO_PRODUCT",      mmoProduct:      { section:        validSection as never } },
           { orderType: "SELLER_PRODUCT",   sellerProduct:   { storeType:      validSection as never } },
-          { orderType: "KHUONGFB_PRODUCT", khuongfbProduct: { displaySection: validSection as never } },
+          { orderType: "KHUONGFB_PRODUCT", externalProduct: { displaySection: validSection as never } },
         ],
       });
     }

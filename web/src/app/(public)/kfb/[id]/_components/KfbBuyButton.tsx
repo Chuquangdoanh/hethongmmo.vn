@@ -212,7 +212,7 @@ export function KfbBuyButton({ productId, productName: _productName, price, isLo
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({
-          khuongfbProductId: productId,
+          externalProductId: productId,
           quantity:          qty,
           idempotencyKey:    genKey(),
         }),

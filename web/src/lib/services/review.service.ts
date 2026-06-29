@@ -11,7 +11,7 @@ export async function createReview(input: {
 }) {
   const order = await prisma.order.findFirst({
     where: { id: input.orderId, userId: input.userId },
-    select: { id: true, status: true, orderType: true, sellerProductId: true, mmoProductId: true, khuongfbProductId: true },
+    select: { id: true, status: true, orderType: true, sellerProductId: true, mmoProductId: true, externalProductId: true },
   });
   if (!order) throw new NotFoundError("Đơn hàng");
   if (order.status !== "DONE") throw new ValidationError("Chỉ có thể đánh giá đơn hàng đã hoàn thành");
@@ -20,7 +20,7 @@ export async function createReview(input: {
   const productId =
     order.orderType === "SELLER_PRODUCT"   ? order.sellerProductId :
     order.orderType === "MMO_PRODUCT"      ? order.mmoProductId    :
-    order.orderType === "KHUONGFB_PRODUCT" ? order.khuongfbProductId : null;
+    order.orderType === "KHUONGFB_PRODUCT" ? order.externalProductId : null;
   if (!productId) throw new ValidationError("Không xác định được sản phẩm");
 
   try {

@@ -200,7 +200,7 @@ export default async function KhoTaiNguyenPage({
       _count: { id: true },
       _avg: { rating: true },
     }),
-    prisma.khuongfbProduct.findMany({
+    prisma.externalProduct.findMany({
       where: {
         isEnabled:      true,
         displaySection: "KHO_TAI_NGUYEN",

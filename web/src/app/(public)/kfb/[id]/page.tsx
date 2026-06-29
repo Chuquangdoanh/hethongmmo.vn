@@ -21,7 +21,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const product = await prisma.khuongfbProduct.findUnique({
+  const product = await prisma.externalProduct.findUnique({
     where: { id, isEnabled: true },
     select: { name: true, description: true, thumbnail: true },
   });
@@ -90,7 +90,7 @@ export default async function KfbProductDetailPage({
   const reviewPage = Math.max(1, Number(sp.reviewPage ?? "1"));
 
   const [product, session] = await Promise.all([
-    prisma.khuongfbProduct.findUnique({
+    prisma.externalProduct.findUnique({
       where: { id, isEnabled: true },
       select: {
         id: true, name: true, description: true, thumbnail: true,
@@ -132,7 +132,7 @@ export default async function KfbProductDetailPage({
     }),
     me
       ? prisma.order.findFirst({
-          where: { userId: me.id, khuongfbProductId: product.id, status: "DONE", review: null },
+          where: { userId: me.id, externalProductId: product.id, status: "DONE", review: null },
           select: { id: true },
         })
       : Promise.resolve(null),

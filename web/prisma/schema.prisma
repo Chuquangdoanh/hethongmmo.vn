@@ -586,7 +586,7 @@ model ResourceCategory {
   updatedAt            DateTime            @updatedAt @map("updated_at")
 
   subCategories    SellerSubCategory[]
-  khuongfbProducts KhuongfbProduct[]
+  externalProducts ExternalProduct[]
 
   @@index([name])
   @@map("resource_categories")
@@ -609,7 +609,7 @@ model SellerSubCategory {
   category         ResourceCategory  @relation(fields: [categoryName], references: [name], onDelete: Cascade)
   users            UserSubCategory[]
   products         SellerProduct[]
-  khuongfbProducts KhuongfbProduct[]
+  externalProducts ExternalProduct[]
 
   @@unique([categoryName, name])
   @@index([categoryName, isActive])
@@ -660,8 +660,8 @@ model Order {
   sellerProductId    String?          @map("seller_product_id") @db.Uuid
   sellerProduct      SellerProduct?   @relation(fields: [sellerProductId], references: [id])
   sellerId           String?          @map("seller_id") @db.Uuid
-  khuongfbProductId  String?          @map("khuongfb_product_id") @db.Uuid
-  khuongfbProduct    KhuongfbProduct? @relation(fields: [khuongfbProductId], references: [id])
+  externalProductId  String?          @map("external_product_id") @db.Uuid
+  externalProduct    ExternalProduct? @relation(fields: [externalProductId], references: [id])
   externalOrderId    String?          @map("external_order_id")
   externalSource     String?          @map("external_source") @db.VarChar(50)
 
@@ -1322,8 +1322,9 @@ model SiteContent {
 // ====================================================================
 // 30. KHUONGFB_PRODUCTS (Sản phẩm nhập từ khuongfb.com)
 // ====================================================================
-model KhuongfbProduct {
+model ExternalProduct {
   id                 String             @id @default(uuid()) @db.Uuid
+  provider           String             @default("khuongfb") @db.VarChar(50)
   externalId         String             @unique @map("external_id")
   externalCategory   String             @map("external_category")
   name               String
@@ -1345,11 +1346,13 @@ model KhuongfbProduct {
 
   orders Order[]
 
+  @@index([provider])
+  @@index([provider, isEnabled])
   @@index([isEnabled])
   @@index([displaySection])
   @@index([resourceCategoryId])
   @@index([subCategoryId])
-  @@map("khuongfb_products")
+  @@map("external_products")
 }
 
 // ====================================================================

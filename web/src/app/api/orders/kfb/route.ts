@@ -8,7 +8,7 @@ import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
 export const runtime = "nodejs";
 
 const schema = z.object({
-  khuongfbProductId: z.string().uuid(),
+  externalProductId: z.string().uuid(),
   quantity:          z.number().int().min(1).max(100),
   idempotencyKey:    z.string().min(16).max(64),
   customerNote:      z.string().max(500).optional(),
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const result = await purchaseKhuongfbProduct({
       userId:            me.id,
-      khuongfbProductId: parsed.data.khuongfbProductId,
+      externalProductId: parsed.data.externalProductId,
       quantity:          parsed.data.quantity,
       idempotencyKey:    parsed.data.idempotencyKey,
       customerNote:      parsed.data.customerNote,

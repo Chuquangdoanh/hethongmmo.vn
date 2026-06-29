@@ -201,7 +201,7 @@ export default async function TaiNguyenMmoPage({
         },
       },
     }),
-    prisma.khuongfbProduct.findMany({
+    prisma.externalProduct.findMany({
       where: {
         isEnabled:      true,
         displaySection: "TAI_NGUYEN_MMO",

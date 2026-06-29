@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { KhuongfbProductTable } from "./_components/KhuongfbProductTable";
-import ApiConfigDropdown from "./_components/ApiConfigDropdown";
+import ProviderManager from "./_components/ProviderManager";
 
 interface SubCategory {
   id:                string;
@@ -21,6 +21,7 @@ export interface ResourceCategoryWithSubs {
 
 export interface KhuongfbProduct {
   id:               string;
+  provider:         string;
   externalId:       string;
   externalCategory: string;
   name:             string;
@@ -43,21 +44,31 @@ interface Meta {
   totalPages: number;
 }
 
-export default function KhuongfbAdminPage() {
-  const [products,   setProducts]   = useState<KhuongfbProduct[]>([]);
-  const [categories, setCategories] = useState<ResourceCategoryWithSubs[]>([]);
-  const [meta,       setMeta]       = useState<Meta>({ total: 0, page: 1, totalPages: 1 });
-  const [syncing,    setSyncing]    = useState(false);
-  const [loading,    setLoading]    = useState(true);
-  const [syncMsg,    setSyncMsg]    = useState<{ type: "ok" | "err"; text: string } | null>(null);
-  const [page,       setPage]       = useState(1);
-  const [section,    setSection]    = useState<string>("");
+interface ProviderTab {
+  id:   string;
+  name: string;
+}
 
-  const fetchProducts = useCallback(async (p: number, sec: string) => {
+type SyncProviderResult = { created: number; updated: number; deactivated: number; total: number } | { error: string };
+
+export default function KhuongfbAdminPage() {
+  const [products,        setProducts]        = useState<KhuongfbProduct[]>([]);
+  const [categories,      setCategories]      = useState<ResourceCategoryWithSubs[]>([]);
+  const [providerTabs,    setProviderTabs]    = useState<ProviderTab[]>([]);
+  const [meta,            setMeta]            = useState<Meta>({ total: 0, page: 1, totalPages: 1 });
+  const [syncing,         setSyncing]         = useState(false);
+  const [loading,         setLoading]         = useState(true);
+  const [syncMsg,         setSyncMsg]         = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [page,            setPage]            = useState(1);
+  const [section,         setSection]         = useState<string>("");
+  const [activeProvider,  setActiveProvider]  = useState<string>("");
+
+  const fetchProducts = useCallback(async (p: number, sec: string, provId: string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(p), limit: "50" });
-      if (sec) params.set("section", sec);
+      if (sec)   params.set("section",  sec);
+      if (provId) params.set("provider", provId);
       const res  = await fetch(`/api/admin/khuongfb/products?${params.toString()}`);
       const json = await res.json() as { data?: KhuongfbProduct[]; meta?: Meta };
       setProducts(json.data ?? []);
@@ -73,13 +84,28 @@ export default function KhuongfbAdminPage() {
     setCategories(json.data ?? []);
   }, []);
 
+  const fetchProviders = useCallback(async () => {
+    const res  = await fetch("/api/admin/khuongfb/providers", { credentials: "include" });
+    const json = await res.json() as { data?: Array<{ id: string; name: string }> };
+    setProviderTabs(json.data ?? []);
+  }, []);
+
   useEffect(() => {
-    void fetchProducts(page, section);
+    void fetchProviders();
     void fetchCategories();
-  }, [page, section, fetchProducts, fetchCategories]);
+  }, [fetchProviders, fetchCategories]);
+
+  useEffect(() => {
+    void fetchProducts(page, section, activeProvider);
+  }, [page, section, activeProvider, fetchProducts]);
 
   function handleSectionChange(val: string) {
     setSection(val);
+    setPage(1);
+  }
+
+  function handleProviderChange(val: string) {
+    setActiveProvider(val);
     setPage(1);
   }
 
@@ -88,18 +114,30 @@ export default function KhuongfbAdminPage() {
     setSyncMsg(null);
     try {
       const res  = await fetch("/api/admin/khuongfb/sync", { method: "POST" });
-      const json = await res.json() as { data?: { created: number; updated: number; deactivated: number; total: number }; error?: string };
+      const json = await res.json() as { data?: { results: Record<string, SyncProviderResult> }; error?: string };
       if (!res.ok) {
         setSyncMsg({ type: "err", text: `Lỗi: ${json.error ?? `HTTP ${res.status}`}` });
         return;
       }
-      const d = json.data;
-      if (d) {
-        const deactivatedNote = d.deactivated > 0 ? `, tắt: ${d.deactivated}` : "";
-        setSyncMsg({ type: "ok", text: `Đồng bộ xong: ${d.total} sản phẩm (mới: ${d.created}, cập nhật: ${d.updated}${deactivatedNote})` });
-        await fetchProducts(1, section);
-        setPage(1);
+
+      const results = json.data?.results ?? {};
+      const lines: string[] = [];
+      let hasError = false;
+
+      for (const [provId, r] of Object.entries(results)) {
+        const label = providerTabs.find(t => t.id === provId)?.name ?? provId;
+        if ("error" in r) {
+          lines.push(`${label}: ❌ ${r.error}`);
+          hasError = true;
+        } else {
+          const deactivatedNote = r.deactivated > 0 ? `, tắt: ${r.deactivated}` : "";
+          lines.push(`${label}: ✓ ${r.total} sp (mới: ${r.created}, cập nhật: ${r.updated}${deactivatedNote})`);
+        }
       }
+
+      setSyncMsg({ type: hasError ? "err" : "ok", text: lines.join(" | ") });
+      await fetchProducts(1, section, activeProvider);
+      setPage(1);
     } catch {
       setSyncMsg({ type: "err", text: "Đồng bộ thất bại — không kết nối được server" });
     } finally {
@@ -110,7 +148,7 @@ export default function KhuongfbAdminPage() {
   const enabledCount = products.filter((p) => p.isEnabled).length;
 
   const SECTION_TABS = [
-    { value: "",               label: "Tất cả" },
+    { value: "",               label: "Tất cả store" },
     { value: "TAI_NGUYEN_MMO", label: "Nguyên liệu MMO" },
     { value: "KHO_TAI_NGUYEN", label: "Kho tài nguyên" },
   ];
@@ -126,7 +164,7 @@ export default function KhuongfbAdminPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ApiConfigDropdown />
+          <ProviderManager onProvidersChanged={() => { void fetchProviders(); void fetchProducts(1, section, activeProvider); }} />
           <button
             onClick={() => void handleSync()}
             disabled={syncing}
@@ -154,8 +192,29 @@ export default function KhuongfbAdminPage() {
         </div>
       )}
 
+      {/* Provider tabs — 1 tab/provider */}
+      {providerTabs.length > 1 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-medium text-gray-400 uppercase tracking-wide mr-1">Provider:</span>
+          {[{ id: "", name: "Tất cả" }, ...providerTabs].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleProviderChange(tab.id)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                activeProvider === tab.id
+                  ? "bg-gray-900 text-white border-gray-900"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:text-gray-800"
+              }`}
+            >
+              {tab.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Section filter */}
       <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-medium text-gray-400 uppercase tracking-wide mr-1">Kênh:</span>
         {SECTION_TABS.map((tab) => (
           <button
             key={tab.value}
@@ -178,7 +237,7 @@ export default function KhuongfbAdminPage() {
         <KhuongfbProductTable
           products={products}
           categories={categories}
-          onRefresh={() => void fetchProducts(page, section)}
+          onRefresh={() => void fetchProducts(page, section, activeProvider)}
         />
       )}
 

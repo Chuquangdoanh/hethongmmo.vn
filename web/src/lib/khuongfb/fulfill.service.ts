@@ -1,14 +1,14 @@
 import { prisma } from "@/lib/db/prisma";
 import { NotFoundError, AppError, InsufficientBalanceError } from "@/lib/errors";
-import { khuongfbBuyProduct } from "./client";
 import { KHUONGFB_SOURCE } from "./constants";
+import { loadEnabledAdapters } from "@/lib/external-providers/providers-config";
 import { logger } from "@/lib/utils/logger";
 import Decimal from "decimal.js";
 import { randomBytes } from "crypto";
 
 interface KhuongfbPurchaseParams {
   userId:            string;
-  khuongfbProductId: string;
+  externalProductId: string;
   quantity:          number;
   idempotencyKey:    string;
   customerNote?:     string;
@@ -28,7 +28,7 @@ function generateOrderCode(): string {
 }
 
 export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): Promise<KhuongfbPurchaseResult> {
-  const { userId, khuongfbProductId, quantity, idempotencyKey, customerNote } = params;
+  const { userId, externalProductId, quantity, idempotencyKey, customerNote } = params;
 
   // Idempotency: trả đơn cũ nếu đã xử lý
   const existingOrder = await prisma.order.findUnique({ where: { idempotencyKey } });
@@ -41,9 +41,9 @@ export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): P
     };
   }
 
-  const product = await prisma.khuongfbProduct.findUnique({
-    where: { id: khuongfbProductId },
-    select: { id: true, name: true, salePrice: true, isEnabled: true, externalId: true },
+  const product = await prisma.externalProduct.findUnique({
+    where: { id: externalProductId },
+    select: { id: true, provider: true, name: true, salePrice: true, isEnabled: true, externalId: true },
   });
   if (!product)          throw new NotFoundError("Sản phẩm Khuongfb");
   if (!product.isEnabled) throw new AppError("Sản phẩm này hiện không khả dụng.", "PRODUCT_DISABLED", 400);
@@ -80,7 +80,7 @@ export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): P
         orderCode,
         userId,
         orderType:         "KHUONGFB_PRODUCT",
-        khuongfbProductId: product.id,
+        externalProductId: product.id,
         itemName:          product.name,
         originalPrice:     totalPrice,
         finalPrice:        totalPrice,
@@ -106,33 +106,29 @@ export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): P
     return created;
   });
 
-  // ── BƯỚC 2: Gọi Khuongfb API để fulfill ──────────────────────────────────
+  // ── BƯỚC 2: Gọi provider API để fulfill ──────────────────────────────────
   try {
-    const buyRes = await khuongfbBuyProduct(product.externalId, quantity);
+    const adapters  = await loadEnabledAdapters();
+    const adapter   = adapters.find(a => a.providerId === product.provider);
+    if (!adapter) throw new AppError(`Provider "${product.provider}" không khả dụng`, "PROVIDER_NOT_FOUND", 502);
 
-    const transId = buyRes.trans_id ?? buyRes.order_id ?? null;
-    const success = buyRes.status === "success" || buyRes.status === "1" || buyRes.status === "ok";
+    const buyRes = await adapter.buyProduct(product.externalId, quantity);
 
-    if (!success || !transId) {
-      const errMsg = buyRes.msg ?? buyRes.message ?? "Khuongfb từ chối đơn hàng";
-      throw new Error(errMsg);
-    }
-
-    // Lưu trans_id + data từ Khuongfb + chuyển trạng thái DONE
+    // Lưu trans_id + data từ provider + chuyển trạng thái DONE
     await prisma.order.update({
       where: { id: order.id },
       data:  {
-        externalOrderId: transId,
+        externalOrderId: buyRes.externalOrderId,
         status:          "DONE",
         completedAt:     new Date(),
-        kfbData:         buyRes.data != null ? (buyRes.data as import("@prisma/client").Prisma.InputJsonValue) : undefined,
+        kfbData:         buyRes.data ?? undefined,
       },
     });
 
     return {
       orderId:         order.id,
       orderCode:       order.orderCode,
-      externalOrderId: transId,
+      externalOrderId: buyRes.externalOrderId,
       finalPrice:      totalPrice.toNumber(),
     };
   } catch (err) {
