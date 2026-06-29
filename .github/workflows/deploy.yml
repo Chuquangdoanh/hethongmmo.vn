@@ -188,6 +188,13 @@ jobs:
               # Force-remove để xử lý cả orphan container (không do Compose tạo)
               docker rm -f hethongmmo-web 2>/dev/null || true
 
+              # Chạy migrate trước — nếu fail, in logs và dừng ngay
+              docker compose up migrate || {
+                echo "❌ Migration failed — logs:"
+                docker logs hethongmmo-migrate --tail 50 2>/dev/null || echo "(no migrate logs)"
+                exit 1
+              }
+
               docker compose up -d
               docker image prune -f
               echo "🐳 App image updated"
