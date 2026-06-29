@@ -188,6 +188,11 @@ jobs:
               # Force-remove để xử lý cả orphan container (không do Compose tạo)
               docker rm -f hethongmmo-web 2>/dev/null || true
 
+              # Nếu có migration nào bị đánh dấu "failed" (P3009), resolve trước
+              # --rolled-back: xóa trạng thái failed → deploy sẽ chạy lại (SQL idempotent)
+              docker compose run --rm migrate migrate resolve \
+                --rolled-back 20260629000001_rename_khuongfb_to_external 2>/dev/null || true
+
               # Chạy migrate trước — nếu fail, in logs và dừng ngay
               docker compose up migrate || {
                 echo "❌ Migration failed — logs:"
