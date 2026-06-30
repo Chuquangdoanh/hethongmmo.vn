@@ -98,10 +98,20 @@ function DeliveryModal({ detail, onClose }: { detail: OrderDetail; finalPrice: n
   const router = useRouter();
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
+  const numericEntries = detail.kfbData
+    ? Object.entries(detail.kfbData).filter(([k, v]) => /^\d+$/.test(k) && v != null && v !== "")
+    : [];
   const kfbRows: { label: string; value: string }[] = detail.kfbData
     ? Object.entries(detail.kfbData)
         .filter(([, v]) => v != null && v !== "")
-        .map(([k, v]) => ({ label: k, value: String(v) }))
+        .map(([k, v]) => ({
+          label: /^\d+$/.test(k)
+            ? numericEntries.length > 1
+              ? `Nội dung nhận được #${Number(k) + 1}`
+              : "Nội dung nhận được"
+            : k,
+          value: String(v),
+        }))
     : [];
 
   const items = [
