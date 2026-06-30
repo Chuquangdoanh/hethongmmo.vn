@@ -12,13 +12,6 @@ export const metadata: Metadata = { title: "Sản phẩm nhà bán" };
 
 const PAGE_SIZE = 20;
 
-type ProductRow = {
-  id: true; name: true; price: true; isActive: true;
-  isRestricted: true; isHidden: true; createdAt: true;
-  seller: { select: { id: true; fullName: true; email: true; sellerCategory: true } };
-  _count: { select: { orders: true; stockItems: { where: { status: "AVAILABLE" } } } };
-};
-
 const PRODUCT_SELECT = {
   id: true, name: true, price: true, isActive: true,
   isRestricted: true, isHidden: true, createdAt: true,
