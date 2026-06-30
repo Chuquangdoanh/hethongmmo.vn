@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, X, Check, CheckCircle, Copy, RotateCcw } from "lucide-react";
+import { ShoppingCart, X, Check, CheckCircle, Copy, RotateCcw, AlertTriangle } from "lucide-react";
+import { FaReact } from "react-icons/fa";
 import { formatVnd } from "@/lib/utils/format";
 import QuantitySelector from "@/components/shared/QuantitySelector";
 
@@ -104,8 +105,8 @@ function DeliveryModal({ detail, onClose }: { detail: OrderDetail; finalPrice: n
     : [];
 
   const items = [
-    ...(detail.deliveredContent ? [{ label: "NỘI DUNG NHẬN ĐƯỢC", value: detail.deliveredContent }] : []),
-    ...kfbRows.map((r) => ({ label: r.label.toUpperCase(), value: r.value })),
+    ...(detail.deliveredContent ? [{ label: "Nội dung nhận được", value: detail.deliveredContent }] : []),
+    ...kfbRows,
   ];
 
   async function copyItem(text: string, idx: number) {
@@ -124,7 +125,7 @@ function DeliveryModal({ detail, onClose }: { detail: OrderDetail; finalPrice: n
       className="fixed inset-0 z-9999 flex items-center justify-center p-4"
       style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
           <div className="flex items-center gap-2">
@@ -135,67 +136,71 @@ function DeliveryModal({ detail, onClose }: { detail: OrderDetail; finalPrice: n
           </div>
           <button
             onClick={handleClose}
-            className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors text-xs font-bold"
+            className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
           >
             <X size={13} />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="px-5 py-5 space-y-4">
+        <div className="px-5 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
           {/* Icon + title */}
           <div className="text-center">
-            <div className="text-4xl mb-2">🎉</div>
+            <div className="flex justify-center mb-2">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
+                <FaReact size={24} className="text-emerald-500" />
+              </div>
+            </div>
             <p className="text-base font-bold text-emerald-600">Giao hàng tự động!</p>
             <p className="text-xs text-gray-500 mt-1">
               Sản phẩm của bạn đã được giao thành công. Lưu thông tin bên dưới.
             </p>
           </div>
 
-          {/* Content box — white background */}
-          <div className="rounded-xl bg-white border border-gray-200 overflow-hidden max-h-64 overflow-y-auto">
-            {items.map((item, idx) => (
-              <div key={idx} className={idx > 0 ? "border-t border-gray-200" : ""}>
-                <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
-                  <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">{item.label}</span>
-                  <button
-                    onClick={() => void copyItem(item.value, idx)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:bg-gray-100 text-gray-600 text-[11px] font-medium transition-colors whitespace-nowrap"
-                  >
-                    {copiedIdx === idx ? (
-                      <><Check size={11} className="text-emerald-500" /> Đã chép</>
-                    ) : (
-                      <><Copy size={11} /> Sao chép</>
-                    )}
-                  </button>
-                </div>
-                <div className="px-4 py-3">
-                  <p className="text-sm font-mono text-gray-900 break-all leading-relaxed whitespace-pre-wrap">
-                    {item.value}
-                  </p>
-                </div>
+          {/* Content items */}
+          {items.map((item, idx) => (
+            <div key={idx} className="rounded-xl bg-white border border-gray-200 overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+                <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">
+                  {item.label}
+                </span>
+                <button
+                  onClick={() => void copyItem(item.value, idx)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-medium transition-colors whitespace-nowrap"
+                >
+                  {copiedIdx === idx ? (
+                    <><Check size={11} className="text-emerald-500" /> Đã chép</>
+                  ) : (
+                    <><Copy size={11} /> Sao chép</>
+                  )}
+                </button>
               </div>
-            ))}
-          </div>
+              <div className="min-h-11 max-h-36 overflow-y-auto px-4 py-3">
+                <p className="text-sm font-mono text-gray-900 break-all leading-relaxed whitespace-pre-wrap">
+                  {item.value}
+                </p>
+              </div>
+            </div>
+          ))}
 
-          {/* Warning note */}
+          {/* Warning */}
           <div className="flex gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-3">
-            <span className="text-amber-500 shrink-0 mt-0.5">⚠</span>
+            <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-amber-800 leading-relaxed">
               Vui lòng lưu thông tin này ngay. Bạn có thể xem lại trong mục{" "}
-              <span className="font-semibold underline cursor-pointer" onClick={() => router.push("/don-hang")}>
+              <span
+                className="font-semibold underline cursor-pointer"
+                onClick={() => router.push("/don-hang")}
+              >
                 Lịch sử đơn hàng
-              </span>{" "}
-              tại trang cá nhân.
+              </span>.
             </p>
           </div>
 
-          {/* Close button */}
           <button
             onClick={handleClose}
-            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
+            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2"
           >
-            ✓ Đã lưu, đóng lại
+            <CheckCircle size={15} /> Đã lưu, đóng lại
           </button>
         </div>
       </div>
