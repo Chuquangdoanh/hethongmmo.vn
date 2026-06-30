@@ -31,27 +31,27 @@ function buildHref(params: Record<string, string | undefined>) {
   return s ? `/admin/sellers?${s}` : "/admin/sellers";
 }
 
-const MONTHS = ["Tháng 1","Tháng 2","Tháng 3","Tháng 4","Tháng 5","Tháng 6","Tháng 7","Tháng 8","Tháng 9","Tháng 10","Tháng 11","Tháng 12"];
-const YEARS = [2024, 2025, 2026, 2027];
-
 export default async function AdminSellersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; tier?: string; q?: string; sort?: string; month?: string; year?: string; storeType?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; tier?: string; q?: string; sort?: string; dateFrom?: string; dateTo?: string; storeType?: string }>;
 }) {
-  const { page, status, tier, q, sort: sortParam, month, year, storeType } = await searchParams;
+  const { page, status, tier, q, sort: sortParam, dateFrom, dateTo, storeType } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
   const search = q?.trim() || undefined;
   const activeSort = VALID_SORTS.includes(sortParam as SortKey) ? sortParam as SortKey : undefined;
 
-  // Revenue date filter
-  const monthNum = month ? parseInt(month, 10) : undefined;
-  const yearNum  = year  ? parseInt(year, 10)  : undefined;
+  // Revenue date filter from dateFrom/dateTo params
+  const isAllTime = dateFrom === "all";
   const dateFilter =
-    monthNum && yearNum && monthNum >= 1 && monthNum <= 12
-      ? { createdAt: { gte: new Date(yearNum, monthNum - 1, 1), lt: new Date(yearNum, monthNum, 1) } }
+    !isAllTime && dateFrom
+      ? {
+          createdAt: {
+            gte: new Date(dateFrom + "T00:00:00"),
+            lte: dateTo ? new Date(dateTo + "T23:59:59") : new Date(dateFrom + "T23:59:59"),
+          },
+        }
       : {};
-  const hasDateFilter = !!(monthNum && yearNum);
 
   // Fetch tier definitions from DB
   const tierDefs = await prisma.sellerTierDefinition.findMany({
@@ -186,10 +186,10 @@ export default async function AdminSellersPage({
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const nextRevenueSort = activeSort === "revenue_desc" ? "revenue_asc" : "revenue_desc";
-  const revenueSortHref = buildHref({ status, tier, q: search, sort: nextRevenueSort, month, year, storeType, page: undefined });
+  const revenueSortHref = buildHref({ status, tier, q: search, sort: nextRevenueSort, dateFrom, dateTo, storeType, page: undefined });
 
   const nextRatingSort = activeSort === "rating_desc" ? "rating_asc" : "rating_desc";
-  const ratingSortHref = buildHref({ status, tier, q: search, sort: nextRatingSort, month, year, storeType, page: undefined });
+  const ratingSortHref = buildHref({ status, tier, q: search, sort: nextRatingSort, dateFrom, dateTo, storeType, page: undefined });
 
   // Serialize data for client component
   const serializedRows: SellerRowData[] = requests.map((r) => {
@@ -217,71 +217,18 @@ export default async function AdminSellersPage({
     };
   });
 
-  const clearDateHref = buildHref({ status, tier, q: search, sort: activeSort, storeType, page: undefined });
-
   return (
     <div className="space-y-6">
-      {/* ── Header row: title + date filter ── */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Danh sách người bán</h1>
-          <span className="text-sm text-gray-500">{total.toLocaleString("vi-VN")} tổng</span>
-        </div>
-
-        {/* Revenue date filter — right side */}
-        <form method="get" action="/admin/sellers" className="flex items-center gap-2 flex-wrap">
-          {status    && <input type="hidden" name="status"    value={status} />}
-          {tier      && <input type="hidden" name="tier"      value={tier} />}
-          {search    && <input type="hidden" name="q"         value={search} />}
-          {activeSort && <input type="hidden" name="sort"     value={activeSort} />}
-          {storeType && <input type="hidden" name="storeType" value={storeType} />}
-
-          <span className="text-xs text-gray-500 whitespace-nowrap">Lọc doanh số:</span>
-
-          <select
-            name="month"
-            defaultValue={month ?? ""}
-            className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:border-violet-400 focus:outline-none transition-colors"
-          >
-            <option value="">Tháng</option>
-            {MONTHS.map((label, idx) => (
-              <option key={idx + 1} value={String(idx + 1)}>{label}</option>
-            ))}
-          </select>
-
-          <select
-            name="year"
-            defaultValue={year ?? ""}
-            className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:border-violet-400 focus:outline-none transition-colors"
-          >
-            <option value="">Năm</option>
-            {YEARS.map((y) => (
-              <option key={y} value={String(y)}>{y}</option>
-            ))}
-          </select>
-
-          <button
-            type="submit"
-            className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-medium hover:bg-violet-700 transition-colors"
-          >
-            Lọc
-          </button>
-
-          {hasDateFilter && (
-            <a
-              href={clearDateHref}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-500 hover:border-gray-300 hover:text-gray-700 transition-colors"
-            >
-              Xóa lọc
-            </a>
-          )}
-        </form>
+      {/* ── Header ── */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Danh sách người bán</h1>
+        <span className="text-sm text-gray-500">{total.toLocaleString("vi-VN")} tổng</span>
       </div>
 
       {/* ── Search + Filters ── */}
       <AdminFilterBar
         basePath="/admin/sellers"
-        search={{ placeholder: "Tìm theo tên, email người bán..." }}
+        search={{ placeholder: "Tìm tên, email người bán..." }}
         selects={[
           {
             paramKey: "status",
@@ -303,18 +250,9 @@ export default async function AdminSellersPage({
             ],
           },
         ]}
-        preserveParams={["month", "year", "sort", "tier"]}
+        dateRange={{ showQuickDates: true }}
+        preserveParams={["sort", "tier"]}
       />
-
-      {/* ── Date filter indicator ── */}
-      {hasDateFilter && (
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-violet-100 text-violet-700 border border-violet-200">
-            Doanh số: {MONTHS[(monthNum ?? 1) - 1]} {yearNum}
-          </span>
-          <a href={clearDateHref} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">✕ Xóa</a>
-        </div>
-      )}
 
       <SellersTableClient
         rows={serializedRows}
@@ -333,8 +271,8 @@ export default async function AdminSellersPage({
             ...(tier       ? { tier }             : {}),
             ...(search     ? { q: search }        : {}),
             ...(activeSort ? { sort: activeSort } : {}),
-            ...(month      ? { month }            : {}),
-            ...(year       ? { year }             : {}),
+            ...(dateFrom   ? { dateFrom }          : {}),
+            ...(dateTo     ? { dateTo }            : {}),
           }}
         />
       )}
