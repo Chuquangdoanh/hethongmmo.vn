@@ -3,22 +3,19 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
-import { formatVnd } from "@/lib/utils/format";
-import { r2Url } from "@/lib/utils/image-url";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import Pagination from "@/components/shared/Pagination";
-import { SortSelect } from "@/app/(public)/tai-nguyen-mmo/_components/SortSelect";
 import { buildMeta } from "@/lib/utils/seo";
 import { KhoFilterSidebar } from "./_components/KhoFilterSidebar";
 import { CategoryFilter } from "@/components/shared/CategoryFilter";
 import { batchGetFavoriteData } from "@/lib/services/favorite.service";
-import FavoriteButton from "@/components/shared/FavoriteButton";
 import {
-  Package, ShoppingBag, ShoppingCart,
-  Pencil, CheckCircle, FolderOpen,
-  Users, Clock, Shield, X, Store,
+  Package, FolderOpen,
+  Users, Clock, Shield, Store,
 } from "lucide-react";
+import { KhoProductList } from "./_components/KhoProductList";
+import type { KhoProductItem } from "./_components/KhoProductList";
 
 export const metadata: Metadata = buildMeta({
   title: "Kho Tài Nguyên MMO | Tài Khoản & Công Cụ Số Chất Lượng Cao",
@@ -30,24 +27,6 @@ export const metadata: Metadata = buildMeta({
 const PAGE_SIZE = 30;
 const BASE_PATH = "/kho-tai-nguyen";
 type SortId = "noi-bat" | "ban-chay" | "moi-nhat" | "gia-cao" | "gia-thap";
-
-function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }) {
-  const cls = size === "xs" ? "w-2.5 h-2.5" : "w-3 h-3";
-  return (
-    <span className="inline-flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((s) => (
-        <svg
-          key={s}
-          className={`${cls} ${s <= Math.round(rating) ? "text-warning" : "text-[#e2e8f0]"}`}
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-        </svg>
-      ))}
-    </span>
-  );
-}
 
 
 export default async function KhoTaiNguyenPage({
@@ -477,20 +456,7 @@ export default async function KhoTaiNguyenPage({
           </Suspense>
           <div className="flex-1 min-w-0">
 
-          {/* Sản phẩm */}
-            {/* Header row */}
-            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <h2 className="font-bold text-[#1e293b] text-[15px]">Tài nguyên trong kho</h2>
-              </div>
-              <div className="flex items-center gap-2">
-                <SortSelect basePath={BASE_PATH} />
-              </div>
-            </div>
-
-            
-
-            {totalCount === 0 ? (
+          {totalCount === 0 ? (
               <div className="text-center py-20">
                 <Package size={44} strokeWidth={1.25} className="text-[#cbd5e1] mx-auto mb-3" />
                 <p className="font-semibold text-[#475569]">Chưa có sản phẩm nào</p>
@@ -500,110 +466,29 @@ export default async function KhoTaiNguyenPage({
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
-                {pagedProducts.map((item) => {
-                  const { id, name, imageUrl, category, description: desc, price, salesCount, isNew, isHot, href, bought, rated, review, available: avail, sellerPrefix: seller, favoriteCount, isFavorite, kind } = item;
-
-                  return (
-                    <div
-                      key={id}
-                      className="relative bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-[#3b82f6]/40 transition-all flex flex-col"
-                    >
-                      {/* Full-card clickable overlay */}
-                      <Link href={href} className="absolute inset-0 z-1" aria-label={`Xem chi tiết ${name}`} />
-
-                      {/* ── Ảnh sản phẩm ── */}
-                      <div className="block relative shrink-0">
-                        <div className="aspect-video bg-light overflow-hidden" style={{ position: "relative" }}>
-                          {imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={r2Url(imageUrl)}
-                              alt={name}
-                              loading="lazy"
-                              decoding="async"
-                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ShoppingBag size={32} strokeWidth={1.25} className="text-[#94a3b8]" />
-                            </div>
-                          )}
-
-                          {/* HOT / NEW — top-left */}
-                          {(isHot || isNew) && (
-                            <div className="absolute top-2 left-2 flex gap-1">
-                              {isHot && (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-[#ef4444] text-white uppercase">
-                                  HOT
-                                </span>
-                              )}
-                              {!isHot && isNew && (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-[#22c55e] text-white uppercase">
-                                  NEW
-                                </span>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Rating overlay — luôn hiển thị (match Tài Nguyên MMO) */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/65 to-transparent px-2.5 pt-5 pb-2">
-                            {review && review.count > 0 ? (
-                              <div className="flex items-center gap-1">
-                                <StarBar rating={review.avg} size="xs" />
-                                <span className="text-[11px] font-bold text-white leading-none">{review.avg.toFixed(1)}</span>
-                                <span className="text-[10px] text-white/60">({review.count})</span>
-                              </div>
-                            ) : (
-                              <span className="text-[10px] text-white/50 italic">Chưa có đánh giá</span>
-                            )}
-                          </div>
-
-                        </div>
-                      </div>
-
-                      {/* ── Thông tin sản phẩm ── */}
-                      <div className="p-2 sm:p-3 flex flex-col gap-1 sm:gap-1.5 flex-1">
-                        <h3 className="text-sm font-bold text-[#1e293b] line-clamp-2 leading-snug">
-                          {name}
-                        </h3>
-
-                        {/* Stats: Đã bán · Còn */}
-                        <div className="flex items-center gap-1.5 text-[10px] text-[#94a3b8] flex-wrap">
-                          <span className="flex items-center gap-0.5">
-                            <ShoppingCart size={8} strokeWidth={2} />
-                            <span>Đã bán <strong className="text-[#374151]">{salesCount}</strong></span>
-                          </span>
-                          <span className="text-[#d1d5db]">·</span>
-                          <span>Còn <strong className="text-[#374151]">{avail}</strong></span>
-                        </div>
-
-                        {/* Review actions */}
-                        {bought && !rated && (
-                          <Link
-                            href={href}
-                            className="relative z-2 inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors w-fit"
-                          >
-                            <Pencil size={9} strokeWidth={2} /> Đánh giá
-                          </Link>
-                        )}
-                        {bought && rated && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0] w-fit">
-                            <CheckCircle size={9} strokeWidth={2} /> Đã đánh giá
-                          </span>
-                        )}
-
-                        {/* Price */}
-                        <div className="mt-auto pt-1.5 sm:pt-2">
-                          <span className="text-xs font-extrabold text-[#e11d48] whitespace-nowrap leading-none">
-                            {formatVnd(price)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <KhoProductList
+                basePath={BASE_PATH}
+                products={pagedProducts.map((item): KhoProductItem => ({
+                  id: item.id,
+                  name: item.name,
+                  imageUrl: item.imageUrl,
+                  category: item.category,
+                  description: item.description,
+                  price: item.price,
+                  salesCount: item.salesCount,
+                  available: item.available,
+                  isNew: item.isNew,
+                  isHot: item.isHot,
+                  href: item.href,
+                  bought: item.bought,
+                  rated: item.rated,
+                  review: item.review,
+                  sellerPrefix: item.sellerPrefix,
+                  favoriteCount: item.favoriteCount,
+                  isFavorite: item.isFavorite,
+                  kind: item.kind,
+                }))}
+              />
             )}
 
             {totalPages > 1 && (
