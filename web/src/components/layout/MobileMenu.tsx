@@ -33,40 +33,9 @@ interface Props {
   serviceCategories?: { name: string; iconUrl: string | null }[];
 }
 
-type PanelType = "services" | "resources" | "account" | "support" | "seller-support";
+type PanelType = "services" | "account" | "support" | "seller-support";
 
-interface ResourceItem {
-  id: string;
-  href: string;
-  icon: React.ElementType;
-  iconBg: string;
-  iconColor: string;
-  label: string;
-  desc: string;
-  children: { label: string; href: string }[];
-}
 
-// Tut MMO children được build động từ tutCategories (truyền từ server)
-const STATIC_RESOURCE_ITEMS: Omit<ResourceItem, "children">[] = [
-  {
-    id: "kho-tai-nguyen",
-    href: "/kho-tai-nguyen",
-    icon: Package,
-    iconBg: "#fef3c7",
-    iconColor: "#d97706",
-    label: "KHO TÀI NGUYÊN",
-    desc: "Hệ Thống Bán Kho Facebook | Fanpage | Kênh Tik Tok...",
-  },
-  {
-    id: "nguyen-lieu",
-    href: "/tai-nguyen-mmo",
-    icon: FolderOpen,
-    iconBg: "#fef3c7",
-    iconColor: "#d97706",
-    label: "NGUYÊN LIỆU",
-    desc: "VIA | Fanpage | BM | Tài Khoản Pro | Fake IP....",
-  },
-];
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, balance, avatarUrl, tutCategories = [], serviceCategories = [] }: Props) {
@@ -151,23 +120,6 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
   const isSeller   = (user?.role === "SELLER" && user?.sellerStatus === "APPROVED") || user?.role === "STAFF" || user?.role === "ADMIN";
   const isAdmin    = user?.role === "ADMIN" || user?.role === "STAFF";
 
-  // Build resource list: Tut MMO với children từ CMS, sau đó các mục tĩnh
-  const resourceItems: ResourceItem[] = [
-    {
-      id: "tut-mmo",
-      href: "/tut-tricks",
-      icon: Lightbulb,
-      iconBg: "#fee2e2",
-      iconColor: "#dc2626",
-      label: "TUT MMO",
-      desc: "Cung Cấp TUT + Thủ Thuật Các Nền Tảng Facebook + Tik Tok...",
-      children: tutCategories.map((c) => ({
-        label: c.name,
-        href: `/tut-tricks?category=${encodeURIComponent(c.name)}`,
-      })),
-    },
-    ...STATIC_RESOURCE_ITEMS.map((item) => ({ ...item, children: [] as { label: string; href: string }[] })),
-  ];
 
   /* ── Shared user card ── */
   const userCard = isLoggedIn && user ? (
@@ -251,6 +203,56 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
             </div>
           </Link>
 
+          {/* Tut MMO accordion */}
+          {tutCategories.length > 0 && (
+            <div className="mnav-section">
+              <p className="mnav-section-label">TUT MMO</p>
+              <div className="mnav-list">
+                <div className="mnav-list-item-wrap">
+                  <button
+                    className="mnav-list-link mnav-list-link--expandable"
+                    onClick={() => toggleExpanded("tut-mmo")}
+                    aria-expanded={expanded === "tut-mmo"}
+                  >
+                    <span className="mnav-list-icon">
+                      <Lightbulb size={16} />
+                    </span>
+                    <div className="mnav-list-text">
+                      <span className="mnav-list-name">TUT MMO</span>
+                      <span className="mnav-list-desc">Cung Cấp TUT + Thủ Thuật Các Nền Tảng Facebook + Tik Tok...</span>
+                    </div>
+                    {expanded === "tut-mmo"
+                      ? <ChevronDown size={14} className="mnav-chevron mnav-chevron--open" />
+                      : <ChevronRight size={14} className="mnav-chevron" />}
+                  </button>
+                  {expanded === "tut-mmo" && (
+                    <div className="mnav-accordion-body">
+                      {tutCategories.map((c) => (
+                        <Link
+                          key={c.name}
+                          href={`/tut-tricks?category=${encodeURIComponent(c.name)}`}
+                          prefetch={false}
+                          className="mnav-accordion-item"
+                          onClick={closeWithNav}
+                        >
+                          {c.name}
+                        </Link>
+                      ))}
+                      <Link
+                        href="/tut-tricks"
+                        prefetch={false}
+                        className="mnav-accordion-item mnav-accordion-view-all"
+                        onClick={closeWithNav}
+                      >
+                        Xem tất cả →
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Danh sách danh mục từ CMS */}
           {serviceCategories.length > 0 ? (
             <div className="mnav-svc-grid">
@@ -277,137 +279,6 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           ) : (
             <p className="mnav-svc-empty">Chưa có danh mục dịch vụ nào.</p>
           )}
-        </div>
-      </div>
-
-      {/* ── Resources Panel ── */}
-      <div
-        className={`mnav-panel${activePanel === "resources" ? " mnav-panel--open" : ""}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Tài nguyên"
-        aria-hidden={activePanel !== "resources"}
-      >
-        <div className="mnav-panel-head">
-          <span className="mnav-panel-title">Tài nguyên</span>
-          <button className="mnav-panel-close" onClick={closePanel} aria-label="Đóng menu">✕</button>
-        </div>
-        <div className="mnav-panel-body">
-          {/* Banner hero card */}
-          <div className="mnav-res-banner">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/Tuttrick.jpg" alt="" className="mnav-res-banner-bg" aria-hidden="true" />
-            <div className="mnav-res-banner-text">
-              <p className="mnav-res-banner-title">
-                Hệ Thống Tài Nguyên
- <ChevronRight size={14} className="mnav-res-banner-arrow" />
-              </p>
-              <p className="mnav-res-banner-desc">Khám phá, học hỏi và phát triển kỹ năng MMO mỗi ngày.</p>
-            </div>
-            <div className="mnav-banner-trust">
-              <div className="mnav-banner-trust-item">
-                <RotateCcw size={15} className="mnav-banner-trust-icon--green" />
-                <div>
-                  <p className="mnav-banner-trust-name">Hoàn tiền 100%</p>
-                  <p className="mnav-banner-trust-sub">Nếu không hài lòng</p>
-                </div>
-              </div>
-              <div className="mnav-banner-trust-item">
-                <Headphones size={15} className="mnav-banner-trust-icon--blue" />
-                <div>
-                  <p className="mnav-banner-trust-name">Hỗ trợ 24/7</p>
-                  <p className="mnav-banner-trust-sub">Đội ngũ luôn sẵn sàng</p>
-                </div>
-              </div>
-              <div className="mnav-banner-trust-item">
-                <Award size={15} className="mnav-banner-trust-icon--orange" />
-                <div>
-                  <p className="mnav-banner-trust-name">Uy tín hàng đầu</p>
-                  <p className="mnav-banner-trust-sub">Cộng đồng MMO lớn mạnh</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* NỔI BẬT */}
-          <div className="mnav-section">
-            <p className="mnav-section-label">NỔI BẬT</p>
-            <div className="mnav-featured-grid">
-              <Link href="/dich-vu" prefetch={false} className="mnav-featured-card" onClick={closeWithNav}>
-                <div className="mnav-featured-icon"><GalleryVerticalEnd size={20} /></div>
-                <div className="mnav-featured-name">DỊCH VỤ</div>
-                <div className="mnav-featured-desc">Mua bán sản phẩm và dịch vụ MMO</div>
-              </Link>
-              <Link href="/khoa-hoc" prefetch={false} className="mnav-featured-card" onClick={closeWithNav}>
-                <div className="mnav-featured-icon"><GraduationCap size={20} /></div>
-                <div className="mnav-featured-name">KHÓA HỌC</div>
-                <div className="mnav-featured-desc">Học tập và phát triển kỹ năng</div>
-              </Link>
-            </div>
-          </div>
-
-          {/* TÀI NGUYÊN accordion */}
-          <div className="mnav-section">
-            <p className="mnav-section-label">TÀI NGUYÊN</p>
-            <div className="mnav-list">
-              {resourceItems.map((item) => {
-                const isExpanded  = expanded === item.id;
-                const hasChildren = item.children.length > 0;
-                const Icon        = item.icon;
-                return (
-                  <div key={item.id} className="mnav-list-item-wrap">
-                    {hasChildren ? (
-                      <button
-                        className="mnav-list-link mnav-list-link--expandable"
-                        onClick={() => toggleExpanded(item.id)}
-                        aria-expanded={isExpanded}
-                      >
-                        <span className="mnav-list-icon">
-                          <Icon size={16} />
-                        </span>
-                        <div className="mnav-list-text">
-                          <span className="mnav-list-name">{item.label}</span>
-                          <span className="mnav-list-desc">{item.desc}</span>
-                        </div>
-                        {isExpanded
-                          ? <ChevronDown size={14} className="mnav-chevron mnav-chevron--open" />
-                          : <ChevronRight size={14} className="mnav-chevron" />}
-                      </button>
-                    ) : (
-                      <Link href={item.href} prefetch={false} className="mnav-list-link" onClick={closeWithNav}>
-                        <span className="mnav-list-icon">
-                          <Icon size={16} />
-                        </span>
-                        <div className="mnav-list-text">
-                          <span className="mnav-list-name">{item.label}</span>
-                          <span className="mnav-list-desc">{item.desc}</span>
-                        </div>
-                        <ChevronRight size={14} className="mnav-chevron" />
-                      </Link>
-                    )}
-                    {hasChildren && isExpanded && (
-                      <div className="mnav-accordion-body">
-                        {item.children.map((child) => (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            prefetch={false}
-                            className="mnav-accordion-item"
-                            onClick={closeWithNav}
-                          >
-                            {child.label}
-                          </Link>
-                        ))}
-                        <Link href={item.href} prefetch={false} className="mnav-accordion-item mnav-accordion-view-all" onClick={closeWithNav}>
-                          Xem tất cả →
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         </div>
       </div>
 
@@ -692,14 +563,24 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           <GraduationCap size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Khóa Học</span>
         </Link>
-        <button
-          className={`mnav-tab${activePanel === "resources" ? " mnav-tab--active" : ""}`}
-          onClick={() => openPanel("resources")}
-          aria-expanded={activePanel === "resources"}
+        <Link
+          href="/kho-tai-nguyen"
+          prefetch={false}
+          className={`mnav-tab${!isOpen && pathname.startsWith("/kho-tai-nguyen") ? " mnav-tab--active" : ""}`}
+          onClick={closeWithNav}
         >
           <FolderOpen size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Tài Nguyên</span>
-        </button>
+        </Link>
+        <Link
+          href="/tai-nguyen-mmo"
+          prefetch={false}
+          className={`mnav-tab${!isOpen && pathname.startsWith("/tai-nguyen-mmo") ? " mnav-tab--active" : ""}`}
+          onClick={closeWithNav}
+        >
+          <Package size={22} className="mnav-tab-icon" />
+          <span className="mnav-tab-label">Nguyên liệu</span>
+        </Link>
         {isLoggedIn ? (
           <button
             className={`mnav-tab${activePanel === "account" ? " mnav-tab--active" : ""}`}
