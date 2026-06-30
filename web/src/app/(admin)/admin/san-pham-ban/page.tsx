@@ -22,7 +22,7 @@ type ProductRow = {
 const PRODUCT_SELECT = {
   id: true, name: true, price: true, isActive: true,
   isRestricted: true, isHidden: true, createdAt: true,
-  seller: { select: { id: true, fullName: true, email: true, sellerCategory: true } },
+  seller: { select: { id: true, fullName: true, email: true, sellerCategory: true, sellerRequest: { select: { id: true } } } },
   _count: {
     select: {
       orders: true,
@@ -179,27 +179,28 @@ export default async function AdminSellerProductsPage({
         {/* Divider */}
         <span className="text-gray-200 select-none">|</span>
 
-        {/* Rating sort */}
-        {[
-          { label: "Mặc định",        val: undefined        },
-          { label: "★ Cao → Thấp", val: "rating_desc"    },
-          { label: "★ Thấp → Cao", val: "rating_asc"     },
-        ].map(({ label, val }) => {
-          const active = val === undefined ? !sort : sort === val;
-          return (
-            <Link
-              key={label}
-              href={filterUrl({ sort: val, page: undefined })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                active
-                  ? "bg-amber-500 text-white border-amber-500"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-amber-400 hover:text-amber-600"
-              }`}
+        {/* Rating sort dropdown */}
+        <form method="get" action="/admin/san-pham-ban">
+          {sellerId   && <input type="hidden" name="sellerId"   value={sellerId} />}
+          {restricted && <input type="hidden" name="restricted" value={restricted} />}
+          <div className="flex items-center gap-1">
+            <select
+              name="sort"
+              defaultValue={sort ?? ""}
+              className="h-8 px-2 pr-7 text-xs border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:border-amber-400 hover:border-amber-400 transition-colors cursor-pointer"
             >
-              {label}
-            </Link>
-          );
-        })}
+              <option value="">Mặc định</option>
+              <option value="rating_desc">★ Cao → Thấp</option>
+              <option value="rating_asc">★ Thấp → Cao</option>
+            </select>
+            <button
+              type="submit"
+              className="h-8 px-2.5 text-xs rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors border border-amber-500"
+            >
+              Lọc
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Table */}
@@ -248,7 +249,7 @@ export default async function AdminSellerProductsPage({
                         <td className="px-4 py-3">
                           <Link
                             prefetch={false}
-                            href={`/admin/sellers/${p.seller.id}`}
+                            href={p.seller.sellerRequest ? `/admin/sellers/${p.seller.sellerRequest.id}` : `/admin/sellers`}
                             className="text-xs font-medium text-blue-600 hover:underline block truncate max-w-30"
                           >
                             {p.seller.fullName}
