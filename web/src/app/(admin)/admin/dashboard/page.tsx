@@ -270,36 +270,42 @@ export default async function AdminDashboardPage({
       value: totalOrders.toLocaleString("vi-VN"),
       sub:   `+${ordersToday} hôm nay`,
       color: "text-[#A855F7]",
+      href:  "/admin/orders",
     },
     {
       label: "Nạp tiền",
       value: formatVnd(Number(depositsPeriod._sum.amount ?? 0)),
       sub:   `All-time: ${formatVnd(Number(totalDeposits._sum.amount ?? 0))}`,
       color: "text-[#10B981]",
+      href:  "/admin/deposits",
     },
     {
       label: "Tổng tiền trên web",
       value: formatVnd(Number(totalBalanceOnWeb._sum.balance ?? 0)),
       sub:   "Tổng balance user hiện tại",
       color: "text-[#2563eb]",
+      href:  "/admin/users",
     },
     {
       label: "Rút chờ duyệt",
       value: pendingWithdrawals.toString(),
       sub:   `${formatVnd(Number(pendingWithdrawalAmount._sum.amount ?? 0))} · ${openComplaints} KN`,
       color: pendingWithdrawals > 0 ? "text-[#F59E0B]" : "text-gray-500",
+      href:  "/admin/withdrawals?status=PENDING",
     },
     {
       label: "Rút tiền",
       value: formatVnd(Number(withdrawalPeriod._sum.amount ?? 0)),
       sub:   `Sau phí: ${formatVnd(Number(withdrawalPeriod._sum.netAmount ?? 0))}`,
       color: "text-blue-600",
+      href:  "/admin/withdrawals",
     },
     {
       label: "Doanh số seller",
       value: formatVnd(Number(sellerRevenuePeriod._sum.finalPrice ?? 0)),
       sub:   `${sellerRevenuePeriod._count.id} đơn · ${approvedSellerCount} seller`,
       color: "text-emerald-600",
+      href:  "/admin/sellers",
     },
   ];
 
@@ -312,12 +318,23 @@ export default async function AdminDashboardPage({
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        {STATS.map(({ label, value, sub, color }) => (
-          <div key={label} className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+        {STATS.map(({ label, value, sub, color, href }) => (
+          <Link
+            key={label}
+            href={href}
+            prefetch={false}
+            className="relative rounded-xl border border-gray-200 bg-gray-50 p-5 hover:border-gray-300 hover:bg-white transition-colors group"
+          >
+            <svg
+              className="absolute top-3 right-3 text-gray-300 group-hover:text-gray-500 transition-colors"
+              width="12" height="12" viewBox="0 0 12 12" fill="none"
+            >
+              <path d="M2 10L10 2M10 2H4M10 2V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             <p className="text-xs text-gray-500 mb-1">{label}</p>
             <p className={`text-2xl font-bold ${color} mb-1`}>{value}</p>
             <p className="text-[10px] text-gray-500">{sub}</p>
-          </div>
+          </Link>
         ))}
       </div>
 
