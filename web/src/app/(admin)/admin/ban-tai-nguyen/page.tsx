@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
@@ -54,12 +55,9 @@ export default async function BanTaiNguyenPage({
   todayEnd.setHours(23, 59, 59, 999);
 
   const isAllTime = dateFromParam === "all";
-  const dateFilter = isAllTime ? {} : {
-    createdAt: {
-      gte: dateFromParam ? new Date(dateFromParam + "T00:00:00") : todayStart,
-      lte: dateToParam && dateToParam !== "all" ? new Date(dateToParam + "T23:59:59") : todayEnd,
-    },
-  };
+  const dateGte = isAllTime ? null : (dateFromParam ? new Date(dateFromParam + "T00:00:00") : todayStart);
+  const dateLte = isAllTime ? null : (dateToParam && dateToParam !== "all" ? new Date(dateToParam + "T23:59:59") : todayEnd);
+  const dateFilter = isAllTime ? {} : { createdAt: { gte: dateGte!, lte: dateLte! } };
 
   const validOrderType   = orderType && (PRODUCT_TYPE_KEYS as readonly string[]).includes(orderType) ? orderType : undefined;
   const validSection     = section && (STORE_SECTION_KEYS as readonly string[]).includes(section) ? section : undefined;
@@ -109,7 +107,10 @@ export default async function BanTaiNguyenPage({
     ...dateFilter,
   };
 
-  const [orders, total, processingCount, doneToday, revenueToday, typeCounts] = await Promise.all([
+  const kfbDateGteCondition = dateGte ? Prisma.sql`AND o.created_at >= ${dateGte}` : Prisma.empty;
+  const kfbDateLteCondition = dateLte ? Prisma.sql`AND o.created_at <= ${dateLte}` : Prisma.empty;
+
+  const [orders, total, processingCount, doneToday, revenueToday, typeCounts, kfbProfitRows] = await Promise.all([
     prisma.order.findMany({
       where: where as never,
       orderBy: { createdAt: "desc" },
@@ -134,7 +135,22 @@ export default async function BanTaiNguyenPage({
       where: typeCountsWhere as never,
       _count: { id: true },
     }),
+    validOrderType === "KHUONGFB_PRODUCT"
+      ? prisma.$queryRaw<Array<{ total_profit: string | null }>>`
+          SELECT COALESCE(SUM(
+            o.final_price - ep.original_price * o.final_price / NULLIF(ep.sale_price, 0)
+          ), 0)::text AS total_profit
+          FROM orders o
+          JOIN external_products ep ON o.external_product_id = ep.id
+          WHERE o.order_type = 'KHUONGFB_PRODUCT'
+            AND o.status = 'DONE'
+            ${kfbDateGteCondition}
+            ${kfbDateLteCondition}
+        `
+      : Promise.resolve(null as null),
   ]);
+
+  const kfbTotalProfit = Array.isArray(kfbProfitRows) ? Number(kfbProfitRows[0]?.total_profit ?? 0) : 0;
 
   const typeCountMap: Record<string, number> = {};
   for (const row of typeCounts) {
@@ -202,7 +218,7 @@ export default async function BanTaiNguyenPage({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="rounded-xl border border-[#A855F7]/30 bg-[#A855F7]/5 p-5">
           <p className="text-xs font-medium text-[#A855F7] uppercase tracking-wide mb-2">Đang xử lý</p>
           <p className="text-3xl font-bold text-[#A855F7]">{processingCount.toLocaleString("vi-VN")}</p>
@@ -213,10 +229,16 @@ export default async function BanTaiNguyenPage({
           <p className="text-3xl font-bold text-[#10B981]">{doneToday.toLocaleString("vi-VN")}</p>
           <p className="text-xs text-gray-400 mt-1.5">Đơn thành công</p>
         </div>
-        <div className="col-span-2 rounded-xl border border-[#2563eb]/30 bg-[#2563eb]/5 p-5">
+        <div className="rounded-xl border border-[#2563eb]/30 bg-[#2563eb]/5 p-5">
           <p className="text-xs font-medium text-[#2563eb] uppercase tracking-wide mb-2">Doanh thu — {periodCardLabel}</p>
           <p className="text-2xl font-bold text-[#2563eb]">{formatVnd(Number(revenueToday._sum.finalPrice ?? 0))}</p>
-          <p className="text-xs text-gray-400 mt-1.5">Từ đơn hoàn thành</p>
+          {validOrderType === "KHUONGFB_PRODUCT" ? (
+            <p className="text-xs text-amber-600 font-semibold mt-1.5">
+              Lợi nhuận: {formatVnd(kfbTotalProfit)}
+            </p>
+          ) : (
+            <p className="text-xs text-gray-400 mt-1.5">Từ đơn hoàn thành</p>
+          )}
         </div>
       </div>
 
