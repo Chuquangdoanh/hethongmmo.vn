@@ -8,6 +8,8 @@ import { auth } from "@/auth";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ReviewSection from "@/components/shared/ReviewSection";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
+import { getFavoriteStatus } from "@/lib/services/favorite.service";
+import FavoriteButton from "@/components/shared/FavoriteButton";
 import { KfbBuyButton } from "./_components/KfbBuyButton";
 import {
   CheckCircle, ShieldCheck, Zap, ArrowLeft,
@@ -107,7 +109,7 @@ export default async function KfbProductDetailPage({
 
   const me = session?.user as AuthenticatedUser | undefined;
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, contactCms] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, contactCms, favoriteStatus] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "KHUONGFB_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -142,6 +144,7 @@ export default async function KfbProductDetailPage({
       _count: { id: true },
     }),
     getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT),
+    getFavoriteStatus(me?.id, "KHUONGFB_PRODUCT", product.id),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
@@ -189,6 +192,19 @@ export default async function KfbProductDetailPage({
           <ShoppingCart size={80} strokeWidth={1} className="text-[#cbd5e1]" />
         </div>
       )}
+      {/* Nút yêu thích — cuối DOM + z-index cao nhất, luôn đứng trên mọi ảnh */}
+      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 9999 }}>
+        <FavoriteButton
+          productId={product.id}
+          productType="KHUONGFB_PRODUCT"
+          initialIsFavorite={favoriteStatus.isFavorite}
+          initialCount={favoriteStatus.favoriteCount}
+          isLoggedIn={!!me}
+          showCount
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white border border-white shadow-md hover:shadow-lg transition-shadow"
+          iconSize={18}
+        />
+      </div>
     </div>
   );
 

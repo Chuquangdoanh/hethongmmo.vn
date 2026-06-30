@@ -6,6 +6,7 @@ export const FAVORITE_PRODUCT_TYPES = [
   "TUTTRICK",
   "MMO_PRODUCT",
   "SELLER_PRODUCT",
+  "KHUONGFB_PRODUCT",
 ] as const;
 
 export type FavoriteProductTypeValue = (typeof FAVORITE_PRODUCT_TYPES)[number];
