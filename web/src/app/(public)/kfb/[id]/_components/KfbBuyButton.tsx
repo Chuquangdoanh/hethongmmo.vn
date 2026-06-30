@@ -104,9 +104,8 @@ function DeliveryModal({ detail, onClose }: { detail: OrderDetail; finalPrice: n
     : [];
 
   const items = [
-    { label: "Mã đơn hàng", value: detail.orderCode },
-    ...(detail.deliveredContent ? [{ label: "Nội dung nhận được", value: detail.deliveredContent }] : []),
-    ...kfbRows,
+    ...(detail.deliveredContent ? [{ label: "NỘI DUNG NHẬN ĐƯỢC", value: detail.deliveredContent }] : []),
+    ...kfbRows.map((r) => ({ label: r.label.toUpperCase(), value: r.value })),
   ];
 
   async function copyItem(text: string, idx: number) {
@@ -153,25 +152,25 @@ function DeliveryModal({ detail, onClose }: { detail: OrderDetail; finalPrice: n
             </p>
           </div>
 
-          {/* Dark content box */}
-          <div className="rounded-xl bg-gray-900 overflow-hidden max-h-64 overflow-y-auto">
+          {/* Content box — white background */}
+          <div className="rounded-xl bg-white border border-gray-200 overflow-hidden max-h-64 overflow-y-auto">
             {items.map((item, idx) => (
-              <div key={idx} className={idx > 0 ? "border-t border-gray-700" : ""}>
-                <div className="flex items-center justify-between px-4 py-2">
-                  <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">{item.label}</span>
+              <div key={idx} className={idx > 0 ? "border-t border-gray-200" : ""}>
+                <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-200">
+                  <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wide">{item.label}</span>
                   <button
                     onClick={() => void copyItem(item.value, idx)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-[11px] font-medium transition-colors whitespace-nowrap"
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:bg-gray-100 text-gray-600 text-[11px] font-medium transition-colors whitespace-nowrap"
                   >
                     {copiedIdx === idx ? (
-                      <><Check size={11} className="text-emerald-400" /> Đã chép</>
+                      <><Check size={11} className="text-emerald-500" /> Đã chép</>
                     ) : (
                       <><Copy size={11} /> Sao chép</>
                     )}
                   </button>
                 </div>
-                <div className="px-4 pb-3">
-                  <p className="text-sm font-mono text-white break-all leading-relaxed whitespace-pre-wrap">
+                <div className="px-4 py-3">
+                  <p className="text-sm font-mono text-gray-900 break-all leading-relaxed whitespace-pre-wrap">
                     {item.value}
                   </p>
                 </div>
