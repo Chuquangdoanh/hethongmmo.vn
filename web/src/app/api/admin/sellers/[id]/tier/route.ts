@@ -44,6 +44,15 @@ export async function PATCH(
       data: { sellerTier: parsed.data.tier },
     });
 
+    await prisma.notification.create({
+      data: {
+        userId: id,
+        title: "Hạng gian hàng được cập nhật",
+        body: `Hạng gian hàng của bạn đã được nâng lên ${tierDef.label}.`,
+        type: "SELLER_APPROVED",
+      },
+    });
+
     await prisma.auditLog.create({
       data: {
         actorId: admin.id,

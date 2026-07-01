@@ -40,7 +40,7 @@ export default async function SuaSanPhamPage({
       },
     }),
     prisma.sellerSubCategory.findMany({
-      where: { isActive: true },
+      where: { isActive: true, users: { some: { userId: me.id } } },
       select: {
         id: true,
         name: true,
