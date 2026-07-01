@@ -416,7 +416,7 @@ export default async function TaiNguyenMmoPage({
                     <h1 className="text-xl md:text-2xl font-extrabold leading-tight tracking-tight">
                       Nguyên Liệu MMO
                     </h1>
-                    <p className="text-white/60 text-xs mt-0.5">Tài khoản &amp; công cụ số — Giao tự động, Bảo hành uy tín</p>
+                    <p className="text-white/60 text-xs mt-0.5">Tài khoản &amp; công cụ số — Phục vụ nhu cầu MMO.</p>
                   </div>
                 </div>
                 <Link

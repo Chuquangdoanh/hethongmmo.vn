@@ -406,8 +406,8 @@ export default async function KhoTaiNguyenPage({
                     <FolderOpen size={20} className="text-[#7dd3fc]" />
                   </div>
                   <div className="min-w-0">
-                    <h1 className="text-base sm:text-xl font-extrabold text-white leading-tight">Kho Tài Nguyên MMO</h1>
-                    <p className="text-[#93c5fd] text-[11px] sm:text-xs mt-0.5">Tài nguyên chất lượng cao — giao tự động sau thanh toán</p>
+                    <h1 className="text-base sm:text-xl font-extrabold text-white leading-tight">Kho Tài Nguyên </h1>
+                    <p className="text-[#93c5fd] text-[11px] sm:text-xs mt-0.5">Cung cấp Tài nguyên chẩt lượng cao - Chuyên các kênh sẵn tương tác. </p>
                   </div>
                 </div>
                 <Link
