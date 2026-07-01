@@ -11,6 +11,7 @@ import {
 import { decrypt } from "@/lib/security/encryption";
 import { logger } from "@/lib/utils/logger";
 import { randomBytes } from "crypto";
+import { sendTelegramAlert, escTelegramHtml } from "@/lib/services/telegram-alert.service";
 
 // ── Course deposit constants ──────────────────────────────────────────────────
 export const COURSE_DEPOSIT_AMOUNT = 5_000_000;
@@ -273,6 +274,18 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
   });
 
   logger.info({ userId, orderType, itemId, orderId: result.order.id }, "Purchase processed");
+
+  sendTelegramAlert(
+    [
+      `🛒 <b>Mua hàng thành công</b>`,
+      ``,
+      `👤 User: <code>${escTelegramHtml(userId)}</code>`,
+      `📦 Sản phẩm: ${escTelegramHtml(itemName)}`,
+      `💵 Số tiền: <b>${price.toFixed(0)}đ</b>`,
+      `🔖 Mã đơn: <code>${escTelegramHtml(result.order.orderCode)}</code>`,
+    ].join("\n"),
+  );
+
   return result;
 }
 

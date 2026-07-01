@@ -3,6 +3,7 @@ import Decimal from "decimal.js";
 import type { TxType, Transaction } from "@prisma/client";
 import { DuplicateError, NotFoundError } from "@/lib/errors";
 import { logger } from "@/lib/utils/logger";
+import { sendTelegramAlert, escTelegramHtml } from "@/lib/services/telegram-alert.service";
 
 interface DepositParams {
   userId: string;
@@ -103,5 +104,16 @@ export async function processDeposit(params: DepositParams): Promise<Transaction
   });
 
   logger.info({ userId, amount, referenceCode, type }, "Deposit processed");
+
+  sendTelegramAlert(
+    [
+      `💰 <b>Nạp tiền thành công</b>`,
+      ``,
+      `👤 User: <code>${escTelegramHtml(userId)}</code>`,
+      `💵 Số tiền: <b>${depositAmount.toFixed(0)}đ</b>`,
+      `📝 ${escTelegramHtml(description)}`,
+    ].join("\n"),
+  );
+
   return result;
 }
