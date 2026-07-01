@@ -63,7 +63,7 @@ export default function RegisterSlotsModal({ packages, currentSlots, userBalance
         onClick={handleOpen}
         className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors"
       >
-        Nâng cấp slot
+        Nâng cấp gian hàng
       </button>
 
       {isOpen && (
