@@ -19,6 +19,7 @@ import { r2Url } from "@/lib/utils/image-url";
 import { getAllSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import HeroScrollObserver from "@/components/home/HeroScrollObserver";
 import HomeDriftObserver from "@/components/home/HomeDriftObserver";
+import HomeWelcomePopup from "@/components/home/HomeWelcomePopup";
 import DJMediaCarousel from "@/components/home/DJMediaCarousel";
 import CourseSlider from "@/components/home/CourseSlider";
 import FaqAccordion from "@/components/home/FaqAccordion";
@@ -187,6 +188,19 @@ export default async function HomePage() {
   const bannersContent = cmsData[SITE_CONTENT_KEYS.HOME_BANNERS] as BannersContent;
   const bannerItems  = (bannersContent.items ?? []).filter((b) => b.imageUrl);
 
+  // Link nhóm Telegram cộng đồng cho popup chào mừng — lấy từ CMS liên hệ hỗ trợ
+  type ContactSupportContent = {
+    items?: { platform: string; href: string }[];
+    quickButtons?: { id: string; href: string }[];
+  };
+  const contactSupport = cmsData[SITE_CONTENT_KEYS.CONTACT_SUPPORT] as ContactSupportContent;
+  const welcomeTelegramHref =
+    contactSupport?.quickButtons?.find((b) => b.id === "telegram")?.href ||
+    contactSupport?.items?.find((i) => i.platform === "telegram")?.href ||
+    "";
+  const welcomeFacebookHref =
+    contactSupport?.items?.find((i) => i.platform === "facebook")?.href || "";
+
   const teamMembers  = teamContent.members ?? [];
   const member0      = teamMembers[0];
   const member1      = teamMembers[1];
@@ -209,6 +223,7 @@ export default async function HomePage() {
     <>
       <HeroScrollObserver />
       <HomeDriftObserver />
+      <HomeWelcomePopup telegramHref={welcomeTelegramHref} facebookHref={welcomeFacebookHref} />
 
       {/* ── DJ MEDIA AGENCY INTRO ────────────────────── */}
       <section className="dj-media-section" style={{ padding: "80px 0 72px", background: "#fff", overflow: "hidden" }}>
