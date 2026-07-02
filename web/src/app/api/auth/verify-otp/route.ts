@@ -95,6 +95,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Check HaveIBeenPwned BEFORE consuming the OTP (fail open — only block if explicitly pwned).
+  // Phải chạy trước verifyOtp: nếu mật khẩu rò rỉ mà đốt mã OTP thì user kẹt (trang OTP không có ô đổi mật khẩu).
+  try {
+    await checkPwnedPassword(password);
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message === "PASSWORD_PWNED") {
+      return NextResponse.json(
+        {
+          error:
+            "Mật khẩu này đã xuất hiện trong các vụ rò rỉ dữ liệu. Vui lòng quay lại trang đăng ký và chọn mật khẩu khác.",
+          code: "PASSWORD_PWNED",
+        },
+        { status: 400 },
+      );
+    }
+  }
+
   // Get pending registration (contains fullName + phone for user creation)
   const pending = await prisma.pendingRegistration.findUnique({ where: { email } });
   if (!pending) {
@@ -115,22 +132,6 @@ export async function POST(req: NextRequest) {
       },
       { status: 400 },
     );
-  }
-
-  // Check HaveIBeenPwned (fail open — only block if explicitly pwned)
-  try {
-    await checkPwnedPassword(password);
-  } catch (e: unknown) {
-    if (e instanceof Error && e.message === "PASSWORD_PWNED") {
-      return NextResponse.json(
-        {
-          error:
-            "Mật khẩu này đã xuất hiện trong các vụ rò rỉ dữ liệu. Vui lòng chọn mật khẩu khác.",
-          code: "PASSWORD_PWNED",
-        },
-        { status: 400 },
-      );
-    }
   }
 
   const passwordHash = await hashPassword(password);

@@ -4,14 +4,22 @@ import { prisma } from "@/lib/db/prisma";
 import { otpRatelimit, checkRateLimit } from "@/lib/security/rate-limit";
 import { generateOtp } from "@/lib/services/otp.service";
 import { sendOtpEmail } from "@/lib/services/email.service";
+import { validatePasswordStrength, checkPwnedPassword } from "@/lib/auth/password";
 import { logger } from "@/lib/utils/logger";
 
-const registerInitSchema = z.object({
-  email: z.string().email().toLowerCase().trim(),
-  fullName: z.string().min(2).max(100).trim(),
-  phone: z.string().regex(/^(0|\+84)[3-9]\d{8}$/, "Số điện thoại không hợp lệ"),
-  captchaToken: z.string().optional(),
-});
+const registerInitSchema = z
+  .object({
+    email: z.string().email().toLowerCase().trim(),
+    fullName: z.string().min(2).max(100).trim(),
+    phone: z.string().regex(/^(0|\+84)[3-9]\d{8}$/, "Số điện thoại không hợp lệ"),
+    password: z.string(),
+    confirmPassword: z.string(),
+    captchaToken: z.string().optional(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Mật khẩu xác nhận không khớp",
+    path: ["confirmPassword"],
+  });
 
 async function verifyCaptcha(token: string, ip: string): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET;
@@ -72,7 +80,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { email, fullName, phone, captchaToken } = parsed.data;
+    const { email, fullName, phone, password, captchaToken } = parsed.data;
+
+    // Validate mật khẩu NGAY ở bước đăng ký (nơi user còn ô nhập để sửa) — trước khi gửi OTP.
+    const { valid, errors } = validatePasswordStrength(password);
+    if (!valid) {
+      return NextResponse.json(
+        { error: errors[0] ?? "Mật khẩu không đủ mạnh", code: "WEAK_PASSWORD", errors },
+        { status: 400 },
+      );
+    }
+
+    // Check HaveIBeenPwned (fail open — chỉ chặn nếu chắc chắn rò rỉ).
+    try {
+      await checkPwnedPassword(password);
+    } catch (e: unknown) {
+      if (e instanceof Error && e.message === "PASSWORD_PWNED") {
+        return NextResponse.json(
+          {
+            error:
+              "Mật khẩu này đã xuất hiện trong các vụ rò rỉ dữ liệu. Vui lòng chọn mật khẩu khác.",
+            code: "PASSWORD_PWNED",
+          },
+          { status: 400 },
+        );
+      }
+    }
 
     if (captchaToken) {
       const captchaOk = await verifyCaptcha(captchaToken, ip);

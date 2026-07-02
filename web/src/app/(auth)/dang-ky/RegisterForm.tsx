@@ -47,6 +47,8 @@ export default function RegisterForm() {
           email: form.email.trim().toLowerCase(),
           fullName: form.fullName.trim(),
           phone: form.phone.trim(),
+          password: form.password,
+          confirmPassword: form.confirmPassword,
           captchaToken,
         }),
       });
