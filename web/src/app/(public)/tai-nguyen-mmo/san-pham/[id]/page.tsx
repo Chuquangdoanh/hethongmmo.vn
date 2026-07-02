@@ -69,10 +69,10 @@ const PLEDGES = [
 ];
 
 const COMMITMENTS = [
-  { Icon: BadgeCheck,  color: "#10b981", title: "Sản phẩm từ nhà bán hàng", desc: "Được kiểm duyệt kỹ lưỡng trước khi bán" },
+  { Icon: BadgeCheck,  color: "#0066ff", title: "Sản phẩm từ nhà bán hàng", desc: "Được kiểm duyệt kỹ lưỡng trước khi bán" },
   { Icon: ShieldCheck, color: "#0066ff", title: "Bảo hành uy tín",          desc: "Hỗ trợ bảo hành theo chính sách" },
-  { Icon: Lock,        color: "#7c3aed", title: "Thanh toán an toàn",       desc: "Bảo mật thông tin tuyệt đối" },
-  { Icon: Headphones,  color: "#f59e0b", title: "Hỗ trợ 24/7",             desc: "Đội ngũ hỗ trợ chuyên nghiệp" },
+  { Icon: Lock,        color: "#0066ff", title: "Thanh toán an toàn",       desc: "Bảo mật thông tin tuyệt đối" },
+  { Icon: Headphones,  color: "#0066ff", title: "Hỗ trợ 24/7",             desc: "Đội ngũ hỗ trợ chuyên nghiệp" },
 ];
 
 const BADGE_STYLE_MAP: Record<string, string> = {
@@ -87,8 +87,8 @@ const BADGE_STYLE_MAP: Record<string, string> = {
 
 const HOW_IT_WORKS = [
   { Icon: ShoppingCart, color: "#0066ff", title: "Đặt hàng",      desc: "Chọn sản phẩm và thanh toán" },
-  { Icon: Zap,          color: "#10b981", title: "Nhận thông tin", desc: "Hệ thống gửi thông tin ngay lập tức" },
-  { Icon: CheckCircle,  color: "#7c3aed", title: "Sử dụng",        desc: "Đăng nhập và sử dụng hiệu quả" },
+  { Icon: Zap,          color: "#0066ff", title: "Nhận thông tin", desc: "Hệ thống gửi thông tin ngay lập tức" },
+  { Icon: CheckCircle,  color: "#0066ff", title: "Sử dụng",        desc: "Đăng nhập và sử dụng hiệu quả" },
 ];
 
 function StarSvg({ filled }: { filled: boolean }) {

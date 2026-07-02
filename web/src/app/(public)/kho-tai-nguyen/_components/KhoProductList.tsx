@@ -68,7 +68,7 @@ function GridCard({ item }: { item: KhoProductItem }) {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <ShoppingBag size={32} strokeWidth={1.25} className="text-[#94a3b8]" />
+              <ShoppingBag size={32} strokeWidth={1.25} className="text-primary" />
             </div>
           )}
 
@@ -152,7 +152,7 @@ function ListCard({ item }: { item: KhoProductItem }) {
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              <ShoppingBag size={28} strokeWidth={1.25} className="text-[#94a3b8]" />
+              <ShoppingBag size={28} strokeWidth={1.25} className="text-primary" />
             </div>
           )}
           {isHot && (

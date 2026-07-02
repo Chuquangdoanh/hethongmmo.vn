@@ -146,9 +146,9 @@ export default function UpgradeShopModal({
     <>
       <button
         onClick={handleOpen}
-        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors"
+        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-[#0052cc] transition-colors"
       >
-        Nâng cấp slot
+        Nâng cấp gian hàng
       </button>
 
       {isOpen && (

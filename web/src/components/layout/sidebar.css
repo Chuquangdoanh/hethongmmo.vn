@@ -163,16 +163,17 @@ html.sb-collapsed .sb-user-card { justify-content: center; padding: 8px; }
   gap: 10px;
   padding: 10px 12px;
   border-radius: 10px;
-  color: #334155;
+  color: #374151;
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
-  background: rgba(0, 0, 0, 0.03);
-  transition: background 0.15s, color 0.15s;
+  background: #ffffff;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
   flex-shrink: 0;
 }
-.sb-home-link:hover { background: rgba(0, 0, 0, 0.06); color: #0f172a; }
-.sb-home-link.sb-active { background: #2563eb; color: #fff; box-shadow: 0 2px 10px rgba(37, 99, 235, 0.3); }
+.sb-home-link:hover { color: #0066ff; }
+.sb-home-link.sb-active { background: #eff6ff; color: #0066ff; }
 html.sb-collapsed .sb-home-link,
 html.sb-collapsed .sb-link,
 html.sb-collapsed .sb-collapse-btn { justify-content: center; }
@@ -183,25 +184,28 @@ html.sb-collapsed .sb-collapse-btn { justify-content: center; }
 .sb-group-title {
   font-size: 10px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #374151;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 6px 12px 4px;
 }
+/* Quy tắc 1 — Interactive Style: Default (trắng + viền) → Hover (light blue) → Active (primary blue) */
 .sb-link {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
   border-radius: 9px;
-  color: #334155;
+  background: #ffffff;
+  border: 1px solid transparent;
+  color: #374151;
   font-size: 12.5px;
   font-weight: 500;
   text-decoration: none;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.sb-link:hover { background: rgba(0, 0, 0, 0.05); color: #0f172a; }
-.sb-link.sb-active { background: #e0e7ff; color: #1e40af; font-weight: 700; }
+.sb-link:hover { color: #0066ff; }
+.sb-link.sb-active { background: #eff6ff; color: #0066ff; font-weight: 700; }
 .sb-link-icon { display: flex; flex-shrink: 0; }
 .sb-icon-badge {
   width: 26px;
@@ -211,24 +215,14 @@ html.sb-collapsed .sb-collapse-btn { justify-content: center; }
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: #f1f5f9;
+  background: #eff6ff;
   transition: background 0.15s;
 }
-.sb-icon-badge svg { color: #94a3b8; transition: color 0.15s; }
+.sb-icon-badge svg { color: #1f2937; transition: color 0.15s; }
 
-/* Hover — blue */
-.sb-link:hover .sb-icon-badge,
-.sb-home-link:hover .sb-icon-badge { background: #dbeafe; }
-.sb-link:hover .sb-icon-badge svg,
-.sb-home-link:hover .sb-icon-badge svg { color: #2563eb; }
-
-/* Active — blue */
-.sb-link.sb-active .sb-icon-badge { background: #dbeafe; }
-.sb-link.sb-active .sb-icon-badge svg { color: #2563eb; }
-
-/* Home active (nền xanh đậm) — icon trắng */
-.sb-home-link.sb-active .sb-icon-badge { background: rgba(255, 255, 255, 0.2); }
-.sb-home-link.sb-active .sb-icon-badge svg { color: #fff; }
+/* Icon: default đen; đổi xanh #0066ff khi active (Quy tắc 1) */
+.sb-link.sb-active .sb-icon-badge svg,
+.sb-home-link.sb-active .sb-icon-badge svg { color: #0066ff; }
 .sb-cat-icon { width: 18px; height: 18px; object-fit: contain; border-radius: 4px; background: #fff; padding: 2px; border: 1px solid rgba(0, 0, 0, 0.06); }
 .sb-link-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sb-badge {
@@ -281,7 +275,7 @@ html.sb-collapsed .sb-collapse-btn { justify-content: center; }
   to   { opacity: 1; transform: translateY(0); }
 }
 .sb-svc-sub { padding-left: 20px; }
-.sb-svc-all .sb-link-text { color: #7c3aed; font-weight: 600; }
+.sb-svc-all .sb-link-text { font-weight: 600; }
 
 /* ── Collapse: ẩn toàn bộ text/label, chỉ giữ icon ───────────── */
 html.sb-collapsed .sb-label { display: none; }

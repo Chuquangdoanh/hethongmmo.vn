@@ -61,8 +61,8 @@ export default async function SellerSanPhamPage({
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-                <Package size={17} className="text-blue-600" />
+              <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center">
+                <Package size={17} className="text-gray-500" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Sản phẩm</h1>
@@ -71,7 +71,7 @@ export default async function SellerSanPhamPage({
             </div>
             <Link
               href="/san-pham/tao-moi"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-[#0052cc] transition-colors"
             >
               <Plus size={15} /> Thêm sản phẩm
             </Link>
@@ -87,7 +87,7 @@ export default async function SellerSanPhamPage({
             />
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
+              className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-[#0052cc] transition-colors"
             >
               Tìm
             </button>

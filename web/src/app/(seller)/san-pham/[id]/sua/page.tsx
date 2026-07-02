@@ -74,8 +74,8 @@ export default async function SuaSanPhamPage({
           {/* Header */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center">
-                <PenLine size={17} className="text-violet-600" />
+              <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center">
+                <PenLine size={17} className="text-gray-500" />
               </div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-900">Chỉnh sửa sản phẩm</h1>
             </div>

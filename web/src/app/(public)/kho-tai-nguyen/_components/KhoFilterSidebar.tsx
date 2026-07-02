@@ -136,7 +136,7 @@ export function KhoFilterSidebar(_props: Props) {
           onClick={() => setMobileOpen((v) => !v)}
         >
           <div className="flex items-center gap-2">
-            <SlidersHorizontal size={15} className="text-[#64748b]" />
+            <SlidersHorizontal size={15} className="text-primary" />
             <span className="text-sm font-semibold text-[#0f172a]">Bộ lọc</span>
           </div>
           <ChevronDown

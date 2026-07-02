@@ -90,8 +90,8 @@ export default async function KhoHangPage({
           {/* Header */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-                <Boxes size={17} className="text-blue-600" />
+              <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center">
+                <Boxes size={17} className="text-gray-500" />
               </div>
               <div>
                 <h1 className="text-xl md:text-2xl font-bold text-gray-900">Quản lý kho hàng</h1>

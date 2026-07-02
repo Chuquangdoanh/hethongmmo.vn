@@ -59,7 +59,7 @@ export default async function SellerDoanhThuPage() {
       label: "Tổng doanh thu",
       value: formatVnd(allTimeRevenue),
       sub: `${allTime._count} đơn hoàn thành`,
-      valueColor: "text-violet-600",
+      valueColor: "text-primary",
       iconBg: "bg-gray-100",
       Icon: TrendingUp,
       iconColor: "text-gray-400",
@@ -142,7 +142,7 @@ export default async function SellerDoanhThuPage() {
                     </div>
                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-linear-to-r from-violet-500 to-purple-400 rounded-full"
+                        className="h-full bg-primary rounded-full"
                         style={{ width: `${pct}%` }}
                       />
                     </div>

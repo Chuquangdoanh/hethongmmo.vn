@@ -69,9 +69,9 @@ function GridCard({ p }: { p: TaiNguyenProductItem }) {
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               {p.kind === "seller" ? (
-                <ShoppingBag size={36} strokeWidth={1.25} className="text-[#94a3b8]" />
+                <ShoppingBag size={36} strokeWidth={1.25} className="text-primary" />
               ) : (
-                <Package size={36} strokeWidth={1.25} className="text-[#94a3b8]" />
+                <Package size={36} strokeWidth={1.25} className="text-primary" />
               )}
             </div>
           )}
@@ -155,9 +155,9 @@ function ListCard({ p }: { p: TaiNguyenProductItem }) {
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
               {p.kind === "seller" ? (
-                <ShoppingBag size={28} strokeWidth={1.25} className="text-[#94a3b8]" />
+                <ShoppingBag size={28} strokeWidth={1.25} className="text-primary" />
               ) : (
-                <Package size={28} strokeWidth={1.25} className="text-[#94a3b8]" />
+                <Package size={28} strokeWidth={1.25} className="text-primary" />
               )}
             </div>
           )}

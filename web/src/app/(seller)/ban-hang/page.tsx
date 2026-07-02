@@ -235,7 +235,7 @@ export default async function BanHangPage() {
                   {productCount < maxProducts ? (
                     <Link
                       href="/san-pham/tao-moi"
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-[#0052cc] transition-colors"
                     >
                       <Plus size={12} /> Thêm
                     </Link>

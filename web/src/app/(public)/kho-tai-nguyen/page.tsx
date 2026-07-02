@@ -460,7 +460,7 @@ export default async function KhoTaiNguyenPage({
 
           {totalCount === 0 ? (
               <div className="text-center py-20">
-                <Package size={44} strokeWidth={1.25} className="text-[#cbd5e1] mx-auto mb-3" />
+                <Package size={44} strokeWidth={1.25} className="text-primary mx-auto mb-3" />
                 <p className="font-semibold text-[#475569]">Chưa có sản phẩm nào</p>
                 <p className="text-xs text-[#94a3b8] mt-1">Thử điều chỉnh bộ lọc hoặc xoá bộ lọc hiện tại</p>
                 <Link href={BASE_PATH} className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-lg bg-[#3b82f6] text-white text-xs font-bold hover:bg-[#2563eb] transition-colors">

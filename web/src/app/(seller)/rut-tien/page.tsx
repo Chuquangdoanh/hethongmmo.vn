@@ -140,7 +140,7 @@ export default async function RutTienPage() {
       Icon: TrendingUp,       label: "Doanh số bán hàng",
       value: formatVnd(totalRevenue),
       sub: "Tổng đơn hoàn thành",
-      valueColor: "text-violet-600", iconBg: "bg-purple-50", iconColor: "text-purple-600",
+      valueColor: "text-violet-600", iconBg: "bg-gray-100", iconColor: "text-gray-500",
     },
     {
       Icon: ArrowDownToLine,  label: "Đã rút",
@@ -164,8 +164,8 @@ export default async function RutTienPage() {
 
           {/* Header */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center">
-              <ArrowDownToLine size={17} className="text-violet-600" />
+            <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center">
+              <ArrowDownToLine size={17} className="text-gray-500" />
             </div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-gray-900">Rút tiền</h1>

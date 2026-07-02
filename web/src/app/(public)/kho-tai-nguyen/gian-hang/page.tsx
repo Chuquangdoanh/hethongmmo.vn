@@ -288,7 +288,7 @@ export default async function KhoGianHangPage({
             {pagedEnriched.length === 0 && !showSystemOnThisPage ? (
               <div className="text-center py-24 bg-white rounded-xl border border-border">
                 <div className="flex justify-center mb-4">
-                  <Store size={52} strokeWidth={1.25} className="text-[#cbd5e1]" />
+                  <Store size={52} strokeWidth={1.25} className="text-primary" />
                 </div>
                 <p className="font-semibold text-text-dark text-base">Chưa có gian hàng nào</p>
                 <p className="text-sm text-text-muted mt-1">Thử điều chỉnh bộ lọc.</p>

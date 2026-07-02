@@ -387,7 +387,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
             type="button"
             onClick={() => { setStoreType(page.key); setSellerCat(""); setSubCategoryId(null); }}
             className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              storeType === page.key ? "bg-white text-violet-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              storeType === page.key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
             }`}
           >
             {page.label}
@@ -407,8 +407,8 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
                 onClick={() => { setSellerCat(cat); setSubCategoryId(null); }}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                   sellerCat === cat
-                    ? "bg-violet-600 border-violet-600 text-white"
-                    : "bg-white border-gray-200 text-gray-600 hover:border-violet-400 hover:text-violet-600"
+                    ? "bg-white border-primary text-primary font-semibold"
+                    : "bg-white border-transparent text-gray-800 hover:text-primary"
                 }`}
               >
                 {cat}
@@ -430,8 +430,8 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
                 onClick={() => setSubCategoryId(subCategoryId === sub.id ? null : sub.id)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                   subCategoryId === sub.id
-                    ? "bg-violet-600 border-violet-600 text-white"
-                    : "bg-white border-gray-200 text-gray-600 hover:border-violet-400 hover:text-violet-600"
+                    ? "bg-white border-primary text-primary font-semibold"
+                    : "bg-white border-transparent text-gray-800 hover:text-primary"
                 }`}
               >
                 {subCategoryId === sub.id ? "✓ " : ""}{sub.name}
@@ -531,7 +531,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
   const actionButtons = (
     <div className="flex items-center gap-3 pt-1">
       <button type="submit" disabled={loading || uploading}
-        className="flex-1 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-60 transition-colors">
+        className="flex-1 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-[#0052cc] disabled:opacity-60 transition-colors">
         {loading ? "Đang lưu..." : mode === "create" ? "Tạo sản phẩm" : "Lưu thay đổi"}
       </button>
       <button type="button" onClick={() => router.back()}
@@ -678,7 +678,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
           <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
           <div>
             <p className="text-sm font-semibold text-emerald-700">Sản phẩm đã được tạo thành công!</p>
-            <p className="text-xs text-emerald-600 mt-0.5">Thêm gói sản phẩm (ví dụ: Gói 1 tháng, Gói 3 tháng...) để khách hàng có thêm lựa chọn.</p>
+            <p className="text-xs text-primary mt-0.5">Thêm gói sản phẩm (ví dụ: Gói 1 tháng, Gói 3 tháng...) để khách hàng có thêm lựa chọn.</p>
           </div>
         </div>
 

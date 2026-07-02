@@ -296,7 +296,7 @@ export default function StockManagerClient({
       {!isRestricted && (
         <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
           <div className="flex items-center gap-2 mb-3">
-            <FileText size={15} className="text-violet-600 shrink-0" />
+            <FileText size={15} className="text-gray-500 shrink-0" />
             <p className="text-sm font-semibold text-violet-800">Thêm kho từ file TXT</p>
             <span className="text-[10px] text-violet-500 ml-1">
               (mỗi dòng = 1 item · tối đa {MAX_IMPORT_ITEMS.toLocaleString("vi-VN")} dòng)
@@ -394,7 +394,7 @@ export default function StockManagerClient({
             /* Preview + confirm */
             <div className="space-y-3">
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-violet-200">
-                <FileText size={13} className="text-violet-400 shrink-0" />
+                <FileText size={13} className="text-gray-500 shrink-0" />
                 <span className="text-xs text-gray-700 flex-1 truncate">{txtFileName}</span>
                 <span className="text-xs font-bold text-violet-700 shrink-0">
                   {txtItems.length.toLocaleString("vi-VN")} dòng
@@ -442,7 +442,7 @@ export default function StockManagerClient({
                 onClick={() => txtInputRef.current?.click()}
                 className="w-full flex flex-col items-center gap-2 rounded-lg border-2 border-dashed border-violet-300 bg-white py-6 text-center hover:border-violet-500 hover:bg-violet-50/50 transition-colors"
               >
-                <Upload size={20} className="text-violet-400" />
+                <Upload size={20} className="text-gray-500" />
                 <p className="text-xs text-violet-600 font-medium">Click để chọn file .txt</p>
                 <p className="text-[10px] text-gray-400">
                   Mỗi dòng = 1 item · Tối đa {MAX_IMPORT_ITEMS.toLocaleString("vi-VN")} dòng · UTF-8 · Max {MAX_FILE_SIZE_MB}MB

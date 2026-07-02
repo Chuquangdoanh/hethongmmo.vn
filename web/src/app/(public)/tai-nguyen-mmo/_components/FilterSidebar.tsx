@@ -132,7 +132,7 @@ export function FilterSidebar({ basePath = "/tai-nguyen-mmo" }: FilterSidebarPro
 
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3.5 bg-[#f8fafc] border-b border-[#e5e7eb]">
-          <SlidersHorizontal size={15} className="text-[#64748b]" />
+          <SlidersHorizontal size={15} className="text-primary" />
           <span className="text-sm font-semibold text-[#0f172a]">Bộ lọc</span>
         </div>
 

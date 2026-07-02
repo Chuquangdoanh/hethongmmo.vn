@@ -63,29 +63,29 @@ Ví dụ: Sidebar, Navigation, Menu, Button, Product Card, Category Card, Servic
 
 ### Default
 
-- Background: White (`#FFFFFF`)
-- Border: Default Border (`#E5E7EB`)
-- Icon: Primary hoặc Neutral
-- Text: Default
+- Background: White (`#FFFFFF`) — card **không hiện viền**
+- Border: KHÔNG có viền (dùng `1px solid transparent` để giữ layout ổn định)
+- Icon: glyph **màu đen** (`#1F2937`), chip nền `#EFF6FF`
+- Text: `#374151` (đồng bộ màu chữ mục footer "Dịch vụ / Hỗ trợ")
 
 ### Hover
 
-Khi người dùng di chuột:
+Khi người dùng di chuột — **chỉ đổi màu chữ** sang Footer Accent Blue. Icon **giữ nguyên màu đen**. **KHÔNG nền, KHÔNG viền**:
 
-- Border chuyển Primary Blue
-- Background chuyển Light Blue (`#F0F6FE`)
-- Không đổi kích thước
-- Không đổi layout
+- Text: Footer Accent Blue (`#0066FF`)
+- Icon: giữ đen (`#1F2937`)
+- Không nền, không viền
+- Không đổi kích thước / layout
 - Transition mượt
 
 ### Active (Click)
 
-Khi Component được chọn:
+Sau khi click, item được chọn đổi nền + màu chữ/icon (KHÔNG viền):
 
-- Border Primary Blue
-- Background Primary Blue
-- Icon White
-- Text White
+- Card background: Footer Hover Blue (`#EFF6FF`)
+- Text: Footer Accent Blue (`#0066FF`), chữ đậm
+- Icon: Footer Accent Blue (`#0066FF`)
+- Không viền
 
 Giữ trạng thái Active cho đến khi người dùng chọn Component khác.
 
@@ -107,9 +107,11 @@ Ví dụ: Feature Icon, Statistics Card, Information Card, Summary Card, Service
 
 ### Quy tắc
 
-- Icon: luôn có nền Primary Blue
-- Icon: White
-- Background: không thay đổi
+Dùng cùng bộ màu với trạng thái hover/active của Quy tắc 1:
+
+- Icon background: Footer Hover Blue (`#EFF6FF`)
+- Icon (glyph): Footer Accent Blue (`#0066FF`)
+- Background của Component: không thay đổi
 - Hover: không có
 - Click: không có
 
@@ -124,6 +126,8 @@ Không đổi màu khi người dùng tương tác.
 | Primary Blue | `#3B82F6` |
 | Light Blue | `#F0F6FE` |
 | Hover Border | `#B7D0F8` |
+| Footer Accent Blue (màu chữ hover/active) | `#0066FF` |
+| Footer Hover Blue (nền chip icon) | `#EFF6FF` |
 | Default Border | `#E5E7EB` |
 | White | `#FFFFFF` |
 | Text Primary | `#1F2937` |

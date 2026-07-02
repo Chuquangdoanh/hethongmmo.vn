@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db/prisma";
 import { buildReferralLink, getAffiliateStats } from "@/lib/services/affiliate.service";
 import { APP_URL } from "@/config/env";
 import { formatVnd } from "@/lib/utils/format";
-import CopyButton from "@/components/shared/CopyButton";
+import ReferralLinkBox from "./_components/ReferralLinkBox";
 
 type AffiliateStats = Awaited<ReturnType<typeof getAffiliateStats>>;
 
@@ -58,10 +58,7 @@ export default async function AffiliateDashboardPage() {
         <Image src={qrDataUrl} alt="QR code affiliate" width={140} height={140} className="rounded-lg border" unoptimized />
         <div className="flex-1 space-y-2">
           <p className="text-sm font-medium text-gray-700">Link giới thiệu của bạn</p>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 truncate rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-800">{referralLink}</code>
-            <CopyButton text={referralLink} />
-          </div>
+          <ReferralLinkBox link={referralLink} />
           <p className="text-xs text-gray-400">Khách hàng chỉ cần truy cập link này 1 lần — hệ thống sẽ tự động gắn vĩnh viễn.</p>
         </div>
       </div>
@@ -78,14 +75,14 @@ export default async function AffiliateDashboardPage() {
       </div>
 
       <div className="flex gap-3">
-        <Link href="/affiliate/customers" className="text-sm font-medium text-violet-600 hover:underline">
-          Danh sách khách hàng →
+        <Link href="/affiliate/customers" className="text-sm font-medium text-[#374151] hover:text-primary transition-colors">
+          Danh sách khách hàng
         </Link>
-        <Link href="/affiliate/commissions" className="text-sm font-medium text-violet-600 hover:underline">
-          Lịch sử hoa hồng →
+        <Link href="/affiliate/commissions" className="text-sm font-medium text-[#374151] hover:text-primary transition-colors">
+          Lịch sử hoa hồng
         </Link>
-        <Link href="/affiliate/withdrawals" className="text-sm font-medium text-violet-600 hover:underline">
-          Rút hoa hồng →
+        <Link href="/affiliate/withdrawals" className="text-sm font-medium text-[#374151] hover:text-primary transition-colors">
+          Rút hoa hồng
         </Link>
       </div>
     </div>

@@ -476,7 +476,7 @@ export default async function TaiNguyenMmoPage({
             {totalCount === 0 ? (
               <div className="text-center py-24 bg-white rounded-xl border border-border">
                 <div className="flex justify-center mb-4">
-                  <Package size={52} strokeWidth={1.25} className="text-[#cbd5e1]" />
+                  <Package size={52} strokeWidth={1.25} className="text-primary" />
                 </div>
                 <p className="font-semibold text-text-dark text-base">Chưa có sản phẩm nào</p>
                 <p className="text-sm text-text-muted mt-1">Thử điều chỉnh bộ lọc.</p>

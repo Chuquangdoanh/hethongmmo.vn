@@ -38,11 +38,11 @@ interface FooterData {
 }
 
 const TRUST_BADGES = [
-  { Icon: Shield,     color: "#2563eb", bg: "#dbeafe", title: "Bảo mật tuyệt đối",  sub: "Dữ liệu thông tin người dùng"  },
-  { Icon: Lock,       color: "#0891b2", bg: "#e0f2fe", title: "Thanh toán an toàn", sub: "Nhiều phương thức thanh toán"  },
-  { Icon: RefreshCw,  color: "#059669", bg: "#d1fae5", title: "Hoàn tiền 100%",     sub: "Nếu không hài lòng"           },
-  { Icon: Headphones, color: "#7c3aed", bg: "#ede9fe", title: "Hỗ trợ 24/7",        sub: "Đội ngũ luôn sẵn sàng"        },
-  { Icon: Award,      color: "#d97706", bg: "#fef3c7", title: "Uy tín hàng đầu",    sub: "Cộng đồng MMO lớn mạnh"       },
+  { Icon: Shield,     color: "#0066ff", bg: "#eff6ff", title: "Bảo mật tuyệt đối",  sub: "Dữ liệu thông tin người dùng"  },
+  { Icon: Lock,       color: "#0066ff", bg: "#eff6ff", title: "Thanh toán an toàn", sub: "Nhiều phương thức thanh toán"  },
+  { Icon: RefreshCw,  color: "#0066ff", bg: "#eff6ff", title: "Hoàn tiền 100%",     sub: "Nếu không hài lòng"           },
+  { Icon: Headphones, color: "#0066ff", bg: "#eff6ff", title: "Hỗ trợ 24/7",        sub: "Đội ngũ luôn sẵn sàng"        },
+  { Icon: Award,      color: "#0066ff", bg: "#eff6ff", title: "Uy tín hàng đầu",    sub: "Cộng đồng MMO lớn mạnh"       },
 ];
 
 const DEFAULT_SERVICES: NavLink[] = [
@@ -167,15 +167,15 @@ export default function FooterClient({ data }: { data: Record<string, unknown> }
             <div className="grid grid-cols-3 gap-2">
               {[
                 {
-                  icon: <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#2563eb" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>,
+                  icon: <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#0066ff" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" /></svg>,
                   value: d.stat1Value ?? "10.000+", label: d.stat1Label ?? "Học viên tin tưởng",
                 },
                 {
-                  icon: <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#059669" strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
+                  icon: <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#0066ff" strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
                   value: d.stat2Value ?? "100%", label: d.stat2Label ?? "An toàn, bảo mật",
                 },
                 {
-                  icon: <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#7c3aed" strokeWidth="1.5"><path d="M3 18v-6a9 9 0 0118 0v6" /><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z" /></svg>,
+                  icon: <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#0066ff" strokeWidth="1.5"><path d="M3 18v-6a9 9 0 0118 0v6" /><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z" /></svg>,
                   value: d.stat3Value ?? "24/7", label: d.stat3Label ?? "Hỗ trợ tận tâm",
                 },
               ].map(({ icon, value, label }) => (

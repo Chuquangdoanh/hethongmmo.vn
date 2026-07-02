@@ -74,7 +74,7 @@ export function SellerFilterSidebar({ categories, totalCount, basePath = "/tai-n
     >
       <div className="bg-white rounded-xl border border-border overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-3 bg-light border-b border-border">
-          <SlidersHorizontal size={14} className="text-[#64748b]" />
+          <SlidersHorizontal size={14} className="text-primary" />
           <span className="text-sm font-bold text-text-dark">Bộ lọc</span>
         </div>
 

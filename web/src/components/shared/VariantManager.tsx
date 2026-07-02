@@ -187,7 +187,9 @@ export default function VariantManager({ productId, isAdmin = false, apiBase = "
         <button
           type="button"
           onClick={() => { setShowAdd((s) => !s); setAddError(""); setAddForm(EMPTY_FORM); }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors"
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition-colors ${
+            isAdmin ? "bg-violet-600 hover:bg-violet-700" : "bg-primary hover:bg-[#0052cc]"
+          }`}
         >
           {showAdd ? <X size={12} /> : <Plus size={12} />}
           {showAdd ? "Đóng" : "Thêm gói sản phẩm"}
@@ -228,7 +230,9 @@ export default function VariantManager({ productId, isAdmin = false, apiBase = "
             <button
               type="submit"
               disabled={addLoading}
-              className="px-4 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 disabled:opacity-60 transition-colors"
+              className={`px-4 py-1.5 rounded-lg text-white text-xs font-semibold disabled:opacity-60 transition-colors ${
+                isAdmin ? "bg-violet-600 hover:bg-violet-700" : "bg-primary hover:bg-[#0052cc]"
+              }`}
             >
               {addLoading ? "Đang lưu..." : "Thêm"}
             </button>
