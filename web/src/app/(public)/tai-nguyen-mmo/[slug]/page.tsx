@@ -131,7 +131,7 @@ export default async function MmoProductDetailPage({
     isActive: v.isActive,
   }));
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, favoriteStatus, contactCms] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, favoriteStatus, contactCms, relatedMmo, relatedKfb] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "MMO_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -168,6 +168,33 @@ export default async function MmoProductDetailPage({
     }),
     getFavoriteStatus(me?.id, "MMO_PRODUCT", product.id),
     getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT),
+    // Sản phẩm tương tự — Hệ Thống MMO (cùng danh mục, còn hàng)
+    prisma.mmoProduct.findMany({
+      where: {
+        categoryGroup: product.categoryGroup,
+        id: { not: product.id },
+        isActive: true, deletedAt: null, section: "TAI_NGUYEN_MMO",
+        items: { some: { status: "AVAILABLE" } },
+      },
+      take: 6,
+      orderBy: [{ isFeatured: "desc" }, { totalOrders: "desc" }],
+      select: {
+        id: true, slug: true, name: true, thumbnail: true, price: true, totalOrders: true,
+      },
+    }),
+    // Sản phẩm tương tự — khuongfb (cùng danh mục)
+    prisma.externalProduct.findMany({
+      where: {
+        isEnabled: true,
+        displaySection: "TAI_NGUYEN_MMO",
+        resourceCategory: { name: product.categoryGroup },
+      },
+      take: 6,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true, name: true, thumbnail: true, salePrice: true,
+      },
+    }),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
@@ -187,6 +214,28 @@ export default async function MmoProductDetailPage({
 
   const hasPrev = reviewPage > 1;
   const hasNext = reviewPage < reviewCount;
+
+  // Gộp sản phẩm tương tự từ Hệ Thống MMO + khuongfb (cùng danh mục), tối đa 6
+  const relatedProducts = [
+    ...relatedMmo.map((p) => ({
+      key: `mmo-${p.id}`,
+      href: `/tai-nguyen-mmo/${p.slug}`,
+      name: p.name,
+      thumbnail: p.thumbnail,
+      price: Number(p.price),
+      soldLabel: `Đã bán ${p.totalOrders.toLocaleString("vi-VN")}`,
+      source: "Hệ Thống MMO",
+    })),
+    ...relatedKfb.map((p) => ({
+      key: `kfb-${p.id}`,
+      href: `/kfb/${p.id}`,
+      name: p.name,
+      thumbnail: p.thumbnail,
+      price: Number(p.salePrice),
+      soldLabel: "khuongfb",
+      source: "khuongfb",
+    })),
+  ].slice(0, 6);
 
   // ── JSX SECTIONS ──────────────────────────────────────────────
 
@@ -552,6 +601,42 @@ export default async function MmoProductDetailPage({
     </div>
   );
 
+  const sectionRelated = relatedProducts.length > 0 ? (
+    <div className="rounded-2xl border border-border bg-white p-5">
+      <h2 className="text-sm font-bold text-text-dark mb-4 flex items-center gap-2">
+        <span className="w-1 h-4 rounded-full bg-primary inline-block shrink-0" />
+        Sản phẩm tương tự
+      </h2>
+      <div className="grid grid-cols-2 gap-3">
+        {relatedProducts.map((rp) => (
+          <Link
+            key={rp.key}
+            href={rp.href}
+            className="flex gap-2.5 p-2.5 rounded-xl border border-border hover:border-primary/40 hover:shadow-sm transition-all group"
+          >
+            <div className="w-14 h-14 rounded-lg bg-[#f1f5f9] overflow-hidden shrink-0">
+              {rp.thumbnail ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={r2Url(rp.thumbnail)} alt={rp.name} className="w-full h-full object-cover" loading="lazy" decoding="async" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <ShoppingCart size={22} strokeWidth={1.25} className="text-[#cbd5e1]" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col justify-between">
+              <p className="text-xs font-semibold text-text-dark group-hover:text-primary transition-colors line-clamp-2 leading-snug">{rp.name}</p>
+              <div>
+                <p className="text-xs font-extrabold text-[#e11d48]">{formatVnd(rp.price)}</p>
+                <p className="text-[10px] text-text-muted">{rp.soldLabel}</p>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  ) : null;
+
   const linkBack = (
     <Link
       href="/tai-nguyen-mmo"
@@ -589,6 +674,7 @@ export default async function MmoProductDetailPage({
         {cardCommitments}
         {sectionHowItWorks}
         {sectionReviews}
+        {sectionRelated}
         {cardSupport}
         {linkBack}
       </div>
@@ -602,6 +688,7 @@ export default async function MmoProductDetailPage({
           {sectionWarranty}
           {sectionHowItWorks}
           {sectionReviews}
+          {sectionRelated}
         </div>
         {/* Right column — sticky */}
         <div className="col-span-5">
