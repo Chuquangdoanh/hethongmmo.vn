@@ -11,7 +11,7 @@ import {
 import { decrypt } from "@/lib/security/encryption";
 import { logger } from "@/lib/utils/logger";
 import { randomBytes } from "crypto";
-import { sendTelegramAlert, escTelegramHtml } from "@/lib/services/telegram-alert.service";
+import { notifyPurchaseSuccess } from "@/lib/services/telegram-alert.service";
 import { createAffiliateCommission } from "@/lib/services/affiliate-commission.service";
 
 // ── Course deposit constants ──────────────────────────────────────────────────
@@ -280,16 +280,7 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
 
   logger.info({ userId, orderType, itemId, orderId: result.order.id }, "Purchase processed");
 
-  sendTelegramAlert(
-    [
-      `🛒 <b>Mua hàng thành công</b>`,
-      ``,
-      `👤 User: <code>${escTelegramHtml(userId)}</code>`,
-      `📦 Sản phẩm: ${escTelegramHtml(itemName)}`,
-      `💵 Số tiền: <b>${price.toFixed(0)}đ</b>`,
-      `🔖 Mã đơn: <code>${escTelegramHtml(result.order.orderCode)}</code>`,
-    ].join("\n"),
-  );
+  notifyPurchaseSuccess(userId, itemName, price.toFixed(0), result.order.orderCode);
 
   return result;
 }
@@ -413,6 +404,9 @@ async function purchaseCourseDeposit(params: CourseDepositParams): Promise<Purch
   });
 
   logger.info({ userId, itemId, orderId: result.order.id }, "Course deposit processed");
+
+  notifyPurchaseSuccess(userId, `Đặt cọc khóa học: ${itemName}`, deposit.toFixed(0), result.order.orderCode);
+
   return {
     order: result.order,
     isDeposit: true,
@@ -504,6 +498,9 @@ export async function purchaseCourseRemainder(orderId: string, userId: string): 
   });
 
   logger.info({ userId, orderId }, "Course final payment processed");
+
+  notifyPurchaseSuccess(userId, `Thanh toán nốt khóa học: ${order.itemName}`, remaining.toFixed(0), order.orderCode);
+
   return updated;
 }
 
@@ -689,6 +686,8 @@ async function purchaseProductBatch(params: BatchPurchaseParams): Promise<Purcha
   if (!firstResultOrder) throw new AppError("Lỗi xử lý đơn hàng.", "ORDER_CREATE_FAILED", 500);
 
   logger.info({ userId, orderType, itemId, quantity, firstOrderId: firstResultOrder.id }, "Batch purchase processed");
+
+  notifyPurchaseSuccess(userId, `${itemName} (x${quantity})`, totalPrice.toFixed(0), firstResultOrder.orderCode);
 
   const firstContent = result.deliveredContents[0] ?? "";
   return {
