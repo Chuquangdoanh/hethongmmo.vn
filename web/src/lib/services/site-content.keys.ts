@@ -5,6 +5,7 @@ export const SITE_CONTENT_KEYS = {
   HOME_TEAM:    "home_team",
   HOME_STATS:   "home_stats",
   HOME_PRESS:   "home_press",
+  HOME_BANNERS: "home_banners",
   HOME_FAQ:     "home_faq",
   PAGE_DICH_VU:    "page_dich_vu",
   PAGE_KHOA_HOC:   "page_khoa_hoc",

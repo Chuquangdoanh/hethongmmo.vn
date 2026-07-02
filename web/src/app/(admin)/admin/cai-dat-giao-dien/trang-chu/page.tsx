@@ -8,6 +8,7 @@ import HomeDJMediaEditor from "./_components/HomeDJMediaEditor";
 import HomeTeamEditor from "./_components/HomeTeamEditor";
 import HomeStatsEditor from "./_components/HomeStatsEditor";
 import HomePressEditor from "./_components/HomePressEditor";
+import HomeBannersEditor from "./_components/HomeBannersEditor";
 import HomeFaqEditor from "./_components/HomeFaqEditor";
 
 export const metadata: Metadata = { title: "Admin — Giao diện Trang chủ" };
@@ -35,6 +36,7 @@ export default async function TrangChuEditorPage() {
       <HomeDJMediaEditor initialData={all["home_djmedia"] as Record<string, unknown>} />
       <HomeHeroEditor initialData={all["home_hero"] as Record<string, unknown>} />
       <HomeTeamEditor initialData={all["home_team"] as Record<string, unknown>} />
+      <HomeBannersEditor initialData={all["home_banners"] as Record<string, unknown>} />
       <HomeStatsEditor initialData={all["home_stats"] as Record<string, unknown>} />
       <HomePressEditor initialData={all["home_press"] as Record<string, unknown>} />
       <HomeFaqEditor initialData={all["home_faq"] as Record<string, unknown>} />

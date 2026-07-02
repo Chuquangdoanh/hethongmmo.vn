@@ -175,6 +175,8 @@ export default async function HomePage() {
   type PressCard     = { logoType: string; tag: string; tagColor: string; headline: string; desc: string; date: string; href: string; };
   type PressContent  = { badge: string; title: string; subtitle: string; cards: PressCard[]; };
   type FaqContent    = { title: string; items: { q: string; a: string; }[]; };
+  type BannerItem     = { imageUrl: string; title: string; subtitle: string; linkUrl: string; };
+  type BannersContent = { sectionLabel: string; sectionTitle: string; items: BannerItem[]; };
 
   const heroContent  = cmsData[SITE_CONTENT_KEYS.HOME_HERO]    as HeroContent;
   const djContent    = cmsData[SITE_CONTENT_KEYS.HOME_DJMEDIA]  as DJContent;
@@ -182,6 +184,8 @@ export default async function HomePage() {
   const cmsStats     = (cmsData[SITE_CONTENT_KEYS.HOME_STATS] as { stats: StatItem[] }).stats;
   const pressContent = cmsData[SITE_CONTENT_KEYS.HOME_PRESS]   as PressContent;
   const faqContent   = cmsData[SITE_CONTENT_KEYS.HOME_FAQ]     as FaqContent;
+  const bannersContent = cmsData[SITE_CONTENT_KEYS.HOME_BANNERS] as BannersContent;
+  const bannerItems  = (bannersContent.items ?? []).filter((b) => b.imageUrl);
 
   const teamMembers  = teamContent.members ?? [];
   const member0      = teamMembers[0];
@@ -579,6 +583,106 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── BANNER GIỮA TRANG (CMS: home_banners) ─────── */}
+      {bannerItems.length > 0 && (
+        <section style={{ padding: "56px 0 40px", background: "#fff", overflow: "hidden" }}>
+          <div style={{ maxWidth: "1480px", margin: "0 auto", padding: "0 24px" }}>
+
+            {(bannersContent.sectionLabel || bannersContent.sectionTitle) && (
+              <div style={{ textAlign: "center", marginBottom: "36px" }} className="anim-fade-up" data-d="1">
+                {bannersContent.sectionLabel && (
+                  <div style={{
+                    display: "inline-flex", alignItems: "center", gap: "7px",
+                    background: "rgba(0,102,255,.07)", color: "#0066ff",
+                    padding: "5px 16px", borderRadius: "100px",
+                    fontSize: ".72rem", fontWeight: "700", letterSpacing: "1.4px",
+                    textTransform: "uppercase", marginBottom: "14px",
+                    border: "1px solid rgba(0,102,255,.15)",
+                  }}>
+                    {bannersContent.sectionLabel}
+                  </div>
+                )}
+                {bannersContent.sectionTitle && (
+                  <h2 style={{
+                    fontSize: "clamp(1.6rem,3.5vw,2.4rem)", fontWeight: "800",
+                    color: "#0f172a", margin: 0, lineHeight: "1.2",
+                  }}>
+                    {bannersContent.sectionTitle}
+                  </h2>
+                )}
+              </div>
+            )}
+
+            <div style={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              gap: "24px",
+            }}>
+              {bannerItems.map((banner, i) => {
+                const imageBlock = (
+                  <div style={{
+                    width: "100%", aspectRatio: "16 / 9",
+                    borderRadius: "18px", overflow: "hidden",
+                    boxShadow: "0 12px 32px rgba(0,0,0,.10)",
+                    background: "#f1f5f9",
+                  }} className="home-banner-img">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={r2Url(banner.imageUrl) || banner.imageUrl}
+                      alt={banner.title || `Banner ${i + 1}`}
+                      loading="lazy"
+                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                    />
+                  </div>
+                );
+
+                return (
+                  <div
+                    key={i}
+                    className="anim-card-in"
+                    data-d={String((i % 6) + 1)}
+                    style={{ flex: "1 1 340px", maxWidth: "600px" }}
+                  >
+                    {banner.linkUrl ? (
+                      <Link
+                        href={banner.linkUrl}
+                        style={{ display: "block", textDecoration: "none" }}
+                        className="home-banner-card"
+                      >
+                        {imageBlock}
+                      </Link>
+                    ) : (
+                      imageBlock
+                    )}
+                    {(banner.title || banner.subtitle) && (
+                      <div style={{ padding: "16px 4px 0" }}>
+                        {banner.title && (
+                          <h3 style={{
+                            fontSize: "1.05rem", fontWeight: "800", color: "#0f172a",
+                            margin: "0 0 6px", lineHeight: "1.35",
+                          }}>
+                            {banner.title}
+                          </h3>
+                        )}
+                        {banner.subtitle && (
+                          <p style={{
+                            fontSize: ".9rem", color: "#64748b",
+                            margin: 0, lineHeight: "1.65",
+                          }}>
+                            {banner.subtitle}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── COURSE SLIDER ─────────────────────────────── */}
       <CourseSlider courses={featuredCourses} />

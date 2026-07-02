@@ -396,3 +396,12 @@ section.cqd-drift {
 }
 
 @keyframes cqd-hot-pulse { 0%,100% { opacity:1; } 50% { opacity:0.65; } }
+
+/* ── Banner giữa trang (home_banners) — hover nhẹ, độc lập ── */
+.home-banner-img { transition: box-shadow .3s ease, transform .3s ease; }
+.home-banner-card:hover .home-banner-img {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 44px rgba(0,0,0,.16);
+}
+.home-banner-img img { transition: transform .5s cubic-bezier(0.16,1,0.3,1); }
+.home-banner-card:hover .home-banner-img img { transform: scale(1.04); }

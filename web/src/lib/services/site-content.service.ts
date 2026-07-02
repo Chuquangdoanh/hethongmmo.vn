@@ -107,6 +107,12 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
       },
     ],
   },
+  home_banners: {
+    sectionLabel: "Ưu đãi & Đối tác",
+    sectionTitle: "Ưu đãi & Đối tác nổi bật",
+    // Mỗi banner: ảnh 16:9 (bấm vào chuyển tới linkUrl), kèm tiêu đề + mô tả ngắn
+    items: [] as { imageUrl: string; title: string; subtitle: string; linkUrl: string }[],
+  },
   home_faq: {
     title: "CÂU HỎI THƯỜNG GẶP",
     items: [
