@@ -3,6 +3,7 @@ import { NotFoundError, AppError, InsufficientBalanceError } from "@/lib/errors"
 import { KHUONGFB_SOURCE } from "./constants";
 import { loadEnabledAdapters } from "@/lib/external-providers/providers-config";
 import { logger } from "@/lib/utils/logger";
+import { notifyPurchaseSuccess } from "@/lib/services/telegram-alert.service";
 import Decimal from "decimal.js";
 import { randomBytes } from "crypto";
 
@@ -124,6 +125,8 @@ export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): P
         kfbData:         buyRes.data ?? undefined,
       },
     });
+
+    notifyPurchaseSuccess(userId, `${product.name} (x${quantity}) qua Khuongfb`, totalPrice.toFixed(0), order.orderCode);
 
     return {
       orderId:         order.id,
