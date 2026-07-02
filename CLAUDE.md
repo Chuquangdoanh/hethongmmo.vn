@@ -30,6 +30,7 @@ Hướng dẫn cho AI assistant khi làm việc với dự án này.
 - [Test Policy](.claude/rules/test-policy.md) — Test ngay sau khi fix/update, checklist theo loại thay đổi
 - [Feature Workflow](.claude/rules/feature-workflow.md) — **ĐỌC KHI: thêm DB field, thêm chức năng, thêm API, thêm UI page, sửa giao diện**
 - [UI Animation Rules](.claude/rules/ui-animation-rules.md) — **ĐỌC KHI: sửa giao diện, thêm hiệu ứng, animation, UI** — 12 nguyên tắc bất biến
+- [UI Design System (DJ MEDIA)](.claude/rules/ui-design-system.md) — **ĐỌC KHI: sửa/thêm giao diện Seller & User** — Design Token, Quy tắc 1 (Interactive) / Quy tắc 2 (Static Icon), KHÔNG áp dụng Admin
 
 ### Logs
 - [Completed Tasks](.claude/logs/completed-tasks.md) — **GHI SAU MỖI TASK HOÀN THÀNH** (không sửa mục cũ)
