@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
     order: { findUnique: vi.fn() },
+    // Used by fire-and-forget telegram alert (notifyPurchaseSuccess) after the tx
+    user: { findUnique: vi.fn().mockResolvedValue({ fullName: "Test", email: "t@t.vn" }) },
     $transaction: vi.fn(),
   },
 }));
@@ -50,6 +52,9 @@ function makeTxClient(overrides?: Record<string, unknown>) {
         idempotencyKey: BASE_PARAMS.idempotencyKey,
       }),
     },
+    // Buyer with no referrer → affiliate-commission hook is a safe no-op
+    user: { findUnique: vi.fn().mockResolvedValue({ referrerAffiliateId: null }) },
+    affiliateCommission: { findUnique: vi.fn(), create: vi.fn() },
     transaction: { create: vi.fn() },
     notification: { create: vi.fn() },
     ...overrides,

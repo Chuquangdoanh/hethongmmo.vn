@@ -5,6 +5,8 @@ vi.mock("@/lib/db/prisma", () => ({
     transaction: {
       findUnique: vi.fn(),
     },
+    // Used by fire-and-forget telegram alert (notifyDepositSuccess) after the tx
+    user: { findUnique: vi.fn().mockResolvedValue({ fullName: "Test", email: "t@t.vn" }) },
     $transaction: vi.fn(),
   },
 }));
