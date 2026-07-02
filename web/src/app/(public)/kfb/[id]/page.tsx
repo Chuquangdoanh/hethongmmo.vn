@@ -9,6 +9,7 @@ import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import ReviewSection from "@/components/shared/ReviewSection";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import { getFavoriteStatus } from "@/lib/services/favorite.service";
+import { getExternalProductSoldCount } from "@/lib/services/external-product-stats.service";
 import FavoriteButton from "@/components/shared/FavoriteButton";
 import { KfbBuyButton } from "./_components/KfbBuyButton";
 import {
@@ -109,7 +110,7 @@ export default async function KfbProductDetailPage({
 
   const me = session?.user as AuthenticatedUser | undefined;
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, contactCms, favoriteStatus] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, contactCms, favoriteStatus, soldCount] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "KHUONGFB_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -145,6 +146,7 @@ export default async function KfbProductDetailPage({
     }),
     getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT),
     getFavoriteStatus(me?.id, "KHUONGFB_PRODUCT", product.id),
+    getExternalProductSoldCount(product.id),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
@@ -305,7 +307,18 @@ export default async function KfbProductDetailPage({
           </div>
           <span className="text-sm font-bold text-text-dark">{avgRating.toFixed(1)}</span>
           <span className="text-xs text-text-muted">({reviewCount} đánh giá)</span>
+          {soldCount > 0 && (
+            <>
+              <span className="text-xs text-text-muted">|</span>
+              <span className="text-xs text-text-muted">Đã bán: {soldCount.toLocaleString("vi-VN")}</span>
+            </>
+          )}
         </div>
+      )}
+
+      {/* Đã bán — hiển thị cả khi chưa có đánh giá */}
+      {reviewCount === 0 && soldCount > 0 && (
+        <p className="text-xs text-text-muted">Đã bán {soldCount.toLocaleString("vi-VN")}</p>
       )}
 
       {/* Price */}

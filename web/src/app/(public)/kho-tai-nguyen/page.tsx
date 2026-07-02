@@ -10,6 +10,7 @@ import { buildMeta } from "@/lib/utils/seo";
 import { KhoFilterSidebar } from "./_components/KhoFilterSidebar";
 import { CategoryFilter } from "@/components/shared/CategoryFilter";
 import { batchGetFavoriteData } from "@/lib/services/favorite.service";
+import { getExternalProductSoldCounts } from "@/lib/services/external-product-stats.service";
 import {
   Package, FolderOpen,
   Users, Clock, Shield, Store,
@@ -200,7 +201,7 @@ export default async function KhoTaiNguyenPage({
     }),
   ]);
 
-  const [purchasedIds, reviewedIds, purchasedMmoIds, reviewedMmoIds] = await Promise.all([
+  const [purchasedIds, reviewedIds, purchasedMmoIds, reviewedMmoIds, kfbSoldMap] = await Promise.all([
     me
       ? prisma.order
           .findMany({
@@ -235,6 +236,7 @@ export default async function KhoTaiNguyenPage({
           })
           .then((rows) => new Set(rows.map((r) => r.productId)))
       : Promise.resolve(new Set<string>()),
+    getExternalProductSoldCounts(kfbProducts.map((p) => p.id)),
   ]);
 
   const mmoReviewMap = new Map(mmoReviewStats.map((r) => [r.productId, { count: r._count.id, avg: r._avg.rating ?? 0 }]));
@@ -327,7 +329,7 @@ export default async function KhoTaiNguyenPage({
         kind: "kfb", id: p.id, name: p.name, imageUrl: p.thumbnail,
         category: p.resourceCategory?.name ?? p.externalCategory,
         description: stripHtml(p.description ?? null),
-        price: Number(p.salePrice), salesCount: 0, createdAt: p.createdAt,
+        price: Number(p.salePrice), salesCount: kfbSoldMap.get(p.id) ?? 0, createdAt: p.createdAt,
         sellerPrefix: "Nguồn ngoài", available: 999,
         isNew: false, isHot: false,
         href: `/kfb/${p.id}`,

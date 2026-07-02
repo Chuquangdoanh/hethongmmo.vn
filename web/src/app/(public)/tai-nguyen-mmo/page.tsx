@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { buildMeta } from "@/lib/utils/seo";
 import { batchGetFavoriteData } from "@/lib/services/favorite.service";
+import { getExternalProductSoldCounts } from "@/lib/services/external-product-stats.service";
 import { TaiNguyenProductList } from "./_components/TaiNguyenProductList";
 import type { TaiNguyenProductItem } from "./_components/TaiNguyenProductList";
 
@@ -201,7 +202,7 @@ export default async function TaiNguyenMmoPage({
     }),
   ]);
 
-  const [purchasedSellerIds, reviewedSellerIds, purchasedMmoIds, reviewedMmoIds] =
+  const [purchasedSellerIds, reviewedSellerIds, purchasedMmoIds, reviewedMmoIds, kfbSoldMap] =
     await Promise.all([
       me ? prisma.order.findMany({
         where: { userId: me.id, orderType: "SELLER_PRODUCT", status: "DONE" },
@@ -221,6 +222,7 @@ export default async function TaiNguyenMmoPage({
         where: { userId: me.id, productType: "MMO_PRODUCT" },
         select: { productId: true },
       }).then((rows) => new Set(rows.map((r) => r.productId))) : Promise.resolve(new Set<string>()),
+      getExternalProductSoldCounts(kfbProducts.map((p) => p.id)),
     ]);
 
   const mmoReviewMap = new Map(
@@ -321,7 +323,7 @@ export default async function TaiNguyenMmoPage({
     ...kfbProducts.map((p): UnifiedProduct => ({
       id: p.id, kind: "kfb", name: p.name,
       description: stripHtml(p.description ?? null), imageUrl: p.thumbnail,
-      price: Number(p.salePrice), rating: 0, reviewCount: 0, salesCount: 0,
+      price: Number(p.salePrice), rating: 0, reviewCount: 0, salesCount: kfbSoldMap.get(p.id) ?? 0,
       available: 999, category: p.resourceCategory?.name ?? p.externalCategory,
       isNew: false, isHot: false,
       href: `/kfb/${p.id}`, shopHref: "#",

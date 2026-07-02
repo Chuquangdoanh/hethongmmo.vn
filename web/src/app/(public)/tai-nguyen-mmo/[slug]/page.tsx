@@ -15,6 +15,7 @@ import {
   ExternalLink, Building2, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { getFavoriteStatus } from "@/lib/services/favorite.service";
+import { getExternalProductSoldCounts } from "@/lib/services/external-product-stats.service";
 import FavoriteButton from "@/components/shared/FavoriteButton";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 
@@ -215,6 +216,9 @@ export default async function MmoProductDetailPage({
   const hasPrev = reviewPage > 1;
   const hasNext = reviewPage < reviewCount;
 
+  // Số lượng đã bán thật của khuongfb (đơn DONE)
+  const kfbSoldMap = await getExternalProductSoldCounts(relatedKfb.map((p) => p.id));
+
   // Gộp sản phẩm tương tự từ Hệ Thống MMO + khuongfb (cùng danh mục), tối đa 6
   const relatedProducts = [
     ...relatedMmo.map((p) => ({
@@ -232,7 +236,7 @@ export default async function MmoProductDetailPage({
       name: p.name,
       thumbnail: p.thumbnail,
       price: Number(p.salePrice),
-      soldLabel: "khuongfb",
+      soldLabel: `Đã bán ${(kfbSoldMap.get(p.id) ?? 0).toLocaleString("vi-VN")}`,
       source: "khuongfb",
     })),
   ].slice(0, 6);
