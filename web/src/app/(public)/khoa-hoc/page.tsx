@@ -41,8 +41,8 @@ const BADGE_PRIORITY: Record<string, number> = {
 };
 
 const FORMAT_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  ONLINE:  { label: "Khóa học online thực chiến",                color: "#0891b2", bg: "#e0f2fe" },
-  OFFLINE: { label: "Khóa học thực chiến trực tiếp chuyên sâu", color: "#7c3aed", bg: "#ede9fe" },
+  ONLINE:  { label: "Khóa Học Online Thực Chiến",                color: "#0891b2", bg: "#e0f2fe" },
+  OFFLINE: { label: "Khóa Học Thực Chiến Trực Tiếp Chuyên Sâu", color: "#7c3aed", bg: "#ede9fe" },
   HYBRID:  { label: "Khóa Học Siêu VIP",                        color: "#16a34a", bg: "#dcfce7" },
 };
 

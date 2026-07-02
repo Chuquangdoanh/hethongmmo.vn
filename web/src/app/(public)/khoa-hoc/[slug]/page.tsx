@@ -53,8 +53,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 const FORMAT_LABELS: Record<string, string> = {
-  ONLINE:  "Khóa học online thực chiến",
-  OFFLINE: "Khóa học thực chiến trực tiếp chuyên sâu",
+  ONLINE:  "Khóa Học Online Thực Chiến",
+  OFFLINE: "Khóa Học Thực Chiến Trực Tiếp Chuyên Sâu",
   HYBRID:  "Khóa Học Siêu VIP",
 };
 
