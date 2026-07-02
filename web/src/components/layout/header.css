@@ -538,6 +538,26 @@ body.menu-open .scm-wrapper { display: none !important; }
   white-space: nowrap;
 }
 
+/* Badge "HOT" cho tab được bật Nổi bật ở CMS — đồng bộ với sb-hot-badge desktop */
+.mnav-tab { position: relative; }
+.mnav-tab-hot {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(2px);
+  height: 13px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 13px;
+  pointer-events: none;
+  z-index: 1;
+}
+
 /* ── Overlay ────────────────────────────────────────────────── */
 /* KHÔNG dùng backdrop-filter: tạo compositing layer, gây delay touch trên iOS Safari */
 .mnav-overlay {

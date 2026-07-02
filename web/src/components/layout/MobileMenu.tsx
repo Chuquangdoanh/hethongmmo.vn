@@ -37,8 +37,7 @@ type PanelType = "services" | "account" | "support" | "seller-support";
 
 
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, balance, avatarUrl, tutCategories = [], serviceCategories = [] }: Props) {
+export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatarUrl, tutCategories = [], serviceCategories = [] }: Props) {
   const [activePanel, setActivePanel] = useState<PanelType | null>(null);
   const [expanded, setExpanded]       = useState<string | null>(null);
   const [mounted, setMounted]         = useState(false);
@@ -119,6 +118,11 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
   const balanceStr = mounted && balance != null ? formatVnd(balance) : null;
   const isSeller   = (user?.role === "SELLER" && user?.sellerStatus === "APPROVED") || user?.role === "STAFF" || user?.role === "ADMIN";
   const isAdmin    = user?.role === "ADMIN" || user?.role === "STAFF";
+
+  // Trang được bật "Nổi bật" ở CMS /admin/phan-quyen → hiện badge HOT trên tab tương ứng (đồng bộ Sidebar desktop)
+  const featuredHrefs = new Set(navLinks.filter((l) => l.isFeatured).map((l) => l.href));
+  const hotBadge = (href: string) =>
+    featuredHrefs.has(href) ? <span className="mnav-tab-hot">HOT</span> : null;
 
 
   /* ── Shared user card ── */
@@ -543,6 +547,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           className={`mnav-tab${!isOpen && pathname === "/" ? " mnav-tab--active" : ""}`}
           onClick={closeWithNav}
         >
+          {hotBadge("/")}
           <Home size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Trang Chủ</span>
         </Link>
@@ -551,6 +556,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           onClick={() => openPanel("services")}
           aria-expanded={activePanel === "services"}
         >
+          {hotBadge("/dich-vu")}
           <GalleryVerticalEnd size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Dịch Vụ</span>
         </button>
@@ -560,6 +566,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           className={`mnav-tab${!isOpen && pathname.startsWith("/khoa-hoc") ? " mnav-tab--active" : ""}`}
           onClick={closeWithNav}
         >
+          {hotBadge("/khoa-hoc")}
           <GraduationCap size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Khóa Học</span>
         </Link>
@@ -569,6 +576,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           className={`mnav-tab${!isOpen && pathname.startsWith("/kho-tai-nguyen") ? " mnav-tab--active" : ""}`}
           onClick={closeWithNav}
         >
+          {hotBadge("/kho-tai-nguyen")}
           <FolderOpen size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Tài Nguyên</span>
         </Link>
@@ -578,6 +586,7 @@ export default function MobileMenu({ navLinks: _navLinks, isLoggedIn, user, bala
           className={`mnav-tab${!isOpen && pathname.startsWith("/tai-nguyen-mmo") ? " mnav-tab--active" : ""}`}
           onClick={closeWithNav}
         >
+          {hotBadge("/tai-nguyen-mmo")}
           <Package size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Nguyên liệu</span>
         </Link>
