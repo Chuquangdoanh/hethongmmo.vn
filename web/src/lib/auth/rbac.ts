@@ -1,8 +1,8 @@
 import type { Session } from "next-auth";
-import type { Role, AccountStatus, SellerStatus } from "@prisma/client";
+import type { Role, AccountStatus, SellerStatus, AffiliateStatus } from "@prisma/client";
 import { AppError } from "@/lib/errors";
 
-const ROLE_LEVELS: Record<Role, number> = {
+export const ROLE_LEVELS: Record<Role, number> = {
   USER: 0,
   SELLER: 1,
   STAFF: 2,
@@ -18,6 +18,8 @@ export type AuthenticatedUser = {
   status: AccountStatus;
   sellerStatus: SellerStatus;
   requiresTwoFactor?: boolean;
+  isAffiliate?: boolean;
+  affiliateStatus?: AffiliateStatus;
 };
 
 export class AppAuthError extends AppError {
@@ -66,6 +68,23 @@ export function requireSeller(session: Session | null): AuthenticatedUser {
 /** Requires STAFF role or above. */
 export function requireStaff(session: Session | null): AuthenticatedUser {
   return assertRole(session, "STAFF");
+}
+
+/**
+ * Requires STAFF/ADMIN (view access to help/audit) OR an explicitly granted,
+ * ACTIVE affiliate account. This guard only decides who can VIEW the affiliate
+ * dashboard — earning commissions still requires isAffiliate=true to have been
+ * granted by Admin (see affiliate-commission.service.ts), independent of role.
+ */
+export function requireAffiliate(session: Session | null): AuthenticatedUser {
+  const user = requireUser(session);
+  const canView =
+    ROLE_LEVELS[user.role] >= ROLE_LEVELS.STAFF ||
+    (user.isAffiliate === true && user.affiliateStatus === "ACTIVE");
+  if (!canView) {
+    throw new AppAuthError("Bạn không có quyền truy cập trang Affiliate", "AFFILIATE_REQUIRED", 403);
+  }
+  return user;
 }
 
 /** Requires ADMIN role exactly. */

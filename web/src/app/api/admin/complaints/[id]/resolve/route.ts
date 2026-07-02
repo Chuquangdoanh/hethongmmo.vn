@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
 import { apiOk, apiCatch, apiError } from "@/lib/api-response";
 import { ValidationError } from "@/lib/errors";
+import { voidAffiliateCommission } from "@/lib/services/affiliate-commission.service";
 
 export const runtime = "nodejs";
 
@@ -57,6 +58,7 @@ export async function POST(
       refundedAmount = refundAmt;
 
       await tx.order.update({ where: { id: order.id }, data: { status: "REFUNDED" } });
+      await voidAffiliateCommission(tx, order.id, "Admin phán quyết khiếu nại — người mua thắng");
 
       // Lock buyer row và hoàn tiền về ví người mua
       const buyerRows = await tx.$queryRaw<Array<{ balance: string }>>`

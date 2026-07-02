@@ -9,7 +9,7 @@ import {
   Gamepad2, Tags, BookMarked, Tag, FolderOpen, ShieldCheck, Star,
   AlertTriangle, Radio, Wallet, ArrowDownCircle, ArrowUpCircle,
   Store, Settings, Users, Search, ChevronDown, Home, X, Lock,
-  Inbox, Monitor, Globe,
+  Inbox, Monitor, Globe, Share2, TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import type { PermissionCode } from "@/lib/constants/modules";
@@ -106,6 +106,16 @@ const SECTIONS: NavSection[] = [
       { href: "/admin/users",      label: "Người dùng", Icon: Users,  color: "#94a3b8", permission: "users:read"      },
       { href: "/admin/audit-log",  label: "Audit Log",  Icon: Search, color: "#94a3b8", permission: "audit_logs:read" },
       { href: "/admin/phan-quyen", label: "Phân quyền", Icon: Lock,   color: "#94a3b8", adminOnly: true               },
+    ],
+  },
+  {
+    key: "affiliate", label: "Affiliate", Icon: Share2, color: "#94a3b8", bg: "#f1f5f9",
+    links: [
+      { href: "/admin/affiliates",             label: "Affiliates",     Icon: Share2,      color: "#94a3b8", adminOnly: true },
+      { href: "/admin/affiliate-rules",        label: "% Hoa hồng",     Icon: Tag,         color: "#94a3b8", adminOnly: true },
+      { href: "/admin/affiliate-commissions",  label: "Hoa hồng",       Icon: Wallet,      color: "#94a3b8", adminOnly: true },
+      { href: "/admin/affiliate-withdrawals",  label: "Rút hoa hồng",   Icon: ArrowUpCircle, color: "#94a3b8", adminOnly: true },
+      { href: "/admin/affiliates/reports",     label: "Báo cáo",        Icon: TrendingUp,  color: "#94a3b8", adminOnly: true },
     ],
   },
 ];

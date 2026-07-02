@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
 import { apiOk, apiCatch, apiError } from "@/lib/api-response";
+import { createAffiliateCommission } from "@/lib/services/affiliate-commission.service";
 
 export const runtime = "nodejs";
 
@@ -41,7 +42,7 @@ export async function POST(
       if (complaint.orderId) {
         const order = await tx.order.findUnique({
           where: { id: complaint.orderId },
-          select: { finalPrice: true, sellerId: true },
+          select: { finalPrice: true, sellerId: true, userId: true, orderType: true },
         });
         if (order?.sellerId) {
           const payAmt = Number(order.finalPrice);
@@ -67,6 +68,9 @@ export async function POST(
           where: { id: complaint.orderId },
           data: { status: "DONE", withdrawn: true },
         });
+        if (order) {
+          await createAffiliateCommission(tx, { id: complaint.orderId, userId: order.userId, orderType: order.orderType, finalPrice: order.finalPrice });
+        }
       }
     });
 

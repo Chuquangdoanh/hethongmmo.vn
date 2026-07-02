@@ -11,7 +11,8 @@ import { verifyPassword } from "@/lib/auth/password";
 import { loginSchema } from "@/lib/validation/user.schema";
 import { logger } from "@/lib/utils/logger";
 import { isSessionDenied } from "@/lib/auth/session-denylist";
-import type { Role, AccountStatus, SellerStatus } from "@prisma/client";
+import { linkCustomerToAffiliate } from "@/lib/services/affiliate.service";
+import type { Role, AccountStatus, SellerStatus, AffiliateStatus } from "@prisma/client";
 
 class AccountBannedError extends CredentialsSignin {
   code = "ACCOUNT_BANNED";
@@ -31,6 +32,12 @@ class CaptchaFailedError extends CredentialsSignin {
 
 class PasswordResetRequiredError extends CredentialsSignin {
   code = "PASSWORD_RESET_REQUIRED";
+}
+
+function readCookie(cookieHeader: string | null | undefined, name: string): string | undefined {
+  if (!cookieHeader) return undefined;
+  const match = cookieHeader.split(";").map((c) => c.trim()).find((c) => c.startsWith(`${name}=`));
+  return match ? decodeURIComponent(match.slice(name.length + 1)) : undefined;
 }
 
 async function verifyCaptcha(token: string, ip: string): Promise<boolean> {
@@ -71,6 +78,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         token.sellerStatus = (user as { sellerStatus?: string }).sellerStatus ?? "NONE";
         token.fullName = (user as { fullName?: string }).fullName ?? "";
         token.requiresTwoFactor = (user as { requiresTwoFactor?: boolean }).requiresTwoFactor ?? false;
+        token.isAffiliate = (user as { isAffiliate?: boolean }).isAffiliate ?? false;
+        token.affiliateStatus = (user as { affiliateStatus?: string }).affiliateStatus as AffiliateStatus | undefined;
         token.statusCheckedAt = Date.now();
         return token;
       }
@@ -92,13 +101,15 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         try {
           const fresh = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { status: true, role: true, sellerStatus: true, twoFactorEnabled: true },
+            select: { status: true, role: true, sellerStatus: true, twoFactorEnabled: true, isAffiliate: true, affiliateStatus: true },
           });
           if (fresh) {
             token.status = fresh.status;
             token.role = fresh.role;
             token.sellerStatus = fresh.sellerStatus;
             token.requiresTwoFactor = (fresh.role === "ADMIN" || fresh.role === "STAFF") && !fresh.twoFactorEnabled;
+            token.isAffiliate = fresh.isAffiliate;
+            token.affiliateStatus = fresh.affiliateStatus;
             token.statusCheckedAt = Date.now();
           } else {
             // User no longer exists in DB — revoke session to force re-login
@@ -144,6 +155,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           id: true, email: true, fullName: true, passwordHash: true,
           role: true, status: true, sellerStatus: true,
           failedLoginCount: true, lockedUntil: true, twoFactorEnabled: true,
+          isAffiliate: true, affiliateStatus: true, referrerAffiliateId: true,
         };
         const user = await (isPhone
           ? prisma.user.findFirst({ where: { phone: email }, select: userSelect })
@@ -218,6 +230,16 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           },
         });
 
+        // Lifetime affiliate — first-touch link on first login (idempotent, additive, separate from the update above)
+        if (!user.referrerAffiliateId) {
+          const affRefCookie = readCookie(request?.headers?.get("cookie"), "aff_ref");
+          if (affRefCookie) {
+            await prisma.$transaction((tx) =>
+              linkCustomerToAffiliate(tx, { customerId: user.id, affiliateCodeFromCookie: affRefCookie }),
+            ).catch((e: unknown) => logger.error({ err: e, userId: user.id }, "Failed to link affiliate on login"));
+          }
+        }
+
         void recordAttempt(true);
         await prisma.notification.create({
           data: {
@@ -238,6 +260,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           status: user.status as AccountStatus,
           sellerStatus: user.sellerStatus as SellerStatus,
           requiresTwoFactor: (user.role === "ADMIN" || user.role === "STAFF") && !user.twoFactorEnabled,
+          isAffiliate: user.isAffiliate,
+          affiliateStatus: user.affiliateStatus as AffiliateStatus,
         };
       },
     }),

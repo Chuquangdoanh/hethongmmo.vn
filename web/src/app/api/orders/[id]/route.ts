@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db/prisma";
 import { decrypt } from "@/lib/security/encryption";
 import { writeAuditLog } from "@/lib/security/audit";
 import { toApiError, ValidationError } from "@/lib/errors";
+import { createAffiliateCommission, voidAffiliateCommission } from "@/lib/services/affiliate-commission.service";
 
 export const runtime = "nodejs";
 
@@ -181,6 +182,8 @@ export async function PATCH(
           });
         }
 
+        await createAffiliateCommission(tx, { id: order.id, userId: order.userId, orderType: order.orderType, finalPrice: order.finalPrice });
+
         return result;
       });
     } else if (newStatus === "REFUNDED") {
@@ -217,11 +220,23 @@ export async function PATCH(
           },
         });
 
+        await voidAffiliateCommission(tx, id, "Đơn hàng được hoàn tiền");
+
         return await tx.order.update({
           where: { id },
           data: { status: newStatus },
           select: orderSelect,
         });
+      });
+    } else if (newStatus === "CANCELLED") {
+      updated = await prisma.$transaction(async (tx) => {
+        const result = await tx.order.update({
+          where: { id },
+          data: { status: newStatus },
+          select: orderSelect,
+        });
+        await voidAffiliateCommission(tx, id, "Đơn hàng bị hủy");
+        return result;
       });
     } else {
       updated = await prisma.order.update({

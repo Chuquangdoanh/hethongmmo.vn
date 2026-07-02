@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db/prisma";
 import { apiOk, apiCatch, apiValidationError, apiError } from "@/lib/api-response";
 import { ValidationError } from "@/lib/errors";
 import { writeAuditLog } from "@/lib/security/audit";
+import { createAffiliateCommission } from "@/lib/services/affiliate-commission.service";
 
 export const runtime = "nodejs";
 
@@ -132,7 +133,7 @@ export async function POST(
             await tx.$queryRaw`SELECT id FROM orders WHERE id = ${complaint.orderId}::uuid FOR UPDATE`;
             const order = await tx.order.findUnique({
               where: { id: complaint.orderId },
-              select: { finalPrice: true, sellerId: true },
+              select: { finalPrice: true, sellerId: true, userId: true, orderType: true },
             });
             if (order?.sellerId) {
               const payAmt = Number(order.finalPrice);
@@ -156,6 +157,9 @@ export async function POST(
               });
             }
             await tx.order.update({ where: { id: complaint.orderId }, data: { status: "DONE", withdrawn: true } });
+            if (order) {
+              await createAffiliateCommission(tx, { id: complaint.orderId, userId: order.userId, orderType: order.orderType, finalPrice: order.finalPrice });
+            }
           }
         });
 
@@ -236,7 +240,7 @@ async function resolveComplaint(complaintId: string, orderId: string | null) {
       await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`;
       const order = await tx.order.findUnique({
         where: { id: orderId },
-        select: { finalPrice: true, sellerId: true },
+        select: { finalPrice: true, sellerId: true, userId: true, orderType: true },
       });
       if (order?.sellerId) {
         const payAmt = Number(order.finalPrice);
@@ -260,6 +264,9 @@ async function resolveComplaint(complaintId: string, orderId: string | null) {
         });
       }
       await tx.order.update({ where: { id: orderId }, data: { status: "DONE", withdrawn: true } });
+      if (order) {
+        await createAffiliateCommission(tx, { id: orderId, userId: order.userId, orderType: order.orderType, finalPrice: order.finalPrice });
+      }
     }
   });
 }

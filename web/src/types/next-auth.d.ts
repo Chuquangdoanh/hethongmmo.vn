@@ -1,5 +1,5 @@
 import type { DefaultSession } from "next-auth";
-import type { Role, AccountStatus, SellerStatus } from "@prisma/client";
+import type { Role, AccountStatus, SellerStatus, AffiliateStatus } from "@prisma/client";
 
 declare module "next-auth" {
   interface Session {
@@ -11,6 +11,8 @@ declare module "next-auth" {
       fullName: string;
       requiresTwoFactor: boolean;
       jti?: string;
+      isAffiliate?: boolean;
+      affiliateStatus?: AffiliateStatus;
     } & DefaultSession["user"];
   }
 
@@ -21,6 +23,8 @@ declare module "next-auth" {
     sellerStatus: SellerStatus;
     fullName: string;
     requiresTwoFactor?: boolean;
+    isAffiliate?: boolean;
+    affiliateStatus?: AffiliateStatus;
   }
 }
 
@@ -34,5 +38,7 @@ declare module "next-auth/jwt" {
     requiresTwoFactor?: boolean;
     statusCheckedAt?: number;
     jti?: string;
+    isAffiliate?: boolean;
+    affiliateStatus?: AffiliateStatus;
   }
 }

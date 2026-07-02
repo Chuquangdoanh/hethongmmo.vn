@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
+import { createAffiliateCommission, voidAffiliateCommission } from "@/lib/services/affiliate-commission.service";
 
 const SELLER_REPLY_DEADLINE_MS  = 12 * 60 * 60 * 1000; // 12 giờ
 const USER_CONFIRM_DEADLINE_MS  = 60 * 60 * 1000;      // 60 phút
@@ -92,7 +93,7 @@ async function autoResolve(complaintId: string, orderId: string | null, resoluti
       await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`;
       const order = await tx.order.findUnique({
         where: { id: orderId },
-        select: { finalPrice: true, sellerId: true },
+        select: { finalPrice: true, sellerId: true, userId: true, orderType: true },
       });
       if (order?.sellerId) {
         const payAmt = Number(order.finalPrice);
@@ -116,6 +117,9 @@ async function autoResolve(complaintId: string, orderId: string | null, resoluti
         });
       }
       await tx.order.update({ where: { id: orderId }, data: { status: "DONE", withdrawn: true } });
+      if (order) {
+        await createAffiliateCommission(tx, { id: orderId, userId: order.userId, orderType: order.orderType, finalPrice: order.finalPrice });
+      }
     }
   });
 
@@ -149,6 +153,7 @@ async function autoReject(complaintId: string, orderId: string | null, userId: s
 
     // Giữ order ở REFUNDED — seller không thể rút tiền từ đơn này
     await tx.order.update({ where: { id: orderId }, data: { status: "REFUNDED" } });
+    await voidAffiliateCommission(tx, orderId, "Seller không phản hồi trong 12 giờ — hoàn tiền tự động");
 
     // Lock user row và hoàn tiền về ví user
     const refundAmt = Number(order.finalPrice);

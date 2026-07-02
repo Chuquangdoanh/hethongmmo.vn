@@ -3,9 +3,10 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import { getCachedPageVisibility } from "@/lib/services/public-page-config.service";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
+import { ROLE_LEVELS } from "@/lib/auth/rbac";
 import { r2Url } from "@/lib/utils/image-url";
 import { formatVnd } from "@/lib/utils/format";
-import { CheckCircle, Plus, Store, Wallet, Package, TicketCheck, Send, Settings, MessageCircleWarning, Rocket, Banknote } from "lucide-react";
+import { CheckCircle, Plus, Store, Wallet, Package, TicketCheck, Send, Settings, MessageCircleWarning, Rocket, Banknote, Share2 } from "lucide-react";
 import { NAV_LINKS, NAV_ICONS } from "./nav-links";
 import SidebarNav, { type SidebarNavGroup, type SidebarNavItem } from "./SidebarNav";
 import SidebarServiceAccordion from "./SidebarServiceAccordion";
@@ -32,6 +33,10 @@ export default async function Sidebar() {
     (sessionUser.role === "SELLER" && sessionUser.sellerStatus === "APPROVED")
     || sessionUser.role === "STAFF"
     || sessionUser.role === "ADMIN"
+  );
+  const canViewAffiliate = !!sessionUser && (
+    ROLE_LEVELS[sessionUser.role] >= ROLE_LEVELS.STAFF
+    || (sessionUser.isAffiliate === true && sessionUser.affiliateStatus === "ACTIVE")
   );
 
   let balance: number | null = null;
@@ -127,6 +132,11 @@ export default async function Sidebar() {
           href: "/ban-hang/vi",
           label: "Ví Seller",
           icon: <span className="sb-icon-badge"><Banknote size={15} strokeWidth={1.75} /></span>,
+        }] : []),
+        ...(canViewAffiliate ? [{
+          href: "/affiliate",
+          label: "Affiliate",
+          icon: <span className="sb-icon-badge"><Share2 size={15} strokeWidth={1.75} /></span>,
         }] : []),
       ],
     });

@@ -12,6 +12,7 @@ import { decrypt } from "@/lib/security/encryption";
 import { logger } from "@/lib/utils/logger";
 import { randomBytes } from "crypto";
 import { sendTelegramAlert, escTelegramHtml } from "@/lib/services/telegram-alert.service";
+import { createAffiliateCommission } from "@/lib/services/affiliate-commission.service";
 
 // ── Course deposit constants ──────────────────────────────────────────────────
 export const COURSE_DEPOSIT_AMOUNT = 5_000_000;
@@ -243,6 +244,10 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
         ...orderData,
       },
     });
+
+    if (!isManualType) {
+      await createAffiliateCommission(tx, { id: order.id, userId, orderType, finalPrice: order.finalPrice });
+    }
 
     // ── 5. Create transaction record ──────────────────────────────────
     await tx.transaction.create({
@@ -637,6 +642,7 @@ async function purchaseProductBatch(params: BatchPurchaseParams): Promise<Purcha
       }
 
       const order = await tx.order.create({ data: orderData });
+      await createAffiliateCommission(tx, { id: order.id, userId, orderType, finalPrice: order.finalPrice });
       orders.push(order);
       orderIndex++;
     }

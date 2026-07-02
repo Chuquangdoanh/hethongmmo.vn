@@ -7,6 +7,7 @@ import {
   checkPwnedPassword,
 } from "@/lib/auth/password";
 import { verifyOtp } from "@/lib/services/otp.service";
+import { linkCustomerToAffiliate } from "@/lib/services/affiliate.service";
 import { logger } from "@/lib/utils/logger";
 import bcrypt from "bcryptjs";
 
@@ -162,6 +163,10 @@ export async function POST(req: NextRequest) {
       });
 
       await tx.pendingRegistration.delete({ where: { email } });
+
+      // Lifetime affiliate — first-touch link on registration (additive, idempotent)
+      const affRefCookie = req.cookies.get("aff_ref")?.value;
+      await linkCustomerToAffiliate(tx, { customerId: newUser.id, affiliateCodeFromCookie: affRefCookie });
 
       await tx.notification.create({
         data: {

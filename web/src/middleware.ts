@@ -265,6 +265,25 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
 
+  // ── 2b. Lifetime Affiliate: capture ?ref= into a cookie (independent, additive) ──
+  // Middleware runs on Edge — no DB access here. Validation of the code and the
+  // permanent link creation happen server-side (register/login), not here.
+  const refCode = req.nextUrl.searchParams.get("ref");
+  if (refCode && !req.cookies.get("aff_ref")) {
+    response.cookies.set("aff_ref", refCode, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 30 * 24 * 60 * 60, // 30 ngày
+    });
+    response.cookies.set("aff_ref_new", "1", {
+      httpOnly: false,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60, // đọc 1 lần bởi client để gọi track-click rồi tự hết hạn
+    });
+  }
+
   // ── 3. Security headers ───────────────────────────────────────────────────
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");

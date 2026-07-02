@@ -46,6 +46,8 @@ export const authConfig: NextAuthConfig = {
       session.user.fullName = (token.fullName ?? "") as string;
       session.user.requiresTwoFactor = (token.requiresTwoFactor ?? false) as boolean;
       session.user.jti = token.jti as string | undefined;
+      session.user.isAffiliate = token.isAffiliate as boolean | undefined;
+      session.user.affiliateStatus = token.affiliateStatus as never;
       return session;
     },
   },

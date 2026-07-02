@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db/prisma";
 import { NotFoundError } from "@/lib/errors";
 import { apiSuccess, apiCatch, apiValidationError } from "@/lib/api-response";
 import { logger } from "@/lib/utils/logger";
+import { createAffiliateCommission, voidAffiliateCommission } from "@/lib/services/affiliate-commission.service";
 
 export const runtime = "nodejs";
 
@@ -31,7 +32,7 @@ export async function PATCH(
 
     const order = await prisma.order.findUnique({
       where: { id },
-      select: { id: true, status: true, orderCode: true, userId: true, itemName: true },
+      select: { id: true, status: true, orderCode: true, userId: true, itemName: true, finalPrice: true, orderType: true },
     });
     if (!order) throw new NotFoundError("Order");
 
@@ -45,6 +46,12 @@ export async function PATCH(
           ...(status === "DONE" ? { completedAt: new Date() } : {}),
         },
       });
+
+      if (status === "DONE") {
+        await createAffiliateCommission(tx, { id: order.id, userId: order.userId, orderType: order.orderType, finalPrice: order.finalPrice });
+      } else if (status === "CANCELLED" || status === "REFUNDED") {
+        await voidAffiliateCommission(tx, order.id, `Admin cập nhật trạng thái đơn hàng sang ${status}`);
+      }
 
       if (status === "DONE") {
         await tx.notification.create({
