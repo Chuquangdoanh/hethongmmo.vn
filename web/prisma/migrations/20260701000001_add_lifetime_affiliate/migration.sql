@@ -1,36 +1,53 @@
--- CreateEnum
-CREATE TYPE "AffiliateStatus" AS ENUM ('ACTIVE', 'LOCKED');
+-- Lifetime Affiliate — IDEMPOTENT rewrite.
+--
+-- Nguyên bản migration này được sinh bằng `prisma migrate diff` trên một dev DB
+-- đang bị drift, nên nó lẫn cả các lệnh RENAME khuongfb→external. Trên production
+-- (nơi 20260629_rename_khuongfb_to_external đã chạy đúng), các RENAME đó thất bại
+-- (constraint/index tên cũ không còn tồn tại) → cả migration rollback → bảng
+-- affiliate không được tạo. Toàn bộ statement dưới đây được bọc guard để chạy lại
+-- an toàn trên mọi trạng thái DB (giống pattern của 20260629).
 
--- CreateEnum
-CREATE TYPE "AffiliateCommissionStatus" AS ENUM ('PENDING', 'APPROVED', 'VOIDED');
+-- CreateEnum (guarded)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'AffiliateStatus') THEN
+    CREATE TYPE "AffiliateStatus" AS ENUM ('ACTIVE', 'LOCKED');
+  END IF;
+END $$;
 
--- CreateEnum
-CREATE TYPE "AffiliateWithdrawalStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'COMPLETED');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'AffiliateCommissionStatus') THEN
+    CREATE TYPE "AffiliateCommissionStatus" AS ENUM ('PENDING', 'APPROVED', 'VOIDED');
+  END IF;
+END $$;
 
--- AlterEnum
--- This migration adds more than one value to an enum.
--- With PostgreSQL versions 11 and earlier, this is not possible
--- in a single migration. This can be worked around by creating
--- multiple migrations, each migration adding only one value to
--- the enum.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'AffiliateWithdrawalStatus') THEN
+    CREATE TYPE "AffiliateWithdrawalStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'COMPLETED');
+  END IF;
+END $$;
 
+-- AlterEnum (idempotent)
+ALTER TYPE "TxType" ADD VALUE IF NOT EXISTS 'AFFILIATE_COMMISSION';
+ALTER TYPE "TxType" ADD VALUE IF NOT EXISTS 'AFFILIATE_COMMISSION_VOID';
+ALTER TYPE "TxType" ADD VALUE IF NOT EXISTS 'AFFILIATE_WITHDRAWAL_FEE';
 
-ALTER TYPE "TxType" ADD VALUE 'AFFILIATE_COMMISSION';
-ALTER TYPE "TxType" ADD VALUE 'AFFILIATE_COMMISSION_VOID';
-ALTER TYPE "TxType" ADD VALUE 'AFFILIATE_WITHDRAWAL_FEE';
+-- Rename external_products PK constraint (chỉ khi còn tên cũ)
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'khuongfb_products_pkey')
+     AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'external_products_pkey') THEN
+    ALTER TABLE "external_products" RENAME CONSTRAINT "khuongfb_products_pkey" TO "external_products_pkey";
+  END IF;
+END $$;
 
--- AlterTable
-ALTER TABLE "external_products" RENAME CONSTRAINT "khuongfb_products_pkey" TO "external_products_pkey";
+-- AlterTable users (idempotent columns)
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "affiliate_code" VARCHAR(32);
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "affiliate_joined_at" TIMESTAMP(3);
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "affiliate_status" "AffiliateStatus" NOT NULL DEFAULT 'ACTIVE';
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "is_affiliate" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "referrer_affiliate_id" UUID;
 
--- AlterTable
-ALTER TABLE "users" ADD COLUMN     "affiliate_code" VARCHAR(32),
-ADD COLUMN     "affiliate_joined_at" TIMESTAMP(3),
-ADD COLUMN     "affiliate_status" "AffiliateStatus" NOT NULL DEFAULT 'ACTIVE',
-ADD COLUMN     "is_affiliate" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "referrer_affiliate_id" UUID;
-
--- CreateTable
-CREATE TABLE "affiliate_commission_rules" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "affiliate_commission_rules" (
     "id" UUID NOT NULL,
     "affiliate_id" UUID,
     "product_id" UUID,
@@ -44,8 +61,7 @@ CREATE TABLE "affiliate_commission_rules" (
     CONSTRAINT "affiliate_commission_rules_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "affiliate_commissions" (
+CREATE TABLE IF NOT EXISTS "affiliate_commissions" (
     "id" UUID NOT NULL,
     "affiliate_id" UUID NOT NULL,
     "customer_id" UUID NOT NULL,
@@ -65,8 +81,7 @@ CREATE TABLE "affiliate_commissions" (
     CONSTRAINT "affiliate_commissions_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "affiliate_clicks" (
+CREATE TABLE IF NOT EXISTS "affiliate_clicks" (
     "id" UUID NOT NULL,
     "affiliate_id" UUID NOT NULL,
     "ip_address" TEXT,
@@ -77,8 +92,7 @@ CREATE TABLE "affiliate_clicks" (
     CONSTRAINT "affiliate_clicks_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "affiliate_withdrawals" (
+CREATE TABLE IF NOT EXISTS "affiliate_withdrawals" (
     "id" UUID NOT NULL,
     "affiliate_id" UUID NOT NULL,
     "amount" DECIMAL(18,2) NOT NULL,
@@ -93,87 +107,131 @@ CREATE TABLE "affiliate_withdrawals" (
     CONSTRAINT "affiliate_withdrawals_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE INDEX "affiliate_commission_rules_affiliate_id_idx" ON "affiliate_commission_rules"("affiliate_id");
+-- CreateIndex (idempotent)
+CREATE INDEX IF NOT EXISTS "affiliate_commission_rules_affiliate_id_idx" ON "affiliate_commission_rules"("affiliate_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "affiliate_commissions_order_id_key" ON "affiliate_commissions"("order_id");
+CREATE INDEX IF NOT EXISTS "affiliate_commissions_affiliate_id_status_idx" ON "affiliate_commissions"("affiliate_id", "status");
+CREATE INDEX IF NOT EXISTS "affiliate_commissions_customer_id_idx" ON "affiliate_commissions"("customer_id");
+CREATE INDEX IF NOT EXISTS "affiliate_commissions_created_at_idx" ON "affiliate_commissions"("created_at");
+CREATE INDEX IF NOT EXISTS "affiliate_clicks_affiliate_id_created_at_idx" ON "affiliate_clicks"("affiliate_id", "created_at");
+CREATE INDEX IF NOT EXISTS "affiliate_withdrawals_affiliate_id_status_idx" ON "affiliate_withdrawals"("affiliate_id", "status");
+CREATE UNIQUE INDEX IF NOT EXISTS "users_affiliate_code_key" ON "users"("affiliate_code");
+CREATE INDEX IF NOT EXISTS "users_affiliate_code_idx" ON "users"("affiliate_code");
+CREATE INDEX IF NOT EXISTS "users_referrer_affiliate_id_idx" ON "users"("referrer_affiliate_id");
+CREATE INDEX IF NOT EXISTS "users_is_affiliate_affiliate_status_idx" ON "users"("is_affiliate", "affiliate_status");
 
--- CreateIndex
-CREATE UNIQUE INDEX "affiliate_commissions_order_id_key" ON "affiliate_commissions"("order_id");
+-- RenameForeignKey external_products (chỉ khi còn tên cũ)
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'khuongfb_products_resource_category_id_fkey')
+     AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'external_products_resource_category_id_fkey') THEN
+    ALTER TABLE "external_products" RENAME CONSTRAINT "khuongfb_products_resource_category_id_fkey" TO "external_products_resource_category_id_fkey";
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE INDEX "affiliate_commissions_affiliate_id_status_idx" ON "affiliate_commissions"("affiliate_id", "status");
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'khuongfb_products_sub_category_id_fkey')
+     AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'external_products_sub_category_id_fkey') THEN
+    ALTER TABLE "external_products" RENAME CONSTRAINT "khuongfb_products_sub_category_id_fkey" TO "external_products_sub_category_id_fkey";
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE INDEX "affiliate_commissions_customer_id_idx" ON "affiliate_commissions"("customer_id");
+-- Orders FK: trên prod đã đổi tên qua drop+add ở 20260629; chỉ rename nếu vẫn còn tên cũ
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_khuongfb_product_id_fkey')
+     AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_external_product_id_fkey') THEN
+    ALTER TABLE "orders" RENAME CONSTRAINT "orders_khuongfb_product_id_fkey" TO "orders_external_product_id_fkey";
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE INDEX "affiliate_commissions_created_at_idx" ON "affiliate_commissions"("created_at");
+-- AddForeignKey (chỉ thêm nếu chưa có)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_referrer_affiliate_id_fkey') THEN
+    ALTER TABLE "users" ADD CONSTRAINT "users_referrer_affiliate_id_fkey" FOREIGN KEY ("referrer_affiliate_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE INDEX "affiliate_clicks_affiliate_id_created_at_idx" ON "affiliate_clicks"("affiliate_id", "created_at");
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'affiliate_commission_rules_affiliate_id_fkey') THEN
+    ALTER TABLE "affiliate_commission_rules" ADD CONSTRAINT "affiliate_commission_rules_affiliate_id_fkey" FOREIGN KEY ("affiliate_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE INDEX "affiliate_withdrawals_affiliate_id_status_idx" ON "affiliate_withdrawals"("affiliate_id", "status");
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'affiliate_commissions_affiliate_id_fkey') THEN
+    ALTER TABLE "affiliate_commissions" ADD CONSTRAINT "affiliate_commissions_affiliate_id_fkey" FOREIGN KEY ("affiliate_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "users_affiliate_code_key" ON "users"("affiliate_code");
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'affiliate_commissions_customer_id_fkey') THEN
+    ALTER TABLE "affiliate_commissions" ADD CONSTRAINT "affiliate_commissions_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE INDEX "users_affiliate_code_idx" ON "users"("affiliate_code");
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'affiliate_commissions_order_id_fkey') THEN
+    ALTER TABLE "affiliate_commissions" ADD CONSTRAINT "affiliate_commissions_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "orders"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE INDEX "users_referrer_affiliate_id_idx" ON "users"("referrer_affiliate_id");
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'affiliate_clicks_affiliate_id_fkey') THEN
+    ALTER TABLE "affiliate_clicks" ADD CONSTRAINT "affiliate_clicks_affiliate_id_fkey" FOREIGN KEY ("affiliate_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- CreateIndex
-CREATE INDEX "users_is_affiliate_affiliate_status_idx" ON "users"("is_affiliate", "affiliate_status");
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'affiliate_withdrawals_affiliate_id_fkey') THEN
+    ALTER TABLE "affiliate_withdrawals" ADD CONSTRAINT "affiliate_withdrawals_affiliate_id_fkey" FOREIGN KEY ("affiliate_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- RenameForeignKey
-ALTER TABLE "external_products" RENAME CONSTRAINT "khuongfb_products_resource_category_id_fkey" TO "external_products_resource_category_id_fkey";
+-- RenameIndex external_products (chỉ khi còn tên cũ)
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'khuongfb_products_display_section_idx')
+     AND NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'external_products_display_section_idx') THEN
+    ALTER INDEX "khuongfb_products_display_section_idx" RENAME TO "external_products_display_section_idx";
+  END IF;
+END $$;
 
--- RenameForeignKey
-ALTER TABLE "external_products" RENAME CONSTRAINT "khuongfb_products_sub_category_id_fkey" TO "external_products_sub_category_id_fkey";
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'khuongfb_products_external_id_key')
+     AND NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'external_products_external_id_key') THEN
+    ALTER INDEX "khuongfb_products_external_id_key" RENAME TO "external_products_external_id_key";
+  END IF;
+END $$;
 
--- RenameForeignKey
-ALTER TABLE "orders" RENAME CONSTRAINT "orders_khuongfb_product_id_fkey" TO "orders_external_product_id_fkey";
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'khuongfb_products_is_enabled_idx')
+     AND NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'external_products_is_enabled_idx') THEN
+    ALTER INDEX "khuongfb_products_is_enabled_idx" RENAME TO "external_products_is_enabled_idx";
+  END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "users" ADD CONSTRAINT "users_referrer_affiliate_id_fkey" FOREIGN KEY ("referrer_affiliate_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'khuongfb_products_provider_idx')
+     AND NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'external_products_provider_idx') THEN
+    ALTER INDEX "khuongfb_products_provider_idx" RENAME TO "external_products_provider_idx";
+  END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "affiliate_commission_rules" ADD CONSTRAINT "affiliate_commission_rules_affiliate_id_fkey" FOREIGN KEY ("affiliate_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'khuongfb_products_provider_is_enabled_idx')
+     AND NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'external_products_provider_is_enabled_idx') THEN
+    ALTER INDEX "khuongfb_products_provider_is_enabled_idx" RENAME TO "external_products_provider_is_enabled_idx";
+  END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "affiliate_commissions" ADD CONSTRAINT "affiliate_commissions_affiliate_id_fkey" FOREIGN KEY ("affiliate_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'khuongfb_products_resource_category_id_idx')
+     AND NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'external_products_resource_category_id_idx') THEN
+    ALTER INDEX "khuongfb_products_resource_category_id_idx" RENAME TO "external_products_resource_category_id_idx";
+  END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "affiliate_commissions" ADD CONSTRAINT "affiliate_commissions_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "affiliate_commissions" ADD CONSTRAINT "affiliate_commissions_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "orders"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "affiliate_clicks" ADD CONSTRAINT "affiliate_clicks_affiliate_id_fkey" FOREIGN KEY ("affiliate_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "affiliate_withdrawals" ADD CONSTRAINT "affiliate_withdrawals_affiliate_id_fkey" FOREIGN KEY ("affiliate_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- RenameIndex
-ALTER INDEX "khuongfb_products_display_section_idx" RENAME TO "external_products_display_section_idx";
-
--- RenameIndex
-ALTER INDEX "khuongfb_products_external_id_key" RENAME TO "external_products_external_id_key";
-
--- RenameIndex
-ALTER INDEX "khuongfb_products_is_enabled_idx" RENAME TO "external_products_is_enabled_idx";
-
--- RenameIndex
-ALTER INDEX "khuongfb_products_provider_idx" RENAME TO "external_products_provider_idx";
-
--- RenameIndex
-ALTER INDEX "khuongfb_products_provider_is_enabled_idx" RENAME TO "external_products_provider_is_enabled_idx";
-
--- RenameIndex
-ALTER INDEX "khuongfb_products_resource_category_id_idx" RENAME TO "external_products_resource_category_id_idx";
-
--- RenameIndex
-ALTER INDEX "khuongfb_products_sub_category_id_idx" RENAME TO "external_products_sub_category_id_idx";
-
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'khuongfb_products_sub_category_id_idx')
+     AND NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'external_products_sub_category_id_idx') THEN
+    ALTER INDEX "khuongfb_products_sub_category_id_idx" RENAME TO "external_products_sub_category_id_idx";
+  END IF;
+END $$;
