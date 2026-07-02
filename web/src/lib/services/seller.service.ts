@@ -7,6 +7,7 @@ import {
   ValidationError,
 } from "@/lib/errors";
 import { logger } from "@/lib/utils/logger";
+import { notifySellerSlotUpgrade } from "@/lib/services/telegram-alert.service";
 
 interface RegisterSellerParams {
   userId: string;
@@ -270,6 +271,8 @@ interface BuySellerSlotsParams {
 export async function buySellerSlots(params: BuySellerSlotsParams): Promise<void> {
   const { userId, slots, price } = params;
 
+  let previousSlots = 0;
+
   await prisma.$transaction(async (tx) => {
     const rows = await tx.$queryRaw<
       Array<{ balance: string; seller_status: string; max_seller_products: number }>
@@ -277,6 +280,7 @@ export async function buySellerSlots(params: BuySellerSlotsParams): Promise<void
 
     const user = rows[0];
     if (!user) throw new NotFoundError("User");
+    previousSlots = user.max_seller_products;
     if (user.seller_status !== "APPROVED") {
       throw new ValidationError("Tài khoản chưa được duyệt làm seller");
     }
@@ -323,4 +327,6 @@ export async function buySellerSlots(params: BuySellerSlotsParams): Promise<void
   });
 
   logger.info({ userId, slots, price }, "Seller slot purchased");
+
+  notifySellerSlotUpgrade(userId, previousSlots, slots, new Decimal(Number(price)).toFixed(0));
 }

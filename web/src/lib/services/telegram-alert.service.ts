@@ -61,6 +61,27 @@ export function notifyDepositSuccess(
   })();
 }
 
+/** Gửi cảnh báo seller nâng cấp gói slot sản phẩm — fire-and-forget. */
+export function notifySellerSlotUpgrade(
+  userId: string,
+  previousSlots: number,
+  newSlots: number,
+  price: string,
+): void {
+  void (async () => {
+    const label = await _getUserLabel(userId);
+    sendTelegramAlert(
+      [
+        `⬆️ <b>Seller nâng cấp gói slot</b>`,
+        ``,
+        `👤 Seller: ${label}`,
+        `📦 Slot: <b>${previousSlots} → ${newSlots}</b> sản phẩm`,
+        `💵 Số tiền: <b>${price}đ</b>`,
+      ].join("\n"),
+    );
+  })();
+}
+
 /** Gửi cảnh báo mua KhuongFB lỗi + đã hoàn tiền — fire-and-forget, để admin biết provider trục trặc. */
 export function notifyKhuongfbRefund(
   userId: string,
