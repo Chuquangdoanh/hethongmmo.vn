@@ -61,6 +61,30 @@ export function notifyDepositSuccess(
   })();
 }
 
+/** Gửi cảnh báo mua KhuongFB lỗi + đã hoàn tiền — fire-and-forget, để admin biết provider trục trặc. */
+export function notifyKhuongfbRefund(
+  userId: string,
+  itemName: string,
+  amount: string,
+  orderCode: string,
+  errorMsg: string,
+): void {
+  void (async () => {
+    const label = await _getUserLabel(userId);
+    sendTelegramAlert(
+      [
+        `⚠️ <b>KhuongFB lỗi — đã hoàn tiền</b>`,
+        ``,
+        `👤 User: ${label}`,
+        `📦 Sản phẩm: ${escTelegramHtml(itemName)}`,
+        `💵 Đã hoàn: <b>${amount}đ</b>`,
+        `🔖 Mã đơn: <code>${escTelegramHtml(orderCode)}</code>`,
+        `❌ Lỗi: ${escTelegramHtml(errorMsg)}`,
+      ].join("\n"),
+    );
+  })();
+}
+
 /** Gửi cảnh báo mua hàng thành công — fire-and-forget, áp dụng cho mọi user. */
 export function notifyPurchaseSuccess(
   userId: string,

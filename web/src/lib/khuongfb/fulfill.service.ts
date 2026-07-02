@@ -3,7 +3,7 @@ import { NotFoundError, AppError, InsufficientBalanceError } from "@/lib/errors"
 import { KHUONGFB_SOURCE } from "./constants";
 import { loadEnabledAdapters } from "@/lib/external-providers/providers-config";
 import { logger } from "@/lib/utils/logger";
-import { notifyPurchaseSuccess } from "@/lib/services/telegram-alert.service";
+import { notifyPurchaseSuccess, notifyKhuongfbRefund } from "@/lib/services/telegram-alert.service";
 import Decimal from "decimal.js";
 import { randomBytes } from "crypto";
 
@@ -169,6 +169,9 @@ export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): P
     });
 
     const msg = err instanceof Error ? err.message : "Khuongfb không phản hồi";
+
+    notifyKhuongfbRefund(userId, `${product.name} (x${quantity})`, totalPrice.toFixed(0), order.orderCode, msg);
+
     throw new AppError(`Đặt hàng thất bại, tiền đã được hoàn vào ví: ${msg}`, "KHUONGFB_FULFILL_ERROR", 502);
   }
 }
