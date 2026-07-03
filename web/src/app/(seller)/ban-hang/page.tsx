@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import ProductActions from "./_components/ProductActions";
 import UpgradeShopModal from "./_components/UpgradeShopModal";
+import TelegramConnectCard from "./_components/TelegramConnectCard";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
 import { r2Url } from "@/lib/utils/image-url";
 
@@ -64,6 +65,7 @@ export default async function BanHangPage() {
         bankNameEnc: true,
         bankAccountNumberEnc: true,
         bankAccountHolderEnc: true,
+        sellerTelegramChatId: true,
       },
     }),
     prisma.sellerProduct.findMany({
@@ -147,6 +149,7 @@ export default async function BanHangPage() {
   } catch { /* bank info not set */ }
 
   const hasBankInfo = !!(bankName && bankAccountNumber && bankAccountHolder);
+  const telegramConnected = !!user?.sellerTelegramChatId;
 
   const STATS = [
     {
@@ -425,6 +428,9 @@ export default async function BanHangPage() {
                   ✓ Chỉ bạn mới xem được đơn hàng và doanh số của cửa hàng mình.
                 </p>
               </div>
+
+              {/* Telegram notification */}
+              <TelegramConnectCard initialConnected={telegramConnected} />
             </div>
           </div>
 

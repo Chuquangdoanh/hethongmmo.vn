@@ -127,3 +127,58 @@ export function notifyPurchaseSuccess(
     );
   })();
 }
+
+// ── Thông báo đơn hàng mới cho SELLER (bot riêng, gửi tới chat_id của từng seller) ──
+
+/**
+ * Gửi tin HTML tới 1 chat_id cụ thể qua BOT SELLER (token riêng).
+ * Tự bỏ qua nếu thiếu env hoặc chưa có chat_id — không throw để không block luồng bán hàng.
+ */
+export async function sendSellerTelegram(chatId: string, text: string): Promise<void> {
+  try {
+    const botToken = process.env.TELEGRAM_SELLER_BOT_TOKEN;
+    if (!botToken || !chatId) return;
+
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch {
+    // silent — không crash luồng nghiệp vụ chính
+  }
+}
+
+/**
+ * Báo cho seller khi có đơn SELLER_PRODUCT mới — fire-and-forget.
+ * Chỉ gửi nếu seller đã kết nối Telegram (có sellerTelegramChatId).
+ */
+export function notifySellerNewOrder(
+  sellerId: string,
+  itemName: string,
+  amount: string,
+  orderCode: string,
+): void {
+  void (async () => {
+    const seller = await prisma.user.findUnique({
+      where: { id: sellerId },
+      select: { sellerTelegramChatId: true },
+    });
+    const chatId = seller?.sellerTelegramChatId;
+    if (!chatId) return;
+
+    await sendSellerTelegram(
+      chatId,
+      [
+        `🎉 <b>Bạn có đơn hàng mới!</b>`,
+        ``,
+        `📦 Sản phẩm: ${escTelegramHtml(itemName)}`,
+        `💵 Số tiền: <b>${amount}đ</b>`,
+        `🔖 Mã đơn: <code>${escTelegramHtml(orderCode)}</code>`,
+        ``,
+        `Đăng nhập gian hàng để xử lý đơn nhé.`,
+      ].join("\n"),
+    );
+  })();
+}

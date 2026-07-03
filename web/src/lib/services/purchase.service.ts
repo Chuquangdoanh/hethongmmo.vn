@@ -11,7 +11,7 @@ import {
 import { decrypt } from "@/lib/security/encryption";
 import { logger } from "@/lib/utils/logger";
 import { randomBytes } from "crypto";
-import { notifyPurchaseSuccess } from "@/lib/services/telegram-alert.service";
+import { notifyPurchaseSuccess, notifySellerNewOrder } from "@/lib/services/telegram-alert.service";
 import { createAffiliateCommission } from "@/lib/services/affiliate-commission.service";
 
 // ── Course deposit constants ──────────────────────────────────────────────────
@@ -281,6 +281,10 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
   logger.info({ userId, orderType, itemId, orderId: result.order.id }, "Purchase processed");
 
   notifyPurchaseSuccess(userId, itemName, price.toFixed(0), result.order.orderCode);
+
+  if (orderType === "SELLER_PRODUCT" && result.order.sellerId) {
+    notifySellerNewOrder(result.order.sellerId, itemName, price.toFixed(0), result.order.orderCode);
+  }
 
   return result;
 }
@@ -688,6 +692,10 @@ async function purchaseProductBatch(params: BatchPurchaseParams): Promise<Purcha
   logger.info({ userId, orderType, itemId, quantity, firstOrderId: firstResultOrder.id }, "Batch purchase processed");
 
   notifyPurchaseSuccess(userId, `${itemName} (x${quantity})`, totalPrice.toFixed(0), firstResultOrder.orderCode);
+
+  if (orderType === "SELLER_PRODUCT" && firstResultOrder.sellerId) {
+    notifySellerNewOrder(firstResultOrder.sellerId, `${itemName} (x${quantity})`, totalPrice.toFixed(0), firstResultOrder.orderCode);
+  }
 
   const firstContent = result.deliveredContents[0] ?? "";
   return {

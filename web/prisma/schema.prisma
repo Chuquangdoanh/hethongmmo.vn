@@ -222,6 +222,12 @@ model User {
   facebookUrl          String?       @map("facebook_url") @db.VarChar(500)
   telegramUsername     String?       @map("telegram_username") @db.VarChar(100)
 
+  // Thông báo đơn hàng qua Telegram bot (chỉ seller dùng)
+  // chat_id số được webhook tự bắt khi seller bấm Start bot — seller không tự nhập
+  sellerTelegramChatId String?       @map("seller_telegram_chat_id") @db.VarChar(32)
+  // Token 1 lần dùng cho deep link /start — xoá sau khi kết nối thành công
+  telegramLinkToken    String?       @unique @map("telegram_link_token") @db.VarChar(64)
+
   avatarUrl            String?       @map("avatar_url") @db.VarChar(500)
 
   // ── Lifetime Affiliate ──────────────────────────────────────────────
