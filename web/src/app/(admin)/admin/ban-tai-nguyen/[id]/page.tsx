@@ -48,6 +48,9 @@ export default async function BanTaiNguyenDetailPage({
       createdAt: true, completedAt: true,
       deliveredItemId: true, kfbData: true,
       user: { select: { id: true, email: true, fullName: true } },
+      sellerProduct: {
+        select: { seller: { select: { id: true, email: true, fullName: true } } },
+      },
       transactions: {
         orderBy: { createdAt: "desc" },
         take: 5,
@@ -252,6 +255,32 @@ export default async function BanTaiNguyenDetailPage({
               </Link>
             </div>
           </div>
+
+          {/* Nhà bán hàng */}
+          {order.sellerProduct?.seller && (
+            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-gray-100 bg-gray-50">
+                <h2 className="text-sm font-semibold text-gray-700">Nhà bán hàng</h2>
+              </div>
+              <div className="px-5 py-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#7C3AED]/10 flex items-center justify-center shrink-0">
+                  <span className="text-sm font-bold text-[#7C3AED]">
+                    {(order.sellerProduct.seller.fullName ?? order.sellerProduct.seller.email).slice(0, 1).toUpperCase()}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">{order.sellerProduct.seller.fullName}</p>
+                  <p className="text-xs text-gray-400 truncate">{order.sellerProduct.seller.email}</p>
+                </div>
+                <Link
+                  href={`/admin/users/${order.sellerProduct.seller.id}`}
+                  className="text-xs text-[#7C3AED] hover:text-[#A855F7] shrink-0 transition-colors"
+                >
+                  Xem →
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Giao dịch liên quan */}
           {order.transactions.length > 0 && (
