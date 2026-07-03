@@ -136,19 +136,22 @@ export function notifyPurchaseSuccess(
       _getUserLabel(userId),
       _getSourceLine(source),
     ]);
-    sendTelegramAlert(
-      [
-        `🛒 <b>Đơn hàng mới</b>`,
-        ``,
-        `👤 User: ${label}`,
-        sourceLine,
-        `📦 Sản phẩm: ${escTelegramHtml(itemName)}`,
-        `💵 Số tiền: <b>${amount}đ</b>`,
-        `🔖 Mã đơn: <code>${escTelegramHtml(orderCode)}</code>`,
-      ].join("\n"),
-      // Đơn hàng mới → gửi vào nhóm riêng nếu có cấu hình; nếu không, về chat mặc định
-      process.env.TELEGRAM_ORDER_CHAT_ID,
-    );
+    const text = [
+      `🛒 <b>Đơn hàng mới</b>`,
+      ``,
+      `👤 User: ${label}`,
+      sourceLine,
+      `📦 Sản phẩm: ${escTelegramHtml(itemName)}`,
+      `💵 Số tiền: <b>${amount}đ</b>`,
+      `🔖 Mã đơn: <code>${escTelegramHtml(orderCode)}</code>`,
+    ].join("\n");
+
+    // Luôn gửi về chat gốc (như trước) + gửi thêm vào nhóm đơn hàng nếu có cấu hình
+    sendTelegramAlert(text);
+    const orderChatId = process.env.TELEGRAM_ORDER_CHAT_ID;
+    if (orderChatId && orderChatId !== process.env.TELEGRAM_ALERT_CHAT_ID) {
+      sendTelegramAlert(text, orderChatId);
+    }
   })();
 }
 
