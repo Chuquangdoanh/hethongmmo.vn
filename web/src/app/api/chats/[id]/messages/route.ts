@@ -9,9 +9,9 @@ import { sendSellerFirstReplyEmail } from "@/lib/services/email.service";
 
 export const runtime = "nodejs";
 
-const TOTAL_MSG_LIMIT = 20;
+const TOTAL_MSG_LIMIT = 100;
 const USER_TURN_LIMIT = 3;
-const WARN_THRESHOLD  = 17; // hiện warning khi >= 17 tin
+const WARN_THRESHOLD  = 97; // hiện warning khi còn <= 3 tin
 
 async function assertAccess(roomId: string, userId: string, role: string): Promise<string> {
   if (role === "ADMIN" || role === "STAFF") return "Admin";
@@ -152,7 +152,7 @@ export async function POST(
     // Hết tổng quota → block
     if (room.totalMsgCount >= TOTAL_MSG_LIMIT) {
       return NextResponse.json(
-        { error: "Đã đạt giới hạn 20 tin nhắn. Vui lòng xác nhận kết quả.", code: "QUOTA_EXCEEDED" },
+        { error: "Đã đạt giới hạn 100 tin nhắn. Vui lòng xác nhận kết quả.", code: "QUOTA_EXCEEDED" },
         { status: 400 },
       );
     }

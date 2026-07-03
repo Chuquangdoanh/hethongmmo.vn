@@ -323,7 +323,7 @@ export default function ComplaintChatPanel({
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 space-y-2">
               <p className="text-sm font-bold text-amber-800">🔄 Xác nhận mở vòng 2?</p>
               <p className="text-xs text-amber-700 leading-relaxed">
-                Chat sẽ reset: quota mới (20 tin), seller và user cần xác nhận lại. Chỉ mở được 1 lần.
+                Chat sẽ reset: quota mới (100 tin), seller và user cần xác nhận lại. Chỉ mở được 1 lần.
               </p>
               <div className="flex gap-2 pt-1">
                 <button
