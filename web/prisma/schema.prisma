@@ -355,6 +355,24 @@ model ServiceCategory {
   @@map("service_categories")
 }
 
+// Nhân sự hiển thị theo từng danh mục dịch vụ (ảnh + tên + chức vụ + mô tả)
+// category = ServiceCategory.name / Service.category (tham chiếu theo tên, không FK — đồng nhất với Service.category)
+model CategoryStaff {
+  id           String   @id @default(uuid()) @db.Uuid
+  category     String
+  name         String
+  role         String
+  description  String?  @db.Text
+  avatarUrl    String?  @map("avatar_url")
+  displayOrder Int      @default(0) @map("display_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@map("category_staff")
+}
+
 model Service {
   id              String    @id @default(uuid()) @db.Uuid
   slug            String    @unique

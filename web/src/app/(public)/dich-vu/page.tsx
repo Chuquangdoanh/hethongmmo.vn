@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import ServiceListWithForm from "./_components/ServiceListWithForm";
+import CategoryStaffSection from "./_components/CategoryStaffSection";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import Pagination from "@/components/shared/Pagination";
@@ -45,7 +46,7 @@ export default async function DichVuPage({
   const page = Math.max(1, parseInt(pageParam ?? "1", 10));
   const userId = (session?.user as { id: string } | null | undefined)?.id;
 
-  const [rawServices, total, agg, serviceCategoryDefs, testimonials, userRow] = await Promise.all([
+  const [rawServices, total, agg, serviceCategoryDefs, testimonials, userRow, categoryStaff] = await Promise.all([
     prisma.service.findMany({
       where: {
         isActive: true,
@@ -88,6 +89,13 @@ export default async function DichVuPage({
     userId
       ? prisma.user.findUnique({ where: { id: userId }, select: { discountPercent: true, totalDeposited: true } })
       : Promise.resolve(null),
+    category
+      ? prisma.categoryStaff.findMany({
+          where: { category, isActive: true },
+          orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
+          select: { id: true, name: true, role: true, description: true, avatarUrl: true },
+        })
+      : Promise.resolve([]),
   ]);
 
   const discountPct = userRow
@@ -175,6 +183,11 @@ export default async function DichVuPage({
             scrollToTop
           />
         </div>
+
+        {/* Đội ngũ nhân sự theo danh mục — chỉ hiện khi lọc 1 danh mục cụ thể */}
+        {category && (
+          <CategoryStaffSection staff={categoryStaff} />
+        )}
 
       </div>
     </div>
