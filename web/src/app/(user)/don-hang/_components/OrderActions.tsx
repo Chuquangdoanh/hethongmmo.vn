@@ -50,10 +50,10 @@ async function fetchDeliveredData(orderId: string): Promise<DeliveredData> {
 }
 
 const COMPLAINT_REASONS = [
-  "Không nhận được hàng",
-  "Bị trừ tiền nhưng không có đơn hàng",
-  "Nội dung không đúng mô tả",
+  "Liên hệ Shop để nhận sản phẩm",
+  "Tôi chưa nhận được sản phẩm từ Shop",
   "Sản phẩm không sử dụng được",
+  "Tôi chưa biết cách sử dụng, Cần hướng dẫn chi tiết !",
   "Khác",
 ];
 
