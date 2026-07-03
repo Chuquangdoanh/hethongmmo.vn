@@ -126,7 +126,7 @@ export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): P
       },
     });
 
-    notifyPurchaseSuccess(userId, `${product.name} (x${quantity}) qua Khuongfb`, totalPrice.toFixed(0), order.orderCode);
+    notifyPurchaseSuccess(userId, `${product.name} (x${quantity}) qua Khuongfb`, totalPrice.toFixed(0), order.orderCode, { kind: "KHUONGFB" });
 
     return {
       orderId:         order.id,

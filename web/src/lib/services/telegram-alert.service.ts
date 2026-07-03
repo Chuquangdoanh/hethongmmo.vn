@@ -107,20 +107,41 @@ export function notifyKhuongfbRefund(
   })();
 }
 
+/** Nguồn của đơn hàng — nơi user mua. */
+export type OrderSource =
+  | { kind: "SYSTEM" }                       // Hệ Thống MMO (service/course/tuttrick/mmo)
+  | { kind: "SELLER"; sellerId?: string }    // Nhà bán hàng — kèm tên/email seller
+  | { kind: "KHUONGFB" };                    // KhuongFB
+
+/** Trả về dòng "Nguồn" cho tin đơn hàng theo nơi mua. */
+async function _getSourceLine(source: OrderSource): Promise<string> {
+  if (source.kind === "KHUONGFB") return `🌐 Nguồn: KhuongFB`;
+  if (source.kind === "SYSTEM")   return `🏢 Nguồn: Hệ Thống MMO`;
+
+  // SELLER — hiển thị tên + email nhà bán hàng
+  const sellerLabel = source.sellerId ? await _getUserLabel(source.sellerId) : "Không rõ";
+  return `🏪 Nhà bán hàng: ${sellerLabel}`;
+}
+
 /** Gửi cảnh báo mua hàng thành công — fire-and-forget, áp dụng cho mọi user. */
 export function notifyPurchaseSuccess(
   userId: string,
   itemName: string,
   amount: string,
   orderCode: string,
+  source: OrderSource,
 ): void {
   void (async () => {
-    const label = await _getUserLabel(userId);
+    const [label, sourceLine] = await Promise.all([
+      _getUserLabel(userId),
+      _getSourceLine(source),
+    ]);
     sendTelegramAlert(
       [
         `🛒 <b>Đơn hàng mới</b>`,
         ``,
         `👤 User: ${label}`,
+        sourceLine,
         `📦 Sản phẩm: ${escTelegramHtml(itemName)}`,
         `💵 Số tiền: <b>${amount}đ</b>`,
         `🔖 Mã đơn: <code>${escTelegramHtml(orderCode)}</code>`,

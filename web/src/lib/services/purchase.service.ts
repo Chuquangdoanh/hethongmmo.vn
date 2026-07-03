@@ -280,7 +280,15 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
 
   logger.info({ userId, orderType, itemId, orderId: result.order.id }, "Purchase processed");
 
-  notifyPurchaseSuccess(userId, itemName, price.toFixed(0), result.order.orderCode);
+  notifyPurchaseSuccess(
+    userId,
+    itemName,
+    price.toFixed(0),
+    result.order.orderCode,
+    orderType === "SELLER_PRODUCT"
+      ? { kind: "SELLER", sellerId: result.order.sellerId ?? undefined }
+      : { kind: "SYSTEM" },
+  );
 
   if (orderType === "SELLER_PRODUCT" && result.order.sellerId) {
     notifySellerNewOrder(result.order.sellerId, itemName, price.toFixed(0), result.order.orderCode);
@@ -409,7 +417,7 @@ async function purchaseCourseDeposit(params: CourseDepositParams): Promise<Purch
 
   logger.info({ userId, itemId, orderId: result.order.id }, "Course deposit processed");
 
-  notifyPurchaseSuccess(userId, `Đặt cọc khóa học: ${itemName}`, deposit.toFixed(0), result.order.orderCode);
+  notifyPurchaseSuccess(userId, `Đặt cọc khóa học: ${itemName}`, deposit.toFixed(0), result.order.orderCode, { kind: "SYSTEM" });
 
   return {
     order: result.order,
@@ -503,7 +511,7 @@ export async function purchaseCourseRemainder(orderId: string, userId: string): 
 
   logger.info({ userId, orderId }, "Course final payment processed");
 
-  notifyPurchaseSuccess(userId, `Thanh toán nốt khóa học: ${order.itemName}`, remaining.toFixed(0), order.orderCode);
+  notifyPurchaseSuccess(userId, `Thanh toán nốt khóa học: ${order.itemName}`, remaining.toFixed(0), order.orderCode, { kind: "SYSTEM" });
 
   return updated;
 }
@@ -691,7 +699,15 @@ async function purchaseProductBatch(params: BatchPurchaseParams): Promise<Purcha
 
   logger.info({ userId, orderType, itemId, quantity, firstOrderId: firstResultOrder.id }, "Batch purchase processed");
 
-  notifyPurchaseSuccess(userId, `${itemName} (x${quantity})`, totalPrice.toFixed(0), firstResultOrder.orderCode);
+  notifyPurchaseSuccess(
+    userId,
+    `${itemName} (x${quantity})`,
+    totalPrice.toFixed(0),
+    firstResultOrder.orderCode,
+    orderType === "SELLER_PRODUCT"
+      ? { kind: "SELLER", sellerId: firstResultOrder.sellerId ?? undefined }
+      : { kind: "SYSTEM" },
+  );
 
   if (orderType === "SELLER_PRODUCT" && firstResultOrder.sellerId) {
     notifySellerNewOrder(firstResultOrder.sellerId, `${itemName} (x${quantity})`, totalPrice.toFixed(0), firstResultOrder.orderCode);
