@@ -6,14 +6,15 @@ import { prisma } from "@/lib/db/prisma";
  * Gửi tin nhắn HTML tới Telegram (dùng chung bot/chat đã cấu hình cho rate-alert).
  * Tự bỏ qua nếu thiếu env — không throw, không log để tránh noise.
  */
-export function sendTelegramAlert(text: string): void {
-  void _send(text);
+export function sendTelegramAlert(text: string, chatId?: string): void {
+  void _send(text, chatId);
 }
 
-async function _send(text: string): Promise<void> {
+async function _send(text: string, chatIdOverride?: string): Promise<void> {
   try {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const chatId   = process.env.TELEGRAM_ALERT_CHAT_ID;
+    // chatIdOverride cho phép gửi tới nhóm riêng (vd: nhóm đơn hàng); rỗng → dùng chat mặc định
+    const chatId   = chatIdOverride || process.env.TELEGRAM_ALERT_CHAT_ID;
     if (!botToken || !chatId) return;
 
     await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -117,13 +118,15 @@ export function notifyPurchaseSuccess(
     const label = await _getUserLabel(userId);
     sendTelegramAlert(
       [
-        `🛒 <b>Mua hàng thành công</b>`,
+        `🛒 <b>Đơn hàng mới</b>`,
         ``,
         `👤 User: ${label}`,
         `📦 Sản phẩm: ${escTelegramHtml(itemName)}`,
         `💵 Số tiền: <b>${amount}đ</b>`,
         `🔖 Mã đơn: <code>${escTelegramHtml(orderCode)}</code>`,
       ].join("\n"),
+      // Đơn hàng mới → gửi vào nhóm riêng nếu có cấu hình; nếu không, về chat mặc định
+      process.env.TELEGRAM_ORDER_CHAT_ID,
     );
   })();
 }
