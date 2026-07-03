@@ -29,6 +29,7 @@ export default async function AdminUsersPage({
   const depositMinNum = depositMin ? parseInt(depositMin, 10) : undefined;
   const depositMaxNum = depositMax ? parseInt(depositMax, 10) : undefined;
   const sortByDeposit = sort === "deposit";
+  const sortByBalance = sort === "balance";
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -57,7 +58,9 @@ export default async function AdminUsersPage({
   const [users, total, allTotal, newToday, sellerCount, staffAdminCount] = await Promise.all([
     prisma.user.findMany({
       where,
-      orderBy: sortByDeposit || depositMinNum !== undefined || depositMaxNum !== undefined
+      orderBy: sortByBalance
+        ? { balance: "desc" }
+        : sortByDeposit || depositMinNum !== undefined || depositMaxNum !== undefined
         ? { totalDeposited: "desc" }
         : { createdAt: "desc" },
       skip: (currentPage - 1) * PAGE_SIZE,

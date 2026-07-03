@@ -51,6 +51,7 @@ export default function UsersTableClient({ users, currentUserId, total, role, q,
   const [isPending, startTransition] = useTransition();
 
   const isSortedByDeposit = sort === "deposit";
+  const isSortedByBalance = sort === "balance";
 
   function handleDepositSort() {
     const params = new URLSearchParams(searchParams.toString());
@@ -58,6 +59,17 @@ export default function UsersTableClient({ users, currentUserId, total, role, q,
       params.delete("sort");
     } else {
       params.set("sort", "deposit");
+      params.delete("page");
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  }
+
+  function handleBalanceSort() {
+    const params = new URLSearchParams(searchParams.toString());
+    if (isSortedByBalance) {
+      params.delete("sort");
+    } else {
+      params.set("sort", "balance");
       params.delete("page");
     }
     router.push(`${pathname}?${params.toString()}`);
@@ -143,7 +155,19 @@ export default function UsersTableClient({ users, currentUserId, total, role, q,
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Người dùng</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Trạng thái</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Số dư</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide">
+                <button
+                  onClick={handleBalanceSort}
+                  className={`inline-flex items-center gap-1 transition-colors hover:text-violet-600 ${isSortedByBalance ? "text-violet-600" : "text-gray-500"}`}
+                >
+                  Số dư
+                  {isSortedByBalance ? (
+                    <ArrowDown size={13} strokeWidth={2.5} />
+                  ) : (
+                    <ArrowDownUp size={12} strokeWidth={2} className="opacity-40" />
+                  )}
+                </button>
+              </th>
               <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide">
                 <button
                   onClick={handleDepositSort}
