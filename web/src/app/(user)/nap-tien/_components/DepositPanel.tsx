@@ -10,6 +10,7 @@ interface Props {
   accountHolder: string;
   bankBin: string;
   transferContent: string;
+  taxPercent?: number;
 }
 
 const PRESET_AMOUNTS = [50_000, 100_000, 200_000, 500_000, 1_000_000, 2_000_000, 5_000_000, 10_000_000];
@@ -24,7 +25,7 @@ function formatAmount(n: number) {
   return n.toLocaleString("vi-VN") + " VNĐ";
 }
 
-export default function DepositPanel({ bankName, accountNumber, accountHolder, bankBin, transferContent }: Props) {
+export default function DepositPanel({ bankName, accountNumber, accountHolder, bankBin, transferContent, taxPercent = 0 }: Props) {
   const [selected, setSelected] = useState(100_000);
   const [custom, setCustom] = useState("");
 
@@ -32,9 +33,13 @@ export default function DepositPanel({ bankName, accountNumber, accountHolder, b
   const isBelowMin = custom !== "" && customNum > 0 && customNum < MIN_AMOUNT;
   const amount = custom ? customNum || selected : selected;
 
+  // Mô hình B: thuế cộng lên trên. amount = số dư user muốn nhận; transferAmount = số phải chuyển (đã +thuế).
+  const hasTax         = taxPercent > 0;
+  const transferAmount = hasTax ? Math.round(amount * (100 + taxPercent) / 100) : amount;
+
   const qrUrl =
     `https://img.vietqr.io/image/${bankBin}-${accountNumber}-qr_only.jpg` +
-    `?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountHolder)}`;
+    `?amount=${transferAmount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountHolder)}`;
 
   function handleCustomChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value.replace(/\D/g, "");
@@ -90,6 +95,19 @@ export default function DepositPanel({ bankName, accountNumber, accountHolder, b
             <p className="text-xs text-red-500">Số tiền nạp tối thiểu là 50.000đ</p>
           )}
         </div>
+
+        {/* Số tiền cần chuyển (đã gồm thuế) */}
+        {hasTax && (
+          <div className="mt-3 rounded-xl bg-amber-50 border border-amber-200 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-amber-700">Số tiền cần chuyển (gồm {taxPercent}% thuế)</span>
+              <span className="text-base font-bold text-amber-700">{formatAmount(transferAmount)}</span>
+            </div>
+            <p className="text-[11px] text-amber-600 mt-1">
+              Bạn chuyển {formatAmount(transferAmount)} → tài khoản nhận {formatAmount(amount)}.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* QR + Bank info */}

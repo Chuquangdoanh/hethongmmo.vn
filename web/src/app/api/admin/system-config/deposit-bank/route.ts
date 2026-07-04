@@ -16,6 +16,7 @@ const depositBankSchema = z.object({
   account_holder: z.string().min(1, "Tên chủ tài khoản không được để trống").max(100).trim(),
   bank_bin:       z.string().min(1, "Bank BIN không được để trống").max(20).trim(),
   ip_whitelist:   z.array(z.string().trim().min(7).max(45)).max(20).default([]),
+  tax_percent:    z.number().min(0, "Thuế không được âm").max(100, "Thuế tối đa 100%").default(0),
 });
 
 export type DepositBankConfig = z.infer<typeof depositBankSchema>;
@@ -26,6 +27,7 @@ const DEFAULTS: DepositBankConfig = {
   account_holder: process.env.BANK_ACCOUNT_HOLDER ?? "CHU QUANG DOANH",
   bank_bin:       process.env.BANK_BIN            ?? "MB",
   ip_whitelist:   (process.env.SEPAY_IP_WHITELIST ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+  tax_percent:    8, // giá trị gợi ý pre-fill; thuế chỉ áp sau khi admin lưu config
 };
 
 export async function GET(): Promise<NextResponse> {

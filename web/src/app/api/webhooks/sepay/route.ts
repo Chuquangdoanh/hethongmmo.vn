@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createHmac, timingSafeEqual } from "crypto";
+import Decimal from "decimal.js";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { processDeposit } from "@/lib/services/deposit.service";
@@ -32,6 +33,29 @@ async function getIpWhitelist(): Promise<string[]> {
   } catch {
     // DB lỗi → fallback env var
     return (process.env.SEPAY_IP_WHITELIST ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  }
+}
+
+// ── Deposit tax % cache (60s TTL) — thuế nạp tiền tự động, admin cấu hình ────
+// Chỉ áp cho nạp tự động (DEPOSIT_AUTO). Mặc định 0 = tắt thuế.
+let _taxCache: { pct: number; exp: number } | null = null;
+
+async function getDepositTaxPercent(): Promise<number> {
+  const now = Date.now();
+  if (_taxCache && _taxCache.exp > now) return _taxCache.pct;
+  try {
+    const config = await prisma.systemConfig.findUnique({
+      where: { key: "deposit_bank_config" },
+      select: { value: true },
+    });
+    const saved = (config?.value ?? {}) as Record<string, unknown>;
+    const raw = saved["tax_percent"];
+    const pct = typeof raw === "number" && raw >= 0 && raw <= 100 ? raw : 0;
+    _taxCache = { pct, exp: now + 60_000 };
+    return pct;
+  } catch {
+    // DB lỗi → không áp thuế (an toàn cho user)
+    return 0;
   }
 }
 
@@ -242,13 +266,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true }, { status: 200 });
   }
 
+  // 6b. Áp thuế nạp tiền nếu admin đã bật (chỉ nạp tự động).
+  // Thuế cộng thêm lên trên: user chuyển gross đã gồm thuế → số dư nhận = gross ÷ (1 + tax%).
+  // VD tax 8%: chuyển 108k → số dư 100k. Làm tròn xuống VND để không cộng dư.
+  const taxPercent  = await getDepositTaxPercent();
+  const grossAmount = transferAmount;
+  const netAmount   = taxPercent > 0
+    ? new Decimal(grossAmount).mul(100).div(100 + taxPercent).toDecimalPlaces(0, Decimal.ROUND_DOWN).toNumber()
+    : grossAmount;
+  const taxAmount   = grossAmount - netAmount;
+
+  const baseDesc = `Nạp tiền qua ${gateway}: ${content.slice(0, 200)}`;
+  const txDescription = taxPercent > 0 ? `${baseDesc} (gồm ${taxPercent}% thuế)` : baseDesc;
+
   // 7. Process deposit (idempotent)
   try {
     await processDeposit({
       userId: user.id,
-      amount: transferAmount,
+      amount: netAmount,
       referenceCode,
-      description: `Nạp tiền qua ${gateway}: ${content.slice(0, 200)}`,
+      description: txDescription,
       type: "DEPOSIT_AUTO",
       transactionDate,
       accountNumber: accountNumber ?? undefined,
@@ -257,6 +294,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         content: content.slice(0, 500),
         transactionDate,
         sePayId: String(payload.id),
+        ...(taxPercent > 0 ? { grossAmount, taxPercent, taxAmount } : {}),
       },
     });
 

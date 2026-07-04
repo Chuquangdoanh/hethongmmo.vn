@@ -72,6 +72,7 @@ export default async function AdminDashboardPage({
     revenueByType,
     refundPeriod,
     totalBalanceOnWeb,
+    depositTaxRows,
   ] = await Promise.all([
     prisma.order.count(),
     prisma.order.count({ where: { createdAt: { gte: todayDate } } }),
@@ -129,7 +130,15 @@ export default async function AdminDashboardPage({
       where: { deletedAt: null },
       _sum: { balance: true },
     }),
+    // Tổng thuế nạp tự động đã thu (all-time) = SUM(metadata->>'taxAmount') của DEPOSIT_AUTO
+    prisma.$queryRaw<Array<{ tax: string | null }>>`
+      SELECT COALESCE(SUM((metadata->>'taxAmount')::numeric), 0) AS tax
+      FROM transactions
+      WHERE type::text = 'DEPOSIT_AUTO'
+    `,
   ]);
+
+  const depositTaxAllTime = Number(depositTaxRows[0]?.tax ?? 0);
 
   // ── Chart data ───────────────────────────────────────────────────────
   let chartData: ChartPoint[];
@@ -275,7 +284,7 @@ export default async function AdminDashboardPage({
     {
       label: "Nạp tiền",
       value: formatVnd(Number(depositsPeriod._sum.amount ?? 0)),
-      sub:   `All-time: ${formatVnd(Number(totalDeposits._sum.amount ?? 0))}`,
+      sub:   `All-time: ${formatVnd(Number(totalDeposits._sum.amount ?? 0))} · Thuế: ${formatVnd(depositTaxAllTime)}`,
       color: "text-[#10B981]",
       href:  "/admin/deposits",
     },

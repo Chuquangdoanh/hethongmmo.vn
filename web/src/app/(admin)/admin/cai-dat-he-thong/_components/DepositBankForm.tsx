@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, Shield, CheckCircle, AlertCircle, Plus, Trash2 } from "lucide-react";
+import { CreditCard, Shield, CheckCircle, AlertCircle, Plus, Trash2, Percent } from "lucide-react";
 
 interface Props {
   initialBankName:      string;
@@ -9,6 +9,7 @@ interface Props {
   initialAccountHolder: string;
   initialBankBin:       string;
   initialIpWhitelist:   string[];
+  initialTaxPercent:    number;
 }
 
 export default function DepositBankForm({
@@ -17,6 +18,7 @@ export default function DepositBankForm({
   initialAccountHolder,
   initialBankBin,
   initialIpWhitelist,
+  initialTaxPercent,
 }: Props) {
   const [bankName,      setBankName]      = useState(initialBankName);
   const [accountNumber, setAccountNumber] = useState(initialAccountNumber);
@@ -24,9 +26,13 @@ export default function DepositBankForm({
   const [bankBin,       setBankBin]       = useState(initialBankBin);
   const [ipList,        setIpList]        = useState<string[]>(initialIpWhitelist);
   const [newIp,         setNewIp]         = useState("");
+  const [taxPercent,    setTaxPercent]    = useState(String(initialTaxPercent));
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState("");
   const [success,       setSuccess]       = useState(false);
+
+  const taxNum          = Number(taxPercent) || 0;
+  const transferPer100k = Math.round(100_000 * (100 + taxNum) / 100);
 
   function addIp() {
     const trimmed = newIp.trim();
@@ -56,6 +62,7 @@ export default function DepositBankForm({
           account_holder: accountHolder.trim(),
           bank_bin:       bankBin.trim(),
           ip_whitelist:   ipList,
+          tax_percent:    Math.min(100, Math.max(0, taxNum)),
         }),
       });
       const json = (await res.json()) as { message?: string; error?: string };
@@ -94,6 +101,42 @@ export default function DepositBankForm({
           </div>
           <Field label="Số tài khoản" placeholder="Ví dụ: 0393118789" value={accountNumber} onChange={setAccountNumber} required />
           <Field label="Tên chủ tài khoản" placeholder="Ví dụ: NGUYEN VAN A" value={accountHolder} onChange={setAccountHolder} hint="Viết IN HOA, đúng tên in trên thẻ" />
+        </div>
+      </div>
+
+      {/* ── Thuế nạp tiền tự động ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
+            <Percent size={18} className="text-amber-600" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Thuế nạp tiền tự động</h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Chỉ áp cho nạp tự động qua ngân hàng. Đặt 0 = không thu thuế. Không ảnh hưởng admin nạp tay.
+            </p>
+          </div>
+        </div>
+
+        <div className="max-w-xs">
+          <label className="block text-xs font-semibold text-gray-700 mb-1.5">Phần trăm thuế (%)</label>
+          <div className="relative">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={0.1}
+              value={taxPercent}
+              onChange={(e) => setTaxPercent(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 pr-9 text-sm text-gray-800 focus:outline-none focus:border-amber-500 focus:bg-white transition-colors"
+            />
+            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium">%</span>
+          </div>
+          <p className="text-[11px] text-gray-500 mt-2">
+            Ví dụ: user muốn nhận <strong>100.000đ</strong> → cần chuyển{" "}
+            <strong className="text-amber-600">{transferPer100k.toLocaleString("vi-VN")}đ</strong>
+            {taxNum > 0 && <> (gồm {(transferPer100k - 100_000).toLocaleString("vi-VN")}đ thuế, sàn giữ)</>}
+          </p>
         </div>
       </div>
 

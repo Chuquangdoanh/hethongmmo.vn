@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
@@ -13,11 +14,19 @@ const PAGE_SIZE = 25;
 export default async function AdminDepositsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; type?: string; q?: string }>;
+  searchParams: Promise<{ page?: string; type?: string; q?: string; dateFrom?: string; dateTo?: string }>;
 }) {
-  const { page, type, q } = await searchParams;
+  const { page, type, q, dateFrom: dateFromParam, dateTo: dateToParam } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
   const search = q?.trim() ?? "";
+
+  // Mặc định = tất cả thời gian (giữ nguyên hành vi cũ). Chỉ lọc khi admin chọn ngày.
+  const noDateFilter = !dateFromParam || dateFromParam === "all";
+  const dateGte = !noDateFilter ? new Date(dateFromParam + "T00:00:00") : undefined;
+  const dateLte = dateToParam && dateToParam !== "all" ? new Date(dateToParam + "T23:59:59") : undefined;
+  const dateWhere: { createdAt?: { gte?: Date; lte?: Date } } = noDateFilter
+    ? {}
+    : { createdAt: { ...(dateGte ? { gte: dateGte } : {}), ...(dateLte ? { lte: dateLte } : {}) } };
 
   const typeWhere =
     type === "AUTO"   ? { type: "DEPOSIT_AUTO" as never } :
@@ -32,7 +41,7 @@ export default async function AdminDepositsPage({
     ],
   } : {};
 
-  const where = search ? { AND: [typeWhere, searchWhere] } : typeWhere;
+  const where = { AND: [typeWhere, searchWhere, dateWhere] };
 
   const [transactions, total] = await Promise.all([
     prisma.transaction.findMany({
@@ -55,31 +64,59 @@ export default async function AdminDepositsPage({
     prisma.transaction.count({ where }),
   ]);
 
-  const [autoTotal, manualTotal] = await Promise.all([
+  const dateSql = noDateFilter
+    ? Prisma.empty
+    : Prisma.sql`AND created_at >= ${dateGte} AND created_at <= ${dateLte ?? new Date()}`;
+
+  const [autoTotal, manualTotal, taxRows] = await Promise.all([
     prisma.transaction.aggregate({
-      where: { type: "DEPOSIT_AUTO" as never },
+      where: { type: "DEPOSIT_AUTO" as never, ...dateWhere },
       _sum: { amount: true },
       _count: true,
     }),
     prisma.transaction.aggregate({
-      where: { type: "DEPOSIT_MANUAL" as never },
+      where: { type: "DEPOSIT_MANUAL" as never, ...dateWhere },
       _sum: { amount: true },
       _count: true,
     }),
+    // Tổng thuế đã thu = SUM(metadata->>'taxAmount') của các giao dịch DEPOSIT_AUTO có thuế
+    prisma.$queryRaw<Array<{ tax: string | null; cnt: bigint }>>`
+      SELECT COALESCE(SUM((metadata->>'taxAmount')::numeric), 0) AS tax,
+             COUNT(metadata->>'taxAmount') AS cnt
+      FROM transactions
+      WHERE type::text = 'DEPOSIT_AUTO'
+      ${dateSql}
+    `,
   ]);
+
+  const taxTotal = Number(taxRows[0]?.tax ?? 0);
+  const taxCount = Number(taxRows[0]?.cnt ?? 0);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
+  const periodLabel = noDateFilter
+    ? "Tất cả thời gian"
+    : dateFromParam === dateToParam || !dateToParam || dateToParam === "all"
+    ? (dateFromParam ?? "").split("-").reverse().join("/")
+    : `${(dateFromParam ?? "").split("-").reverse().join("/")} — ${(dateToParam ?? "").split("-").reverse().join("/")}`;
+
   const paginationParams: Record<string, string> = {};
-  if (type)   paginationParams.type = type;
-  if (search) paginationParams.q    = search;
+  if (type)           paginationParams.type     = type;
+  if (search)         paginationParams.q        = search;
+  if (dateFromParam)  paginationParams.dateFrom = dateFromParam;
+  if (dateToParam)    paginationParams.dateTo   = dateToParam;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Nạp tiền</h1>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h1 className="text-2xl font-bold text-gray-900">Nạp tiền</h1>
+        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+          Kỳ: {periodLabel}
+        </span>
+      </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
           <p className="text-xs text-gray-500 mb-1">Tự động (SePay)</p>
           <p className="text-xl font-bold text-[#10B981]">
@@ -93,6 +130,13 @@ export default async function AdminDepositsPage({
             {formatVnd(Number(manualTotal._sum.amount ?? 0))}
           </p>
           <p className="text-xs text-gray-500 mt-1">{manualTotal._count.toLocaleString("vi-VN")} giao dịch</p>
+        </div>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-xs text-amber-700 mb-1">Thuế đã thu (SePay)</p>
+          <p className="text-xl font-bold text-amber-700">
+            {formatVnd(taxTotal)}
+          </p>
+          <p className="text-xs text-amber-600 mt-1">{taxCount.toLocaleString("vi-VN")} lượt nạp có thuế</p>
         </div>
       </div>
 
@@ -114,6 +158,8 @@ export default async function AdminDepositsPage({
             ],
           },
         ]}
+        dateRange={{}}
+        preserveParams={["type"]}
       />
 
       {/* Search result summary */}

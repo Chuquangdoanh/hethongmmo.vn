@@ -56,6 +56,10 @@ export default async function NapTienPage() {
     accountHolder: savedBank["account_holder"] ?? ENV_BANK.accountHolder,
     bankBin:       savedBank["bank_bin"]       ?? ENV_BANK.bankBin,
   };
+  const savedConfig = (bankConfig?.value ?? {}) as Record<string, unknown>;
+  const depositTaxPercent = typeof savedConfig["tax_percent"] === "number"
+    ? (savedConfig["tax_percent"] as number)
+    : 0;
 
   if (!user) redirect("/");
 
@@ -92,6 +96,7 @@ export default async function NapTienPage() {
               accountHolder={BANK_INFO.accountHolder}
               bankBin={BANK_INFO.bankBin}
               transferContent={transferContent}
+              taxPercent={depositTaxPercent}
             />
 
             {/* Deposit history */}

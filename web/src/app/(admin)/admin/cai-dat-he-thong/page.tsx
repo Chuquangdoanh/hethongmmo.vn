@@ -10,6 +10,7 @@ const DEFAULTS = {
   account_holder: process.env.BANK_ACCOUNT_HOLDER ?? "CHU QUANG DOANH",
   bank_bin:       process.env.BANK_BIN            ?? "MB",
   ip_whitelist:   (process.env.SEPAY_IP_WHITELIST ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+  tax_percent:    8, // giá trị gợi ý pre-fill trong form; thuế chỉ thực sự bật sau khi admin bấm Lưu
 };
 
 export default async function CaiDatHeThongPage() {
@@ -27,6 +28,9 @@ export default async function CaiDatHeThongPage() {
   const ipWhitelist   = Array.isArray(saved["ip_whitelist"])
     ? (saved["ip_whitelist"] as string[]).filter(Boolean)
     : DEFAULTS.ip_whitelist;
+  const taxPercent    = typeof saved["tax_percent"] === "number"
+    ? (saved["tax_percent"] as number)
+    : DEFAULTS.tax_percent;
 
   return (
     <div className="space-y-6">
@@ -41,6 +45,7 @@ export default async function CaiDatHeThongPage() {
         initialAccountHolder={accountHolder}
         initialBankBin={bankBin}
         initialIpWhitelist={ipWhitelist}
+        initialTaxPercent={taxPercent}
       />
     </div>
   );
