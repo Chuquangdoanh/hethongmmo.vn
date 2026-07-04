@@ -206,7 +206,7 @@ export async function uploadToR2(params: {
     // Lazy import — tránh top-level import fail khi native binary chưa sẵn sàng ở standalone mode
     const sharp = (await import("sharp")).default;
     finalBuffer = await sharp(buffer)
-      .resize({ width: 1600, withoutEnlargement: true })
+      .resize({ width: 600, withoutEnlargement: true })
       .webp({ quality: 82 })
       .toBuffer();
     finalMime = "image/webp";

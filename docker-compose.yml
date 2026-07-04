@@ -151,6 +151,32 @@ services:
         reservations:
           memory: 32m
 
+  warmup:
+    image: alpine:3.20
+    container_name: hethongmmo-warmup
+    restart: unless-stopped
+    depends_on:
+      - web
+    # Ping các trang public chính mỗi 3 phút để giữ Nginx + CF cache luôn ấm
+    # User truy cập lần đầu sẽ luôn nhận cache thay vì chờ Next.js render
+    command: >
+      sh -c "
+        apk add --no-cache curl --quiet &&
+        while true; do
+          curl -sf http://nginx/kho-tai-nguyen     -o /dev/null -H 'Host: hethongmmo.vn' &
+          curl -sf http://nginx/tai-nguyen-mmo     -o /dev/null -H 'Host: hethongmmo.vn' &
+          curl -sf http://nginx/                   -o /dev/null -H 'Host: hethongmmo.vn' &
+          curl -sf http://nginx/dich-vu            -o /dev/null -H 'Host: hethongmmo.vn' &
+          wait
+          sleep 180
+        done
+      "
+    deploy:
+      resources:
+        limits:
+          memory: 32m
+          cpus: "0.05"
+
   backup:
     # alpine:3.20 — script tự cài postgresql-client + rclone khi khởi động
     image: alpine:3.20
