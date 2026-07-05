@@ -210,7 +210,7 @@ const SECTIONS = [
       {
         label: "Thời hạn khiếu nại theo loại sản phẩm:",
         items: [
-          "Sản phẩm số (tài khoản, tài nguyên, via, clone, source code): 24–48 giờ kể từ khi nhận sản phẩm.",
+          "Sản phẩm số (tài khoản, tài nguyên, via, clone, source code): 2 giờ kể từ khi nhận sản phẩm.",
           "Dịch vụ dài hạn (Website, Hosting, Khóa học, VPS): 7 ngày kể từ khi bàn giao.",
         ],
       },

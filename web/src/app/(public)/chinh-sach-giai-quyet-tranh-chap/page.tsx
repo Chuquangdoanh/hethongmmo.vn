@@ -52,7 +52,7 @@ const SECTIONS: LegalSection[] = [
     type: "list",
     intro: "Thời hạn theo loại sản phẩm:",
     items: [
-      "Sản phẩm số (tài khoản, tài nguyên, via, clone, source code): 24–48 giờ kể từ khi nhận.",
+      "Sản phẩm số (tài khoản, tài nguyên, via, clone, source code): 2 giờ kể từ khi nhận.",
       "Dịch vụ dài hạn (Website, Hosting, Khóa học, VPS): 7 ngày kể từ khi bàn giao.",
       "Quá thời hạn khiếu nại, giao dịch được xem là hoàn tất.",
     ],

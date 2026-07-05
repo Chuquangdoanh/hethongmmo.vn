@@ -29,7 +29,7 @@ const SECTIONS: LegalSection[] = [
     type: "list",
     intro: "Thời hạn gửi khiếu nại:",
     items: [
-      "Sản phẩm số: trong vòng 24–48 giờ kể từ khi nhận sản phẩm.",
+      "Sản phẩm số: trong vòng 2 giờ kể từ khi nhận sản phẩm.",
       "Dịch vụ dài hạn: trong vòng 7 ngày kể từ khi bàn giao.",
       "Khiếu nại ngoài thời hạn có thể không được thụ lý.",
     ],
