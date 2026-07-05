@@ -3,7 +3,7 @@ import Link from "next/link";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import {
   ShieldCheck, Info, Settings2, Mail, Send, MapPin, CheckCircle2,
-  UserRound, CreditCard, Monitor,
+  UserRound, CreditCard, Monitor, FileClock,
 } from "lucide-react";
 
 import { buildMeta } from "@/lib/utils/seo";
@@ -68,8 +68,10 @@ const SECTIONS: ({ id: string; title: string } & SectionType)[] = [
     intro: "Người dùng có quyền:",
     items: [
       "Xem dữ liệu cá nhân.",
+      "Yêu cầu xuất dữ liệu cá nhân.",
       "Chỉnh sửa thông tin.",
       "Yêu cầu xóa dữ liệu.",
+      "Yêu cầu hạn chế xử lý dữ liệu.",
       "Rút lại sự đồng ý xử lý dữ liệu.",
       "Khiếu nại về việc sử dụng dữ liệu cá nhân.",
     ],
@@ -84,6 +86,26 @@ const SECTIONS: ({ id: string; title: string } & SectionType)[] = [
       "Trong thời gian tài khoản còn hoạt động.",
       "Theo thời hạn pháp luật yêu cầu.",
       "Cho đến khi người dùng yêu cầu xóa hợp lệ.",
+      "Dữ liệu giao dịch được lưu theo quy định pháp luật Việt Nam.",
+      "Dữ liệu log được lưu theo quy định pháp luật Việt Nam.",
+      "Dữ liệu thanh toán được lưu theo quy định pháp luật Việt Nam.",
+      "Dữ liệu bảo hành được lưu theo quy định pháp luật Việt Nam.",
+    ],
+  },
+  {
+    id: "chuyen-du-lieu-quoc-te",
+    title: "Chuyển dữ liệu quốc tế",
+    type: "list",
+    intro: "Trong trường hợp sử dụng hạ tầng quốc tế (Cloudflare, AWS, Google Cloud, Azure, DigitalOcean, Hetzner, OVH, VPS quốc tế), dữ liệu có thể được xử lý tại máy chủ nước ngoài nhưng vẫn tuân thủ pháp luật Việt Nam:",
+    items: [
+      "Cloudflare.",
+      "AWS.",
+      "Google Cloud.",
+      "Azure.",
+      "DigitalOcean.",
+      "Hetzner.",
+      "OVH.",
+      "VPS quốc tế.",
     ],
   },
   {
@@ -112,6 +134,17 @@ const SECTIONS: ({ id: string; title: string } & SectionType)[] = [
     type: "text",
     text: "Chúng tôi có thể cập nhật Chính sách bảo mật bất kỳ lúc nào. Phiên bản mới nhất sẽ được công bố trên website và có hiệu lực kể từ ngày đăng tải.",
   },
+  {
+    id: "cam-ket-phap-ly",
+    title: "Cam kết pháp lý",
+    type: "list",
+    intro: "Cam kết chung áp dụng cho toàn bộ nội dung trên nền tảng:",
+    items: [
+      "Website chỉ cho phép đăng tải, mua bán, trao đổi các sản phẩm, dịch vụ và tài nguyên hợp pháp.",
+      "Mọi sản phẩm phải tuân thủ pháp luật Việt Nam, điều ước quốc tế mà Việt Nam là thành viên và không vi phạm quyền của bất kỳ tổ chức, cá nhân nào.",
+      "Website có quyền từ chối, ẩn, khóa hoặc gỡ bỏ bất kỳ nội dung nào có dấu hiệu vi phạm pháp luật Việt Nam, pháp luật quốc tế, quyền sở hữu trí tuệ, quyền riêng tư hoặc quy định của các nhà cung cấp dịch vụ bên thứ ba.",
+    ],
+  },
 ];
 
 const TOC = SECTIONS.map((s, i) => ({ id: s.id, label: `${i + 1}. ${s.title}` }));
@@ -130,7 +163,12 @@ const DATA_GROUPS = [
   {
     icon: <Monitor size={18} strokeWidth={1.75} style={{ color: "#059669" }} />,
     label: "Dữ liệu kỹ thuật",
-    items: ["Địa chỉ IP", "Cookie", "Thiết bị truy cập", "Nhật ký hoạt động"],
+    items: ["Địa chỉ IP", "Device ID", "Trình duyệt", "Cookie", "Thiết bị truy cập", "Nhật ký hoạt động"],
+  },
+  {
+    icon: <FileClock size={18} strokeWidth={1.75} style={{ color: "#059669" }} />,
+    label: "Nhật ký hệ thống",
+    items: ["Nhật ký đăng nhập", "Nhật ký giao dịch", "Nhật ký API", "Nhật ký thanh toán", "Địa chỉ ví điện tử (nếu có)"],
   },
 ];
 

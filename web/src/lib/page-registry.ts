@@ -147,6 +147,15 @@ export const PUBLIC_PAGES: PageEntry[] = [
   { key: "chinh-sach",              label: "Chính sách bảo mật" },
   { key: "dieu-khoan",              label: "Điều khoản dịch vụ" },
   { key: "chinh-sach-nha-ban-hang", label: "Chính sách nhà bán hàng" },
+  { key: "quy-che-hoat-dong-san",             label: "Quy chế hoạt động sàn" },
+  { key: "chinh-sach-xu-ly-du-lieu-ca-nhan",  label: "Chính sách xử lý dữ liệu cá nhân" },
+  { key: "chinh-sach-thanh-toan",             label: "Chính sách thanh toán" },
+  { key: "chinh-sach-giai-quyet-tranh-chap",  label: "Chính sách giải quyết tranh chấp" },
+  { key: "chinh-sach-xu-ly-khieu-nai",        label: "Chính sách xử lý khiếu nại" },
+  { key: "quy-trinh-kiem-duyet-seller",       label: "Quy trình kiểm duyệt Seller" },
+  { key: "quy-trinh-go-san-pham",             label: "Quy trình gỡ sản phẩm" },
+  { key: "chinh-sach-so-huu-tri-tue",         label: "Chính sách sở hữu trí tuệ" },
+  { key: "dieu-khoan-nguoi-mua",              label: "Điều khoản dành cho Người mua" },
 ];
 
 // ── Registry lookup ───────────────────────────────────────────────────────────
