@@ -88,35 +88,15 @@ async function autoResolve(complaintId: string, orderId: string | null, resoluti
     });
     if (guard.count === 0) return;
     if (orderId) {
-      // Trả tiền cho seller khi khiếu nại kết thúc có lợi cho seller
+      // Khiếu nại có lợi cho seller → đưa đơn về DONE, withdrawn=false để đơn quay
+      // lại pool doanh số, rút theo luồng đơn hàng bình thường (KHÔNG cộng balance).
       // Lock order row trước để tránh race condition
       await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`;
       const order = await tx.order.findUnique({
         where: { id: orderId },
         select: { finalPrice: true, sellerId: true, userId: true, orderType: true },
       });
-      if (order?.sellerId) {
-        const payAmt = Number(order.finalPrice);
-        // Lock seller row và đọc balance
-        const sellerRows = await tx.$queryRaw<Array<{ balance: string }>>`
-          SELECT balance::text FROM users WHERE id = ${order.sellerId}::uuid FOR UPDATE
-        `;
-        const balanceBefore = parseFloat(sellerRows[0]?.balance ?? "0");
-        const balanceAfter = balanceBefore + payAmt;
-        await tx.user.update({ where: { id: order.sellerId }, data: { balance: balanceAfter } });
-        await tx.transaction.create({
-          data: {
-            userId: order.sellerId,
-            orderId,
-            type: "SELLER_PAYOUT",
-            amount: payAmt,
-            description: "Thanh toán đơn hàng — người mua không xác nhận trong 60 phút",
-            balanceBefore,
-            balanceAfter,
-          },
-        });
-      }
-      await tx.order.update({ where: { id: orderId }, data: { status: "DONE", withdrawn: true } });
+      await tx.order.update({ where: { id: orderId }, data: { status: "DONE", withdrawn: false } });
       if (order) {
         await createAffiliateCommission(tx, { id: orderId, userId: order.userId, orderType: order.orderType, finalPrice: order.finalPrice });
       }

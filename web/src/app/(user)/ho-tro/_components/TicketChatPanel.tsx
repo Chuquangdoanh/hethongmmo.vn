@@ -208,6 +208,10 @@ export default function TicketChatPanel({
   const isBuyer  = currentUserLabel === "Người mua";
   const isSeller = currentUserLabel === "Nhà bán hàng";
 
+  // Seller chỉ được xác nhận sau khi đã trả lời ≥1 tin (API bắt buộc firstSellerMsgAt).
+  // Suy ra từ messages để khóa nút, tránh seller bấm hụt gây "user không thấy panel".
+  const sellerHasReplied = messages.some((m) => m.senderLabel === "Nhà bán hàng");
+
   // Trạng thái PENDING_ADMIN được chia làm 3 giai đoạn:
   // waitingAdmin   : vòng 1 tranh chấp, chat đóng, chờ admin mở vòng 2 (roundTwoOpened=false)
   // roundTwoActive : admin đã mở vòng 2 (roundTwoOpened=true, userDone=null) — chat mở
@@ -340,19 +344,24 @@ export default function TicketChatPanel({
           <div style={{ marginBottom: "8px" }}>
             <button
               onClick={() => { void handleResolve("seller"); }}
-              disabled={resolving}
+              disabled={resolving || !sellerHasReplied}
               style={{
                 width: "100%", padding: "9px 14px", borderRadius: "10px",
-                background: "#16a34a", color: "#fff", border: "none",
+                background: sellerHasReplied ? "#16a34a" : "#9ca3af", color: "#fff", border: "none",
                 fontSize: "13px", fontWeight: "700",
-                cursor: resolving ? "not-allowed" : "pointer",
+                cursor: (resolving || !sellerHasReplied) ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: "7px",
-                opacity: resolving ? 0.7 : 1,
+                opacity: (resolving || !sellerHasReplied) ? 0.7 : 1,
               }}
             >
               <CheckCircle2 size={15} />
               Xác nhận đơn hàng đã hoàn thành
             </button>
+            {!sellerHasReplied && (
+              <p style={{ fontSize: "11px", color: "#94a3b8", marginTop: "6px", textAlign: "center" }}>
+                Hãy phản hồi người mua ít nhất 1 tin trước khi xác nhận.
+              </p>
+            )}
           </div>
         )}
 

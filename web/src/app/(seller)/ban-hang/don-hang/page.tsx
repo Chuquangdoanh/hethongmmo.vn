@@ -7,6 +7,7 @@ import { formatVnd, formatDate } from "@/lib/utils/format";
 import { ShoppingBag, ChevronRight } from "lucide-react";
 import Pagination from "@/components/shared/Pagination";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
+import { getSellerTierConfig } from "@/lib/services/seller.service";
 
 export const metadata: Metadata = { title: "Đơn hàng — Seller" };
 
@@ -19,6 +20,13 @@ const STATUS_BADGES: Record<string, { label: string; cls: string }> = {
   REFUNDED:   { label: "Hoàn tiền",    cls: "bg-red-50 text-red-600 border-red-200" },
   DISPUTED:   { label: "Khiếu nại",    cls: "bg-orange-50 text-orange-700 border-orange-200" },
 };
+
+// Tình trạng rút tiền của đơn (dựa trên cờ withdrawn + hold-days theo tier)
+const WITHDRAW_BADGES = {
+  WITHDRAWN: { label: "Đã rút",            cls: "bg-violet-50 text-violet-700 border-violet-200" },
+  ELIGIBLE:  { label: "Đủ điều kiện",      cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  HOLDING:   { label: "Chưa đủ điều kiện", cls: "bg-amber-50 text-amber-700 border-amber-200" },
+} as const;
 
 const PAGE_SIZE = 10;
 
@@ -44,6 +52,13 @@ export default async function SellerDonHangPage({
     ...(status ? { status: status as never } : {}),
   };
 
+  const sellerRow = await prisma.user.findUnique({
+    where: { id: me.id },
+    select: { sellerTier: true },
+  });
+  const tierCfg = await getSellerTierConfig(sellerRow?.sellerTier ?? "STANDARD");
+  const holdDate = new Date(Date.now() - tierCfg.hold_days * 24 * 60 * 60 * 1000);
+
   const [orders, total] = await Promise.all([
     prisma.order.findMany({
       where,
@@ -52,7 +67,7 @@ export default async function SellerDonHangPage({
       take: PAGE_SIZE,
       select: {
         id: true, orderCode: true, itemName: true,
-        finalPrice: true, status: true, createdAt: true,
+        finalPrice: true, status: true, createdAt: true, withdrawn: true,
         user: { select: { email: true } },
       },
     }),
@@ -112,6 +127,7 @@ export default async function SellerDonHangPage({
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Sản phẩm</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Giá</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Trạng thái</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Tình trạng rút tiền</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Ngày</th>
                       <th className="px-4 py-3 w-10" />
                     </tr>
@@ -119,6 +135,7 @@ export default async function SellerDonHangPage({
                   <tbody>
                     {orders.map((order, i) => {
                       const st = STATUS_BADGES[order.status] ?? STATUS_BADGES["PENDING"]!;
+                      const wd = getWithdrawBadge(order, holdDate);
                       return (
                         <tr
                           key={order.id}
@@ -129,6 +146,11 @@ export default async function SellerDonHangPage({
                           <td className="px-4 py-3 text-sm text-red-500 font-semibold">{formatVnd(Number(order.finalPrice))}</td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${st.cls}`}>{st.label}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {wd
+                              ? <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${wd.cls}`}>{wd.label}</span>
+                              : <span className="text-gray-300">—</span>}
                           </td>
                           <td className="px-4 py-3 text-xs text-gray-400">{formatDate(order.createdAt)}</td>
                           <td className="px-4 py-3">
@@ -165,4 +187,17 @@ export default async function SellerDonHangPage({
       </div>
     </>
   );
+}
+
+// Chưa đủ điều kiện = còn trong hold-days · Đủ điều kiện = đã qua hold-days, chưa rút
+// Đã rút = admin đã duyệt rút (withdrawn=true) · null = không áp dụng (đơn không DONE)
+function getWithdrawBadge(
+  order: { withdrawn: boolean; status: string; createdAt: Date },
+  holdDate: Date,
+): { label: string; cls: string } | null {
+  if (order.withdrawn) return WITHDRAW_BADGES.WITHDRAWN;
+  if (order.status !== "DONE") return null;
+  return order.createdAt.getTime() < holdDate.getTime()
+    ? WITHDRAW_BADGES.ELIGIBLE
+    : WITHDRAW_BADGES.HOLDING;
 }

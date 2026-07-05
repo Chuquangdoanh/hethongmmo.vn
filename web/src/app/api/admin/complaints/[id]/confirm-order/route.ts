@@ -40,33 +40,15 @@ export async function POST(
       });
 
       if (complaint.orderId) {
+        // Admin xác nhận đơn hợp lệ (seller thắng) → đơn về DONE, withdrawn=false để
+        // quay lại pool doanh số, seller rút theo luồng đơn hàng (KHÔNG cộng balance).
         const order = await tx.order.findUnique({
           where: { id: complaint.orderId },
           select: { finalPrice: true, sellerId: true, userId: true, orderType: true },
         });
-        if (order?.sellerId) {
-          const payAmt = Number(order.finalPrice);
-          const seller = await tx.user.findUnique({ where: { id: order.sellerId }, select: { balance: true } });
-          if (seller) {
-            const balanceBefore = Number(seller.balance);
-            const balanceAfter = balanceBefore + payAmt;
-            await tx.user.update({ where: { id: order.sellerId }, data: { balance: balanceAfter } });
-            await tx.transaction.create({
-              data: {
-                userId: order.sellerId,
-                orderId: complaint.orderId,
-                type: "SELLER_PAYOUT",
-                amount: payAmt,
-                description: "Thanh toán đơn hàng — admin xác nhận hợp lệ",
-                balanceBefore,
-                balanceAfter,
-              },
-            });
-          }
-        }
         await tx.order.update({
           where: { id: complaint.orderId },
-          data: { status: "DONE", withdrawn: true },
+          data: { status: "DONE", withdrawn: false },
         });
         if (order) {
           await createAffiliateCommission(tx, { id: complaint.orderId, userId: order.userId, orderType: order.orderType, finalPrice: order.finalPrice });

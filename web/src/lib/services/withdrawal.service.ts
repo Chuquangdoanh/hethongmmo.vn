@@ -3,7 +3,6 @@ import Decimal from "decimal.js";
 import { getSellerTierConfig } from "@/lib/services/seller.service";
 import { SELLER_ESCROW_MINIMUM } from "@/lib/services/wallet.service";
 import {
-  InsufficientBalanceError,
   NotFoundError,
   ValidationError,
 } from "@/lib/errors";
@@ -197,38 +196,12 @@ export async function processWithdrawal(
     if (approve) {
       const orderIds = withdrawal.qualifyingOrderIds as string[];
 
-      // Mark all qualifying orders as withdrawn
+      // Đánh dấu đơn đã rút — đây chính là "trừ doanh số có thể rút".
+      // Doanh số seller theo dõi qua đơn hàng (cờ withdrawn), KHÔNG qua ví balance,
+      // nên duyệt rút không đụng tới balance của seller.
       await tx.order.updateMany({
         where: { id: { in: orderIds } },
         data: { withdrawn: true },
-      });
-
-      // Deduct seller balance (the SELLER_PAYOUT was credited when orders completed)
-      const userRows = await tx.$queryRaw<Array<{ balance: string }>>`
-        SELECT balance FROM users WHERE id = ${withdrawal.sellerId}::uuid FOR UPDATE
-      `;
-      const currentBalance = new Decimal(userRows[0]?.balance ?? "0");
-      const deductAmount = new Decimal(withdrawal.amount.toString());
-
-      if (currentBalance.lt(deductAmount)) {
-        throw new InsufficientBalanceError(currentBalance.toNumber(), deductAmount.toNumber());
-      }
-
-      await tx.$executeRaw`
-        UPDATE users
-        SET balance = balance - ${deductAmount.toFixed(2)}::numeric, updated_at = now()
-        WHERE id = ${withdrawal.sellerId}::uuid
-      `;
-
-      await tx.transaction.create({
-        data: {
-          userId: withdrawal.sellerId,
-          type: "WITHDRAWAL_FEE",
-          amount: deductAmount.neg().toFixed(2),
-          description: `Rút tiền duyệt — ${orderIds.length} đơn hàng`,
-          balanceBefore: currentBalance.toFixed(2),
-          balanceAfter: currentBalance.sub(deductAmount).toFixed(2),
-        },
       });
 
       await tx.sellerWithdrawal.update({
