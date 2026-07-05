@@ -37,7 +37,7 @@ function makeLimiter(
 }
 
 const L = {
-  auth:      makeLimiter(10,  "1 m"),
+  auth:      makeLimiter(30,  "1 m"),
   sensitive: makeLimiter(5,   "1 m"),
   chat:      makeLimiter(30,  "1 m"),
   image:     makeLimiter(200, "1 m"), // public image proxy — browser-cached 1yr, needs burst headroom
@@ -54,6 +54,18 @@ function getIp(req: NextRequest): string {
     req.headers.get("x-real-ip") ??
     "127.0.0.1"
   );
+}
+
+// Hash User-Agent (djb2) để tách người dùng chung IP CGNAT nhà mạng VN vào các
+// bucket auth khác nhau — giảm false-positive 429 khi login/register. KHÔNG dùng
+// cho bảo mật, chỉ để phân tán key; bot đơn giản (cùng UA) vẫn bị gom chung IP.
+function hashUserAgent(req: NextRequest): string {
+  const ua = req.headers.get("user-agent") ?? "";
+  let hash = 5381;
+  for (let i = 0; i < ua.length; i++) {
+    hash = ((hash << 5) + hash + ua.charCodeAt(i)) | 0;
+  }
+  return (hash >>> 0).toString(36);
 }
 
 // 800 ms timeout: if Upstash is slow, fail-open immediately instead of holding
@@ -207,7 +219,9 @@ export default auth(async function middleware(req: NextRequest & { auth?: { user
       pathname === "/api/auth/error";
 
     if (pathname.startsWith("/api/auth/") && !isAuthReadOnly) {
-      if (!(await checkAndAllow(L.auth, `auth:${ip}`, "auth", pathname))) return r429();
+      // Key theo IP + hash(UA) để không gộp nhiều người thật chung 1 IP CGNAT
+      const authKey = `auth:${ip}:${hashUserAgent(req)}`;
+      if (!(await checkAndAllow(L.auth, authKey, "auth", pathname))) return r429();
     } else if (
       pathname === "/api/seller/withdrawal" ||
       pathname === "/api/seller/buy-slots" ||
