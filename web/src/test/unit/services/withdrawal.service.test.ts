@@ -215,7 +215,7 @@ describe("processWithdrawal", () => {
     ).rejects.toThrow(ValidationError);
   });
 
-  it("approve: marks orders withdrawn, deducts balance, writes audit", async () => {
+  it("approve: marks orders withdrawn, writes audit (no balance deduction)", async () => {
     let capturedTx!: ReturnType<typeof makeRequestTxClient>;
     mockPrisma.$transaction.mockImplementationOnce(
       async (fn: (tx: unknown) => unknown) => {
@@ -240,8 +240,10 @@ describe("processWithdrawal", () => {
     expect(capturedTx.order.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({ data: { withdrawn: true } }),
     );
-    expect(capturedTx.$executeRaw).toHaveBeenCalledOnce(); // balance deduction
-    expect(capturedTx.transaction.create).toHaveBeenCalledOnce();
+    // Doanh số seller theo dõi qua đơn hàng (cờ withdrawn), KHÔNG qua balance:
+    // duyệt rút không trừ balance và không tạo transaction WITHDRAWAL_FEE.
+    expect(capturedTx.$executeRaw).not.toHaveBeenCalled();
+    expect(capturedTx.transaction.create).not.toHaveBeenCalled();
     expect(capturedTx.sellerWithdrawal.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: "APPROVED" }) }),
     );
