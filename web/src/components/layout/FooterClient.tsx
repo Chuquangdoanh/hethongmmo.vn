@@ -64,6 +64,7 @@ const LEGAL: NavLink[] = [
   { href: "/dieu-khoan",              label: "Điều khoản dịch vụ" },
   { href: "/chinh-sach",              label: "Chính sách bảo mật" },
   { href: "/chinh-sach-nha-ban-hang", label: "Chính sách nhà bán hàng" },
+  { href: "/dieu-khoan-chinh-sach",   label: "Điều khoản & Chính sách" },
 ];
 
 export default function FooterClient({ data }: { data: Record<string, unknown> }) {

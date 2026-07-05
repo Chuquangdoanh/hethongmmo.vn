@@ -147,6 +147,7 @@ export const PUBLIC_PAGES: PageEntry[] = [
   { key: "chinh-sach",              label: "Chính sách bảo mật" },
   { key: "dieu-khoan",              label: "Điều khoản dịch vụ" },
   { key: "chinh-sach-nha-ban-hang", label: "Chính sách nhà bán hàng" },
+  { key: "dieu-khoan-chinh-sach",             label: "Điều khoản & Chính sách (tổng hợp)" },
   { key: "quy-che-hoat-dong-san",             label: "Quy chế hoạt động sàn" },
   { key: "chinh-sach-xu-ly-du-lieu-ca-nhan",  label: "Chính sách xử lý dữ liệu cá nhân" },
   { key: "chinh-sach-thanh-toan",             label: "Chính sách thanh toán" },
