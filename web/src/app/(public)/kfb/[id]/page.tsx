@@ -12,6 +12,7 @@ import { getFavoriteStatus } from "@/lib/services/favorite.service";
 import { getExternalProductSoldCount } from "@/lib/services/external-product-stats.service";
 import FavoriteButton from "@/components/shared/FavoriteButton";
 import { KfbBuyButton } from "./_components/KfbBuyButton";
+import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
 import {
   CheckCircle, ShieldCheck, Zap, ArrowLeft,
   ShoppingCart, Headphones, RotateCcw, BadgeCheck, Lock,
@@ -58,16 +59,16 @@ const PLEDGES = [
 ];
 
 const COMMITMENTS = [
-  { Icon: BadgeCheck,  color: "#10b981", title: "Hệ Thống MMO kiểm duyệt", desc: "Được hệ thống xác minh trước khi bán" },
-  { Icon: ShieldCheck, color: "#0066ff", title: "Bảo hành uy tín",         desc: "Hỗ trợ bảo hành theo chính sách" },
-  { Icon: Lock,        color: "#7c3aed", title: "Thanh toán an toàn",      desc: "Bảo mật thông tin tuyệt đối" },
-  { Icon: Headphones,  color: "#f59e0b", title: "Hỗ trợ 24/7",            desc: "Đội ngũ hỗ trợ chuyên nghiệp" },
+  { Icon: BadgeCheck,  title: "Hệ Thống MMO kiểm duyệt", desc: "Được hệ thống xác minh trước khi bán" },
+  { Icon: ShieldCheck, title: "Bảo hành uy tín",         desc: "Hỗ trợ bảo hành theo chính sách" },
+  { Icon: Lock,        title: "Thanh toán an toàn",      desc: "Bảo mật thông tin tuyệt đối" },
+  { Icon: Headphones,  title: "Hỗ trợ 24/7",            desc: "Đội ngũ hỗ trợ chuyên nghiệp" },
 ];
 
 const HOW_IT_WORKS = [
-  { Icon: ShoppingCart, color: "#0066ff", title: "Đặt hàng",      desc: "Chọn sản phẩm và thanh toán" },
-  { Icon: Zap,          color: "#10b981", title: "Nhận thông tin", desc: "Hệ thống gửi thông tin ngay lập tức" },
-  { Icon: CheckCircle,  color: "#7c3aed", title: "Sử dụng",        desc: "Đăng nhập và sử dụng hiệu quả" },
+  { Icon: ShoppingCart, title: "Đặt hàng",      desc: "Chọn sản phẩm và thanh toán" },
+  { Icon: Zap,          title: "Nhận thông tin", desc: "Hệ thống gửi thông tin ngay lập tức" },
+  { Icon: CheckCircle,  title: "Sử dụng",        desc: "Đăng nhập và sử dụng hiệu quả" },
 ];
 
 function StarSvg({ filled }: { filled: boolean }) {
@@ -110,7 +111,7 @@ export default async function KfbProductDetailPage({
 
   const me = session?.user as AuthenticatedUser | undefined;
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, contactCms, favoriteStatus, soldCount] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, contactCms, favoriteStatus, soldCount, discountPct] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "KHUONGFB_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -147,6 +148,7 @@ export default async function KfbProductDetailPage({
     getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT),
     getFavoriteStatus(me?.id, "KHUONGFB_PRODUCT", product.id),
     getExternalProductSoldCount(product.id),
+    me ? getUserResourceDiscountPercent(me.id) : Promise.resolve(0),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
@@ -175,6 +177,8 @@ export default async function KfbProductDetailPage({
   const salePrice     = Number(product.salePrice);
   const originalPrice = Number(product.originalPrice);
   const hasDiscount   = originalPrice > salePrice;
+  // finalPrice = giá thực tế sẽ bị trừ khi mua (đã áp discount Đại lý/tier) — dùng cho preview + nút mua
+  const finalPrice    = discountPct > 0 ? Math.round(salePrice * (1 - discountPct / 100)) : salePrice;
 
   // ── JSX SECTIONS ─────────────────────────────────────────────────
 
@@ -324,9 +328,19 @@ export default async function KfbProductDetailPage({
       {/* Price */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-3xl font-black text-[#e11d48]">{formatVnd(salePrice)}</p>
-          {hasDiscount && (
-            <p className="text-sm text-[#94a3b8] line-through">{formatVnd(originalPrice)}</p>
+          {discountPct > 0 ? (
+            <>
+              <p className="text-sm text-[#94a3b8] line-through">{formatVnd(salePrice)}</p>
+              <p className="text-3xl font-black text-[#e11d48]">{formatVnd(finalPrice)}</p>
+              <span className="text-[11px] font-bold text-emerald-600">-{discountPct}% cho bạn</span>
+            </>
+          ) : (
+            <>
+              <p className="text-3xl font-black text-[#e11d48]">{formatVnd(salePrice)}</p>
+              {hasDiscount && (
+                <p className="text-sm text-[#94a3b8] line-through">{formatVnd(originalPrice)}</p>
+              )}
+            </>
           )}
         </div>
         <div className="flex items-center gap-1.5 text-sm font-semibold text-[#10b981]">
@@ -339,7 +353,7 @@ export default async function KfbProductDetailPage({
       <KfbBuyButton
         productId={product.id}
         productName={product.name}
-        price={salePrice}
+        price={finalPrice}
         isLoggedIn={!!me}
       />
 
@@ -359,10 +373,10 @@ export default async function KfbProductDetailPage({
     <div className="rounded-2xl border border-border bg-white p-4">
       <p className="text-xs font-bold text-text-dark mb-3">Cam kết từ chúng tôi</p>
       <div className="space-y-3">
-        {COMMITMENTS.map(({ Icon, color, title, desc }) => (
+        {COMMITMENTS.map(({ Icon, title, desc }) => (
           <div key={title} className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${color}14` }}>
-              <Icon size={15} strokeWidth={2} style={{ color }} />
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-[#EFF6FF]">
+              <Icon size={15} strokeWidth={2} className="text-[#0066FF]" />
             </div>
             <div>
               <p className="text-[12px] font-semibold text-text-dark">{title}</p>
@@ -381,13 +395,10 @@ export default async function KfbProductDetailPage({
         Cách hoạt động
       </h2>
       <div className="grid grid-cols-3 gap-4">
-        {HOW_IT_WORKS.map(({ Icon, color, title, desc }) => (
+        {HOW_IT_WORKS.map(({ Icon, title, desc }) => (
           <div key={title} className="text-center">
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-              style={{ background: `${color}14` }}
-            >
-              <Icon size={22} strokeWidth={1.75} style={{ color }} />
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 bg-[#EFF6FF]">
+              <Icon size={22} strokeWidth={1.75} className="text-[#0066FF]" />
             </div>
             <p className="text-xs font-bold text-text-dark mb-1">{title}</p>
             <p className="text-[11px] text-text-muted leading-snug">{desc}</p>
