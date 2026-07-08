@@ -66,7 +66,7 @@ const SECTIONS: NavSection[] = [
       { href: "/admin/tut-tricks",   label: "Tut / Tricks", Icon: FileText, color: "#94a3b8", permission: "tut_tricks:read" },
       { href: "/admin/mmo-products", label: "Tài nguyên",   Icon: Gamepad2, color: "#94a3b8", permission: "resources:read"  },
       { href: "/admin/khuongfb",     label: "Khuongfb",     Icon: Globe,    color: "#94a3b8", adminOnly: true                },
-      { href: "/admin/coupons",      label: "Mã giảm giá",  Icon: Ticket,   color: "#94a3b8", adminOnly: true                },
+      // { href: "/admin/coupons",      label: "Mã giảm giá",  Icon: Ticket,   color: "#94a3b8", adminOnly: true                },
     ],
   },
   {
@@ -76,7 +76,7 @@ const SECTIONS: NavSection[] = [
       { href: "/admin/service-categories",   label: "DM Dịch vụ",      Icon: Tag,        color: "#94a3b8", permission: "categories:read" },
       { href: "/admin/resource-categories",  label: "DM Tài nguyên",   Icon: FolderOpen, color: "#94a3b8", permission: "categories:read" },
       { href: "/admin/tut-trick-categories", label: "DM Tut & Tricks", Icon: FileText,   color: "#94a3b8", permission: "categories:read" },
-      { href: "/admin/nhan-su-danh-muc",     label: "Nhân sự DM",      Icon: Users,      color: "#94a3b8", permission: "categories:read" },
+      // { href: "/admin/nhan-su-danh-muc",     label: "Nhân sự DM",      Icon: Users,      color: "#94a3b8", permission: "categories:read" },
     ],
   },
   {
