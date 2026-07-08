@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/db/prisma";
-import { Prisma } from "@prisma/client";
 import Decimal from "decimal.js";
 import { AppError, NotFoundError, ValidationError, DuplicateError } from "@/lib/errors";
 import { writeAuditLog } from "@/lib/security/audit";
@@ -123,7 +122,7 @@ export async function redeemCouponInTransaction(
   try {
     await tx.couponRedemption.create({ data: { couponId, userId, orderId } });
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+    if (typeof err === "object" && err !== null && "code" in err && (err as { code: unknown }).code === "P2002") {
       throw new AppError("Bạn đã sử dụng mã giảm giá này rồi", "COUPON_ALREADY_USED", 409);
     }
     throw err;
