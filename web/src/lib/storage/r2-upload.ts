@@ -220,10 +220,13 @@ export async function uploadToR2(params: {
   try {
     await client.send(
       new PutObjectCommand({
-        Bucket:      bucket,
-        Key:         key,
-        Body:        finalBuffer,
-        ContentType: finalMime,
+        Bucket:       bucket,
+        Key:          key,
+        Body:         finalBuffer,
+        ContentType:  finalMime,
+        // Key chứa UUID ngẫu nhiên — không bao giờ bị ghi đè — nên an toàn để
+        // browser/CDN cache vĩnh viễn, không cần revalidate mỗi lần reload.
+        CacheControl: "public, max-age=31536000, immutable",
       }),
     );
   } catch (err) {
