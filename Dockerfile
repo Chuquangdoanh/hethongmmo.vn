@@ -34,6 +34,8 @@ RUN --mount=type=cache,target=/app/.next/cache,id=nextjs-build-cache \
 # Reuses full node_modules from deps stage so Prisma CLI, @prisma/config,
 # effect, and all other migration-time deps are available.
 # This stage does NOT run next build — fast to rebuild.
+# (rebuild marker 2026-07-08: force this stage to rebuild — a prior CI run failed
+# before build-migrator ran, leaving prod's migrator image 3 migrations behind)
 FROM deps AS migrator
 COPY web/prisma ./prisma
 COPY web/prisma.config.ts ./

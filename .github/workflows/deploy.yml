@@ -100,11 +100,14 @@ jobs:
           cache-from: type=local,src=/tmp/docker-cache/web
           cache-to: type=local,dest=/tmp/docker-cache/web,mode=max
 
-  # Build migrator — CHỈ khi prisma schema hoặc Dockerfile thay đổi
-  # Code-only push → skip hoàn toàn, tiết kiệm 1-2 phút
+  # Build migrator — chạy bất kỳ khi nào app code đổi (không chỉ riêng prisma/**).
+  # Lý do: nếu 1 push vừa đổi schema/migration vừa fail ở job test, build-migrator
+  # bị skip vĩnh viễn cho các push sau (chúng chỉ diff riêng lẻ, không thấy phần
+  # prisma đã đổi ở push trước) → migrator image cũ thiếu migration, trong khi
+  # build-web vẫn rebuild bình thường → app query bảng chưa tồn tại, crash mọi request.
   build-migrator:
     needs: [changes, test]
-    if: needs.changes.outputs.prisma == 'true'
+    if: needs.changes.outputs.app == 'true'
     name: Build & Push migrator image
     runs-on: self-hosted
     permissions:
