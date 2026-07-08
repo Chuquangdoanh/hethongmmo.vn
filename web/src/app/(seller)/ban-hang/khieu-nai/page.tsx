@@ -8,8 +8,9 @@ import { formatVnd, formatDate } from "@/lib/utils/format";
 import {
   Clock, CheckCircle, MessageCircleWarning,
 } from "lucide-react";
-import SellerKhieuNaiSidebar, { type ComplaintListItem } from "./_components/SellerKhieuNaiSidebar";
+import SellerKhieuNaiSidebar, { type ConversationItem } from "./_components/SellerKhieuNaiSidebar";
 import TicketChatPanel from "@/app/(user)/ho-tro/_components/TicketChatPanel";
+import SupportChatThread from "@/components/shared/SupportChatThread";
 import ScrollToTop from "@/components/shared/ScrollToTop";
 import BackBtn from "@/components/shared/BackBtn";
 import "./seller-khieu-nai.css";
@@ -40,6 +41,10 @@ export default async function SellerKhieuNaiPage({
   const { id: activeId } = await searchParams;
   const session = await auth();
   const me = session!.user as AuthenticatedUser;
+
+  // Chat hỗ trợ (SupportTicket) dùng id có tiền tố "st-" để phân biệt với Complaint
+  const isSupportTicket = activeId?.startsWith("st-") ?? false;
+  const supportTicketId = isSupportTicket ? activeId!.slice(3) : null;
 
   /* ── Seller's order IDs ── */
   const sellerOrderIds = (
@@ -79,8 +84,19 @@ export default async function SellerKhieuNaiPage({
     : [];
   const orderListMap = new Map(listOrders.map((o) => [o.id, o]));
 
+  /* ── Chat hỗ trợ list (left panel) — độc lập với Complaint, không tranh chấp tiền ── */
+  const supportTickets = await prisma.supportTicket.findMany({
+    where: { sellerId: me.id },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      order: { select: { orderCode: true, itemName: true } },
+      user: { select: { fullName: true, email: true } },
+      messages: { orderBy: { createdAt: "desc" }, take: 1, select: { senderName: true, content: true } },
+    },
+  });
+
   /* ── Selected complaint (middle + right panel) ── */
-  const selected = activeId
+  const selected = (activeId && !isSupportTicket)
     ? await prisma.complaint.findFirst({
         where: { id: activeId, orderId: { in: sellerOrderIds } },
         include: {
@@ -97,7 +113,20 @@ export default async function SellerKhieuNaiPage({
       })
     : null;
 
-  if (activeId && !selected) redirect("/ban-hang/khieu-nai");
+  if (activeId && !isSupportTicket && !selected) redirect("/ban-hang/khieu-nai");
+
+  /* ── Selected support ticket ── */
+  const selectedSupportTicket = supportTicketId
+    ? await prisma.supportTicket.findFirst({
+        where: { id: supportTicketId, sellerId: me.id },
+        include: {
+          order: { select: { orderCode: true, itemName: true } },
+          user: { select: { fullName: true, email: true } },
+        },
+      })
+    : null;
+
+  if (isSupportTicket && !selectedSupportTicket) redirect("/ban-hang/khieu-nai");
 
   const selectedOrder = selected?.orderId
     ? await prisma.order.findFirst({
@@ -180,25 +209,41 @@ export default async function SellerKhieuNaiPage({
     <div className={`ht-wrapper${activeId ? " ht-wrapper--detail" : " ht-wrapper--list"}`}>
       <ScrollToTop />
 
-      {/* ══ LEFT — Danh sách khiếu nại ═══════════════════════════ */}
+      {/* ══ LEFT — Danh sách hội thoại (gộp Khiếu nại + Chat hỗ trợ) ═══ */}
       <div className="ht-sidebar">
         <SellerKhieuNaiSidebar
           activeId={activeId}
-          complaints={complaints.map((c): ComplaintListItem => {
-            const o       = c.orderId ? orderListMap.get(c.orderId) : null;
-            const lastMsg = c.chatRoom?.messages[0];
-            return {
-              id:                 c.id,
-              status:             c.status,
-              updatedAt:          c.updatedAt.toISOString(),
-              buyerName:          c.user.fullName ?? c.user.email,
-              orderCode:          o?.orderCode ?? undefined,
-              itemName:           o?.itemName  ?? undefined,
-              subject:            c.subject,
-              lastMsgSenderName:  lastMsg?.senderName  ?? undefined,
-              lastMsgContent:     lastMsg?.content     ?? undefined,
-            };
-          })}
+          items={[
+            ...complaints.map((c): ConversationItem => {
+              const o       = c.orderId ? orderListMap.get(c.orderId) : null;
+              const lastMsg = c.chatRoom?.messages[0];
+              return {
+                kind:               "complaint",
+                id:                 c.id,
+                status:             c.status,
+                updatedAt:          c.updatedAt.toISOString(),
+                buyerName:          c.user.fullName ?? c.user.email,
+                orderCode:          o?.orderCode ?? undefined,
+                itemName:           o?.itemName  ?? undefined,
+                subject:            c.subject,
+                lastMsgSenderName:  lastMsg?.senderName  ?? undefined,
+                lastMsgContent:     lastMsg?.content     ?? undefined,
+              };
+            }),
+            ...supportTickets.map((t): ConversationItem => {
+              const lastMsg = t.messages[0];
+              return {
+                kind:               "support",
+                id:                 t.id,
+                updatedAt:          t.updatedAt.toISOString(),
+                buyerName:          t.user.fullName ?? t.user.email,
+                orderCode:          t.order.orderCode,
+                itemName:           t.order.itemName,
+                lastMsgSenderName:  lastMsg?.senderName ?? undefined,
+                lastMsgContent:     lastMsg?.content    ?? undefined,
+              };
+            }),
+          ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())}
         />
       </div>
 
@@ -323,6 +368,32 @@ export default async function SellerKhieuNaiPage({
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      ) : selectedSupportTicket ? (
+        <div className="ht-middle">
+          {/* Title bar — chat hỗ trợ thuần túy, không progress steps, không nút xác nhận/hoàn thành */}
+          <div className="ht-title-bar">
+            <BackBtn href="/ban-hang/khieu-nai" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a", margin: 0 }}>
+                Chat hỗ trợ với người mua
+              </h1>
+              <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
+                Người mua: <strong>{selectedSupportTicket.user.fullName ?? selectedSupportTicket.user.email}</strong>
+                <span style={{ margin: "0 6px", color: "#e2e8f0" }}>·</span>
+                <span>Đơn #{selectedSupportTicket.order.orderCode}</span>
+                <span style={{ margin: "0 6px", color: "#e2e8f0" }}>·</span>
+                <span>{selectedSupportTicket.order.itemName}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Chat area */}
+          <div className="ht-chat-area">
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
+              <SupportChatThread ticketId={selectedSupportTicket.id} myRole="SELLER" />
+            </div>
           </div>
         </div>
       ) : (

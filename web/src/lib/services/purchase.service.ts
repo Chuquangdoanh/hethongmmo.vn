@@ -13,6 +13,7 @@ import { logger } from "@/lib/utils/logger";
 import { randomBytes } from "crypto";
 import { notifyPurchaseSuccess, notifySellerNewOrder } from "@/lib/services/telegram-alert.service";
 import { createAffiliateCommission } from "@/lib/services/affiliate-commission.service";
+import { redeemCouponInTransaction } from "@/lib/services/coupon.service";
 
 // ── Course deposit constants ──────────────────────────────────────────────────
 export const COURSE_DEPOSIT_AMOUNT = 5_000_000;
@@ -45,6 +46,9 @@ interface PurchaseParams {
   warrantyVariant?: string;
   customerNote?: string;
   quantity?: number;      // số lượng mua (default 1)
+  // Mã giảm giá — chỉ hỗ trợ khi quantity = 1 (batch purchase tạo nhiều order riêng biệt,
+  // không thể chia đều 1 lượt coupon cho N đơn một cách nhất quán).
+  coupon?: { id: string; maxUses: number };
 }
 
 interface PurchaseResult {
@@ -70,9 +74,13 @@ function generateOrderCode(): string {
  * creates order + transaction. Returns decrypted content for digital items.
  */
 export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseResult> {
-  const { userId, orderType, itemId, itemName, catalogPrice, finalPrice, discountPercent, idempotencyKey, variantId, warrantyVariant, customerNote } =
+  const { userId, orderType, itemId, itemName, catalogPrice, finalPrice, discountPercent, idempotencyKey, variantId, warrantyVariant, customerNote, coupon } =
     params;
   const quantity = params.quantity ?? 1;
+
+  if (coupon && quantity > 1) {
+    throw new AppError("Mã giảm giá chỉ áp dụng khi mua số lượng 1.", "COUPON_QUANTITY_NOT_SUPPORTED", 400);
+  }
 
   // Delegate to batch handler when buying multiple units
   if (quantity > 1) {
@@ -227,6 +235,7 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
       tutTrickDocs,
       idempotencyKey,
       ...(isManualType ? {} : { completedAt: new Date() }),
+      ...(coupon ? { couponId: coupon.id } : {}),
     };
 
     if (orderType === "SERVICE") orderData.serviceId = itemId;
@@ -244,6 +253,10 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
         ...orderData,
       },
     });
+
+    if (coupon) {
+      await redeemCouponInTransaction(tx, { couponId: coupon.id, maxUses: coupon.maxUses, userId, orderId: order.id });
+    }
 
     if (!isManualType) {
       await createAffiliateCommission(tx, { id: order.id, userId, orderType, finalPrice: order.finalPrice });

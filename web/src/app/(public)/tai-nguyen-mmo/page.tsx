@@ -18,6 +18,7 @@ import { batchGetFavoriteData } from "@/lib/services/favorite.service";
 import { getExternalProductSoldCounts } from "@/lib/services/external-product-stats.service";
 import { TaiNguyenProductList } from "./_components/TaiNguyenProductList";
 import type { TaiNguyenProductItem } from "./_components/TaiNguyenProductList";
+import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
 
 export const metadata: Metadata = buildMeta({
   title: "Nguyên Liệu MMO | Tài Khoản & Công Cụ Số Chất Lượng Cao",
@@ -238,6 +239,8 @@ export default async function TaiNguyenMmoPage({
       mmoProductIds: mmoProducts.map((p) => p.id),
       sellerProductIds: sellerProducts.map((p) => p.id),
     });
+  // Discount preview (Đại lý/tier) — chỉ áp dụng kind mmo/kfb, không áp dụng seller
+  const discountPct = me ? await getUserResourceDiscountPercent(me.id) : 0;
   const categoryIconMap = new Map(resourceCategories.map((c) => [c.name, c.iconUrl]));
 
   const mmoGroupSet = new Set(allMmoGroups.map((c) => c.categoryGroup));
@@ -504,6 +507,7 @@ export default async function TaiNguyenMmoPage({
                   favoriteCount: p.favoriteCount,
                   isFavorite: p.isFavorite,
                 }))}
+                discountPct={discountPct}
               />
             )}
 

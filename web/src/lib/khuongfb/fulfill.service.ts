@@ -4,6 +4,9 @@ import { KHUONGFB_SOURCE } from "./constants";
 import { loadEnabledAdapters } from "@/lib/external-providers/providers-config";
 import { logger } from "@/lib/utils/logger";
 import { notifyPurchaseSuccess, notifyKhuongfbRefund } from "@/lib/services/telegram-alert.service";
+import { applyDiscount } from "@/lib/utils/discount";
+import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
+import { checkCouponEligibility, applyCouponDiscount, redeemCouponInTransaction, releaseCouponRedemption } from "@/lib/services/coupon.service";
 import Decimal from "decimal.js";
 import { randomBytes } from "crypto";
 
@@ -13,6 +16,7 @@ interface KhuongfbPurchaseParams {
   quantity:          number;
   idempotencyKey:    string;
   customerNote?:     string;
+  couponCode?:       string;
 }
 
 interface KhuongfbPurchaseResult {
@@ -29,7 +33,7 @@ function generateOrderCode(): string {
 }
 
 export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): Promise<KhuongfbPurchaseResult> {
-  const { userId, externalProductId, quantity, idempotencyKey, customerNote } = params;
+  const { userId, externalProductId, quantity, idempotencyKey, customerNote, couponCode } = params;
 
   // Idempotency: trả đơn cũ nếu đã xử lý
   const existingOrder = await prisma.order.findUnique({ where: { idempotencyKey } });
@@ -49,8 +53,29 @@ export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): P
   if (!product)          throw new NotFoundError("Sản phẩm Khuongfb");
   if (!product.isEnabled) throw new AppError("Sản phẩm này hiện không khả dụng.", "PRODUCT_DISABLED", 400);
 
-  const totalPrice = new Decimal(product.salePrice).mul(quantity);
-  const orderCode  = generateOrderCode();
+  const discountPct    = await getUserResourceDiscountPercent(userId);
+  const catalogUnitPrice = Number(product.salePrice);
+  const finalUnitPrice   = applyDiscount(catalogUnitPrice, discountPct);
+
+  const catalogTotal = new Decimal(catalogUnitPrice).mul(quantity);
+  const tierDiscountedTotal = new Decimal(finalUnitPrice).mul(quantity);
+
+  // Mã giảm giá áp trên tổng đơn (1 order row duy nhất dù mua nhiều số lượng) — giảm thêm trên giá đã có tier/agent discount.
+  let totalPrice = tierDiscountedTotal;
+  let coupon: { id: string; maxUses: number } | undefined;
+  if (couponCode) {
+    const eligible = await checkCouponEligibility({
+      code: couponCode,
+      userId,
+      orderType: "KHUONGFB_PRODUCT",
+      productId: externalProductId,
+      orderValue: tierDiscountedTotal.toNumber(),
+    });
+    coupon = { id: eligible.id, maxUses: eligible.maxUses };
+    totalPrice = new Decimal(applyCouponDiscount(tierDiscountedTotal.toNumber(), eligible));
+  }
+
+  const orderCode = generateOrderCode();
 
   // ── BƯỚC 1: Trừ ví + tạo order trong transaction ─────────────────────────
   const order = await prisma.$transaction(async (tx) => {
@@ -83,14 +108,19 @@ export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): P
         orderType:         "KHUONGFB_PRODUCT",
         externalProductId: product.id,
         itemName:          product.name,
-        originalPrice:     totalPrice,
+        originalPrice:     catalogTotal,
         finalPrice:        totalPrice,
         customerNote:      customerNote ?? null,
         status:            "PROCESSING",
         externalSource:    KHUONGFB_SOURCE,
         idempotencyKey,
+        ...(coupon ? { couponId: coupon.id } : {}),
       },
     });
+
+    if (coupon) {
+      await redeemCouponInTransaction(tx, { couponId: coupon.id, maxUses: coupon.maxUses, userId, orderId: created.id });
+    }
 
     await tx.transaction.create({
       data: {
@@ -98,7 +128,9 @@ export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): P
         orderId:       created.id,
         type:          "BUY_KHUONGFB_PRODUCT",
         amount:        totalPrice.neg(),
-        description:   `Mua ${product.name} (x${quantity}) qua Khuongfb`,
+        description:   discountPct > 0
+          ? `Mua ${product.name} (x${quantity}) qua Khuongfb (giảm ${discountPct}%)`
+          : `Mua ${product.name} (x${quantity}) qua Khuongfb`,
         balanceBefore,
         balanceAfter,
       },
@@ -166,6 +198,11 @@ export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): P
           balanceAfter:  refundedBalance,
         },
       });
+
+      // Đơn bị hoàn tiền → không tính là đã dùng coupon, trả lại lượt cho user
+      if (coupon) {
+        await releaseCouponRedemption(tx, order.id);
+      }
     });
 
     const msg = err instanceof Error ? err.message : "Khuongfb không phản hồi";

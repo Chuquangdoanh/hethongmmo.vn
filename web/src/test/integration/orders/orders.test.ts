@@ -200,4 +200,59 @@ describe("POST /api/orders", () => {
     const json = await res.json();
     expect(json.data.orderCode).toBe("ORD-EXIST");
   });
+
+  it("applies agent discount (Đại lý) to MMO_PRODUCT, overriding tier from totalDeposited", async () => {
+    mockAuth.mockResolvedValueOnce(VALID_SESSION);
+    mockMmoProductFindUnique.mockResolvedValueOnce({ name: "Tài nguyên Test", price: "100000" });
+    mockUserFindUnique.mockResolvedValueOnce({
+      discountPercent: 5,
+      totalDeposited: "200000000", // đủ điều kiện tier 15%, nhưng Đại lý phải thắng
+      agentDiscountPercent: 20,
+    });
+    mockPurchaseProduct.mockResolvedValueOnce({
+      order: {
+        id: "order-mmo", orderCode: "ORD-MMO-01", orderType: "MMO_PRODUCT",
+        itemName: "Tài nguyên Test", finalPrice: "80000", status: "DONE",
+      },
+    });
+
+    const res = await POST(makePostRequest({
+      itemId: "11111111-1111-4111-8111-111111111111",
+      orderType: "MMO_PRODUCT",
+      idempotencyKey: "33333333-3333-4333-8333-333333333333",
+    }));
+
+    expect(res.status).toBe(201);
+    expect(mockPurchaseProduct).toHaveBeenCalledWith(
+      expect.objectContaining({ finalPrice: 80_000, discountPercent: 20 }),
+    );
+  });
+
+  it("does not apply any discount to SELLER_PRODUCT (freeze: sản phẩm seller không giảm giá)", async () => {
+    mockAuth.mockResolvedValueOnce(VALID_SESSION);
+    mockSellerProductFindUnique.mockResolvedValueOnce({ name: "Seller Item", price: "100000" });
+    mockUserFindUnique.mockResolvedValueOnce({
+      discountPercent: 10,
+      totalDeposited: "200000000",
+      agentDiscountPercent: 20,
+    });
+    mockPurchaseProduct.mockResolvedValueOnce({
+      order: {
+        id: "order-seller", orderCode: "ORD-SELLER-01", orderType: "SELLER_PRODUCT",
+        itemName: "Seller Item", finalPrice: "100000", status: "DONE",
+      },
+    });
+
+    const res = await POST(makePostRequest({
+      itemId: "11111111-1111-4111-8111-111111111111",
+      orderType: "SELLER_PRODUCT",
+      idempotencyKey: "44444444-4444-4444-8444-444444444444",
+    }));
+
+    expect(res.status).toBe(201);
+    expect(mockPurchaseProduct).toHaveBeenCalledWith(
+      expect.objectContaining({ finalPrice: 100_000, discountPercent: 0 }),
+    );
+    expect(mockUserFindUnique).not.toHaveBeenCalled();
+  });
 });

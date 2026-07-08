@@ -36,6 +36,22 @@ export function getDiscountInfo(
   return { pct: 0, label: "Thường", isOverride: false };
 }
 
+/**
+ * Discount riêng cho Tài nguyên MMO / Kho nguyên liệu / Khương FB.
+ * agentDiscountPercent (Đại lý) > 0 → luôn ưu tiên, không phụ thuộc totalDeposited.
+ * Ngược lại fallback về đúng logic tier/override của getDiscountInfo (Service/Course/TutTrick).
+ */
+export function getResourceDiscountInfo(
+  totalDeposited: number,
+  discountPercent: number,   // từ User.discountPercent
+  agentDiscountPercent: number, // từ User.agentDiscountPercent
+): DiscountInfo {
+  if (agentDiscountPercent > 0) {
+    return { pct: agentDiscountPercent, label: "Đại lý", isOverride: true };
+  }
+  return getDiscountInfo(totalDeposited, discountPercent);
+}
+
 /** Tính giá sau giảm — làm tròn đến VND (không có số lẻ). */
 export function applyDiscount(catalogPrice: number, pct: number): number {
   if (pct <= 0) return catalogPrice;

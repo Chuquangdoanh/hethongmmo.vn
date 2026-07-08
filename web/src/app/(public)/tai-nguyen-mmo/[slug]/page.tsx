@@ -18,6 +18,7 @@ import { getFavoriteStatus } from "@/lib/services/favorite.service";
 import { getExternalProductSoldCounts } from "@/lib/services/external-product-stats.service";
 import FavoriteButton from "@/components/shared/FavoriteButton";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
+import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
 
 export async function generateMetadata({
   params,
@@ -132,7 +133,7 @@ export default async function MmoProductDetailPage({
     isActive: v.isActive,
   }));
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, favoriteStatus, contactCms, relatedMmo, relatedKfb] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, favoriteStatus, contactCms, relatedMmo, relatedKfb, discountPct] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "MMO_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -196,6 +197,7 @@ export default async function MmoProductDetailPage({
         id: true, name: true, thumbnail: true, salePrice: true,
       },
     }),
+    me ? getUserResourceDiscountPercent(me.id) : Promise.resolve(0),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
@@ -218,6 +220,10 @@ export default async function MmoProductDetailPage({
 
   // Số lượng đã bán thật của khuongfb (đơn DONE)
   const kfbSoldMap = await getExternalProductSoldCounts(relatedKfb.map((p) => p.id));
+
+  // Giá preview sau discount (Đại lý/tier) — áp dụng cho cả mmo lẫn kfb, không áp dụng seller
+  const applyDiscountPreview = (catalogPrice: number) =>
+    discountPct > 0 ? Math.round(catalogPrice * (1 - discountPct / 100)) : catalogPrice;
 
   // Gộp sản phẩm tương tự từ Hệ Thống MMO + khuongfb (cùng danh mục), tối đa 6
   const relatedProducts = [
@@ -400,8 +406,13 @@ export default async function MmoProductDetailPage({
       {/* Price + stock */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-3xl font-black text-[#e11d48]">{formatVnd(Number(product.price))}</p>
-          
+          {discountPct > 0 && (
+            <p className="text-sm text-[#94a3b8] line-through">{formatVnd(Number(product.price))}</p>
+          )}
+          <p className="text-3xl font-black text-[#e11d48]">{formatVnd(applyDiscountPreview(Number(product.price)))}</p>
+          {discountPct > 0 && (
+            <span className="text-[11px] font-bold text-emerald-600">-{discountPct}% cho bạn</span>
+          )}
         </div>
         <div className={`flex items-center gap-1.5 text-sm font-semibold ${isOutOfStock ? "text-danger" : "text-[#10b981]"}`}>
           {isOutOfStock ? <XCircle size={16} strokeWidth={2} /> : <CheckCircle size={16} strokeWidth={2} />}
@@ -426,6 +437,7 @@ export default async function MmoProductDetailPage({
           available={available}
           totalSold={product.totalOrders}
           variants={variants.length > 0 ? variants : undefined}
+          discountPct={discountPct}
         />
       )}
 
@@ -631,7 +643,10 @@ export default async function MmoProductDetailPage({
             <div className="flex-1 min-w-0 flex flex-col justify-between">
               <p className="text-xs font-semibold text-text-dark group-hover:text-primary transition-colors line-clamp-2 leading-snug">{rp.name}</p>
               <div>
-                <p className="text-xs font-extrabold text-[#e11d48]">{formatVnd(rp.price)}</p>
+                {discountPct > 0 && (
+                  <p className="text-[10px] text-text-muted line-through leading-none">{formatVnd(rp.price)}</p>
+                )}
+                <p className="text-xs font-extrabold text-[#e11d48]">{formatVnd(applyDiscountPreview(rp.price))}</p>
                 <p className="text-[10px] text-text-muted">{rp.soldLabel}</p>
               </div>
             </div>

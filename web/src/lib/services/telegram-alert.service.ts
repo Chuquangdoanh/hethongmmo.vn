@@ -178,6 +178,49 @@ export async function sendSellerTelegram(chatId: string, text: string): Promise<
 }
 
 /**
+ * Báo cho seller khi buyer nhắn tin trong chat hỗ trợ (SupportTicket) — fire-and-forget.
+ * Chỉ gửi nếu seller đã kết nối Telegram. Không gửi báo cho buyer (buyer chưa có kết nối Telegram).
+ */
+export function notifySellerNewSupportMessage(
+  sellerId: string,
+  buyerId: string,
+  orderId: string,
+  content: string,
+): void {
+  void (async () => {
+    const seller = await prisma.user.findUnique({
+      where: { id: sellerId },
+      select: { sellerTelegramChatId: true },
+    });
+    const chatId = seller?.sellerTelegramChatId;
+    if (!chatId) return;
+
+    const [buyerLabel, order] = await Promise.all([
+      _getUserLabel(buyerId),
+      prisma.order.findUnique({ where: { id: orderId }, select: { orderCode: true, itemName: true } }),
+    ]);
+    const preview = content.length > 300 ? `${content.slice(0, 300)}...` : content;
+
+    await sendSellerTelegram(
+      chatId,
+      [
+        `💬 <b>Tin nhắn chat hỗ trợ mới</b>`,
+        ``,
+        `👤 Người mua: ${buyerLabel}`,
+        ...(order ? [
+          `📦 Sản phẩm: ${escTelegramHtml(order.itemName)}`,
+          `🔖 Mã đơn: <code>${escTelegramHtml(order.orderCode)}</code>`,
+        ] : []),
+        ``,
+        `📝 ${escTelegramHtml(preview)}`,
+        ``,
+        `Đăng nhập gian hàng để trả lời nhé.`,
+      ].join("\n"),
+    );
+  })();
+}
+
+/**
  * Báo cho seller khi có đơn SELLER_PRODUCT mới — fire-and-forget.
  * Chỉ gửi nếu seller đã kết nối Telegram (có sellerTelegramChatId).
  */

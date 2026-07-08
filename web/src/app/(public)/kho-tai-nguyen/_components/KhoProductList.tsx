@@ -49,8 +49,15 @@ function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }
   );
 }
 
-function GridCard({ item }: { item: KhoProductItem }) {
-  const { name, imageUrl, price, salesCount, isNew, isHot, href, bought, rated, review, available: avail } = item;
+/** Discount preview chỉ áp dụng cho kind mmo/kfb (Hệ Thống MMO) — không áp dụng sản phẩm seller. */
+function getDisplayPrice(item: KhoProductItem, discountPct: number): number {
+  const applies = discountPct > 0 && item.kind !== "seller";
+  return applies ? Math.round(item.price * (1 - discountPct / 100)) : item.price;
+}
+
+function GridCard({ item, discountPct }: { item: KhoProductItem; discountPct: number }) {
+  const { name, imageUrl, price, salesCount, isNew, isHot, href, bought, rated, review, available: avail, kind } = item;
+  const showDiscount = discountPct > 0 && kind !== "seller";
   return (
     <div className="relative bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-[#3b82f6]/40 transition-all flex flex-col">
       <Link href={href} className="absolute inset-0 z-1" aria-label={`Xem chi tiết ${name}`} />
@@ -124,8 +131,11 @@ function GridCard({ item }: { item: KhoProductItem }) {
         )}
 
         <div className="mt-auto pt-1.5 sm:pt-2">
+          {showDiscount && (
+            <span className="block text-[9px] text-[#94a3b8] line-through leading-none mb-0.5">{formatVnd(price)}</span>
+          )}
           <span className="text-xs font-extrabold text-[#e11d48] whitespace-nowrap leading-none">
-            {formatVnd(price)}
+            {formatVnd(getDisplayPrice(item, discountPct))}
           </span>
         </div>
       </div>
@@ -133,8 +143,9 @@ function GridCard({ item }: { item: KhoProductItem }) {
   );
 }
 
-function ListCard({ item }: { item: KhoProductItem }) {
-  const { name, imageUrl, category, price, salesCount, isNew, isHot, href, bought, rated, review, available: avail } = item;
+function ListCard({ item, discountPct }: { item: KhoProductItem; discountPct: number }) {
+  const { name, imageUrl, category, price, salesCount, isNew, isHot, href, bought, rated, review, available: avail, kind } = item;
+  const showDiscount = discountPct > 0 && kind !== "seller";
   return (
     <div className="relative bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-[#3b82f6]/40 transition-all flex flex-row">
       <Link href={href} className="absolute inset-0 z-1" aria-label={`Xem chi tiết ${name}`} />
@@ -199,8 +210,13 @@ function ListCard({ item }: { item: KhoProductItem }) {
 
         {/* Row 3: giá + review action */}
         <div className="flex items-center justify-between gap-2">
-          <span className="text-base font-extrabold text-[#e11d48] leading-none">
-            {formatVnd(price)}
+          <span className="flex items-baseline gap-1.5">
+            {showDiscount && (
+              <span className="text-[10px] text-[#94a3b8] line-through leading-none">{formatVnd(price)}</span>
+            )}
+            <span className="text-base font-extrabold text-[#e11d48] leading-none">
+              {formatVnd(getDisplayPrice(item, discountPct))}
+            </span>
           </span>
           {bought && !rated && (
             <Link
@@ -225,9 +241,12 @@ function ListCard({ item }: { item: KhoProductItem }) {
 export function KhoProductList({
   products,
   basePath,
+  discountPct = 0,
 }: {
   products: KhoProductItem[];
   basePath: string;
+  /** % giảm giá preview cho Hệ Thống MMO (mmo/kfb) — không áp dụng sản phẩm seller. */
+  discountPct?: number;
 }) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
@@ -263,13 +282,13 @@ export function KhoProductList({
       {viewMode === "grid" ? (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
           {products.map((item) => (
-            <GridCard key={item.id} item={item} />
+            <GridCard key={item.id} item={item} discountPct={discountPct} />
           ))}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           {products.map((item) => (
-            <ListCard key={item.id} item={item} />
+            <ListCard key={item.id} item={item} discountPct={discountPct} />
           ))}
         </div>
       )}

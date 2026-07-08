@@ -9,7 +9,7 @@ import {
   Gamepad2, Tags, BookMarked, Tag, FolderOpen, ShieldCheck, Star,
   AlertTriangle, Radio, Wallet, ArrowDownCircle, ArrowUpCircle,
   Store, Settings, Users, Search, ChevronDown, Home, X, Lock,
-  Inbox, Monitor, Globe, Share2,
+  Inbox, Monitor, Globe, Share2, Ticket,
   type LucideIcon,
 } from "lucide-react";
 import type { PermissionCode } from "@/lib/constants/modules";
@@ -66,6 +66,7 @@ const SECTIONS: NavSection[] = [
       { href: "/admin/tut-tricks",   label: "Tut / Tricks", Icon: FileText, color: "#94a3b8", permission: "tut_tricks:read" },
       { href: "/admin/mmo-products", label: "Tài nguyên",   Icon: Gamepad2, color: "#94a3b8", permission: "resources:read"  },
       { href: "/admin/khuongfb",     label: "Khuongfb",     Icon: Globe,    color: "#94a3b8", adminOnly: true                },
+      { href: "/admin/coupons",      label: "Mã giảm giá",  Icon: Ticket,   color: "#94a3b8", adminOnly: true                },
     ],
   },
   {
@@ -101,20 +102,21 @@ const SECTIONS: NavSection[] = [
       { href: "/admin/cai-dat-ban-hang", label: "Cài đặt bán hàng", Icon: Settings,    color: "#94a3b8", adminOnly: true                     },
     ],
   },
-  {
-    key: "system", label: "Hệ thống", Icon: Users, color: "#94a3b8", bg: "#f1f5f9",
-    links: [
-      { href: "/admin/users",      label: "Người dùng", Icon: Users,  color: "#94a3b8", permission: "users:read"      },
-      { href: "/admin/audit-log",  label: "Audit Log",  Icon: Search, color: "#94a3b8", permission: "audit_logs:read" },
-      { href: "/admin/phan-quyen", label: "Phân quyền", Icon: Lock,   color: "#94a3b8", adminOnly: true               },
-    ],
-  },
+  
   {
     key: "affiliate", label: "Affiliate", Icon: Share2, color: "#94a3b8", bg: "#f1f5f9",
     links: [
       { href: "/admin/affiliates",             label: "Affiliate & %",  Icon: Share2,      color: "#94a3b8", adminOnly: true },
       { href: "/admin/affiliate-commissions",  label: "Hoa hồng",       Icon: Wallet,      color: "#94a3b8", adminOnly: true },
       { href: "/admin/affiliate-withdrawals",  label: "Rút hoa hồng",   Icon: ArrowUpCircle, color: "#94a3b8", adminOnly: true },
+    ],
+  },
+  {
+    key: "system", label: "Hệ thống", Icon: Users, color: "#94a3b8", bg: "#f1f5f9",
+    links: [
+      { href: "/admin/users",      label: "Người dùng", Icon: Users,  color: "#94a3b8", permission: "users:read"      },
+      { href: "/admin/audit-log",  label: "Audit Log",  Icon: Search, color: "#94a3b8", permission: "audit_logs:read" },
+      { href: "/admin/phan-quyen", label: "Phân quyền", Icon: Lock,   color: "#94a3b8", adminOnly: true               },
     ],
   },
 ];

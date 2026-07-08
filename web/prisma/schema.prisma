@@ -185,6 +185,11 @@ enum AffiliateWithdrawalStatus {
   COMPLETED
 }
 
+enum CouponDiscountType {
+  PERCENT
+  FIXED_AMOUNT
+}
+
 // ====================================================================
 // 1. USERS & AUTH
 // ====================================================================
@@ -208,6 +213,11 @@ model User {
   // Giảm giá khi mua Service/Course/TutTrick
   // 0 = dùng tier tự động theo totalDeposited; > 0 = admin override cứng
   discountPercent      Int           @default(0) @map("discount_percent")
+
+  // Giảm giá "Đại lý" — chỉ áp dụng Tài nguyên MMO / Kho nguyên liệu / Khương FB
+  // 0 = không phải đại lý; > 0 = % cố định, admin gán tay, không phụ thuộc totalDeposited
+  // Ưu tiên cao hơn discountPercent/tier tự động cho các loại sản phẩm trên
+  agentDiscountPercent Int           @default(0) @map("agent_discount_percent")
 
   sellerStatus         SellerStatus  @default(NONE) @map("seller_status")
   sellerTier           String        @default("STANDARD") @map("seller_tier") @db.VarChar(50)
@@ -271,10 +281,14 @@ model User {
   loginAttempts        LoginAttempt[]
   chatParticipations   ChatParticipant[]
   chatMessages         ChatMessage[]
+  supportTicketsAsBuyer  SupportTicket[]  @relation("SupportTicketBuyer")
+  supportTicketsAsSeller SupportTicket[]  @relation("SupportTicketSeller")
+  supportMessages        SupportMessage[]
   subCategories        UserSubCategory[]
   staffPermissions     StaffPermission[]
   siteContentUpdates   SiteContent[]
   favorites            ProductFavorite[]
+  couponRedemptions    CouponRedemption[]
 
   affiliateCommissionRules       AffiliateCommissionRule[] @relation("AffiliateOwnerRules")
   affiliateCommissionsEarned     AffiliateCommission[]     @relation("AffiliateEarner")
@@ -728,6 +742,8 @@ model Order {
   externalProduct    ExternalProduct? @relation(fields: [externalProductId], references: [id])
   externalOrderId    String?          @map("external_order_id")
   externalSource     String?          @map("external_source") @db.VarChar(50)
+  couponId           String?          @map("coupon_id") @db.Uuid
+  coupon             Coupon?          @relation(fields: [couponId], references: [id])
 
   itemName        String         @map("item_name")
   originalPrice   Decimal        @db.Decimal(18, 2) @map("original_price")
@@ -757,6 +773,7 @@ model Order {
   transactions    Transaction[]
   review          Review?
   affiliateCommission AffiliateCommission?
+  supportTicket       SupportTicket?
 
   @@index([userId, createdAt])
   @@index([status])
@@ -1152,6 +1169,42 @@ model ChatMessage {
 }
 
 // ====================================================================
+// 20b. SUPPORT TICKETS (chat hỗ trợ User↔Seller sau khi hết hạn khiếu nại)
+// ====================================================================
+model SupportTicket {
+  id        String   @id @default(uuid()) @db.Uuid
+  orderId   String   @unique @map("order_id") @db.Uuid
+  order     Order    @relation(fields: [orderId], references: [id])
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation("SupportTicketBuyer", fields: [userId], references: [id])
+  sellerId  String   @map("seller_id") @db.Uuid
+  seller    User     @relation("SupportTicketSeller", fields: [sellerId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  messages  SupportMessage[]
+
+  @@index([userId])
+  @@index([sellerId])
+  @@map("support_tickets")
+}
+
+model SupportMessage {
+  id         String        @id @default(uuid()) @db.Uuid
+  ticketId   String        @map("ticket_id") @db.Uuid
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId   String        @map("sender_id") @db.Uuid
+  sender     User          @relation(fields: [senderId], references: [id])
+  senderName String        @map("sender_name")
+  senderRole String        @map("sender_role") @db.VarChar(10)
+  content    String
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  @@index([ticketId, createdAt])
+  @@map("support_messages")
+}
+
+// ====================================================================
 // 21. AUDIT_LOGS
 // ====================================================================
 model AuditLog {
@@ -1528,4 +1581,67 @@ model ProductFavorite {
   @@index([userId])
   @@index([productType, productId])
   @@map("product_favorites")
+}
+
+// ====================================================================
+// 30. COUPONS (Mã giảm giá — Kho tài nguyên / Tài nguyên MMO / Khương FB)
+// ====================================================================
+
+// Áp dụng cho: SELLER_PRODUCT (kho tài nguyên) / MMO_PRODUCT (nguyên liệu) / KHUONGFB_PRODUCT.
+// Dùng lại OrderType thay vì khai enum riêng để tránh trùng lặp danh sách loại sản phẩm.
+model Coupon {
+  id            String              @id @default(uuid()) @db.Uuid
+  code          String              @unique @db.VarChar(50)
+  name          String
+  discountType  CouponDiscountType  @map("discount_type")
+  discountValue Decimal             @db.Decimal(18, 2) @map("discount_value")
+  maxUses       Int                 @map("max_uses")
+  usedCount     Int                 @default(0) @map("used_count")
+  minOrderValue Decimal?            @db.Decimal(18, 2) @map("min_order_value")
+  // Ngưỡng tier tối thiểu — khớp với label trong DISCOUNT_TIERS (lib/utils/discount.ts): "Thẻ" | "Silver" | "Gold". Null = không giới hạn.
+  minTierLabel  String?             @map("min_tier_label") @db.VarChar(20)
+  // Chỉ áp dụng cho user chưa từng có Order nào (mua lần đầu)
+  newUserOnly   Boolean             @default(false) @map("new_user_only")
+  startAt       DateTime            @map("start_at")
+  endAt         DateTime            @map("end_at")
+  isActive      Boolean             @default(true) @map("is_active")
+  createdBy     String              @map("created_by") @db.Uuid
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  deletedAt     DateTime?           @map("deleted_at")
+
+  products    CouponProduct[]
+  redemptions CouponRedemption[]
+  orders      Order[]
+
+  @@index([code])
+  @@index([isActive, startAt, endAt])
+  @@map("coupons")
+}
+
+model CouponProduct {
+  id          String    @id @default(uuid()) @db.Uuid
+  couponId    String    @map("coupon_id") @db.Uuid
+  coupon      Coupon    @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  productType OrderType @map("product_type")
+  productId   String    @map("product_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@unique([couponId, productType, productId])
+  @@index([productType, productId])
+  @@map("coupon_products")
+}
+
+model CouponRedemption {
+  id        String   @id @default(uuid()) @db.Uuid
+  couponId  String   @map("coupon_id") @db.Uuid
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId   String   @unique @map("order_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Chốt quy tắc "1 tài khoản chỉ dùng 1 lần" ở tầng DB — chống race condition
+  @@unique([couponId, userId])
+  @@map("coupon_redemptions")
 }

@@ -14,11 +14,19 @@ interface Props {
   isLoggedIn:  boolean;
 }
 
+// Giá `price` truyền vào component này đã là giá cuối cùng sau discount (tính ở page.tsx server-side).
+
 interface PostResult {
   orderId:         string;
   orderCode:       string;
   externalOrderId: string;
   finalPrice:      number;
+}
+
+interface CouponResult {
+  discountType: "PERCENT" | "FIXED_AMOUNT";
+  discountValue: number;
+  discountedPrice: number;
 }
 
 interface OrderDetail {
@@ -196,12 +204,12 @@ function DeliveryModal({ detail, onClose }: { detail: OrderDetail; finalPrice: n
           <div className="flex gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-3">
             <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-amber-800 leading-relaxed">
-              Vui lòng lưu thông tin này ngay. Bạn có thể xem lại trong mục{" "}
+               TRUY CẬP ĐỂ KHIẾU NẠI ĐƠN HÀNG ĐỂ ĐƯỢC HỖ TRỢ {"  "} 
               <span
                 className="font-semibold underline cursor-pointer"
                 onClick={() => router.push("/don-hang")}
               >
-                Lịch sử đơn hàng
+                 "LỊCH SỬ ĐƠN HÀNG "
               </span>.
             </p>
           </div>
@@ -227,6 +235,48 @@ export function KfbBuyButton({ productId, productName: _productName, price, isLo
   const [error,      setError]      = useState<string | null>(null);
   const [refundMsg,  setRefundMsg]  = useState<string | null>(null);
   const [qty,        setQty]        = useState(1);
+  const [couponCode,     setCouponCode]     = useState("");
+  const [couponResult,   setCouponResult]   = useState<CouponResult | null>(null);
+  const [couponError,    setCouponError]    = useState("");
+  const [couponChecking, setCouponChecking] = useState(false);
+
+  function resetCoupon() {
+    setCouponCode("");
+    setCouponResult(null);
+    setCouponError("");
+  }
+
+  async function handleApplyCoupon() {
+    setCouponError("");
+    setCouponChecking(true);
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        credentials: "include",
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: couponCode,
+          orderType: "KHUONGFB_PRODUCT",
+          productId,
+          orderValue: price * qty,
+          quantity: qty,
+        }),
+      });
+      const json = await res.json() as { data?: CouponResult; error?: string };
+      if (!res.ok || !json.data) {
+        setCouponError(json.error ?? "Mã giảm giá không hợp lệ.");
+        return;
+      }
+      setCouponResult(json.data);
+    } catch {
+      setCouponError("Lỗi kết nối, vui lòng thử lại.");
+    } finally {
+      setCouponChecking(false);
+    }
+  }
+
+  const totalBeforeCoupon = price * qty;
+  const totalPrice = couponResult ? couponResult.discountedPrice : totalBeforeCoupon;
 
   async function handleBuy() {
     if (!isLoggedIn) {
@@ -245,6 +295,7 @@ export function KfbBuyButton({ productId, productName: _productName, price, isLo
           externalProductId: productId,
           quantity:          qty,
           idempotencyKey:    genKey(),
+          ...(couponResult ? { couponCode } : {}),
         }),
       });
       const json = await res.json() as { data?: PostResult; error?: string; code?: string };
@@ -270,6 +321,7 @@ export function KfbBuyButton({ productId, productName: _productName, price, isLo
       };
 
       setOrderDetail({ detail, finalPrice });
+      resetCoupon();
     } catch {
       setError("Lỗi kết nối, vui lòng thử lại.");
     } finally {
@@ -291,8 +343,43 @@ export function KfbBuyButton({ productId, productName: _productName, price, isLo
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1 py-1">
           <span className="text-sm font-medium text-gray-700">Số lượng</span>
-          <QuantitySelector value={qty} onChange={setQty} min={1} max={100} />
+          <QuantitySelector value={qty} onChange={(v) => { setQty(v); resetCoupon(); }} min={1} max={100} />
         </div>
+
+        {couponResult ? (
+          <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 px-3.5 py-2.5">
+            <span className="text-xs font-semibold text-emerald-700">
+              Đã áp dụng mã &quot;{couponCode}&quot; {couponResult.discountType === "PERCENT" ? `(-${couponResult.discountValue}%)` : `(-${formatVnd(couponResult.discountValue)})`}
+            </span>
+            <button
+              type="button"
+              onClick={resetCoupon}
+              className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-800"
+            >
+              Hủy
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <div className="flex gap-2">
+              <input
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                placeholder="Mã giảm giá (nếu có)"
+                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => void handleApplyCoupon()}
+                disabled={couponChecking || !couponCode.trim()}
+                className="px-3.5 py-2 rounded-xl bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200 disabled:opacity-50 transition-colors"
+              >
+                {couponChecking ? "..." : "Áp dụng"}
+              </button>
+            </div>
+            {couponError && <p className="text-[11px] text-red-500">{couponError}</p>}
+          </div>
+        )}
 
         {error && (
           <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2">
@@ -316,7 +403,7 @@ export function KfbBuyButton({ productId, productName: _productName, price, isLo
           ) : (
             <>
               <ShoppingCart size={16} />
-              {isLoggedIn ? `Mua ngay — ${formatVnd(price * qty)}` : "Đăng nhập để mua"}
+              {isLoggedIn ? `Mua ngay — ${formatVnd(totalPrice)}` : "Đăng nhập để mua"}
             </>
           )}
         </button>

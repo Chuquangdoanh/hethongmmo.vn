@@ -10,7 +10,7 @@ import {
   Banknote, Home, GalleryVerticalEnd, GraduationCap, Lightbulb, FolderOpen,
   Package, ShoppingBag, User, Settings, LogOut, Bell,
   Heart, Store, ChevronRight, ChevronDown, ArrowLeft, AlertCircle,
-  Grid3x3, LayoutDashboard, TicketCheck, BookOpen, RotateCcw, Headphones, Award,
+  Grid3x3, LayoutDashboard, MessageCircle, BookOpen, RotateCcw, Headphones, Award,
 } from "lucide-react";
 import MobileSupportPanel from "./MobileSupportPanel";
 import { r2Url } from "@/lib/utils/image-url";
@@ -414,7 +414,7 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
                     <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
                   <Link href="/ho-tro" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
-                    <span className="mnav-acc-icon-badge"><TicketCheck size={16} /></span>
+                    <span className="mnav-acc-icon-badge"><MessageCircle size={16} /></span>
                     <span>Hộp thư hỗ trợ</span>
                     <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>

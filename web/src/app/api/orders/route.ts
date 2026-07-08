@@ -9,6 +9,8 @@ import { trackRateHit } from "@/lib/security/rate-alert";
 import { AppError } from "@/lib/errors";
 import { apiOk, apiList, apiCatch, apiValidationError, apiError } from "@/lib/api-response";
 import { getDiscountInfo, applyDiscount } from "@/lib/utils/discount";
+import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
+import { checkCouponEligibility, applyCouponDiscount } from "@/lib/services/coupon.service";
 
 export const runtime = "nodejs";
 
@@ -21,6 +23,7 @@ const purchaseSchema = z.object({
   customerNote: z.string().max(5000).optional(),
   idempotencyKey: z.string().uuid("idempotencyKey phải là UUID"),
   quantity: z.coerce.number().int().min(1).max(100).default(1),
+  couponCode: z.string().min(3).max(50).trim().toUpperCase().optional(),
 });
 
 const listQuerySchema = z.object({
@@ -94,25 +97,34 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const parsed = purchaseSchema.safeParse(body);
     if (!parsed.success) return apiValidationError(parsed.error.issues);
 
-    const { itemId, orderType, variantId, warrantyVariant, deviceVariant, customerNote, idempotencyKey, quantity } = parsed.data;
+    const { itemId, orderType, variantId, warrantyVariant, deviceVariant, customerNote, idempotencyKey, quantity, couponCode } = parsed.data;
 
     // Resolve catalog price server-side (không tin client)
     const { itemName, catalogPrice, resolvedWarranty } = await resolveItem(orderType, itemId, deviceVariant, warrantyVariant, variantId);
 
-    // Tính discount — chỉ áp dụng cho SERVICE / COURSE / TUTTRICK
-    const DISCOUNTABLE: string[] = ["SERVICE", "COURSE", "TUTTRICK"];
-    let discountPct = 0;
-    if (DISCOUNTABLE.includes(orderType)) {
-      const userRow = await prisma.user.findUnique({
-        where: { id: me.id },
-        select: { discountPercent: true, totalDeposited: true },
-      });
-      if (userRow) {
-        const info = getDiscountInfo(Number(userRow.totalDeposited), userRow.discountPercent);
-        discountPct = info.pct;
+    const discountPct = await resolveDiscountPercent(orderType, me.id);
+    const tierDiscountedPrice = applyDiscount(catalogPrice, discountPct);
+
+    // Mã giảm giá chỉ áp dụng cho Kho tài nguyên (SELLER_PRODUCT) / Tài nguyên MMO (MMO_PRODUCT), giảm thêm trên giá đã có tier/agent discount.
+    let finalPrice = tierDiscountedPrice;
+    let coupon: { id: string; maxUses: number } | undefined;
+    if (couponCode) {
+      if (orderType !== "MMO_PRODUCT" && orderType !== "SELLER_PRODUCT") {
+        return apiError("Mã giảm giá không áp dụng cho loại sản phẩm này.", "COUPON_PRODUCT_NOT_APPLICABLE", 400);
       }
+      if (quantity > 1) {
+        return apiError("Mã giảm giá chỉ áp dụng khi mua số lượng 1.", "COUPON_QUANTITY_NOT_SUPPORTED", 400);
+      }
+      const eligible = await checkCouponEligibility({
+        code: couponCode,
+        userId: me.id,
+        orderType,
+        productId: itemId,
+        orderValue: tierDiscountedPrice,
+      });
+      coupon = { id: eligible.id, maxUses: eligible.maxUses };
+      finalPrice = applyCouponDiscount(tierDiscountedPrice, eligible);
     }
-    const finalPrice = applyDiscount(catalogPrice, discountPct);
 
     const result = await purchaseProduct({
       userId: me.id,
@@ -127,6 +139,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       warrantyVariant: resolvedWarranty ?? warrantyVariant,
       customerNote,
       quantity,
+      coupon,
     });
 
     return apiOk(
@@ -153,6 +166,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   } catch (err) {
     return apiCatch(err);
   }
+}
+
+// SERVICE/COURSE/TUTTRICK dùng tier nạp tiền + override admin (discountPercent).
+// MMO_PRODUCT (Tài nguyên MMO / Kho nguyên liệu) dùng thêm agentDiscountPercent (Đại lý), ưu tiên cao hơn tier.
+const SERVICE_DISCOUNTABLE: string[] = ["SERVICE", "COURSE", "TUTTRICK"];
+const RESOURCE_DISCOUNTABLE: string[] = ["MMO_PRODUCT"];
+
+async function resolveDiscountPercent(orderType: string, userId: string): Promise<number> {
+  if (SERVICE_DISCOUNTABLE.includes(orderType)) {
+    const userRow = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { discountPercent: true, totalDeposited: true },
+    });
+    if (!userRow) return 0;
+    return getDiscountInfo(Number(userRow.totalDeposited), userRow.discountPercent).pct;
+  }
+  if (RESOURCE_DISCOUNTABLE.includes(orderType)) {
+    return getUserResourceDiscountPercent(userId);
+  }
+  return 0;
 }
 
 function parseVariantArray(raw: unknown): { name: string; price: number }[] {

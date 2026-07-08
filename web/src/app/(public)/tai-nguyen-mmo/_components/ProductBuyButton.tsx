@@ -33,6 +33,13 @@ interface ProductBuyButtonProps {
   compact?: boolean;
   showCartButton?: boolean;
   variants?: ProductVariant[];
+  /** % giảm giá preview (Tài nguyên MMO/Kho nguyên liệu — Đại lý hoặc tier). Không truyền = không hiển thị (SELLER_PRODUCT không áp dụng). */
+  discountPct?: number;
+}
+
+/** Giá hiển thị sau khi áp discount preview — chỉ để hiển thị, giá thật luôn tính lại ở server khi checkout. */
+function applyDiscountPreview(price: number, pct: number): number {
+  return pct > 0 ? Math.round(price * (1 - pct / 100)) : price;
 }
 
 interface OrderResult {
@@ -41,6 +48,12 @@ interface OrderResult {
   deliveredContent?: string;
   deliveredContents?: string[];
   quantity?: number;
+}
+
+interface CouponResult {
+  discountType: "PERCENT" | "FIXED_AMOUNT";
+  discountValue: number;
+  discountedPrice: number;
 }
 
 // ── Star row for confirm popup ────────────────────────────────────────────────
@@ -176,13 +189,13 @@ function DeliveryModal({ result, onClose }: { result: OrderResult; onClose: () =
           {/* Warning */}
           <div className="flex gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-3">
             <AlertTriangle size={13} className="text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-amber-800 leading-relaxed">
-              Vui lòng lưu thông tin này ngay. Bạn có thể xem lại trong mục{" "}
+            <p className="text-[11px] text-gray-800 leading-relaxed">
+              TRUY CẬP ĐỂ KHIẾU NẠI ĐƠN HÀNG ĐỂ ĐƯỢC HỖ TRỢ {"  "}
               <span
                 className="font-semibold underline cursor-pointer"
                 onClick={() => router.push("/don-hang")}
               >
-                Lịch sử đơn hàng
+              "LỊCH SỬ ĐƠN HÀNG "
               </span>.
             </p>
           </div>
@@ -209,6 +222,8 @@ function BuyConfirmPopup({
   onClose,
   loading,
   error,
+  couponCode,
+  couponResult,
 }: {
   props: ProductBuyButtonProps;
   selectedVariant: ProductVariant | null;
@@ -217,6 +232,8 @@ function BuyConfirmPopup({
   onClose: () => void;
   loading: boolean;
   error: string;
+  couponCode: string;
+  couponResult: CouponResult | null;
 }) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -228,7 +245,11 @@ function BuyConfirmPopup({
     };
   }, [onClose]);
 
-  const unitPrice = selectedVariant ? selectedVariant.variantPrice : props.price;
+  const discountPct = props.discountPct ?? 0;
+  const catalogUnitPrice = selectedVariant ? selectedVariant.variantPrice : props.price;
+  const tierDiscountedUnitPrice = applyDiscountPreview(catalogUnitPrice, discountPct);
+  const canUseCoupon = quantity === 1;
+  const unitPrice = canUseCoupon && couponResult ? couponResult.discountedPrice : tierDiscountedUnitPrice;
   const totalPrice = unitPrice * quantity;
 
   return (
@@ -279,6 +300,12 @@ function BuyConfirmPopup({
         {/* Price breakdown */}
         <div className="px-5 pb-4">
           <div className="rounded-xl bg-gray-50 px-4 py-3 space-y-1.5">
+            {discountPct > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-gray-400">Giá gốc</span>
+                <span className="text-[11px] text-gray-400 line-through">{formatVnd(catalogUnitPrice * quantity)}</span>
+              </div>
+            )}
             {quantity > 1 ? (
               <>
                 <div className="flex items-center justify-between">
@@ -290,18 +317,39 @@ function BuyConfirmPopup({
                   <span className="text-sm font-semibold text-gray-700">× {quantity}</span>
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-200 pt-2 mt-1">
-                  <span className="text-xs font-semibold text-gray-600">Thành tiền</span>
+                  <span className="text-xs font-semibold text-gray-600">
+                    Thành tiền
+                    {discountPct > 0 && (
+                      <span className="ml-1.5 text-[10px] font-bold text-emerald-600">-{discountPct}%</span>
+                    )}
+                  </span>
                   <span className="text-xl font-bold text-[#E53E3E]">{formatVnd(totalPrice)}</span>
                 </div>
               </>
             ) : (
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Giá thanh toán</span>
+                <span className="text-xs text-gray-500">
+                  Giá thanh toán
+                  {discountPct > 0 && (
+                    <span className="ml-1.5 text-[10px] font-bold text-emerald-600">-{discountPct}%</span>
+                  )}
+                </span>
                 <span className="text-xl font-bold text-[#E53E3E]">{formatVnd(unitPrice)}</span>
               </div>
             )}
           </div>
         </div>
+
+        {/* Coupon applied (đã áp trên trang sản phẩm) — chỉ hiển thị, không nhập lại ở đây */}
+        {canUseCoupon && couponResult && (
+          <div className="px-5 pb-4">
+            <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-3.5 py-2.5">
+              <span className="text-xs font-semibold text-emerald-700">
+                Đã áp dụng mã &quot;{couponCode}&quot; {couponResult.discountType === "PERCENT" ? `(-${couponResult.discountValue}%)` : `(-${formatVnd(couponResult.discountValue)})`}
+              </span>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="px-5 pb-3">
@@ -340,20 +388,34 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
   const [mounted, setMounted] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
+  const [couponError, setCouponError] = useState("");
+  const [couponChecking, setCouponChecking] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMounted(true); }, []);
 
+  function resetCoupon() {
+    setCouponCode("");
+    setCouponResult(null);
+    setCouponError("");
+  }
+
+  const discountPct = props.discountPct ?? 0;
   const activeVariants = (props.variants ?? []).filter((v) => v.isActive);
   const hasVariants = activeVariants.length > 0;
   const selectedVariant = activeVariants.find((v) => v.id === selectedVariantId) ?? null;
 
   const minVariantPrice = hasVariants ? Math.min(...activeVariants.map((v) => v.variantPrice)) : null;
   const unitPrice = selectedVariant ? selectedVariant.variantPrice : (minVariantPrice ?? props.price);
+  const canUseCoupon = quantity === 1 && (!hasVariants || !!selectedVariantId);
+  const tierDiscountedUnitPrice = applyDiscountPreview(unitPrice, discountPct);
+  const displayUnitPrice = canUseCoupon && couponResult ? couponResult.discountedPrice : tierDiscountedUnitPrice;
   const priceLabel = selectedVariant
-    ? formatVnd(selectedVariant.variantPrice * quantity)
+    ? formatVnd(displayUnitPrice * quantity)
     : hasVariants
-      ? `Từ ${formatVnd(minVariantPrice!)}`
-      : formatVnd(props.price * quantity);
+      ? `Từ ${formatVnd(applyDiscountPreview(minVariantPrice!, discountPct))}`
+      : formatVnd(displayUnitPrice * quantity);
 
   // Quantity is only meaningful when there are items in stock to buy
   const maxQuantity = Math.min(props.available, 100);
@@ -361,6 +423,13 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
 
   function handleQuantityChange(newQty: number) {
     setQuantity(newQty);
+    if (newQty !== 1) resetCoupon();
+  }
+
+  function handleSelectVariant(variantId: string | null) {
+    setSelectedVariantId(variantId);
+    setError("");
+    resetCoupon();
   }
 
   function handleClick() {
@@ -376,6 +445,35 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
     setShowPopup(true);
   }
 
+  async function handleApplyCoupon() {
+    setCouponError("");
+    setCouponChecking(true);
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        credentials: "include",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: couponCode,
+          orderType: props.orderType,
+          productId: props.itemId,
+          orderValue: tierDiscountedUnitPrice,
+          quantity: 1,
+        }),
+      });
+      const json = await res.json() as { data?: CouponResult; error?: string };
+      if (!res.ok || !json.data) {
+        setCouponError(json.error ?? "Mã giảm giá không hợp lệ.");
+        return;
+      }
+      setCouponResult(json.data);
+    } catch {
+      setCouponError("Lỗi kết nối, vui lòng thử lại.");
+    } finally {
+      setCouponChecking(false);
+    }
+  }
+
   async function handleConfirm() {
     setError("");
     setLoading(true);
@@ -387,6 +485,7 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
         quantity,
       };
       if (selectedVariantId) body.variantId = selectedVariantId;
+      if (canUseCoupon && couponResult) body.couponCode = couponCode;
 
       const res = await fetch("/api/orders", {
         credentials: "include",
@@ -400,6 +499,7 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
         return;
       }
       setShowPopup(false);
+      resetCoupon();
       if (json.data.deliveredContent ?? json.data.deliveredContents?.length) {
         setResult(json.data);
       } else {
@@ -428,6 +528,8 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
           onClose={() => { if (!loading) setShowPopup(false); }}
           loading={loading}
           error={error}
+          couponCode={couponCode}
+          couponResult={couponResult}
         />,
         document.body
       )}
@@ -441,7 +543,7 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
               {selectedVariantId && (
                 <button
                   type="button"
-                  onClick={() => { setSelectedVariantId(null); setError(""); }}
+                  onClick={() => handleSelectVariant(null)}
                   className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-red-500 transition-colors"
                 >
                   <X size={11} /> Hủy chọn
@@ -456,7 +558,7 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
                   <button
                     key={v.id}
                     type="button"
-                    onClick={() => { setSelectedVariantId(v.id); setError(""); }}
+                    onClick={() => handleSelectVariant(v.id)}
                     className={`w-full text-left rounded-xl border-2 px-3 py-2.5 transition-all duration-150 ${
                       isSelected
                         ? "border-[#C53030] bg-red-50/60"
@@ -475,9 +577,14 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
                         </p>
                         <p className="text-[11px] text-gray-400 mt-0.5">{v.warranty}</p>
                       </div>
-                      <p className={`text-sm font-bold shrink-0 ${isSelected ? "text-[#C53030]" : "text-gray-700"}`}>
-                        {formatVnd(v.variantPrice)}
-                      </p>
+                      <div className="shrink-0 text-right">
+                        {discountPct > 0 && (
+                          <p className="text-[9px] text-gray-400 line-through leading-none mb-0.5">{formatVnd(v.variantPrice)}</p>
+                        )}
+                        <p className={`text-sm font-bold ${isSelected ? "text-[#C53030]" : "text-gray-700"}`}>
+                          {formatVnd(applyDiscountPreview(v.variantPrice, discountPct))}
+                        </p>
+                      </div>
                     </div>
                   </button>
                 );
@@ -499,23 +606,68 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
           </div>
         )}
 
+        {/* Coupon code — nhập ngay trên trang sản phẩm, không cần mở popup mua */}
+        {!props.compact && props.isLoggedIn && canUseCoupon && (
+          <div className="space-y-1.5">
+            {couponResult ? (
+              <div className="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 px-3.5 py-2.5">
+                <span className="text-xs font-semibold text-emerald-700">
+                  Đã áp dụng mã &quot;{couponCode}&quot; {couponResult.discountType === "PERCENT" ? `(-${couponResult.discountValue}%)` : `(-${formatVnd(couponResult.discountValue)})`}
+                </span>
+                <button type="button" onClick={resetCoupon} className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-800">
+                  Hủy
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="Mã giảm giá (nếu có)"
+                  className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleApplyCoupon()}
+                  disabled={couponChecking || !couponCode.trim()}
+                  className="px-3.5 py-2 rounded-xl bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                >
+                  {couponChecking ? "..." : "Áp dụng"}
+                </button>
+              </div>
+            )}
+            {couponError && <p className="text-[11px] text-red-500">{couponError}</p>}
+          </div>
+        )}
+
         {/* Price summary */}
         {hasVariants && (
           <div className="rounded-xl bg-gray-50 px-4 py-2.5">
             {selectedVariant ? (
               <div className="space-y-1">
+                {discountPct > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-gray-400">Giá gốc</span>
+                    <span className="text-[11px] text-gray-400 line-through">{formatVnd(selectedVariant.variantPrice * quantity)}</span>
+                  </div>
+                )}
                 {quantity > 1 && (
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">Đơn giá</span>
-                    <span className="text-sm text-gray-600">{formatVnd(selectedVariant.variantPrice)}</span>
+                    <span className="text-sm text-gray-600">{formatVnd(displayUnitPrice)}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">
                     {quantity > 1 ? `Thành tiền (×${quantity})` : "Giá thanh toán"}
+                    {canUseCoupon && couponResult ? (
+                      <span className="ml-1.5 text-[10px] font-bold text-emerald-600">Đã áp mã</span>
+                    ) : discountPct > 0 ? (
+                      <span className="ml-1.5 text-[10px] font-bold text-emerald-600">-{discountPct}%</span>
+                    ) : null}
                   </span>
                   <span className="text-lg font-bold text-[#E53E3E]">
-                    {formatVnd(selectedVariant.variantPrice * quantity)}
+                    {formatVnd(displayUnitPrice * quantity)}
                   </span>
                 </div>
               </div>

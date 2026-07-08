@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Download, Copy, Check, Flag, CheckCircle,
-  X, Info, AlertTriangle, Send, Eye,
+  X, Info, AlertTriangle, Send, Eye, MessageCircle,
 } from "lucide-react";
 import SafeHtml from "@/components/shared/SafeHtml";
 import { FaReact } from "react-icons/fa";
@@ -467,12 +467,30 @@ export default function OrderActions({ orderId, itemName, orderType, isDone, has
   const router = useRouter();
   const [showDetail, setShowDetail] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [openingSupportChat, setOpeningSupportChat] = useState(false);
   const [localHasComplaint, setLocalHasComplaint] = useState(hasComplaint);
 
   function handleComplaintSuccess() {
     setShowPopup(false);
     setLocalHasComplaint(true);
     router.refresh();
+  }
+
+  async function handleOpenSupportChat() {
+    if (openingSupportChat) return;
+    setOpeningSupportChat(true);
+    try {
+      const res = await fetch("/api/user/support-tickets", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+      const json = await res.json() as { data?: { id: string }; error?: string };
+      if (json.data) router.push(`/ho-tro?id=st-${json.data.id}`);
+    } finally {
+      setOpeningSupportChat(false);
+    }
   }
 
   return (
@@ -524,9 +542,14 @@ export default function OrderActions({ orderId, itemName, orderType, isDone, has
               <Flag size={11} /> Khiếu nại
             </button>
           ) : (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-gray-400 text-[11px] font-medium whitespace-nowrap" title="Chỉ có thể khiếu nại trong 2 giờ đầu sau khi mua">
-              <Flag size={11} /> Hết hạn KN
-            </span>
+            <button
+              onClick={() => void handleOpenSupportChat()}
+              disabled={openingSupportChat}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-medium hover:bg-blue-100 disabled:opacity-60 transition-colors whitespace-nowrap"
+              title="Đã hết hạn khiếu nại — chat trực tiếp với người bán để được hỗ trợ"
+            >
+              <MessageCircle size={11} /> Chat hỗ trợ
+            </button>
           )
         )}
       </div>

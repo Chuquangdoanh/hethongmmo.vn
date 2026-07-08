@@ -6,7 +6,7 @@ import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { ROLE_LEVELS } from "@/lib/auth/rbac";
 import { r2Url } from "@/lib/utils/image-url";
 import { formatVnd } from "@/lib/utils/format";
-import { CheckCircle, Plus, Store, Wallet, Package, TicketCheck, Send, Settings, MessageCircleWarning, Rocket, Banknote, Share2 } from "lucide-react";
+import { CheckCircle, Plus, Store, Wallet, Package, MessageCircle, Send, Settings, MessageCircleWarning, Rocket, Banknote, Share2 } from "lucide-react";
 import { NAV_LINKS, NAV_ICONS } from "./nav-links";
 import SidebarNav, { type SidebarNavGroup, type SidebarNavItem } from "./SidebarNav";
 import SidebarServiceAccordion from "./SidebarServiceAccordion";
@@ -148,7 +148,7 @@ export default async function Sidebar() {
       ...(sessionUser ? [{
         href: "/ho-tro",
         label: "Hộp thư hỗ trợ",
-        icon: <span className="sb-icon-badge"><TicketCheck size={15} strokeWidth={1.75} /></span>,
+        icon: <span className="sb-icon-badge"><MessageCircle size={15} strokeWidth={1.75} /></span>,
         badge: openTicketCount || undefined,
       }] : []),
       ...(isSeller ? [{

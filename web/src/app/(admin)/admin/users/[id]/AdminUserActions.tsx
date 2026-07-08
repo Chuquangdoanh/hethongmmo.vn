@@ -15,16 +15,17 @@ interface Props {
   currentRole: string;
   currentStatus: string;
   discountPercent: number;
+  agentDiscountPercent: number;
   isSelf: boolean;
 }
 
-export default function AdminUserActions({ userId, currentRole, currentStatus, discountPercent, isSelf }: Props) {
+export default function AdminUserActions({ userId, currentRole, currentStatus, discountPercent, agentDiscountPercent, isSelf }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [selectedRole, setSelectedRole] = useState(currentRole);
   const [confirmRole, setConfirmRole] = useState(false);
-  const [discountInput, setDiscountInput] = useState(String(discountPercent));
+  const [discountAllInput, setDiscountAllInput] = useState(String(discountPercent || agentDiscountPercent));
 
   async function patch(body: Record<string, unknown>, label: string) {
     setLoading(label);
@@ -105,39 +106,44 @@ export default function AdminUserActions({ userId, currentRole, currentStatus, d
         </div>
       )}
 
-      {/* Discount override */}
+      {/* Giảm giá — 1 ô nhập set chung cho cả 2 nhóm (Service/Course/Tut và Tài nguyên MMO/Kho/Khương FB) */}
       <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
         <p className="text-xs text-gray-500 font-medium">
-          Giảm giá khi mua (Service / Khóa học / Tut)
+          Giảm giá (Service / Khóa học / Tut / Tài nguyên MMO / Kho nguyên liệu / Khương FB)
         </p>
         <p className="text-[10px] text-gray-400">
-          0 = dùng tier tự động (Trên 15tr: +5% - Chuyên Gia Tăng Trưởng; Trên 50tr: +10% - Chuyên Gia Bứt Phá; Trên 100tr: +15% - Đối Tác Toàn Diện). &gt;0 = override cứng.
+          0 = Service/Course/Tut dùng tier tự động theo tổng nạp (Trên 15tr: +5%; Trên 50tr: +10%; Trên 100tr: +15%), Tài nguyên MMO/Kho/Khương FB không giảm.
+          &gt;0 = override cứng cho Service/Course/Tut, đồng thời set % Đại lý cho Tài nguyên MMO/Kho/Khương FB (không phụ thuộc tổng nạp, luôn ưu tiên hơn tier).
         </p>
         <div className="flex gap-2 items-center">
           <input
             type="number"
             min={0}
             max={100}
-            value={discountInput}
-            onChange={(e) => setDiscountInput(e.target.value)}
+            value={discountAllInput}
+            onChange={(e) => setDiscountAllInput(e.target.value)}
             placeholder="0-100"
             className="w-24 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-900 focus:border-[#7C3AED] focus:outline-none"
           />
           <span className="text-xs text-gray-500">%</span>
           <button
             onClick={() => {
-              const pct = parseInt(discountInput, 10);
+              const pct = parseInt(discountAllInput, 10);
               if (isNaN(pct) || pct < 0 || pct > 100) { setError("% giảm giá phải từ 0-100."); return; }
-              void patch({ action: "set_discount", discountPercent: pct }, "discount");
+              void patch({ action: "set_discount_all", percent: pct }, "discountAll");
             }}
             disabled={!!loading}
             className="px-3 py-1.5 rounded-md bg-[#7C3AED] text-white text-xs hover:bg-[#A855F7] disabled:opacity-60 transition-colors"
           >
-            {loading === "discount" ? "..." : "Lưu"}
+            {loading === "discountAll" ? "..." : "Lưu"}
           </button>
         </div>
         <p className="text-[10px] text-gray-400">
-          Hiện tại: <span className="font-semibold text-gray-600">{discountPercent > 0 ? `${discountPercent}% (admin override)` : "Tự động theo tier"}</span>
+          Hiện tại: <span className="font-semibold text-gray-600">
+            {discountPercent > 0 ? `${discountPercent}% (Service/Course/Tut)` : "Service/Course/Tut: tự động theo tier"}
+            {" · "}
+            {agentDiscountPercent > 0 ? `${agentDiscountPercent}% (Tài nguyên/Kho/Khương FB)` : "Tài nguyên/Kho/Khương FB: không giảm"}
+          </span>
         </p>
       </div>
 

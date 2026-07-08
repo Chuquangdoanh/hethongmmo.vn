@@ -3,7 +3,10 @@ import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
 import { r2Url } from "@/lib/utils/image-url";
+import { auth } from "@/auth";
+import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
+import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
 import { FaTelegramPlane, FaFacebook } from "react-icons/fa";
 import {
   Building2, BadgeCheck, ShoppingCart, Star,
@@ -40,10 +43,13 @@ export default async function SystemProfilePage({
 }: {
   searchParams: Promise<{ category?: string; sort?: string }>;
 }) {
-  const [sp, cmsData] = await Promise.all([
+  const [sp, cmsData, session] = await Promise.all([
     searchParams,
     getSiteContent<Record<string, unknown>>(SITE_CONTENT_KEYS.PAGE_TAI_NGUYEN),
+    auth(),
   ]);
+  const me = session?.user as AuthenticatedUser | undefined;
+  const discountPct = me ? await getUserResourceDiscountPercent(me.id) : 0;
 
   const contactTitle        = String(cmsData.contactTitle        ?? "Chăm sóc khách hàng Hệ Thống MMO");
   const contactTelegramUrl  = String(cmsData.contactTelegramUrl  ?? "https://t.me/BossMeta789");
@@ -362,9 +368,14 @@ export default async function SystemProfilePage({
                         )}
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-base font-extrabold text-[#e11d48]">
-                          {formatVnd(Number(p.price))}
-                        </span>
+                        <div>
+                          {discountPct > 0 && (
+                            <span className="block text-[10px] text-[#94a3b8] line-through leading-none">{formatVnd(Number(p.price))}</span>
+                          )}
+                          <span className="text-base font-extrabold text-[#e11d48]">
+                            {formatVnd(discountPct > 0 ? Math.round(Number(p.price) * (1 - discountPct / 100)) : Number(p.price))}
+                          </span>
+                        </div>
                         <div className="w-9 h-9 rounded-xl bg-[#0066ff] flex items-center justify-center group-hover:bg-[#0052cc] transition-colors shadow-sm">
                           <ShoppingCart size={15} strokeWidth={2} className="text-white" />
                         </div>

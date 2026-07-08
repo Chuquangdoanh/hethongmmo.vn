@@ -50,7 +50,14 @@ function StarBar({ rating, size = "sm" }: { rating: number; size?: "sm" | "xs" }
   );
 }
 
-function GridCard({ p }: { p: TaiNguyenProductItem }) {
+/** Discount preview chỉ áp dụng cho kind mmo/kfb (Hệ Thống MMO) — không áp dụng sản phẩm seller. */
+function getDisplayPrice(p: TaiNguyenProductItem, discountPct: number): number {
+  const applies = discountPct > 0 && p.kind !== "seller";
+  return applies ? Math.round(p.price * (1 - discountPct / 100)) : p.price;
+}
+
+function GridCard({ p, discountPct }: { p: TaiNguyenProductItem; discountPct: number }) {
+  const showDiscount = discountPct > 0 && p.kind !== "seller";
   return (
     <div className="relative bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-primary/40 transition-all flex flex-col">
       <Link href={p.href} className="absolute inset-0 z-1" aria-label={`Xem chi tiết ${p.name}`} />
@@ -127,8 +134,11 @@ function GridCard({ p }: { p: TaiNguyenProductItem }) {
         )}
 
         <div className="mt-auto pt-1.5 sm:pt-2">
+          {showDiscount && (
+            <span className="block text-[9px] text-text-muted line-through leading-none mb-0.5">{formatVnd(p.price)}</span>
+          )}
           <span className="text-xs font-extrabold text-[#e11d48] whitespace-nowrap leading-none">
-            {formatVnd(p.price)}
+            {formatVnd(getDisplayPrice(p, discountPct))}
           </span>
         </div>
       </div>
@@ -136,7 +146,8 @@ function GridCard({ p }: { p: TaiNguyenProductItem }) {
   );
 }
 
-function ListCard({ p }: { p: TaiNguyenProductItem }) {
+function ListCard({ p, discountPct }: { p: TaiNguyenProductItem; discountPct: number }) {
+  const showDiscount = discountPct > 0 && p.kind !== "seller";
   return (
     <div className="relative bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-primary/40 transition-all flex flex-row">
       <Link href={p.href} className="absolute inset-0 z-1" aria-label={`Xem chi tiết ${p.name}`} />
@@ -205,8 +216,13 @@ function ListCard({ p }: { p: TaiNguyenProductItem }) {
 
         {/* Row 3: giá + review action */}
         <div className="flex items-center justify-between gap-2">
-          <span className="text-base font-extrabold text-[#e11d48] leading-none">
-            {formatVnd(p.price)}
+          <span className="flex items-baseline gap-1.5">
+            {showDiscount && (
+              <span className="text-[10px] text-text-muted line-through leading-none">{formatVnd(p.price)}</span>
+            )}
+            <span className="text-base font-extrabold text-[#e11d48] leading-none">
+              {formatVnd(getDisplayPrice(p, discountPct))}
+            </span>
           </span>
           {p.purchasedByMe && !p.reviewedByMe && (
             <Link
@@ -229,8 +245,11 @@ function ListCard({ p }: { p: TaiNguyenProductItem }) {
 
 export function TaiNguyenProductList({
   products,
+  discountPct = 0,
 }: {
   products: TaiNguyenProductItem[];
+  /** % giảm giá preview cho Hệ Thống MMO (mmo/kfb) — không áp dụng sản phẩm seller. */
+  discountPct?: number;
 }) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
@@ -266,13 +285,13 @@ export function TaiNguyenProductList({
       {viewMode === "grid" ? (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
           {products.map((p) => (
-            <GridCard key={`${p.kind}-${p.id}`} p={p} />
+            <GridCard key={`${p.kind}-${p.id}`} p={p} discountPct={discountPct} />
           ))}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           {products.map((p) => (
-            <ListCard key={`${p.kind}-${p.id}`} p={p} />
+            <ListCard key={`${p.kind}-${p.id}`} p={p} discountPct={discountPct} />
           ))}
         </div>
       )}

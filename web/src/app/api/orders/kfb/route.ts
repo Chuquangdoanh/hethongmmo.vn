@@ -12,6 +12,7 @@ const schema = z.object({
   quantity:          z.number().int().min(1).max(100),
   idempotencyKey:    z.string().min(16).max(64),
   customerNote:      z.string().max(500).optional(),
+  couponCode:        z.string().min(3).max(50).trim().toUpperCase().optional(),
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       quantity:          parsed.data.quantity,
       idempotencyKey:    parsed.data.idempotencyKey,
       customerNote:      parsed.data.customerNote,
+      couponCode:        parsed.data.couponCode,
     });
 
     return apiOk(result);

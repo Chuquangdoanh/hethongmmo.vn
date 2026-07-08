@@ -117,6 +117,7 @@ export default async function AdminUserDetailPage({
       sellerEscrow: true,
       uidPrefix: true,
       discountPercent: true,
+      agentDiscountPercent: true,
       cccdImageUrl: true,
       portraitImageUrl: true,
       sellerRequest: {
@@ -212,6 +213,7 @@ export default async function AdminUserDetailPage({
               currentRole={user.role}
               currentStatus={user.status}
               discountPercent={user.discountPercent}
+              agentDiscountPercent={user.agentDiscountPercent}
               isSelf={user.id === meId}
             />
           </div>

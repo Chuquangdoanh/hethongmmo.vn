@@ -6,12 +6,13 @@ import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatDate } from "@/lib/utils/format";
 import {
-  Search, Clock, CheckCircle, TicketCheck, ShieldAlert,
+  Search, Clock, CheckCircle, ShieldAlert, MessageCircle,
 } from "lucide-react";
 import TicketChatPanel from "./_components/TicketChatPanel";
 import TicketScrollLink from "./_components/TicketScrollLink";
 import ScrollToTop from "@/components/shared/ScrollToTop";
 import BackBtn from "@/components/shared/BackBtn";
+import SupportChatThread from "@/components/shared/SupportChatThread";
 import "./ho-tro.css";
 
 export const metadata: Metadata = { title: "Ticket hỗ trợ" };
@@ -34,6 +35,19 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; border: string }
 const defaultStyle = { bg: "#f8fafc", color: "#64748b", border: "#e2e8f0" };
 
 const ticketCode = (id: string) => `#KN-${id.slice(0, 8).toUpperCase()}`;
+
+/* Item dùng chung cho danh sách hội thoại gộp (Khiếu nại + Chat hỗ trợ) */
+type ConversationRow = {
+  kind: "complaint" | "support";
+  id: string;
+  href: string;
+  updatedAt: string;
+  titleLabel: string;
+  line2: string;
+  line3?: string;
+  lastMsg?: { senderName: string; content: string };
+  statusBadge?: { label: string; bg: string; color: string; border: string };
+};
 
 /* ─── Progress steps ──────────────────────────────────────────── */
 function buildSteps(status: string, createdAt: Date, resolvedAt: Date | null) {
@@ -79,6 +93,10 @@ export default async function HoTroPage({
   const session = await auth();
   const me = session!.user as AuthenticatedUser;
 
+  // Chat hỗ trợ (SupportTicket) dùng id có tiền tố "st-" để phân biệt với Complaint
+  const isSupportTicket = activeId?.startsWith("st-") ?? false;
+  const supportTicketId = isSupportTicket ? activeId!.slice(3) : null;
+
   /* ── Complaint list (left panel) ── */
   const complaints = await prisma.complaint.findMany({
     where: { userId: me.id },
@@ -108,8 +126,18 @@ export default async function HoTroPage({
     : [];
   const orderListMap = new Map(listOrders.map(o => [o.id, o]));
 
+  /* ── Chat hỗ trợ list (left panel) — độc lập với Complaint, không tranh chấp tiền ── */
+  const supportTickets = await prisma.supportTicket.findMany({
+    where: { userId: me.id },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      order: { select: { orderCode: true, itemName: true } },
+      messages: { orderBy: { createdAt: "desc" }, take: 1, select: { senderName: true, content: true } },
+    },
+  });
+
   /* ── Selected complaint ── */
-  const selected = activeId
+  const selected = (activeId && !isSupportTicket)
     ? await prisma.complaint.findFirst({
         where: { id: activeId, userId: me.id },
         include: {
@@ -125,7 +153,17 @@ export default async function HoTroPage({
       })
     : null;
 
-  if (activeId && !selected) redirect("/ho-tro");
+  if (activeId && !isSupportTicket && !selected) redirect("/ho-tro");
+
+  /* ── Selected support ticket ── */
+  const selectedSupportTicket = supportTicketId
+    ? await prisma.supportTicket.findFirst({
+        where: { id: supportTicketId, userId: me.id },
+        include: { order: { select: { orderCode: true, itemName: true } } },
+      })
+    : null;
+
+  if (isSupportTicket && !selectedSupportTicket) redirect("/ho-tro");
 
   const selectedOrder = selected?.orderId
     ? await prisma.order.findFirst({
@@ -206,6 +244,34 @@ export default async function HoTroPage({
     ? buildSteps(selected.status, selected.createdAt, selected.resolvedAt ?? null)
     : null;
 
+  /* ── Danh sách hội thoại (gộp Khiếu nại + Chat hỗ trợ vào 1 tab chung) ── */
+  const conversationItems: ConversationRow[] = [
+    ...complaints.map((c): ConversationRow => {
+      const o  = c.orderId ? orderListMap.get(c.orderId) : null;
+      const st = STATUS_STYLE[c.status] ?? defaultStyle;
+      return {
+        kind: "complaint",
+        id: c.id,
+        href: `/ho-tro?id=${c.id}`,
+        updatedAt: c.updatedAt.toISOString(),
+        titleLabel: ticketCode(c.id),
+        line2: o ? `Đơn #${o.orderCode}` : "Không có đơn hàng",
+        line3: o?.itemName ?? c.subject,
+        lastMsg: c.chatRoom?.messages[0],
+        statusBadge: { label: STATUS_LABEL[c.status] ?? c.status, ...st },
+      };
+    }),
+    ...supportTickets.map((t): ConversationRow => ({
+      kind: "support",
+      id: t.id,
+      href: `/ho-tro?id=st-${t.id}`,
+      updatedAt: t.updatedAt.toISOString(),
+      titleLabel: `Đơn #${t.order.orderCode}`,
+      line2: t.order.itemName,
+      lastMsg: t.messages[0],
+    })),
+  ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
   const STATUS_TABS = [
     { key: "IN_REVIEW",     label: "Đang xử lý" },
     { key: "PENDING_ADMIN", label: "Đã phản hồi" },
@@ -228,7 +294,7 @@ export default async function HoTroPage({
               fontSize: "10px", padding: "2px 8px", background: "#f1f5f9",
               borderRadius: "20px", border: "1px solid #e2e8f0", color: "#64748b",
             }}>
-              {complaints.length} ticket
+              {conversationItems.length} hội thoại
             </span>
           </div>
           <div className="ht-search">
@@ -238,25 +304,22 @@ export default async function HoTroPage({
         </div>
 
         <div className="ht-sidebar-list">
-          {complaints.length === 0 ? (
+          {conversationItems.length === 0 ? (
             <div style={{ padding: "40px 16px", textAlign: "center" }}>
-              <TicketCheck size={28} style={{ color: "#cbd5e1", margin: "0 auto 8px", display: "block" }} />
-              <p style={{ fontSize: "12px", color: "#94a3b8" }}>Chưa có ticket nào</p>
+              <MessageCircle size={28} style={{ color: "#cbd5e1", margin: "0 auto 8px", display: "block" }} />
+              <p style={{ fontSize: "12px", color: "#94a3b8" }}>Chưa có hội thoại nào</p>
               <p style={{ fontSize: "11px", color: "#cbd5e1", marginTop: "4px" }}>
-                Khiếu nại đơn hàng để tạo ticket hỗ trợ
+                Khiếu nại hoặc chat hỗ trợ đơn hàng để tạo hội thoại
               </p>
             </div>
           ) : (
-            complaints.map(c => {
-              const o        = c.orderId ? orderListMap.get(c.orderId) : null;
-              const isActive = c.id === activeId;
-              const lastMsg  = c.chatRoom?.messages[0];
-              const st       = STATUS_STYLE[c.status] ?? defaultStyle;
+            conversationItems.map((item) => {
+              const isActive = activeId === (item.kind === "complaint" ? item.id : `st-${item.id}`);
 
               return (
                 <TicketScrollLink
-                  key={c.id}
-                  href={`/ho-tro?id=${c.id}`}
+                  key={`${item.kind}-${item.id}`}
+                  href={item.href}
                   className={`ht-ticket-item${isActive ? " ht-ticket-item--active" : ""}`}
                 >
                   <div style={{ display: "flex", gap: "8px", justifyContent: "space-between" }}>
@@ -264,42 +327,56 @@ export default async function HoTroPage({
                       <p style={{
                         fontSize: "12px", fontWeight: "700",
                         color: isActive ? "#1d4ed8" : "#1e293b", marginBottom: "2px",
+                        display: "flex", alignItems: "center", gap: "4px",
                       }}>
-                        {ticketCode(c.id)}
+                        {item.kind === "support" && <MessageCircle size={11} style={{ flexShrink: 0 }} />}
+                        {item.titleLabel}
                       </p>
                       <p style={{
                         fontSize: "11px", color: "#475569",
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                         marginBottom: "1px",
                       }}>
-                        {o ? `Đơn #${o.orderCode}` : "Không có đơn hàng"}
+                        {item.line2}
                       </p>
-                      <p style={{
-                        fontSize: "11px", color: "#64748b",
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                      }}>
-                        {o?.itemName ?? c.subject}
-                      </p>
-                      {lastMsg && (
+                      {item.line3 && (
+                        <p style={{
+                          fontSize: "11px", color: "#64748b",
+                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        }}>
+                          {item.line3}
+                        </p>
+                      )}
+                      {item.lastMsg && (
                         <p style={{
                           fontSize: "10px", color: "#94a3b8", marginTop: "2px",
                           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                         }}>
-                          {lastMsg.senderName}: {lastMsg.content}
+                          {item.lastMsg.senderName}: {item.lastMsg.content}
                         </p>
                       )}
                     </div>
                     <div style={{ flexShrink: 0, textAlign: "right" }}>
                       <p style={{ fontSize: "10px", color: "#94a3b8", marginBottom: "5px" }}>
-                        {new Date(c.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}
+                        {new Date(item.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}
                       </p>
-                      <span style={{
-                        display: "inline-block", fontSize: "9px", padding: "2px 7px",
-                        borderRadius: "10px", fontWeight: "600",
-                        background: st.bg, color: st.color, border: `1px solid ${st.border}`,
-                      }}>
-                        {STATUS_LABEL[c.status] ?? c.status}
-                      </span>
+                      {item.statusBadge ? (
+                        <span style={{
+                          display: "inline-block", fontSize: "9px", padding: "2px 7px",
+                          borderRadius: "10px", fontWeight: "600",
+                          background: item.statusBadge.bg, color: item.statusBadge.color, border: `1px solid ${item.statusBadge.border}`,
+                        }}>
+                          {item.statusBadge.label}
+                        </span>
+                      ) : (
+                        <span style={{
+                          display: "inline-block", fontSize: "9px", padding: "2px 7px",
+                          borderRadius: "10px", fontWeight: "600",
+                          background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe",
+                        }}>
+                          Chat hỗ trợ
+                        </span>
+                      )}
                     </div>
                   </div>
                 </TicketScrollLink>
@@ -466,9 +543,35 @@ export default async function HoTroPage({
             )}
           </div>
         </div>
+      ) : selectedSupportTicket ? (
+        <div className="ht-middle">
+          {/* Title bar — chat hỗ trợ thuần túy, không progress steps, không status tabs */}
+          <div className="ht-title-bar">
+            <BackBtn href="/ho-tro" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a", margin: 0 }}>
+                Chat hỗ trợ với người bán
+              </h1>
+              <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
+                <Link href="/don-hang" style={{ color: "#2563eb", fontWeight: "600", textDecoration: "none" }}>
+                  Đơn #{selectedSupportTicket.order.orderCode}
+                </Link>
+                <span style={{ margin: "0 6px", color: "#e2e8f0" }}>·</span>
+                <span>{selectedSupportTicket.order.itemName}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Chat area */}
+          <div className="ht-chat-area">
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
+              <SupportChatThread ticketId={selectedSupportTicket.id} myRole="USER" />
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="ht-middle ht-middle--empty">
-          <TicketCheck size={44} style={{ color: "#cbd5e1" }} />
+          <MessageCircle size={44} style={{ color: "#cbd5e1" }} />
           <p style={{ fontSize: "14px", fontWeight: "600", color: "#94a3b8" }}>Chọn ticket để xem chi tiết</p>
           <p style={{ fontSize: "12px", color: "#cbd5e1" }}>Chọn một khiếu nại từ danh sách bên trái</p>
         </div>

@@ -153,7 +153,7 @@ export default function UserMenu({ user, balance, avatarUrl }: UserMenuProps) {
           </div>
 
           <MenuItem href="/thong-tin-ca-nhan"              Icon={User}            label="Hồ sơ cá nhân"    onClick={() => setOpen(false)} />
-          <MenuItem href="/ho-tro"                          Icon={TicketCheck}     label="Ticket hỗ trợ"   onClick={() => setOpen(false)} />
+          
           <MenuItem href="/nap-tien"                        Icon={CreditCard}      label="Nạp tiền"         onClick={() => setOpen(false)} />
 
           {isSeller ? (

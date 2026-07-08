@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { KhoProductList } from "./_components/KhoProductList";
 import type { KhoProductItem } from "./_components/KhoProductList";
+import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
 
 export const metadata: Metadata = buildMeta({
   title: "Kho Tài Nguyên MMO | Tài Khoản & Công Cụ Số Chất Lượng Cao",
@@ -247,6 +248,8 @@ export default async function KhoTaiNguyenPage({
       mmoProductIds: filteredMmoProducts.map((p) => p.id),
       sellerProductIds: filteredProducts.map((p) => p.id),
     });
+  // Discount preview (Đại lý/tier) — chỉ áp dụng kind mmo/kfb, không áp dụng seller
+  const discountPct = me ? await getUserResourceDiscountPercent(me.id) : 0;
 
   // Build platform stats (seller + mmo)
   const platformProductCount = new Map<string, number>();
@@ -490,6 +493,7 @@ export default async function KhoTaiNguyenPage({
                   isFavorite: item.isFavorite,
                   kind: item.kind,
                 }))}
+                discountPct={discountPct}
               />
             )}
 

@@ -31,6 +31,14 @@ const patchSchema = z.discriminatedUnion("action", [
     discountPercent: z.number().int().min(0).max(100),
   }),
   z.object({
+    action: z.literal("set_agent_discount"),
+    agentDiscountPercent: z.number().int().min(0).max(100),
+  }),
+  z.object({
+    action: z.literal("set_discount_all"),
+    percent: z.number().int().min(0).max(100),
+  }),
+  z.object({
     action: z.literal("adjust_escrow"),
     amount: z.number().refine((n) => n !== 0, "Số tiền không được bằng 0"),
     note: z.string().min(1).max(500).optional(),
@@ -53,6 +61,7 @@ export async function GET(
         id: true, email: true, fullName: true, phone: true,
         role: true, status: true,
         balance: true, totalDeposited: true, totalSpent: true,
+        discountPercent: true, agentDiscountPercent: true,
         sellerStatus: true, sellerCategory: true, maxSellerProducts: true,
         twoFactorEnabled: true,
         lastLoginAt: true, lastLoginIp: true,
@@ -262,6 +271,49 @@ export async function PATCH(
         });
       });
       logger.info({ adminId: admin.id, targetUserId: id, discountPercent }, "Admin set user discount");
+      return apiSuccess();
+    }
+
+    if (action === "set_agent_discount") {
+      const { agentDiscountPercent } = parsed.data as Extract<(typeof parsed)["data"], { action: "set_agent_discount" }>;
+      await prisma.$transaction(async (tx) => {
+        const before = await tx.user.findUniqueOrThrow({ where: { id }, select: { agentDiscountPercent: true } });
+        await tx.user.update({ where: { id }, data: { agentDiscountPercent } });
+        await tx.auditLog.create({
+          data: {
+            actorId: admin.id,
+            action: "ADMIN_SET_AGENT_DISCOUNT",
+            targetType: "User",
+            targetId: id,
+            before: { agentDiscountPercent: before.agentDiscountPercent },
+            after: { agentDiscountPercent },
+          },
+        });
+      });
+      logger.info({ adminId: admin.id, targetUserId: id, agentDiscountPercent }, "Admin set user agent discount");
+      return apiSuccess();
+    }
+
+    if (action === "set_discount_all") {
+      const { percent } = parsed.data as Extract<(typeof parsed)["data"], { action: "set_discount_all" }>;
+      await prisma.$transaction(async (tx) => {
+        const before = await tx.user.findUniqueOrThrow({
+          where: { id },
+          select: { discountPercent: true, agentDiscountPercent: true },
+        });
+        await tx.user.update({ where: { id }, data: { discountPercent: percent, agentDiscountPercent: percent } });
+        await tx.auditLog.create({
+          data: {
+            actorId: admin.id,
+            action: "ADMIN_SET_DISCOUNT_ALL",
+            targetType: "User",
+            targetId: id,
+            before: { discountPercent: before.discountPercent, agentDiscountPercent: before.agentDiscountPercent },
+            after: { discountPercent: percent, agentDiscountPercent: percent },
+          },
+        });
+      });
+      logger.info({ adminId: admin.id, targetUserId: id, percent }, "Admin set combined discount (all)");
       return apiSuccess();
     }
 

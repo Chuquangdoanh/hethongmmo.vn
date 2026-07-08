@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, MessageCircleWarning } from "lucide-react";
+import { Search, MessageCircleWarning, MessageCircle } from "lucide-react";
 import TicketScrollLink from "@/app/(user)/ho-tro/_components/TicketScrollLink";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -30,41 +30,59 @@ export interface ComplaintListItem {
   lastMsgContent?: string;
 }
 
+export interface SupportTicketListItem {
+  id: string;
+  updatedAt: string;
+  buyerName: string;
+  orderCode: string;
+  itemName: string;
+  lastMsgSenderName?: string;
+  lastMsgContent?: string;
+}
+
+export type ConversationItem =
+  | ({ kind: "complaint" } & ComplaintListItem)
+  | ({ kind: "support" } & SupportTicketListItem);
+
 const ticketCode = (id: string) => `#KN-${id.slice(0, 8).toUpperCase()}`;
 
+function codeLabel(item: ConversationItem): string {
+  return item.kind === "complaint" ? ticketCode(item.id) : `Đơn #${item.orderCode}`;
+}
+
 interface Props {
-  complaints: ComplaintListItem[];
+  items: ConversationItem[];
   activeId?: string;
 }
 
-export default function SellerKhieuNaiSidebar({ complaints, activeId }: Props) {
+export default function SellerKhieuNaiSidebar({ items, activeId }: Props) {
   const [query, setQuery] = useState("");
 
   const filtered = query.trim()
-    ? complaints.filter((c) => {
+    ? items.filter((item) => {
         const q = query.toLowerCase();
         return (
-          ticketCode(c.id).toLowerCase().includes(q) ||
-          c.buyerName.toLowerCase().includes(q) ||
-          c.subject.toLowerCase().includes(q) ||
-          (c.orderCode?.toLowerCase().includes(q) ?? false) ||
-          (c.itemName?.toLowerCase().includes(q) ?? false)
+          codeLabel(item).toLowerCase().includes(q) ||
+          item.buyerName.toLowerCase().includes(q) ||
+          (item.kind === "complaint" && item.subject.toLowerCase().includes(q)) ||
+          (item.orderCode?.toLowerCase().includes(q) ?? false) ||
+          (item.itemName?.toLowerCase().includes(q) ?? false)
         );
       })
-    : complaints;
+    : items;
 
   return (
     <>
       <div className="ht-sidebar-head">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a" }}>
-            Khiếu nại từ khách
+            Danh sách hội thoại
           </span>
           <span style={{
             fontSize: "10px", padding: "2px 8px", background: "#f1f5f9",
             borderRadius: "20px", border: "1px solid #e2e8f0", color: "#64748b",
           }}>
-            {query.trim() ? `${filtered.length}/${complaints.length}` : `${complaints.length}`} khiếu nại
+            {query.trim() ? `${filtered.length}/${items.length}` : `${items.length}`} hội thoại
           </span>
         </div>
         <div className="ht-search">
@@ -100,7 +118,7 @@ export default function SellerKhieuNaiSidebar({ complaints, activeId }: Props) {
           <div style={{ padding: "40px 16px", textAlign: "center" }}>
             <MessageCircleWarning size={28} style={{ color: "#cbd5e1", margin: "0 auto 8px", display: "block" }} />
             <p style={{ fontSize: "12px", color: "#94a3b8" }}>
-              {query.trim() ? "Không tìm thấy khiếu nại nào" : "Chưa có khiếu nại nào"}
+              {query.trim() ? "Không tìm thấy hội thoại nào" : "Chưa có hội thoại nào"}
             </p>
             {query.trim() ? (
               <p style={{ fontSize: "11px", color: "#cbd5e1", marginTop: "4px" }}>
@@ -113,14 +131,14 @@ export default function SellerKhieuNaiSidebar({ complaints, activeId }: Props) {
             )}
           </div>
         ) : (
-          filtered.map((c) => {
-            const isActive = c.id === activeId;
-            const st = STATUS_STYLE[c.status] ?? defaultStyle;
+          filtered.map((item) => {
+            const id = item.kind === "complaint" ? item.id : `st-${item.id}`;
+            const isActive = id === activeId;
 
             return (
               <TicketScrollLink
-                key={c.id}
-                href={`/ban-hang/khieu-nai?id=${c.id}`}
+                key={`${item.kind}-${item.id}`}
+                href={`/ban-hang/khieu-nai?id=${id}`}
                 className={`ht-ticket-item${isActive ? " ht-ticket-item--active" : ""}`}
               >
                 <div style={{ display: "flex", gap: "8px", justifyContent: "space-between" }}>
@@ -128,42 +146,58 @@ export default function SellerKhieuNaiSidebar({ complaints, activeId }: Props) {
                     <p style={{
                       fontSize: "12px", fontWeight: "700",
                       color: isActive ? "#ea580c" : "#1e293b", marginBottom: "2px",
+                      display: "flex", alignItems: "center", gap: "4px",
                     }}>
-                      {ticketCode(c.id)}
+                      {item.kind === "support" && <MessageCircle size={11} style={{ flexShrink: 0 }} />}
+                      {codeLabel(item)}
                     </p>
                     <p style={{
                       fontSize: "11px", color: "#475569",
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                       marginBottom: "1px",
                     }}>
-                      Từ: {c.buyerName}
+                      Từ: {item.buyerName}
                     </p>
                     <p style={{
                       fontSize: "11px", color: "#64748b",
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                     }}>
-                      {c.orderCode ? `Đơn #${c.orderCode} · ${c.itemName}` : c.subject}
+                      {item.kind === "complaint"
+                        ? (item.orderCode ? `Đơn #${item.orderCode} · ${item.itemName}` : item.subject)
+                        : item.itemName}
                     </p>
-                    {c.lastMsgContent && (
+                    {item.lastMsgContent && (
                       <p style={{
                         fontSize: "10px", color: "#94a3b8", marginTop: "2px",
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                       }}>
-                        {c.lastMsgSenderName}: {c.lastMsgContent}
+                        {item.lastMsgSenderName}: {item.lastMsgContent}
                       </p>
                     )}
                   </div>
                   <div style={{ flexShrink: 0, textAlign: "right" }}>
                     <p style={{ fontSize: "10px", color: "#94a3b8", marginBottom: "5px" }}>
-                      {new Date(c.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}
+                      {new Date(item.updatedAt).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}
                     </p>
-                    <span style={{
-                      display: "inline-block", fontSize: "9px", padding: "2px 7px",
-                      borderRadius: "10px", fontWeight: "600",
-                      background: st.bg, color: st.color, border: `1px solid ${st.border}`,
-                    }}>
-                      {STATUS_LABEL[c.status] ?? c.status}
-                    </span>
+                    {item.kind === "complaint" ? (
+                      <span style={{
+                        display: "inline-block", fontSize: "9px", padding: "2px 7px",
+                        borderRadius: "10px", fontWeight: "600",
+                        background: (STATUS_STYLE[item.status] ?? defaultStyle).bg,
+                        color: (STATUS_STYLE[item.status] ?? defaultStyle).color,
+                        border: `1px solid ${(STATUS_STYLE[item.status] ?? defaultStyle).border}`,
+                      }}>
+                        {STATUS_LABEL[item.status] ?? item.status}
+                      </span>
+                    ) : (
+                      <span style={{
+                        display: "inline-block", fontSize: "9px", padding: "2px 7px",
+                        borderRadius: "10px", fontWeight: "600",
+                        background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe",
+                      }}>
+                        Chat hỗ trợ
+                      </span>
+                    )}
                   </div>
                 </div>
               </TicketScrollLink>

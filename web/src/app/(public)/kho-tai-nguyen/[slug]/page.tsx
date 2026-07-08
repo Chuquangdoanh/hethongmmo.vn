@@ -17,6 +17,7 @@ import {
 import { getFavoriteStatus } from "@/lib/services/favorite.service";
 import FavoriteButton from "@/components/shared/FavoriteButton";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
+import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
 
 export async function generateMetadata({
   params,
@@ -131,7 +132,7 @@ export default async function KhoMmoProductDetailPage({
     isActive: v.isActive,
   }));
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, favoriteStatus, contactCms] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, favoriteStatus, contactCms, discountPct] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "MMO_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -167,6 +168,7 @@ export default async function KhoMmoProductDetailPage({
     }),
     getFavoriteStatus(me?.id, "MMO_PRODUCT", product.id),
     getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT),
+    me ? getUserResourceDiscountPercent(me.id) : Promise.resolve(0),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
@@ -346,8 +348,15 @@ export default async function KhoMmoProductDetailPage({
       {/* Price + stock */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-3xl font-black text-[#e11d48]">{formatVnd(Number(product.price))}</p>
-         
+          {discountPct > 0 && (
+            <p className="text-sm text-[#94a3b8] line-through">{formatVnd(Number(product.price))}</p>
+          )}
+          <p className="text-3xl font-black text-[#e11d48]">
+            {formatVnd(discountPct > 0 ? Math.round(Number(product.price) * (1 - discountPct / 100)) : Number(product.price))}
+          </p>
+          {discountPct > 0 && (
+            <span className="text-[11px] font-bold text-emerald-600">-{discountPct}% cho bạn</span>
+          )}
         </div>
         <div className={`flex items-center gap-1.5 text-sm font-semibold ${isOutOfStock ? "text-danger" : "text-[#10b981]"}`}>
           {isOutOfStock ? <XCircle size={16} strokeWidth={2} /> : <CheckCircle size={16} strokeWidth={2} />}
@@ -372,6 +381,7 @@ export default async function KhoMmoProductDetailPage({
           available={available}
           totalSold={product.totalOrders}
           variants={variants.length > 0 ? variants : undefined}
+          discountPct={discountPct}
         />
       )}
 
