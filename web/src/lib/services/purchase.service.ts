@@ -14,6 +14,8 @@ import { randomBytes } from "crypto";
 import { notifyPurchaseSuccess, notifySellerNewOrder } from "@/lib/services/telegram-alert.service";
 import { createAffiliateCommission } from "@/lib/services/affiliate-commission.service";
 import { redeemCouponInTransaction } from "@/lib/services/coupon.service";
+import { LIMITS } from "@/lib/constants/limits";
+import { formatVnd } from "@/lib/utils/format";
 
 // ── Course deposit constants ──────────────────────────────────────────────────
 export const COURSE_DEPOSIT_AMOUNT = 5_000_000;
@@ -116,6 +118,16 @@ export async function purchaseProduct(params: PurchaseParams): Promise<PurchaseR
     if (!userRow) throw new NotFoundError("User");
 
     const balanceBefore = new Decimal(userRow.balance);
+
+    // Tut-trick: yêu cầu số dư tối thiểu, độc lập với giá tài liệu
+    if (orderType === "TUTTRICK" && balanceBefore.lt(LIMITS.TUTTRICK_MIN_BALANCE)) {
+      throw new AppError(
+        `Số dư tài khoản phải từ ${formatVnd(LIMITS.TUTTRICK_MIN_BALANCE)} trở lên mới có thể mua tài liệu.`,
+        "TUTTRICK_MIN_BALANCE_REQUIRED",
+        402,
+      );
+    }
+
     if (balanceBefore.lt(price)) {
       throw new InsufficientBalanceError(balanceBefore.toNumber(), price.toNumber());
     }

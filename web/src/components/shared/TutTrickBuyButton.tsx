@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { formatVnd } from "@/lib/utils/format";
+import { LIMITS } from "@/lib/constants/limits";
 import SafeHtml from "@/components/shared/SafeHtml";
 import {
   X, CheckCircle, Copy, Check, AlertTriangle,
@@ -243,7 +244,8 @@ function BuyConfirmPopup({
   }, [onClose]);
 
   const remaining = !isFree && balance !== null ? balance - discountedPrice : null;
-  const isInsufficient = !isFree && remaining !== null && remaining < 0;
+  const isBelowMinBalance = balance !== null && balance < LIMITS.TUTTRICK_MIN_BALANCE;
+  const isInsufficient = (!isFree && remaining !== null && remaining < 0) || isBelowMinBalance;
 
   // Dòng chi tiết dịch vụ (không bao gồm rating/khách hàng — đã đưa lên stats bar)
   const rows: Array<{ label: string; value: React.ReactNode; variant?: "emerald" | "red" }> = [
@@ -350,7 +352,11 @@ function BuyConfirmPopup({
         {/* Cảnh báo số dư không đủ */}
         {isInsufficient && (
           <div className="px-5 py-2.5 bg-red-50 border-t border-red-100">
-            <p className="text-xs text-red-600 font-medium">Số dư không đủ. Vui lòng nạp thêm tiền.</p>
+            <p className="text-xs text-red-600 font-medium">
+              {isBelowMinBalance
+                ? `Số dư tài khoản phải từ ${formatVnd(LIMITS.TUTTRICK_MIN_BALANCE)} trở lên mới có thể mua tài liệu.`
+                : "Số dư không đủ. Vui lòng nạp thêm tiền."}
+            </p>
           </div>
         )}
 
