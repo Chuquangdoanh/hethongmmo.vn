@@ -56,7 +56,7 @@ function getDisplayPrice(p: TaiNguyenProductItem, discountPct: number): number {
   return applies ? Math.round(p.price * (1 - discountPct / 100)) : p.price;
 }
 
-function GridCard({ p, discountPct }: { p: TaiNguyenProductItem; discountPct: number }) {
+function GridCard({ p, discountPct, priority = false }: { p: TaiNguyenProductItem; discountPct: number; priority?: boolean }) {
   const showDiscount = discountPct > 0 && p.kind !== "seller";
   return (
     <div className="relative bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-primary/40 transition-all flex flex-col">
@@ -69,7 +69,8 @@ function GridCard({ p, discountPct }: { p: TaiNguyenProductItem; discountPct: nu
             <img
               src={r2Url(p.imageUrl)}
               alt={p.name}
-              loading="lazy"
+              loading={priority ? "eager" : "lazy"}
+              fetchPriority={priority ? "high" : undefined}
               decoding="async"
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
             />
@@ -146,7 +147,7 @@ function GridCard({ p, discountPct }: { p: TaiNguyenProductItem; discountPct: nu
   );
 }
 
-function ListCard({ p, discountPct }: { p: TaiNguyenProductItem; discountPct: number }) {
+function ListCard({ p, discountPct, priority = false }: { p: TaiNguyenProductItem; discountPct: number; priority?: boolean }) {
   const showDiscount = discountPct > 0 && p.kind !== "seller";
   return (
     <div className="relative bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-primary/40 transition-all flex flex-row">
@@ -159,7 +160,8 @@ function ListCard({ p, discountPct }: { p: TaiNguyenProductItem; discountPct: nu
             <img
               src={r2Url(p.imageUrl)}
               alt={p.name}
-              loading="lazy"
+              loading={priority ? "eager" : "lazy"}
+              fetchPriority={priority ? "high" : undefined}
               decoding="async"
               className="absolute inset-0 w-full h-full object-cover"
             />
@@ -284,14 +286,14 @@ export function TaiNguyenProductList({
 
       {viewMode === "grid" ? (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
-          {products.map((p) => (
-            <GridCard key={`${p.kind}-${p.id}`} p={p} discountPct={discountPct} />
+          {products.map((p, i) => (
+            <GridCard key={`${p.kind}-${p.id}`} p={p} discountPct={discountPct} priority={i < 6} />
           ))}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {products.map((p) => (
-            <ListCard key={`${p.kind}-${p.id}`} p={p} discountPct={discountPct} />
+          {products.map((p, i) => (
+            <ListCard key={`${p.kind}-${p.id}`} p={p} discountPct={discountPct} priority={i < 6} />
           ))}
         </div>
       )}

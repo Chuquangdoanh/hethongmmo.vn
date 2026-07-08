@@ -55,7 +55,7 @@ function getDisplayPrice(item: KhoProductItem, discountPct: number): number {
   return applies ? Math.round(item.price * (1 - discountPct / 100)) : item.price;
 }
 
-function GridCard({ item, discountPct }: { item: KhoProductItem; discountPct: number }) {
+function GridCard({ item, discountPct, priority = false }: { item: KhoProductItem; discountPct: number; priority?: boolean }) {
   const { name, imageUrl, price, salesCount, isNew, isHot, href, bought, rated, review, available: avail, kind } = item;
   const showDiscount = discountPct > 0 && kind !== "seller";
   return (
@@ -69,7 +69,8 @@ function GridCard({ item, discountPct }: { item: KhoProductItem; discountPct: nu
             <img
               src={r2Url(imageUrl)}
               alt={name}
-              loading="lazy"
+              loading={priority ? "eager" : "lazy"}
+              fetchPriority={priority ? "high" : undefined}
               decoding="async"
               className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
             />
@@ -143,7 +144,7 @@ function GridCard({ item, discountPct }: { item: KhoProductItem; discountPct: nu
   );
 }
 
-function ListCard({ item, discountPct }: { item: KhoProductItem; discountPct: number }) {
+function ListCard({ item, discountPct, priority = false }: { item: KhoProductItem; discountPct: number; priority?: boolean }) {
   const { name, imageUrl, category, price, salesCount, isNew, isHot, href, bought, rated, review, available: avail, kind } = item;
   const showDiscount = discountPct > 0 && kind !== "seller";
   return (
@@ -157,7 +158,8 @@ function ListCard({ item, discountPct }: { item: KhoProductItem; discountPct: nu
             <img
               src={r2Url(imageUrl)}
               alt={name}
-              loading="lazy"
+              loading={priority ? "eager" : "lazy"}
+              fetchPriority={priority ? "high" : undefined}
               decoding="async"
               className="absolute inset-0 w-full h-full object-cover"
             />
@@ -281,14 +283,14 @@ export function KhoProductList({
 
       {viewMode === "grid" ? (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
-          {products.map((item) => (
-            <GridCard key={item.id} item={item} discountPct={discountPct} />
+          {products.map((item, i) => (
+            <GridCard key={item.id} item={item} discountPct={discountPct} priority={i < 6} />
           ))}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {products.map((item) => (
-            <ListCard key={item.id} item={item} discountPct={discountPct} />
+          {products.map((item, i) => (
+            <ListCard key={item.id} item={item} discountPct={discountPct} priority={i < 6} />
           ))}
         </div>
       )}

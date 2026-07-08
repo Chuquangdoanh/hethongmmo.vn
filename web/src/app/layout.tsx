@@ -53,6 +53,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {nonce && (
           <meta name="csp-nonce" content={nonce} />
         )}
+        <link rel="preconnect" href="https://cdn.hethongmmo.vn" />
+        <link rel="dns-prefetch" href="https://cdn.hethongmmo.vn" />
       </head>
       <body className="min-h-full flex flex-col bg-white text-[#0f172a] font-sans">
         {/* PageTransitionWrapper intentionally NOT here — each route group
