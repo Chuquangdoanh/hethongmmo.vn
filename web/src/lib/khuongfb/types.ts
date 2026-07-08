@@ -72,3 +72,12 @@ export interface KhuongfbApiError {
   message?: string;
   error?: string;
 }
+
+/** Đọc số lượng tồn kho từ rawData đã sync (field "amount" hoặc "số tiền" tuỳ provider) — dùng chung cho admin CMS và trang danh sách công khai. */
+export function extractKhuongfbStockAmount(rawData: unknown): number | null {
+  if (rawData == null || typeof rawData !== "object") return null;
+  const rd = rawData as Record<string, unknown>;
+  if (typeof rd.amount === "number") return rd.amount;
+  if (typeof rd["số tiền"] === "number") return rd["số tiền"];
+  return null;
+}

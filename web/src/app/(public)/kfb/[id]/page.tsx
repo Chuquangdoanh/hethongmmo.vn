@@ -198,8 +198,8 @@ export default async function KfbProductDetailPage({
           <ShoppingCart size={80} strokeWidth={1} className="text-[#cbd5e1]" />
         </div>
       )}
-      {/* Nút yêu thích — cuối DOM + z-index cao nhất, luôn đứng trên mọi ảnh */}
-      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 9999 }}>
+      {/* Nút yêu thích — đứng trên ảnh nhưng thấp hơn thanh marquee (900) và popup (9999) */}
+      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 5 }}>
         <FavoriteButton
           productId={product.id}
           productType="KHUONGFB_PRODUCT"

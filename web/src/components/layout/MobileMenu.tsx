@@ -410,7 +410,7 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
                   </Link>
                   <Link href="/don-hang" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
                     <span className="mnav-acc-icon-badge"><Package size={16} /></span>
-                    <span>Đơn hàng của tôi</span>
+                    <span>Lịch sử mua hàng</span>
                     <ChevronRight size={14} className="mnav-acc-chevron" />
                   </Link>
                   <Link href="/ho-tro" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
@@ -482,7 +482,7 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
                       <span>Seller Center</span>
                       <ChevronRight size={14} className="mnav-acc-chevron" />
                     </Link>
-                    <Link href="/ban-hang/san-pham" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
+                    <Link href="/san-pham" prefetch={false} className="mnav-acc-item" onClick={closeWithNav}>
                       <span className="mnav-acc-icon-badge"><Grid3x3 size={16} /></span>
                       <span>Sản phẩm của tôi</span>
                       <ChevronRight size={14} className="mnav-acc-chevron" />

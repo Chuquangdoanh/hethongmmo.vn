@@ -223,8 +223,8 @@ export default async function KhoMmoProductDetailPage({
           </span>
         </div>
       )}
-      {/* Nút yêu thích — cuối DOM + z-index cao nhất, luôn đứng trên mọi ảnh */}
-      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 9999 }}>
+      {/* Nút yêu thích — đứng trên ảnh nhưng thấp hơn thanh marquee (900) và popup (9999) */}
+      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 5 }}>
         <FavoriteButton
           productId={product.id}
           productType="MMO_PRODUCT"

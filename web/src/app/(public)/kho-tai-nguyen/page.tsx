@@ -18,6 +18,7 @@ import {
 import { KhoProductList } from "./_components/KhoProductList";
 import type { KhoProductItem } from "./_components/KhoProductList";
 import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
+import { extractKhuongfbStockAmount } from "@/lib/khuongfb/types";
 
 export const metadata: Metadata = buildMeta({
   title: "Kho Tài Nguyên MMO | Tài Khoản & Công Cụ Số Chất Lượng Cao",
@@ -197,6 +198,7 @@ export default async function KhoTaiNguyenPage({
         externalCategory: true, description: true, createdAt: true,
         resourceCategory: { select: { name: true } },
         subCategory:      { select: { name: true } },
+        rawData: true,
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -333,7 +335,7 @@ export default async function KhoTaiNguyenPage({
         category: p.resourceCategory?.name ?? p.externalCategory,
         description: stripHtml(p.description ?? null),
         price: Number(p.salePrice), salesCount: kfbSoldMap.get(p.id) ?? 0, createdAt: p.createdAt,
-        sellerPrefix: "Nguồn ngoài", available: 999,
+        sellerPrefix: "Nguồn ngoài", available: extractKhuongfbStockAmount(p.rawData) ?? 0,
         isNew: false, isHot: false,
         href: `/kfb/${p.id}`,
         bought: false, rated: false, review: undefined,

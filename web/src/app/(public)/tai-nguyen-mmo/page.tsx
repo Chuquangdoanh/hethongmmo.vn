@@ -19,6 +19,7 @@ import { getExternalProductSoldCounts } from "@/lib/services/external-product-st
 import { TaiNguyenProductList } from "./_components/TaiNguyenProductList";
 import type { TaiNguyenProductItem } from "./_components/TaiNguyenProductList";
 import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
+import { extractKhuongfbStockAmount } from "@/lib/khuongfb/types";
 
 export const metadata: Metadata = buildMeta({
   title: "Nguyên Liệu MMO | Tài Khoản & Công Cụ Số Chất Lượng Cao",
@@ -198,6 +199,7 @@ export default async function TaiNguyenMmoPage({
         id: true, name: true, thumbnail: true, salePrice: true,
         externalCategory: true, description: true, createdAt: true,
         resourceCategory: { select: { name: true } },
+        rawData: true,
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -327,7 +329,7 @@ export default async function TaiNguyenMmoPage({
       id: p.id, kind: "kfb", name: p.name,
       description: stripHtml(p.description ?? null), imageUrl: p.thumbnail,
       price: Number(p.salePrice), rating: 0, reviewCount: 0, salesCount: kfbSoldMap.get(p.id) ?? 0,
-      available: 999, category: p.resourceCategory?.name ?? p.externalCategory,
+      available: extractKhuongfbStockAmount(p.rawData) ?? 0, category: p.resourceCategory?.name ?? p.externalCategory,
       isNew: false, isHot: false,
       href: `/kfb/${p.id}`, shopHref: "#",
       createdAt: p.createdAt, sellerName: "Nguồn ngoài",

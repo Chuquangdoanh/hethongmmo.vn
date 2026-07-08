@@ -16,6 +16,13 @@ export default function DisclaimerPopup() {
     if (Date.now() > dismissedUntil) setOpen(true);
   }, []);
 
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [open]);
+
   function close() { setOpen(false); }
 
   function dismissFor2Hours() {

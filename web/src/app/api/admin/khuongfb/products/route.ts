@@ -6,6 +6,7 @@ import { StoreType } from "@prisma/client";
 import { z } from "zod";
 import { apiOk, apiList, apiCatch, apiValidationError } from "@/lib/api-response";
 import { writeAuditLog } from "@/lib/security/audit";
+import { extractKhuongfbStockAmount } from "@/lib/khuongfb/types";
 
 export const runtime = "nodejs";
 
@@ -72,11 +73,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     ]);
 
     const data = raw.map((p) => {
-      const rd = p.rawData as Record<string, unknown> | null;
-      const stockAmount: number | null =
-        rd != null
-          ? (typeof rd["amount"] === "number" ? rd["amount"] : typeof rd["số tiền"] === "number" ? rd["số tiền"] : null)
-          : null;
+      const stockAmount = extractKhuongfbStockAmount(p.rawData);
       const { rawData: _rawData, ...rest } = p;
       return { ...rest, stockAmount };
     });
