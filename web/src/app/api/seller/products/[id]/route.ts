@@ -155,10 +155,9 @@ export async function PATCH(
     const updateData = {
       ...rest,
       ...(description !== undefined ? { description: sanitizeHtml(description) } : {}),
-      // Sản phẩm bị từ chối mà seller sửa lại → gửi duyệt lại tự động
-      ...(product.approvalStatus === "REJECTED"
-        ? { approvalStatus: "PENDING" as const, approvalRejectReason: null }
-        : {}),
+      // Mọi lần seller sửa/update sản phẩm đều phải qua duyệt lại
+      approvalStatus: "PENDING" as const,
+      approvalRejectReason: null,
     };
 
     const updated = await prisma.sellerProduct.update({
@@ -180,8 +179,9 @@ export async function PATCH(
         price: Number(product.price),
         isHidden: product.isHidden,
         isActive: product.isActive,
+        approvalStatus: product.approvalStatus,
       },
-      after: rest as Record<string, string | number | boolean>,
+      after: { ...rest, approvalStatus: "PENDING" } as Record<string, string | number | boolean>,
     });
 
     return NextResponse.json({ success: true, data: updated });
