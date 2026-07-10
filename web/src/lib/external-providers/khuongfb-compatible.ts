@@ -117,6 +117,12 @@ function normalizeRaw(raw: RawProduct): NormalizedProduct {
   };
 }
 
+function sameEnrichableData(a: NormalizedProduct, b: NormalizedProduct): boolean {
+  return a.description === b.description
+    && a.thumbnail === b.thumbnail
+    && a.originalPrice.equals(b.originalPrice);
+}
+
 const DETAIL_FETCH_CONCURRENCY = 5;
 
 // Gọi detail với giới hạn số request đồng thời — tránh vừa bị rate-limit (chạy song song vô hạn)
@@ -166,20 +172,46 @@ export class KhuongfbCompatibleAdapter implements ExternalProductProvider {
       rawProducts = res["products"] as RawProduct[];
     }
 
-    // Giới hạn số request detail chạy đồng thời — vừa tránh rate limit, vừa tránh timeout
-    // khi catalog lớn (gọi tuần tự 100% dễ vượt quá proxy_read_timeout của Nginx)
-    return mapWithConcurrency(rawProducts, DETAIL_FETCH_CONCURRENCY, async (raw) => {
+    if (rawProducts.length === 0) return [];
+
+    // Thăm dò: gọi API chi tiết cho sản phẩm ĐẦU TIÊN để kiểm tra thực tế xem chi tiết có
+    // bổ sung dữ liệu gì mới ngoài danh sách không (giá/mô tả/ảnh). Nếu không có gì mới,
+    // bỏ qua gọi chi tiết cho toàn bộ phần còn lại — tránh hàng nghìn request dư thừa
+    // (như muaviaus, đã kiểm chứng chi tiết trả về y hệt danh sách) khiến sync quá lâu và
+    // vượt proxy_read_timeout của Nginx. Nếu chi tiết CÓ bổ sung thêm, vẫn gọi đầy đủ từng
+    // sản phẩm như cũ để không mất dữ liệu.
+    const [firstRaw, ...restRaw] = rawProducts;
+
+    // Thăm dò lỗi (network/timeout) → không kết luận được gì, an toàn nhất là coi như
+    // vẫn cần gọi chi tiết cho từng sản phẩm (giữ hành vi cũ, không mất dữ liệu)
+    let detailAddsInfo = true;
+    let firstEnriched: RawProduct = firstRaw!;
+    try {
+      firstEnriched = await this.fetchDetailRaw(firstRaw!);
+      detailAddsInfo = !sameEnrichableData(normalizeRaw(firstRaw!), normalizeRaw(firstEnriched));
+    } catch {
+      // giữ detailAddsInfo = true — fallback về gọi chi tiết từng sản phẩm như cũ
+    }
+
+    if (!detailAddsInfo) {
+      return rawProducts.map(normalizeRaw);
+    }
+
+    const restNormalized = await mapWithConcurrency(restRaw, DETAIL_FETCH_CONCURRENCY, async (raw) => {
       try {
-        const detail = await httpGet<Record<string, unknown>>(this.cfg.baseUrl, this.cfg.apiKey, "/product.php", { product: String(raw.id) });
-        const dp = (detail["data"] && typeof detail["data"] === "object" ? detail["data"] : detail["id"] !== undefined ? detail : null) as RawProduct | null;
-        const enriched: RawProduct = dp
-          ? { ...raw, ...dp, categoryId: raw.categoryId, categoryName: raw.categoryName }
-          : raw;
+        const enriched = await this.fetchDetailRaw(raw);
         return normalizeRaw(enriched);
       } catch {
         return normalizeRaw(raw);
       }
     });
+    return [normalizeRaw(firstEnriched), ...restNormalized];
+  }
+
+  private async fetchDetailRaw(raw: RawProduct): Promise<RawProduct> {
+    const detail = await httpGet<Record<string, unknown>>(this.cfg.baseUrl, this.cfg.apiKey, "/product.php", { product: String(raw.id) });
+    const dp = (detail["data"] && typeof detail["data"] === "object" ? detail["data"] : detail["id"] !== undefined ? detail : null) as RawProduct | null;
+    return dp ? { ...raw, ...dp, categoryId: raw.categoryId, categoryName: raw.categoryName } : raw;
   }
 
   async buyProduct(externalId: string, quantity: number): Promise<BuyResult> {
