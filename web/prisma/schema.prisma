@@ -1551,7 +1551,7 @@ model SiteContent {
 model ExternalProduct {
   id                 String             @id @default(uuid()) @db.Uuid
   provider           String             @default("khuongfb") @db.VarChar(50)
-  externalId         String             @unique @map("external_id")
+  externalId         String             @map("external_id")
   externalCategory   String             @map("external_category")
   name               String
   description        String?
@@ -1572,6 +1572,7 @@ model ExternalProduct {
 
   orders Order[]
 
+  @@unique([provider, externalId])
   @@index([provider])
   @@index([provider, isEnabled])
   @@index([isEnabled])
