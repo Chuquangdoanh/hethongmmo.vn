@@ -11,7 +11,7 @@ import type { CategoryItem } from "./_components/FilterSidebar";
 import Pagination from "@/components/shared/Pagination";
 import {
   Package, Store,
-  FolderOpen, Shield,
+  FolderOpen, Shield, AlertTriangle,
 } from "lucide-react";
 import { buildMeta } from "@/lib/utils/seo";
 import { batchGetFavoriteData } from "@/lib/services/favorite.service";
@@ -433,6 +433,14 @@ export default async function TaiNguyenMmoPage({
                   <Store size={13} strokeWidth={2} />
                   Gian hàng
                 </Link>
+              </div>
+
+              {/* Cảnh báo tuân thủ — tài khoản Scan / không rõ nguồn gốc */}
+              <div className="mt-4 rounded-xl bg-amber-400/10 border border-amber-400/25 px-3 py-2.5 flex items-start gap-2.5">
+                <AlertTriangle size={16} strokeWidth={2} className="text-amber-300 shrink-0 mt-0.5" />
+                <p className="text-[11px] sm:text-xs text-amber-100/90 leading-relaxed">
+                  Tuyệt đối không mua bán tài khoản Scan + Tài Khoản không có nguồn gốc rõ ràng (có chứa thông tin &amp; dữ liệu cá nhân của người khác). Người bán chịu hoàn toàn trách nhiệm về nguồn gốc và tính hợp pháp của sản phẩm. HETHONGMMO có quyền từ chối, gỡ bỏ hoặc khóa tài khoản vi phạm và phối hợp với cơ quan có thẩm quyền.
+                </p>
               </div>
 
               {/* Stats row */}
