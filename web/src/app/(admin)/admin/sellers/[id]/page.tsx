@@ -12,15 +12,38 @@ import BankChangeRequestAdmin from "./BankChangeRequestAdmin";
 import { getSellerBankChangeRequests } from "@/lib/services/bank-change-request.service";
 import { decrypt } from "@/lib/security/encryption";
 import AdminEscrowAdjust from "@/app/(admin)/admin/users/[id]/AdminEscrowAdjust";
+import ProductRevenueFilter from "./ProductRevenueFilter";
 
 export const metadata: Metadata = { title: "Duyệt Seller" };
 
+function parseDateLocal(s: string): Date {
+  const parts = s.split("-").map(Number);
+  const y = parts[0] ?? new Date().getFullYear();
+  const m = parts[1] ?? 1;
+  const d = parts[2] ?? 1;
+  return new Date(y, m - 1, d);
+}
+
 export default async function AdminSellerDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ dateFrom?: string; dateTo?: string }>;
 }) {
   const { id } = await params;
+  const sp = await searchParams;
+  const dateFrom = sp.dateFrom ?? "";
+  const dateTo   = sp.dateTo   ?? "";
+
+  let completedAtFilter: { gte: Date; lt: Date } | undefined;
+  if (dateFrom && dateTo) {
+    const [orderedFrom, orderedTo] = dateFrom <= dateTo ? [dateFrom, dateTo] : [dateTo, dateFrom];
+    const periodStart = parseDateLocal(orderedFrom);
+    const periodEnd   = parseDateLocal(orderedTo);
+    periodEnd.setDate(periodEnd.getDate() + 1); // exclusive upper bound
+    completedAtFilter = { gte: periodStart, lt: periodEnd };
+  }
 
   const request = await prisma.sellerRequest.findUnique({
     where: { id },
@@ -45,7 +68,7 @@ export default async function AdminSellerDetailPage({
   const sellerCategory = request.approvedCategory ?? request.category;
 
   type ShopRow = { shop_locked: boolean };
-  const [shopRows, products, orderStats, withdrawalStats, allTiers, allSubCategories] = await Promise.all([
+  const [shopRows, products, orderStats, withdrawalStats, allTiers, allSubCategories, productRevenueGroups] = await Promise.all([
     prisma.$queryRaw<ShopRow[]>`SELECT shop_locked FROM users WHERE id = ${request.userId}`,
     prisma.sellerProduct.findMany({
       where: { sellerId: request.userId, deletedAt: null },
@@ -83,8 +106,32 @@ export default async function AdminSellerDetailPage({
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
+    // Doanh thu/số đơn thực tế theo từng sản phẩm — tính lại từ đơn hàng DONE
+    // (không dùng cột sellerProduct.salesCount/revenue vì bị lệch khi đơn bị hoàn tiền/tranh chấp)
+    prisma.order.groupBy({
+      by: ["sellerProductId"],
+      where: {
+        sellerId: request.userId,
+        sellerProductId: { not: null },
+        status: "DONE",
+        ...(completedAtFilter ? { completedAt: completedAtFilter } : {}),
+      },
+      _sum: { finalPrice: true },
+      _count: { _all: true },
+    }),
   ]);
   const shopLocked = shopRows[0]?.shop_locked ?? false;
+
+  const productRevenueMap = new Map<string, { orders: number; revenue: number }>();
+  for (const g of productRevenueGroups) {
+    if (!g.sellerProductId) continue;
+    productRevenueMap.set(g.sellerProductId, {
+      orders: g._count._all,
+      revenue: Number(g._sum.finalPrice ?? 0),
+    });
+  }
+  const filteredTotalRevenue = Array.from(productRevenueMap.values()).reduce((acc, v) => acc + v.revenue, 0);
+  const filteredTotalOrders  = Array.from(productRevenueMap.values()).reduce((acc, v) => acc + v.orders, 0);
 
   const [bankChangeRequests, sellerUser] = await Promise.all([
     getSellerBankChangeRequests(request.userId),
@@ -281,9 +328,21 @@ export default async function AdminSellerDetailPage({
         {/* RIGHT: products table */}
         <div>
           <div className="rounded-xl border border-gray-200 bg-white p-5">
-            <h2 className="text-sm font-semibold text-gray-900 mb-4">
-              Sản phẩm ({products.length})
-            </h2>
+            <div className="flex items-start justify-between gap-3 mb-1 flex-wrap">
+              <h2 className="text-sm font-semibold text-gray-900">
+                Sản phẩm ({products.length})
+              </h2>
+              <div className="text-right">
+                <p className="text-xs text-gray-500">
+                  {dateFrom && dateTo ? "Doanh thu trong khoảng đã lọc" : "Doanh thu (tính lại từ đơn hàng)"}
+                </p>
+                <p className="text-sm font-bold text-emerald-600">
+                  {formatVnd(filteredTotalRevenue)}
+                  <span className="text-xs font-normal text-gray-400"> · {filteredTotalOrders.toLocaleString("vi-VN")} đơn</span>
+                </p>
+              </div>
+            </div>
+            <ProductRevenueFilter requestId={id} dateFrom={dateFrom} dateTo={dateTo} />
             {products.length === 0 ? (
               <p className="text-sm text-gray-400">Chưa có sản phẩm nào.</p>
             ) : (
@@ -312,14 +371,18 @@ export default async function AdminSellerDetailPage({
                         ? { text: "Ẩn", cls: "bg-yellow-50 text-yellow-600" }
                         : { text: "Hoạt động", cls: "bg-green-50 text-green-600" };
 
+                      const revenueStats = productRevenueMap.get(p.id);
+                      const recalculatedSalesCount = revenueStats?.orders  ?? 0;
+                      const recalculatedRevenue     = revenueStats?.revenue ?? 0;
+
                       return (
                         <tr key={p.id} className="hover:bg-gray-50">
                           <td className="py-2.5 pr-3 font-medium text-gray-900 max-w-50 truncate">{p.name}</td>
                           <td className="py-2.5 pr-3 text-gray-500 text-xs">{p.sellerCategory}</td>
                           <td className="py-2.5 pr-3 text-right text-gray-700">{formatVnd(Number(p.price))}</td>
                           <td className="py-2.5 pr-3 text-right text-gray-700">{p._count.stockItems}</td>
-                          <td className="py-2.5 pr-3 text-right text-gray-700">{p.salesCount}</td>
-                          <td className="py-2.5 pr-3 text-right text-gray-700">{formatVnd(Number(p.revenue))}</td>
+                          <td className="py-2.5 pr-3 text-right text-gray-700">{recalculatedSalesCount}</td>
+                          <td className="py-2.5 pr-3 text-right text-gray-700">{formatVnd(recalculatedRevenue)}</td>
                           <td className="py-2.5 px-3 text-center">
                             <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${statusLabel.cls}`}>
                               {statusLabel.text}
