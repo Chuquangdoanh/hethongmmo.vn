@@ -3,6 +3,7 @@ import Link from "next/link";
 import { unstable_cache } from "next/cache";
 import CourseScrollHelper from "./_components/CourseScrollHelper";
 import CategoryFilterClient from "./_components/CategoryFilterClient";
+import DJMediaCarousel from "@/components/home/DJMediaCarousel";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd } from "@/lib/utils/format";
 import { guardPublicPage } from "@/lib/utils/public-page-guard";
@@ -102,7 +103,8 @@ export default async function KhoaHocPage({
   searchParams: Promise<{ category?: string }>;
 }) {
   await guardPublicPage("khoa-hoc");
-  const pageHero = await getSiteContent<{ badge: string; title: string; description: string; titleAccentColor: string }>(SITE_CONTENT_KEYS.PAGE_KHOA_HOC);
+  const pageHero = await getSiteContent<{ badge: string; title: string; description: string; titleAccentColor: string; bannerImages?: string[] }>(SITE_CONTENT_KEYS.PAGE_KHOA_HOC);
+  const bannerImages = Array.isArray(pageHero.bannerImages) ? pageHero.bannerImages : [];
   const { category } = await searchParams;
 
   const [courses, { rawCategories, courseCategoryDefs }] = await Promise.all([
@@ -179,7 +181,11 @@ export default async function KhoaHocPage({
 
             {/* 2 — Ảnh thumbnail (thứ 2 trên mobile, cột phải span 2 hàng trên desktop) */}
             <div className="order-2 lg:col-start-8 lg:col-span-5 lg:row-start-1 lg:row-span-2">
-              {featuredCourse?.thumbnail ? (
+              {bannerImages.length > 0 ? (
+                <div className="relative shadow-2xl rounded-2xl overflow-hidden">
+                  <DJMediaCarousel images={bannerImages} alt="Khóa học thực chiến" aspectRatio="16/9" />
+                </div>
+              ) : featuredCourse?.thumbnail ? (
                 <div className="relative aspect-video lg:aspect-auto lg:h-full rounded-2xl overflow-hidden shadow-2xl">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img

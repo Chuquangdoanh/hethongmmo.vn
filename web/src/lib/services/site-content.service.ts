@@ -139,6 +139,7 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     description: "Hệ thống khóa học từ cơ bản đến nâng cao, học cùng chuyên gia thực chiến",
     thumbnail: "",
     titleAccentColor: "#7c3aed",
+    bannerImages: [] as string[],
   },
   page_quang_cao: {
     badge: "Quảng cáo",

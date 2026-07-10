@@ -6,9 +6,10 @@ interface Props {
   images: string[];
   fallbackUrl?: string;
   alt?: string;
+  aspectRatio?: string;
 }
 
-export default function DJMediaCarousel({ images, fallbackUrl, alt = "DJ Media" }: Props) {
+export default function DJMediaCarousel({ images, fallbackUrl, alt = "DJ Media", aspectRatio = "4/3" }: Props) {
   const slides = images.length > 0 ? images : fallbackUrl ? [fallbackUrl] : [];
   const [current, setCurrent] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -31,7 +32,7 @@ export default function DJMediaCarousel({ images, fallbackUrl, alt = "DJ Media" 
 
   if (slides.length === 0) {
     return (
-      <div style={{ width: "100%", aspectRatio: "4/3", borderRadius: "24px", background: "#f0fdf4", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: "100%", aspectRatio, borderRadius: "24px", background: "#f0fdf4", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <span style={{ color: "#94a3b8", fontSize: "0.85rem" }}>Chưa có ảnh</span>
       </div>
     );
@@ -50,7 +51,7 @@ export default function DJMediaCarousel({ images, fallbackUrl, alt = "DJ Media" 
     <div
       onClick={handleClick}
       style={{
-        position: "relative", width: "100%", aspectRatio: "4/3",
+        position: "relative", width: "100%", aspectRatio,
         borderRadius: "24px", overflow: "hidden",
         cursor: total > 1 ? "pointer" : "default",
       }}

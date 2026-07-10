@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { FieldText } from "../trang-chu/_components/FieldInput";
 import { ImageUpload } from "./ImageUpload";
+import { MultiImageUpload } from "./MultiImageUpload";
 import { ColoredTitle } from "@/components/shared/ColoredTitle";
 
 interface Props {
@@ -9,14 +10,19 @@ interface Props {
   initialData: Record<string, unknown>;
   pageLabel: string;
   pageUrl: string;
+  enableCarousel?: boolean;
 }
 
-export default function PageHeroEditor({ sectionKey, initialData, pageLabel, pageUrl }: Props) {
+export default function PageHeroEditor({ sectionKey, initialData, pageLabel, pageUrl, enableCarousel }: Props) {
   const [data, setData] = useState<Record<string, unknown>>(initialData);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   function handleChange(field: string, value: string) {
+    setData((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleArrayChange(field: string, value: string[]) {
     setData((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -70,6 +76,16 @@ export default function PageHeroEditor({ sectionKey, initialData, pageLabel, pag
           uploadType="cms-page"
           hint="Ảnh đại diện / hero image của trang"
         />
+        {enableCarousel && (
+          <MultiImageUpload
+            label="Danh sách ảnh carousel banner"
+            values={Array.isArray(data["bannerImages"]) ? (data["bannerImages"] as string[]) : []}
+            onChange={(urls) => handleArrayChange("bannerImages", urls)}
+            uploadType="cms-page"
+            hint="Thêm 2 ảnh trở lên để bật chế độ tự động lướt. Hover vào ảnh để sắp xếp hoặc xóa. Ưu tiên hiển thị hơn ảnh khóa học nổi bật nếu có."
+            maxImages={8}
+          />
+        )}
         <FieldText
           label="Badge"
           value={String(data["badge"] ?? "")}

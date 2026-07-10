@@ -18,7 +18,7 @@ export default async function KhoaHocEditorPage() {
         <span className="text-gray-400">/</span>
         <h1 className="text-2xl font-bold text-gray-900">Khóa học</h1>
       </div>
-      <PageHeroEditor sectionKey={SITE_CONTENT_KEYS.PAGE_KHOA_HOC} initialData={data} pageLabel="Khóa học" pageUrl="/khoa-hoc" />
+      <PageHeroEditor sectionKey={SITE_CONTENT_KEYS.PAGE_KHOA_HOC} initialData={data} pageLabel="Khóa học" pageUrl="/khoa-hoc" enableCarousel />
     </div>
   );
 }
