@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db/prisma";
 import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
 import { ValidationError } from "@/lib/errors";
 import { sendComplaintCreatedToSellerEmail } from "@/lib/services/email.service";
+import { notifySellerOrderDisputed } from "@/lib/services/telegram-alert.service";
 
 export const runtime = "nodejs";
 
@@ -91,6 +92,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         orderType: true,
         status: true,
         createdAt: true,
+        itemName: true,
+        orderCode: true,
         sellerProduct: { select: { seller: { select: { id: true, email: true } } } },
       },
     });
@@ -183,6 +186,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         subject,
         complaintId: complaint.id,
       }).catch(() => {});
+    }
+    if (seller?.id) {
+      notifySellerOrderDisputed(seller.id, order.itemName, order.orderCode);
     }
 
     return apiOk(complaint, 201);

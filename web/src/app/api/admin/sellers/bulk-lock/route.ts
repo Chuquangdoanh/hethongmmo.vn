@@ -5,6 +5,7 @@ import { requireStaff } from "@/lib/auth/rbac";
 import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
+import { notifySellerShopLocked } from "@/lib/services/telegram-alert.service";
 
 export const runtime = "nodejs";
 
@@ -35,6 +36,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const userIds = requests.map((r) => r.userId);
     await prisma.$executeRaw`UPDATE users SET shop_locked = ${lock} WHERE id = ANY(${userIds}::uuid[])`;
+
+    for (const userId of userIds) {
+      notifySellerShopLocked(userId, lock);
+    }
 
     return apiOk({ updated: userIds.length });
   } catch (err) {

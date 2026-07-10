@@ -80,6 +80,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Tài khoản chưa được duyệt làm seller", code: "FORBIDDEN" }, { status: 403 });
     }
 
+    const telegramUser = await prisma.user.findUnique({
+      where: { id: me.id },
+      select: { sellerTelegramChatId: true },
+    });
+    if (!telegramUser?.sellerTelegramChatId) {
+      return NextResponse.json(
+        { error: "Vui lòng kết nối Telegram trước khi tạo sản phẩm mới", code: "TELEGRAM_NOT_CONNECTED" },
+        { status: 403 },
+      );
+    }
+
     const body: unknown = await req.json();
     const parsed = addProductSchema.safeParse(body);
     if (!parsed.success) {

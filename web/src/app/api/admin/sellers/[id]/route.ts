@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { sendSellerApprovedEmail, sendSellerRejectedEmail } from "@/lib/services/email.service";
+import { notifySellerShopLocked } from "@/lib/services/telegram-alert.service";
 import { apiSuccess, apiCatch, apiValidationError } from "@/lib/api-response";
 
 export const runtime = "nodejs";
@@ -30,6 +31,9 @@ export async function PATCH(
     const body: unknown = await req.json();
     const parsed = reviewSchema.safeParse(body);
     if (!parsed.success) return apiValidationError(parsed.error.issues);
+
+    let notifyShopLockedSellerId = "";
+    let notifyShopLocked = false;
 
     await prisma.$transaction(async (tx) => {
       const request = await tx.sellerRequest.findUnique({
@@ -125,6 +129,8 @@ export async function PATCH(
         }).catch(() => {});
       } else if (parsed.data.action === "lock_shop" || parsed.data.action === "unlock_shop") {
         const locked = parsed.data.action === "lock_shop";
+        notifyShopLockedSellerId = request.userId;
+        notifyShopLocked = locked;
         await tx.$executeRaw`UPDATE users SET shop_locked = ${locked} WHERE id = ${request.userId}`;
 
         await tx.notification.create({
@@ -150,6 +156,10 @@ export async function PATCH(
         });
       }
     });
+
+    if (notifyShopLockedSellerId) {
+      notifySellerShopLocked(notifyShopLockedSellerId, notifyShopLocked);
+    }
 
     return apiSuccess();
   } catch (err) {

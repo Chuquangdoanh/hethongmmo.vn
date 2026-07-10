@@ -284,3 +284,120 @@ export function notifySellerNewOrder(
     );
   })();
 }
+
+/** Gửi tin tới seller theo sellerId — chỉ gửi nếu đã kết nối Telegram. Dùng chung cho các hàm notify bên dưới. */
+async function _sendToSellerIfConnected(sellerId: string, text: string): Promise<void> {
+  const seller = await prisma.user.findUnique({
+    where: { id: sellerId },
+    select: { sellerTelegramChatId: true },
+  });
+  const chatId = seller?.sellerTelegramChatId;
+  if (!chatId) return;
+  await sendSellerTelegram(chatId, text);
+}
+
+/** Báo cho seller khi trạng thái yêu cầu rút tiền thay đổi (duyệt / từ chối / đã chuyển khoản) — fire-and-forget. */
+export function notifySellerWithdrawalStatus(
+  sellerId: string,
+  status: "APPROVED" | "REJECTED" | "COMPLETED",
+  netAmount: string,
+  rejectReason?: string,
+): void {
+  void (async () => {
+    const STATUS_TEXT: Record<typeof status, string> = {
+      APPROVED: "✅ <b>Yêu cầu rút tiền được duyệt</b>",
+      REJECTED: "❌ <b>Yêu cầu rút tiền bị từ chối</b>",
+      COMPLETED: "💸 <b>Rút tiền hoàn thành</b>",
+    };
+    const lines = [
+      STATUS_TEXT[status],
+      ``,
+      `💵 Số tiền: <b>${Number(netAmount).toLocaleString("vi-VN")}đ</b>`,
+    ];
+    if (status === "REJECTED" && rejectReason) {
+      lines.push(`📝 Lý do: ${escTelegramHtml(rejectReason)}`);
+    }
+    await _sendToSellerIfConnected(sellerId, lines.join("\n"));
+  })();
+}
+
+/** Báo cho seller khi đơn hàng của họ bị khách hàng khiếu nại — fire-and-forget. */
+export function notifySellerOrderDisputed(
+  sellerId: string,
+  itemName: string,
+  orderCode: string,
+): void {
+  void (async () => {
+    await _sendToSellerIfConnected(
+      sellerId,
+      [
+        `⚠️ <b>Đơn hàng bị khiếu nại</b>`,
+        ``,
+        `📦 Sản phẩm: ${escTelegramHtml(itemName)}`,
+        `🔖 Mã đơn: <code>${escTelegramHtml(orderCode)}</code>`,
+        ``,
+        `Vui lòng phản hồi trong vòng 12 giờ trong chat hỗ trợ.`,
+      ].join("\n"),
+    );
+  })();
+}
+
+/** Báo cho seller khi đơn hàng của họ bị hoàn tiền cho người mua — fire-and-forget. */
+export function notifySellerOrderRefunded(
+  sellerId: string,
+  itemName: string,
+  orderCode: string,
+  amount: string,
+): void {
+  void (async () => {
+    await _sendToSellerIfConnected(
+      sellerId,
+      [
+        `↩️ <b>Đơn hàng đã hoàn tiền cho người mua</b>`,
+        ``,
+        `📦 Sản phẩm: ${escTelegramHtml(itemName)}`,
+        `💵 Số tiền: <b>${amount}đ</b>`,
+        `🔖 Mã đơn: <code>${escTelegramHtml(orderCode)}</code>`,
+      ].join("\n"),
+    );
+  })();
+}
+
+/** Báo cho seller khi sản phẩm được admin duyệt hoặc từ chối — fire-and-forget. */
+export function notifySellerProductApproval(
+  sellerId: string,
+  productName: string,
+  approved: boolean,
+  rejectReason?: string,
+): void {
+  void (async () => {
+    const lines = approved
+      ? [`✅ <b>Sản phẩm đã được duyệt</b>`, ``, `📦 Sản phẩm: ${escTelegramHtml(productName)}`, ``, `Sản phẩm đã hiển thị công khai trên marketplace.`]
+      : [`❌ <b>Sản phẩm bị từ chối</b>`, ``, `📦 Sản phẩm: ${escTelegramHtml(productName)}`, ...(rejectReason ? [`📝 Lý do: ${escTelegramHtml(rejectReason)}`] : [])];
+    await _sendToSellerIfConnected(sellerId, lines.join("\n"));
+  })();
+}
+
+/** Báo cho seller khi sản phẩm bị admin hạn chế hoặc bỏ hạn chế — fire-and-forget. */
+export function notifySellerProductRestricted(
+  sellerId: string,
+  productName: string,
+  restricted: boolean,
+): void {
+  void (async () => {
+    const lines = restricted
+      ? [`🔒 <b>Sản phẩm bị hạn chế</b>`, ``, `📦 Sản phẩm: ${escTelegramHtml(productName)}`, ``, `Sản phẩm tạm thời không thể bán. Liên hệ hỗ trợ để biết thêm chi tiết.`]
+      : [`🔓 <b>Sản phẩm được bỏ hạn chế</b>`, ``, `📦 Sản phẩm: ${escTelegramHtml(productName)}`, ``, `Sản phẩm có thể bán lại bình thường.`];
+    await _sendToSellerIfConnected(sellerId, lines.join("\n"));
+  })();
+}
+
+/** Báo cho seller khi gian hàng bị admin khóa hoặc mở khóa — fire-and-forget. */
+export function notifySellerShopLocked(sellerId: string, locked: boolean): void {
+  void (async () => {
+    const lines = locked
+      ? [`🔒 <b>Gian hàng của bạn đã bị khóa</b>`, ``, `Sản phẩm đã ẩn khỏi trang công khai. Bạn không thể rút tiền cho đến khi được mở khóa.`, `Liên hệ bộ phận CSKH để được hỗ trợ.`]
+      : [`🔓 <b>Gian hàng của bạn đã được mở khóa</b>`, ``, `Bạn có thể tiếp tục bán hàng bình thường.`];
+    await _sendToSellerIfConnected(sellerId, lines.join("\n"));
+  })();
+}

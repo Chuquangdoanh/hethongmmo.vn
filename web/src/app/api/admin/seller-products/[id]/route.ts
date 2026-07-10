@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
 import { apiSuccess, apiCatch, apiValidationError, apiError } from "@/lib/api-response";
+import { notifySellerProductRestricted } from "@/lib/services/telegram-alert.service";
 
 export const runtime = "nodejs";
 
@@ -47,6 +48,8 @@ export async function PATCH(
       before: { isRestricted: product.isRestricted },
       after: { isRestricted: parsed.data.isRestricted, reason: parsed.data.restrictReason },
     });
+
+    notifySellerProductRestricted(product.sellerId, product.name, parsed.data.isRestricted);
 
     const action = parsed.data.isRestricted ? "hạn chế" : "bỏ hạn chế";
     return apiSuccess(`Đã ${action} sản phẩm "${product.name}"`);

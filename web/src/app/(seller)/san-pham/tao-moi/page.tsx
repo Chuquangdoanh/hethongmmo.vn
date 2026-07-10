@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { redirect } from "next/navigation";
-import { PackagePlus, ChevronLeft, AlertTriangle } from "lucide-react";
+import { PackagePlus, ChevronLeft, AlertTriangle, Send } from "lucide-react";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
 import ProductForm from "../_components/ProductForm";
 
@@ -20,6 +20,7 @@ export default async function TaoMoiSanPhamPage() {
       select: {
         sellerCategory: true,
         maxSellerProducts: true,
+        sellerTelegramChatId: true,
         _count: { select: { sellerProducts: { where: { deletedAt: null } } } },
         subCategories: {
           select: { subCategory: { select: { id: true, name: true } } },
@@ -42,6 +43,7 @@ export default async function TaoMoiSanPhamPage() {
   if (!user?.sellerCategory) redirect("/ban-hang");
 
   const canAdd = (user._count.sellerProducts ?? 0) < (user.maxSellerProducts ?? 3);
+  const telegramConnected = !!user.sellerTelegramChatId;
   const subCategories = user.subCategories.map((r) => r.subCategory);
 
   return (
@@ -66,7 +68,23 @@ export default async function TaoMoiSanPhamPage() {
             <h1 className="text-xl md:text-2xl font-bold text-gray-900">Thêm sản phẩm mới</h1>
           </div>
 
-          {!canAdd ? (
+          {!telegramConnected ? (
+            <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-sky-100 flex items-center justify-center shrink-0">
+                <Send size={16} className="text-sky-600" />
+              </div>
+              <div>
+                <p className="text-sm text-sky-700 font-medium">Cần kết nối Telegram trước khi tạo sản phẩm</p>
+                <p className="text-xs text-sky-600 mt-0.5">
+                  Vui lòng kết nối Telegram tại{" "}
+                  <Link href="/ban-hang" className="underline font-medium">
+                    trang Quản lý bán hàng
+                  </Link>{" "}
+                  để nhận thông báo đơn hàng trước khi thêm sản phẩm mới.
+                </p>
+              </div>
+            </div>
+          ) : !canAdd ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
                 <AlertTriangle size={16} className="text-amber-600" />

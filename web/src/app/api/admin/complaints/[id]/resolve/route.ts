@@ -7,6 +7,7 @@ import { writeAuditLog } from "@/lib/security/audit";
 import { apiOk, apiCatch, apiError } from "@/lib/api-response";
 import { ValidationError } from "@/lib/errors";
 import { voidAffiliateCommission } from "@/lib/services/affiliate-commission.service";
+import { notifySellerOrderRefunded } from "@/lib/services/telegram-alert.service";
 
 export const runtime = "nodejs";
 
@@ -30,6 +31,9 @@ export async function POST(
     }
 
     let refundedAmount = 0;
+    let notifySellerId = "";
+    let notifyItemName = "";
+    let notifyOrderCode = "";
 
     await prisma.$transaction(async (tx) => {
       // Atomic guard — ngăn 2 admin bấm đồng thời gây double refund
@@ -50,12 +54,17 @@ export async function POST(
       await tx.$queryRaw`SELECT id FROM orders WHERE id = ${complaint.orderId}::uuid FOR UPDATE`;
       const order = await tx.order.findUnique({
         where: { id: complaint.orderId },
-        select: { id: true, finalPrice: true, sellerId: true, withdrawn: true },
+        select: { id: true, finalPrice: true, sellerId: true, withdrawn: true, itemName: true, orderCode: true },
       });
       if (!order) throw new ValidationError("Đơn hàng không tồn tại — không thể hoàn tiền");
 
       const refundAmt = Number(order.finalPrice);
       refundedAmount = refundAmt;
+      if (order.sellerId) {
+        notifySellerId = order.sellerId;
+        notifyItemName = order.itemName;
+        notifyOrderCode = order.orderCode;
+      }
 
       await tx.order.update({ where: { id: order.id }, data: { status: "REFUNDED" } });
       await voidAffiliateCommission(tx, order.id, "Admin phán quyết khiếu nại — người mua thắng");
@@ -113,6 +122,10 @@ export async function POST(
       targetId: id,
       after: { outcome: "user_wins", refundedAmount },
     });
+
+    if (notifySellerId) {
+      notifySellerOrderRefunded(notifySellerId, notifyItemName, notifyOrderCode, refundedAmount.toFixed(0));
+    }
 
     return apiOk({ resolved: true, outcome: "user_wins", refundedAmount });
   } catch (err) {

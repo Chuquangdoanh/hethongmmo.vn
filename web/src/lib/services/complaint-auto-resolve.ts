@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
 import { createAffiliateCommission, voidAffiliateCommission } from "@/lib/services/affiliate-commission.service";
+import { notifySellerOrderRefunded } from "@/lib/services/telegram-alert.service";
 
 const SELLER_REPLY_DEADLINE_MS  = 12 * 60 * 60 * 1000; // 12 giờ
 const USER_CONFIRM_DEADLINE_MS  = 60 * 60 * 1000;      // 60 phút
@@ -113,6 +114,11 @@ async function autoResolve(complaintId: string, orderId: string | null, resoluti
 }
 
 async function autoReject(complaintId: string, orderId: string | null, userId: string, resolution: string) {
+  let notifySellerId = "";
+  let notifyItemName = "";
+  let notifyOrderCode = "";
+  let notifyAmount = 0;
+
   await prisma.$transaction(async (tx) => {
     // Atomic guard — ngăn scheduler trigger 2 lần đồng thời gây double refund buyer
     const guard = await tx.complaint.updateMany({
@@ -127,7 +133,7 @@ async function autoReject(complaintId: string, orderId: string | null, userId: s
     await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`;
     const order = await tx.order.findUnique({
       where: { id: orderId },
-      select: { id: true, status: true, finalPrice: true },
+      select: { id: true, status: true, finalPrice: true, sellerId: true, itemName: true, orderCode: true },
     });
     if (!order) return;
 
@@ -157,7 +163,18 @@ async function autoReject(complaintId: string, orderId: string | null, userId: s
         balanceAfter,
       },
     });
+
+    if (order.sellerId) {
+      notifySellerId = order.sellerId;
+      notifyItemName = order.itemName;
+      notifyOrderCode = order.orderCode;
+      notifyAmount = refundAmt;
+    }
   });
+
+  if (notifySellerId) {
+    notifySellerOrderRefunded(notifySellerId, notifyItemName, notifyOrderCode, notifyAmount.toFixed(0));
+  }
 
   await writeAuditLog({
     actorId: undefined,

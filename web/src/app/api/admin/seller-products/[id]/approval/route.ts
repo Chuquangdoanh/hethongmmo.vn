@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { writeAuditLog } from "@/lib/security/audit";
 import { apiSuccess, apiCatch, apiValidationError, apiError } from "@/lib/api-response";
+import { notifySellerProductApproval } from "@/lib/services/telegram-alert.service";
 
 export const runtime = "nodejs";
 
@@ -33,7 +34,7 @@ export async function PATCH(
 
     const product = await prisma.sellerProduct.findFirst({
       where: { id, deletedAt: null },
-      select: { id: true, name: true, approvalStatus: true },
+      select: { id: true, name: true, approvalStatus: true, sellerId: true },
     });
     if (!product) return apiError("Sản phẩm không tồn tại", "NOT_FOUND", 404);
 
@@ -55,6 +56,8 @@ export async function PATCH(
       before: { approvalStatus: product.approvalStatus },
       after: { approvalStatus: status, rejectReason },
     });
+
+    notifySellerProductApproval(product.sellerId, product.name, status === "APPROVED", rejectReason);
 
     const action = status === "APPROVED" ? "duyệt" : "từ chối";
     return apiSuccess(`Đã ${action} sản phẩm "${product.name}"`);

@@ -7,6 +7,7 @@ import {
   ValidationError,
 } from "@/lib/errors";
 import { logger } from "@/lib/utils/logger";
+import { notifySellerWithdrawalStatus } from "@/lib/services/telegram-alert.service";
 
 interface RequestWithdrawalParams {
   sellerId: string;
@@ -172,6 +173,9 @@ export async function processWithdrawal(
 ): Promise<void> {
   const { withdrawalId, adminUserId, approve, rejectReason } = params;
 
+  let notifySellerId = "";
+  let notifyNetAmount = "0";
+
   await prisma.$transaction(async (tx) => {
     const withdrawal = await tx.sellerWithdrawal.findUnique({
       where: { id: withdrawalId },
@@ -189,6 +193,8 @@ export async function processWithdrawal(
     });
 
     if (!withdrawal) throw new NotFoundError("Withdrawal");
+    notifySellerId = withdrawal.sellerId;
+    notifyNetAmount = withdrawal.netAmount.toString();
     if (withdrawal.status !== "PENDING") {
       throw new ValidationError(`Yêu cầu đã ở trạng thái ${withdrawal.status}`);
     }
@@ -251,6 +257,8 @@ export async function processWithdrawal(
     { withdrawalId, adminUserId, approve },
     approve ? "Withdrawal approved" : "Withdrawal rejected",
   );
+
+  notifySellerWithdrawalStatus(notifySellerId, approve ? "APPROVED" : "REJECTED", notifyNetAmount, rejectReason);
 }
 
 interface CompleteWithdrawalParams {
@@ -262,6 +270,9 @@ interface CompleteWithdrawalParams {
 export async function completeWithdrawal(params: CompleteWithdrawalParams): Promise<void> {
   const { withdrawalId, adminUserId } = params;
 
+  let notifySellerId = "";
+  let notifyNetAmount = "0";
+
   await prisma.$transaction(async (tx) => {
     const withdrawal = await tx.sellerWithdrawal.findUnique({
       where: { id: withdrawalId },
@@ -269,6 +280,8 @@ export async function completeWithdrawal(params: CompleteWithdrawalParams): Prom
     });
 
     if (!withdrawal) throw new NotFoundError("Withdrawal");
+    notifySellerId = withdrawal.sellerId;
+    notifyNetAmount = withdrawal.netAmount.toString();
     if (withdrawal.status !== "APPROVED") {
       throw new ValidationError(`Chỉ có thể hoàn thành yêu cầu ở trạng thái APPROVED, hiện tại: ${withdrawal.status}`);
     }
@@ -301,4 +314,6 @@ export async function completeWithdrawal(params: CompleteWithdrawalParams): Prom
   });
 
   logger.info({ withdrawalId, adminUserId }, "Withdrawal completed");
+
+  notifySellerWithdrawalStatus(notifySellerId, "COMPLETED", notifyNetAmount);
 }
