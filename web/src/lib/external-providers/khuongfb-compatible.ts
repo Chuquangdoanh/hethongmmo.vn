@@ -1,6 +1,10 @@
+import { setDefaultResultOrder } from "dns";
 import type { Prisma } from "@prisma/client";
 import Decimal from "decimal.js";
 import type { ExternalProductProvider, NormalizedProduct, BuyResult, ExternalOrderStatus } from "./types";
+
+// Ép IPv4 trước để tránh bị chặn bởi whitelist IP của provider khi ISP cấp IPv6 mặc định
+setDefaultResultOrder("ipv4first");
 
 const TIMEOUT_MS = 15_000;
 
@@ -113,6 +117,29 @@ function normalizeRaw(raw: RawProduct): NormalizedProduct {
   };
 }
 
+const DETAIL_FETCH_CONCURRENCY = 5;
+
+// Gọi detail với giới hạn số request đồng thời — tránh vừa bị rate-limit (chạy song song vô hạn)
+// vừa tránh timeout Nginx (chạy tuần tự 100% quá chậm khi catalog lớn)
+async function mapWithConcurrency<T, R>(
+  items:       T[],
+  concurrency: number,
+  fn:          (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+
+  async function worker(): Promise<void> {
+    while (nextIndex < items.length) {
+      const current = nextIndex++;
+      results[current] = await fn(items[current]!);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()));
+  return results;
+}
+
 export interface KfbCompatibleConfig {
   providerId: string;
   baseUrl:    string;
@@ -139,21 +166,20 @@ export class KhuongfbCompatibleAdapter implements ExternalProductProvider {
       rawProducts = res["products"] as RawProduct[];
     }
 
-    const results: NormalizedProduct[] = [];
-    // Gọi detail tuần tự để tránh rate limit
-    for (const raw of rawProducts) {
+    // Giới hạn số request detail chạy đồng thời — vừa tránh rate limit, vừa tránh timeout
+    // khi catalog lớn (gọi tuần tự 100% dễ vượt quá proxy_read_timeout của Nginx)
+    return mapWithConcurrency(rawProducts, DETAIL_FETCH_CONCURRENCY, async (raw) => {
       try {
         const detail = await httpGet<Record<string, unknown>>(this.cfg.baseUrl, this.cfg.apiKey, "/product.php", { product: String(raw.id) });
         const dp = (detail["data"] && typeof detail["data"] === "object" ? detail["data"] : detail["id"] !== undefined ? detail : null) as RawProduct | null;
         const enriched: RawProduct = dp
           ? { ...raw, ...dp, categoryId: raw.categoryId, categoryName: raw.categoryName }
           : raw;
-        results.push(normalizeRaw(enriched));
+        return normalizeRaw(enriched);
       } catch {
-        results.push(normalizeRaw(raw));
+        return normalizeRaw(raw);
       }
-    }
-    return results;
+    });
   }
 
   async buyProduct(externalId: string, quantity: number): Promise<BuyResult> {

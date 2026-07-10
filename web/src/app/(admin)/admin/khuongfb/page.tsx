@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { KhuongfbProductTable } from "./_components/KhuongfbProductTable";
 import ProviderManager from "./_components/ProviderManager";
+import Pagination from "@/components/shared/Pagination";
 
 interface SubCategory {
   id:                string;
@@ -291,21 +292,11 @@ export default function KhuongfbAdminPage() {
       )}
 
       {/* Pagination */}
-      {meta.totalPages > 1 && (
-        <div className="flex justify-center gap-2">
-          {Array.from({ length: meta.totalPages }, (_, i) => i + 1).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPage(p)}
-              className={`px-3 py-1 rounded border text-sm ${
-                p === page ? "bg-blue-600 text-white border-blue-600" : "border-gray-300 hover:border-blue-400"
-              }`}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-      )}
+      <Pagination
+        currentPage={page}
+        totalPages={meta.totalPages}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

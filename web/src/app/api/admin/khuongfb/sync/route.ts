@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { requireAdmin } from "@/lib/auth/rbac";
 import { apiOk, apiCatch, apiError } from "@/lib/api-response";
@@ -10,14 +10,23 @@ import type { SyncResult } from "@/lib/external-providers/types";
 
 export const runtime = "nodejs";
 
-export async function POST(): Promise<NextResponse> {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const session = await auth();
     const me = requireAdmin(session);
 
-    const adapters = await loadEnabledAdapters();
+    // providerId (optional) — đồng bộ riêng 1 provider thay vì tất cả
+    const body = (await req.json().catch(() => null)) as { providerId?: string } | null;
+    const providerId = body?.providerId;
+
+    const allAdapters = await loadEnabledAdapters();
+    const adapters = providerId ? allAdapters.filter(a => a.providerId === providerId) : allAdapters;
     if (adapters.length === 0) {
-      return apiError("Chưa có provider nào được cấu hình", "NO_PROVIDERS", 400);
+      return apiError(
+        providerId ? "Provider không tồn tại hoặc chưa bật" : "Chưa có provider nào được cấu hình",
+        "NO_PROVIDERS",
+        400,
+      );
     }
 
     // Sync song song tất cả providers

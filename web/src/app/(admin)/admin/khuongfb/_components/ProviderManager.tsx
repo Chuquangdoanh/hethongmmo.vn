@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Settings, X, Plus, Trash2, Check, Loader2, Eye, EyeOff } from "lucide-react";
+import { Settings, X, Plus, Trash2, Check, Loader2, Eye, EyeOff, RefreshCw } from "lucide-react";
 
 export interface ProviderInfo {
   id:      string;
@@ -23,6 +23,7 @@ export default function ProviderManager({ onProvidersChanged }: Props) {
   const [saving,    setSaving]    = useState(false);
   const [msg,       setMsg]       = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [showKey,   setShowKey]   = useState(false);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
 
   // Add form state
   const [newName,    setNewName]    = useState("");
@@ -66,6 +67,38 @@ export default function ProviderManager({ onProvidersChanged }: Props) {
     if (res.ok) {
       await loadProviders();
       onProvidersChanged();
+    }
+  }
+
+  async function handleSyncOne(p: ProviderInfo) {
+    setSyncingId(p.id);
+    setMsg(null);
+    try {
+      const res  = await fetch("/api/admin/khuongfb/sync", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ providerId: p.id }),
+        credentials: "include",
+      });
+      const json = await res.json() as {
+        data?: { results: Record<string, { created: number; updated: number; deactivated: number; total: number } | { error: string }> };
+        error?: string;
+      };
+      if (!res.ok) {
+        setMsg({ type: "err", text: `${p.name}: ${json.error ?? `HTTP ${res.status}`}` });
+        return;
+      }
+      const r = json.data?.results[p.id];
+      if (r && "error" in r) {
+        setMsg({ type: "err", text: `${p.name}: ❌ ${r.error}` });
+      } else if (r) {
+        setMsg({ type: "ok", text: `${p.name}: ✓ ${r.total} sp (mới: ${r.created}, cập nhật: ${r.updated})` });
+      }
+      onProvidersChanged();
+    } catch {
+      setMsg({ type: "err", text: `${p.name}: Đồng bộ thất bại — không kết nối được server` });
+    } finally {
+      setSyncingId(null);
     }
   }
 
@@ -160,6 +193,16 @@ export default function ProviderManager({ onProvidersChanged }: Props) {
                   <p className="text-[10px] text-gray-400 font-mono truncate">{p.apiKey}</p>
                 </div>
 
+                {/* Đồng bộ riêng provider này */}
+                <button
+                  onClick={() => void handleSyncOne(p)}
+                  disabled={syncingId === p.id}
+                  className="shrink-0 text-gray-300 hover:text-blue-500 transition-colors disabled:opacity-60"
+                  title={`Đồng bộ riêng ${p.name}`}
+                >
+                  <RefreshCw size={13} className={syncingId === p.id ? "animate-spin" : ""} />
+                </button>
+
                 {/* Delete */}
                 <button
                   onClick={() => void handleDelete(p)}
@@ -171,6 +214,15 @@ export default function ProviderManager({ onProvidersChanged }: Props) {
               </div>
             ))}
           </div>
+
+          {/* Thông báo kết quả — đồng bộ riêng lẻ hoặc thêm provider */}
+          {msg && !showAdd && (
+            <div className="px-4 pb-2">
+              <p className={`text-[11px] font-medium ${msg.type === "ok" ? "text-emerald-600" : "text-red-500"}`}>
+                {msg.text}
+              </p>
+            </div>
+          )}
 
           {/* Thêm mới */}
           {showAdd ? (
