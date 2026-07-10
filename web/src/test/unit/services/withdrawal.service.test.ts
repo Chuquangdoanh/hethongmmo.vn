@@ -17,6 +17,10 @@ vi.mock("@/lib/security/encryption", () => ({
   decrypt: vi.fn().mockReturnValue("plain-bank-info"),
 }));
 
+vi.mock("@/lib/services/telegram-alert.service", () => ({
+  notifySellerWithdrawalStatus: vi.fn(),
+}));
+
 import { requestWithdrawal, processWithdrawal } from "@/lib/services/withdrawal.service";
 import { prisma } from "@/lib/db/prisma";
 import { InsufficientBalanceError, ValidationError, NotFoundError } from "@/lib/errors";
