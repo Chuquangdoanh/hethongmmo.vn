@@ -71,6 +71,8 @@ export default async function AdminServiceEditPage({
       rating: true, warrantyOptions: true, platformVariants: true, productList: true,
       seoTitle: true, seoDescription: true,
       requiresAccountType: true, requiresCccd: true,
+      requiresTitle: true, requiresSampleFile: true,
+      showAccountPass: true, showGmailPass: true, showLinkUrl: true,
     },
   });
 
@@ -109,6 +111,11 @@ export default async function AdminServiceEditPage({
           seoDescription: service.seoDescription ?? undefined,
           requiresAccountType: service.requiresAccountType,
           requiresCccd: service.requiresCccd,
+          requiresTitle: service.requiresTitle,
+          requiresSampleFile: service.requiresSampleFile,
+          showAccountPass: service.showAccountPass,
+          showGmailPass: service.showGmailPass,
+          showLinkUrl: service.showLinkUrl,
         }}
       />
     </div>

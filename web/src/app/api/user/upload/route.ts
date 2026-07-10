@@ -12,7 +12,7 @@ const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 // CCCD/portrait → VPS disk only (never R2 — documents must not be publicly accessible)
 const SENSITIVE_TYPES = new Set(["cccd", "portrait"]);
 // Non-sensitive uploads allowed for regular users
-const USER_R2_PURPOSES = new Set(["avatar", "product-image"]);
+const USER_R2_PURPOSES = new Set(["avatar", "product-image", "order-sample"]);
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {

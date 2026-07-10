@@ -52,6 +52,7 @@ export const UPLOAD_PURPOSES = [
   "resource-icon",
   "course-icon",
   "service-icon",
+  "order-sample",
 ] as const;
 
 export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number];

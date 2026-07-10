@@ -10,7 +10,7 @@ import {
   Star, ShoppingCart, Upload, X,
   Phone, Link2, Smartphone, Mail, KeyRound,
   Shield, AlertTriangle, Tag, MessageSquare, Send,
-  BadgeCheck, Package,
+  BadgeCheck, Package, Type as TitleIcon, FileImage,
 } from "lucide-react";
 import TestimonialsSection, { type TestimonialItem } from "@/components/shared/TestimonialsSection";
 import SafeHtml from "@/components/shared/SafeHtml";
@@ -55,6 +55,11 @@ interface ServiceItem {
   deviceVariants: DeviceVariant[];
   requiresAccountType: boolean;
   requiresCccd: boolean;
+  requiresTitle: boolean;
+  requiresSampleFile: boolean;
+  showAccountPass: boolean;
+  showGmailPass: boolean;
+  showLinkUrl: boolean;
 }
 
 
@@ -250,6 +255,7 @@ function ServiceOrderPanel({
 }) {
   const router = useRouter();
   const cccdInputRef = useRef<HTMLInputElement>(null);
+  const sampleInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const isICloud = service.platform === "ICLOUD";
@@ -267,10 +273,14 @@ function ServiceOrderPanel({
     accountType: "chinh_chu" as "chinh_chu" | "khong_chinh_chu",
     warranty: "",
     note: "",
+    title: "",
   });
   const [cccdUrl, setCccdUrl] = useState("");
   const [cccdUploading, setCccdUploading] = useState(false);
   const [cccdError, setCccdError] = useState("");
+  const [sampleFileUrl, setSampleFileUrl] = useState("");
+  const [sampleUploading, setSampleUploading] = useState(false);
+  const [sampleError, setSampleError] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [phoneError, setPhoneError]           = useState("");
@@ -278,10 +288,13 @@ function ServiceOrderPanel({
   const [warrantyError, setWarrantyError]     = useState("");
   const [warrantyTouched, setWarrantyTouched] = useState(false);
   const [cccdFieldError, setCccdFieldError]   = useState("");
+  const [sampleFieldError, setSampleFieldError] = useState("");
   const [linkError, setLinkError]             = useState("");
   const [linkTouched, setLinkTouched]         = useState(false);
   const [gmailError, setGmailError]           = useState("");
   const [gmailTouched, setGmailTouched]       = useState(false);
+  const [titleError, setTitleError]           = useState("");
+  const [titleTouched, setTitleTouched]       = useState(false);
 
   useEffect(() => {
     if (!autoScroll) return;
@@ -311,6 +324,7 @@ function ServiceOrderPanel({
   }
 
   function validateLink(value: string): string {
+    if (!service.showLinkUrl) return "";
     const v = value.trim();
     if (!v) return "Vui lòng nhập thông tin này.";
     if (isICloud && !/^\d{14,16}$/.test(v)) return "IMEI không hợp lệ — cần 14–16 chữ số.";
@@ -337,6 +351,11 @@ function ServiceOrderPanel({
     return "";
   }
 
+  function validateTitle(value: string): string {
+    if (service.requiresTitle && !value.trim()) return "Vui lòng nhập tiêu đề.";
+    return "";
+  }
+
   async function handleCccdFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -355,6 +374,24 @@ function ServiceOrderPanel({
     }
   }
 
+  async function handleSampleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSampleError("");
+    const fd = new FormData();
+    fd.append("file", file);
+    setSampleUploading(true);
+    try {
+      const res = await fetch("/api/user/upload?type=order-sample", { credentials: "include", method: "POST", body: fd });
+      const json = (await res.json()) as { data?: { url: string }; error?: string };
+      if (!res.ok) { setSampleError(json.error ?? "Upload thất bại"); return; }
+      setSampleFileUrl(json.data?.url ?? "");
+    } finally {
+      setSampleUploading(false);
+      if (sampleInputRef.current) sampleInputRef.current.value = "";
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isLoggedIn) { router.push("/dang-nhap"); return; }
@@ -366,22 +403,32 @@ function ServiceOrderPanel({
     const gErr = validateGmail(form.gmailPass);
     const wErr = validateWarranty(form.warranty);
     const cErr = (service.requiresCccd && !cccdUrl) ? "Vui lòng tải lên ảnh CCCD mặt trước." : "";
+    const tErr = validateTitle(form.title);
+    const sErr = (service.requiresSampleFile && !sampleFileUrl) ? "Vui lòng tải lên file mẫu." : "";
     setLinkTouched(true);    setLinkError(lErr);
     setPhoneTouched(true);   setPhoneError(pErr);
     setGmailTouched(true);   setGmailError(gErr);
     setWarrantyTouched(true); setWarrantyError(wErr);
     setCccdFieldError(cErr);
-    if (lErr || pErr || gErr || wErr || cErr) return;
+    setTitleTouched(true);   setTitleError(tErr);
+    setSampleFieldError(sErr);
+    if (lErr || pErr || gErr || wErr || cErr || tErr || sErr) return;
     setError("");
     setLoading(true);
     try {
       const customerNote = JSON.stringify({
-        ...(isICloud ? { imei: form.imeiOrLink.trim() || undefined } : { link: form.imeiOrLink.trim() || undefined }),
-        accountPass: form.accountPass.trim() || undefined,
-        gmailPass: form.gmailPass.trim() || undefined,
+        ...(!service.showLinkUrl
+          ? {}
+          : isICloud
+            ? { imei: form.imeiOrLink.trim() || undefined }
+            : { link: form.imeiOrLink.trim() || undefined }),
+        accountPass: (service.showAccountPass && !isICloud) ? (form.accountPass.trim() || undefined) : undefined,
+        gmailPass: (service.showGmailPass && !isICloud) ? (form.gmailPass.trim() || undefined) : undefined,
         zaloPhone: form.zaloPhone.trim(),
         accountType: service.requiresAccountType ? form.accountType : undefined,
         cccdUrl: service.requiresCccd ? (cccdUrl || undefined) : undefined,
+        title: service.requiresTitle ? (form.title.trim() || undefined) : undefined,
+        sampleFileUrl: service.requiresSampleFile ? (sampleFileUrl || undefined) : undefined,
         note: form.note.trim() || undefined,
       });
 
@@ -490,36 +537,66 @@ function ServiceOrderPanel({
 
           {/* Main fields grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* IMEI / Link */}
-            <div>
-              <label className="block text-xs font-semibold text-[#374151] mb-1.5 flex items-center gap-1.5">
-                {isICloud
-                  ? <><Smartphone size={12} strokeWidth={2} className="text-[#7c3aed]" /> IMEI Máy *</>
-                  : <><Link2 size={12} strokeWidth={2} className="text-[#0066ff]" /> Link URL *</>}
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]">
+            {/* IMEI / Link — admin có thể ẩn riêng theo dịch vụ */}
+            {service.showLinkUrl && (
+              <div>
+                <label className="block text-xs font-semibold text-[#374151] mb-1.5 flex items-center gap-1.5">
                   {isICloud
-                    ? <Smartphone size={15} strokeWidth={1.75} />
-                    : <Link2 size={15} strokeWidth={1.75} />}
-                </span>
-                <input
-                  type="text"
-                  value={form.imeiOrLink}
-                  onChange={(e) => {
-                    setField("imeiOrLink", e.target.value);
-                    if (linkTouched) setLinkError(validateLink(e.target.value));
-                  }}
-                  onBlur={() => { setLinkTouched(true); setLinkError(validateLink(form.imeiOrLink)); }}
-                  placeholder={isICloud ? "VD: 352456789013456" : "Link Tài khoản , Bài viết , fanpage"}
-                  className={`w-full rounded-xl border pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none transition-colors ${
-                    linkError ? "border-[#ef4444] bg-[#fff5f5] focus:border-[#ef4444]" : "border-[#e2e8f0] bg-[#f8fafc] focus:border-[#7C3AED]"
-                  }`}
-                  suppressHydrationWarning
-                />
+                    ? <><Smartphone size={12} strokeWidth={2} className="text-[#7c3aed]" /> IMEI Máy *</>
+                    : <><Link2 size={12} strokeWidth={2} className="text-[#0066ff]" /> Link URL *</>}
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]">
+                    {isICloud
+                      ? <Smartphone size={15} strokeWidth={1.75} />
+                      : <Link2 size={15} strokeWidth={1.75} />}
+                  </span>
+                  <input
+                    type="text"
+                    value={form.imeiOrLink}
+                    onChange={(e) => {
+                      setField("imeiOrLink", e.target.value);
+                      if (linkTouched) setLinkError(validateLink(e.target.value));
+                    }}
+                    onBlur={() => { setLinkTouched(true); setLinkError(validateLink(form.imeiOrLink)); }}
+                    placeholder={isICloud ? "VD: 352456789013456" : "Link Tài khoản , Bài viết , fanpage"}
+                    className={`w-full rounded-xl border pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none transition-colors ${
+                      linkError ? "border-[#ef4444] bg-[#fff5f5] focus:border-[#ef4444]" : "border-[#e2e8f0] bg-[#f8fafc] focus:border-[#7C3AED]"
+                    }`}
+                    suppressHydrationWarning
+                  />
+                </div>
+                {linkError && <p className="mt-1 text-xs text-[#ef4444]">{linkError}</p>}
               </div>
-              {linkError && <p className="mt-1 text-xs text-[#ef4444]">{linkError}</p>}
-            </div>
+            )}
+
+            {/* Tiêu đề — hiện khi service bật flag requiresTitle. Đặt trước SĐT để khi chỉ còn 2 field này thì Tiêu đề nằm bên trái, SĐT bên phải */}
+            {service.requiresTitle && (
+              <div>
+                <label className="block text-xs font-semibold text-[#374151] mb-1.5 flex items-center gap-1.5">
+                  <TitleIcon size={12} strokeWidth={2} className="text-[#0066ff]" />
+                  Tiêu đề <span className="text-[#ef4444]">*</span>
+                </label>
+                <div className="relative">
+                  <TitleIcon size={15} strokeWidth={1.75} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+                  <input
+                    type="text"
+                    value={form.title}
+                    onChange={(e) => {
+                      setField("title", e.target.value);
+                      if (titleTouched) setTitleError(validateTitle(e.target.value));
+                    }}
+                    onBlur={() => { setTitleTouched(true); setTitleError(validateTitle(form.title)); }}
+                    placeholder="Nhập tiêu đề đơn hàng"
+                    className={`w-full rounded-xl border pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none transition-colors ${
+                      titleError ? "border-[#ef4444] bg-[#fff5f5] focus:border-[#ef4444]" : "border-[#e2e8f0] bg-[#f8fafc] focus:border-[#7C3AED]"
+                    }`}
+                    suppressHydrationWarning
+                  />
+                </div>
+                {titleError && <p className="mt-1 text-xs text-[#ef4444]">{titleError}</p>}
+              </div>
+            )}
 
             {/* SĐT Zalo */}
             <div>
@@ -547,53 +624,109 @@ function ServiceOrderPanel({
               {phoneError && <p className="mt-1 text-xs text-[#ef4444]">{phoneError}</p>}
             </div>
 
-            {/* Tài khoản/pass — ẩn với iCloud */}
-            {!isICloud && (
-              <>
-                <div>
-                  <label className="block text-xs font-semibold text-[#374151] mb-1.5 flex items-center gap-1.5">
-                    <KeyRound size={12} strokeWidth={2} className="text-[#f59e0b]" />
-                    Tài khoản/pass cũ (nếu có)
-                  </label>
-                  <div className="relative">
-                    <KeyRound size={15} strokeWidth={1.75} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
-                    <input
-                      type="text"
-                      value={form.accountPass}
-                      onChange={(e) => setField("accountPass", e.target.value)}
-                      placeholder="Tài khoản/pass cũ"
-                      className="w-full rounded-xl border border-[#e2e8f0] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:border-[#7C3AED] focus:outline-none transition-colors"
-                      suppressHydrationWarning
-                    />
-                  </div>
+            {/* Tài khoản/pass cũ — ẩn với iCloud, admin có thể ẩn riêng theo dịch vụ */}
+            {!isICloud && service.showAccountPass && (
+              <div>
+                <label className="block text-xs font-semibold text-[#374151] mb-1.5 flex items-center gap-1.5">
+                  <KeyRound size={12} strokeWidth={2} className="text-[#f59e0b]" />
+                  Tài khoản/pass cũ (nếu có)
+                </label>
+                <div className="relative">
+                  <KeyRound size={15} strokeWidth={1.75} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+                  <input
+                    type="text"
+                    value={form.accountPass}
+                    onChange={(e) => setField("accountPass", e.target.value)}
+                    placeholder="Tài khoản/pass cũ"
+                    className="w-full rounded-xl border border-[#e2e8f0] bg-[#f8fafc] pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:border-[#7C3AED] focus:outline-none transition-colors"
+                    suppressHydrationWarning
+                  />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[#374151] mb-1.5 flex items-center gap-1.5">
-                    <Mail size={12} strokeWidth={2} className="text-[#ef4444]" />
-                    Gmail/pass cũ (nếu có)
-                  </label>
-                  <div className="relative">
-                    <Mail size={15} strokeWidth={1.75} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
-                    <input
-                      type="text"
-                      value={form.gmailPass}
-                      onChange={(e) => {
-                        setField("gmailPass", e.target.value);
-                        if (gmailTouched) setGmailError(validateGmail(e.target.value));
-                      }}
-                      onBlur={() => { setGmailTouched(true); setGmailError(validateGmail(form.gmailPass)); }}
-                      placeholder="Gmail/pass cũ"
-                      className={`w-full rounded-xl border pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none transition-colors ${
-                        gmailError ? "border-[#ef4444] bg-[#fff5f5] focus:border-[#ef4444]" : "border-[#e2e8f0] bg-[#f8fafc] focus:border-[#7C3AED]"
-                      }`}
-                      suppressHydrationWarning
-                    />
-                  </div>
-                  {gmailError && <p className="mt-1 text-xs text-[#ef4444]">{gmailError}</p>}
+              </div>
+            )}
+
+            {/* Gmail/pass cũ — ẩn với iCloud, admin có thể ẩn riêng theo dịch vụ */}
+            {!isICloud && service.showGmailPass && (
+              <div>
+                <label className="block text-xs font-semibold text-[#374151] mb-1.5 flex items-center gap-1.5">
+                  <Mail size={12} strokeWidth={2} className="text-[#ef4444]" />
+                  Gmail/pass cũ (nếu có)
+                </label>
+                <div className="relative">
+                  <Mail size={15} strokeWidth={1.75} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]" />
+                  <input
+                    type="text"
+                    value={form.gmailPass}
+                    onChange={(e) => {
+                      setField("gmailPass", e.target.value);
+                      if (gmailTouched) setGmailError(validateGmail(e.target.value));
+                    }}
+                    onBlur={() => { setGmailTouched(true); setGmailError(validateGmail(form.gmailPass)); }}
+                    placeholder="Gmail/pass cũ"
+                    className={`w-full rounded-xl border pl-9 pr-3 py-2.5 text-sm text-[#0f172a] placeholder:text-[#94a3b8] focus:outline-none transition-colors ${
+                      gmailError ? "border-[#ef4444] bg-[#fff5f5] focus:border-[#ef4444]" : "border-[#e2e8f0] bg-[#f8fafc] focus:border-[#7C3AED]"
+                    }`}
+                    suppressHydrationWarning
+                  />
                 </div>
-              </>
+                {gmailError && <p className="mt-1 text-xs text-[#ef4444]">{gmailError}</p>}
+              </div>
             )}
           </div>
+
+          {/* Tải file mẫu — hiện khi service bật flag requiresSampleFile */}
+          {service.requiresSampleFile && (
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-[#374151] mb-2">
+                <FileImage size={12} strokeWidth={2} className="text-[#0066ff]" />
+                Tải file mẫu <span className="text-[#ef4444]">*</span>
+              </label>
+              <div className={`relative rounded-xl border-2 border-dashed transition-colors ${
+                sampleFileUrl ? "border-[#0d9488] bg-[#f0fdfa]"
+                : sampleFieldError ? "border-[#ef4444] bg-[#fff5f5]"
+                : "border-[#e2e8f0] bg-[#f8fafc] hover:border-[#0d9488]/50"
+              }`}>
+                {sampleFileUrl ? (
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={sampleFileUrl} alt="File mẫu" className="w-16 h-10 object-cover rounded-lg border border-[#0d9488]/30" />
+                    <div className="flex-1">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold text-[#0d9488]">
+                        <CheckCircle size={13} strokeWidth={2} /> File mẫu đã tải lên
+                      </p>
+                    </div>
+                    <button type="button" onClick={() => setSampleFileUrl("")} className="flex items-center gap-1 text-[11px] text-[#ef4444] hover:underline">
+                      <X size={12} strokeWidth={2} /> Xóa
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center gap-2 py-7 cursor-pointer">
+                    {sampleUploading ? (
+                      <span className="flex items-center gap-2 text-xs text-[#0d9488]">
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                        </svg>
+                        Đang tải lên...
+                      </span>
+                    ) : (
+                      <>
+                        <div className="w-12 h-12 rounded-2xl bg-[#eff6ff] flex items-center justify-center">
+                          <Upload size={22} strokeWidth={1.75} className="text-[#0066ff]" />
+                        </div>
+                        <span className="text-xs font-semibold text-[#475569]">Click để tải lên file mẫu</span>
+                        <span className="text-[10px] text-[#94a3b8]">PNG, JPG hoặc JPEG</span>
+                      </>
+                    )}
+                    <input ref={sampleInputRef} type="file" accept="image/jpeg,image/png,image/webp"
+                      onChange={handleSampleFile} disabled={sampleUploading} className="hidden" />
+                  </label>
+                )}
+              </div>
+              {sampleError && <p className="text-xs text-[#ef4444] mt-1">{sampleError}</p>}
+              {sampleFieldError && !sampleFileUrl && <p className="text-xs text-[#ef4444] mt-1">{sampleFieldError}</p>}
+            </div>
+          )}
 
           {/* Account type — hiện khi service bật flag requiresAccountType */}
           {service.requiresAccountType && (

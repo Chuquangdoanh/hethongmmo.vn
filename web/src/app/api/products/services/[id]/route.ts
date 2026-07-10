@@ -35,6 +35,11 @@ const servicePatchSchema = z.object({
   isActive: z.boolean().optional(),
   requiresAccountType: z.boolean().optional(),
   requiresCccd: z.boolean().optional(),
+  requiresTitle: z.boolean().optional(),
+  requiresSampleFile: z.boolean().optional(),
+  showAccountPass: z.boolean().optional(),
+  showGmailPass: z.boolean().optional(),
+  showLinkUrl: z.boolean().optional(),
 });
 
 // ── PATCH — Update service (Staff+) ──────────────────────────────────────────

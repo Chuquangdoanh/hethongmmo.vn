@@ -62,6 +62,8 @@ export default async function DichVuPage({
         totalViews: true, isFeatured: true,
         description: true, warrantyOptions: true, productList: true,
         requiresAccountType: true, requiresCccd: true,
+        requiresTitle: true, requiresSampleFile: true,
+        showAccountPass: true, showGmailPass: true, showLinkUrl: true,
       },
     }),
     prisma.service.count({

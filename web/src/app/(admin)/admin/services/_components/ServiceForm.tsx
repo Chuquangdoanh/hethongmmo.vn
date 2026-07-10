@@ -69,6 +69,11 @@ interface ServiceData {
   seoDescription?: string;
   requiresAccountType?: boolean;
   requiresCccd?: boolean;
+  requiresTitle?: boolean;
+  requiresSampleFile?: boolean;
+  showAccountPass?: boolean;
+  showGmailPass?: boolean;
+  showLinkUrl?: boolean;
 }
 
 const inputCls =
@@ -101,6 +106,11 @@ export default function ServiceForm({ initial }: { initial?: ServiceData }) {
     seoDescription: initial?.seoDescription ?? "",
     requiresAccountType: initial?.requiresAccountType ?? false,
     requiresCccd: initial?.requiresCccd ?? false,
+    requiresTitle: initial?.requiresTitle ?? false,
+    requiresSampleFile: initial?.requiresSampleFile ?? false,
+    showAccountPass: initial?.showAccountPass ?? true,
+    showGmailPass: initial?.showGmailPass ?? true,
+    showLinkUrl: initial?.showLinkUrl ?? true,
   });
 
   const [warrantyOptions, setWarrantyOptions] = useState<WarrantyOption[]>(initial?.warrantyOptions ?? []);
@@ -223,6 +233,11 @@ export default function ServiceForm({ initial }: { initial?: ServiceData }) {
       ...(form.seoDescription ? { seoDescription: form.seoDescription } : {}),
       requiresAccountType: form.requiresAccountType,
       requiresCccd: form.requiresCccd,
+      requiresTitle: form.requiresTitle,
+      requiresSampleFile: form.requiresSampleFile,
+      showAccountPass: form.showAccountPass,
+      showGmailPass: form.showGmailPass,
+      showLinkUrl: form.showLinkUrl,
     };
 
     setLoading(true);
@@ -323,6 +338,19 @@ export default function ServiceForm({ initial }: { initial?: ServiceData }) {
             <p className="text-xs font-semibold text-[#7C3AED] uppercase tracking-wide">Yêu cầu khi đặt hàng</p>
             <div className="flex items-center justify-between gap-3">
               <div>
+                <p className="text-sm font-medium text-gray-900">Link URL / IMEI</p>
+                <p className="text-xs text-gray-500">Hiện ô nhập link tài khoản (hoặc IMEI với iCloud)</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => set("showLinkUrl", !form.showLinkUrl)}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${form.showLinkUrl ? "bg-[#7C3AED]" : "bg-gray-200"}`}
+              >
+                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form.showLinkUrl ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
                 <p className="text-sm font-medium text-gray-900">Loại tài khoản</p>
                 <p className="text-xs text-gray-500">Khách chọn: chính chủ / không chính chủ</p>
               </div>
@@ -345,6 +373,58 @@ export default function ServiceForm({ initial }: { initial?: ServiceData }) {
                 className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${form.requiresCccd ? "bg-[#7C3AED]" : "bg-gray-200"}`}
               >
                 <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form.requiresCccd ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Tiêu đề</p>
+                <p className="text-xs text-gray-500">Khách nhập tiêu đề cho đơn hàng</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => set("requiresTitle", !form.requiresTitle)}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${form.requiresTitle ? "bg-[#7C3AED]" : "bg-gray-200"}`}
+              >
+                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form.requiresTitle ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Tải file mẫu</p>
+                <p className="text-xs text-gray-500">Khách upload ảnh mẫu gửi kèm đơn hàng</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => set("requiresSampleFile", !form.requiresSampleFile)}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${form.requiresSampleFile ? "bg-[#7C3AED]" : "bg-gray-200"}`}
+              >
+                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form.requiresSampleFile ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Tài khoản/pass cũ</p>
+                <p className="text-xs text-gray-500">Hiện ô nhập tài khoản/pass cũ (nếu có)</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => set("showAccountPass", !form.showAccountPass)}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${form.showAccountPass ? "bg-[#7C3AED]" : "bg-gray-200"}`}
+              >
+                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form.showAccountPass ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Gmail/pass cũ</p>
+                <p className="text-xs text-gray-500">Hiện ô nhập Gmail/pass cũ (nếu có)</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => set("showGmailPass", !form.showGmailPass)}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${form.showGmailPass ? "bg-[#7C3AED]" : "bg-gray-200"}`}
+              >
+                <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form.showGmailPass ? "translate-x-6" : "translate-x-1"}`} />
               </button>
             </div>
           </div>

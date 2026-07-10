@@ -26,6 +26,7 @@ const NOTE_LABELS: Record<string, string> = {
   zaloPhone: "SĐT Zalo liên hệ", accountType: "Loại tài khoản",
   phone: "Số điện thoại", name: "Họ tên",
   note: "Ghi chú", cccdUrl: "CCCD mặt trước",
+  title: "Tiêu đề", sampleFileUrl: "File mẫu",
 };
 
 export default async function AdminOrderDetailPage({
@@ -121,14 +122,14 @@ export default async function AdminOrderDetailPage({
                   if (!val) return null;
                   const label = NOTE_LABELS[key] ?? key;
 
-                  if (key === "cccdUrl") {
+                  if (key === "cccdUrl" || key === "sampleFileUrl") {
                     return (
                       <div key={key}>
                         <p className="text-xs text-gray-500 mb-2">{label}</p>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={val}
-                          alt="CCCD mặt trước"
+                          alt={label}
                           className="rounded-xl border border-gray-200 max-w-xs w-full object-contain"
                         />
                         <a

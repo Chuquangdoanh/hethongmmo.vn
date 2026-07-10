@@ -94,6 +94,11 @@ const serviceCreateSchema = z.object({
   isActive: z.boolean().default(true),
   requiresAccountType: z.boolean().default(false),
   requiresCccd: z.boolean().default(false),
+  requiresTitle: z.boolean().default(false),
+  requiresSampleFile: z.boolean().default(false),
+  showAccountPass: z.boolean().default(true),
+  showGmailPass: z.boolean().default(true),
+  showLinkUrl: z.boolean().default(true),
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -147,6 +152,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         isActive: data.isActive,
         requiresAccountType: data.requiresAccountType,
         requiresCccd: data.requiresCccd,
+        requiresTitle: data.requiresTitle,
+        requiresSampleFile: data.requiresSampleFile,
+        showAccountPass: data.showAccountPass,
+        showGmailPass: data.showGmailPass,
+        showLinkUrl: data.showLinkUrl,
       },
       select: { id: true, slug: true, name: true },
     });
