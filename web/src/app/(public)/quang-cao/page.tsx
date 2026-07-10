@@ -10,6 +10,10 @@ import { guardPublicPage } from "@/lib/utils/public-page-guard";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import ImageLightbox from "@/components/shared/ImageLightbox";
 import { ColoredTitle } from "@/components/shared/ColoredTitle";
+import CategoryStaffSection from "../dich-vu/_components/CategoryStaffSection";
+
+// Nhân sự trang Quảng cáo được quản lý dùng chung danh mục ảo "Quảng cáo" ở /admin/nhan-su-danh-muc
+const STAFF_PAGE_CATEGORY = "Quảng cáo";
 
 import { buildMeta } from "@/lib/utils/seo";
 export const metadata: Metadata = buildMeta({
@@ -57,10 +61,15 @@ type WhyChooseData = {
 
 export default async function QuangCaoAdsPage() {
   await guardPublicPage("quang-cao");
-  const [pageHero, whyChooseData, session] = await Promise.all([
+  const [pageHero, whyChooseData, session, categoryStaff] = await Promise.all([
     getSiteContent<{ badge: string; title: string; subtitle: string; description: string; thumbnail: string; titleAccentColor: string }>(SITE_CONTENT_KEYS.PAGE_QUANG_CAO),
     getSiteContent<WhyChooseData>(SITE_CONTENT_KEYS.PAGE_QUANG_CAO_WHY_CHOOSE),
     auth(),
+    prisma.categoryStaff.findMany({
+      where: { category: STAFF_PAGE_CATEGORY, isActive: true },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
+      select: { id: true, name: true, role: true, description: true, avatarUrl: true },
+    }),
   ]);
   const sessionUser = session?.user as AuthenticatedUser | undefined;
 
@@ -368,6 +377,15 @@ export default async function QuangCaoAdsPage() {
           </a>
         </div>
       </section>
+
+      {/* ── ĐỘI NGŨ NHÂN SỰ ──────────────────────────────────────── */}
+      {categoryStaff.length > 0 && (
+        <section style={{ padding: "0 24px 64px", background: "#fff" }}>
+          <div style={{ maxWidth: 1480, margin: "0 auto" }}>
+            <CategoryStaffSection staff={categoryStaff} />
+          </div>
+        </section>
+      )}
 
     </>
   );

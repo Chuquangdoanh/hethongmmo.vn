@@ -9,6 +9,10 @@ import ServiceSectionClient, { type Illustration, type UserInfo } from "./_compo
 import ImageLightbox from "@/components/shared/ImageLightbox";
 import KocGalleryClient from "./_components/KocGalleryClient";
 import { ColoredTitle } from "@/components/shared/ColoredTitle";
+import CategoryStaffSection from "../dich-vu/_components/CategoryStaffSection";
+
+// Nhân sự trang Network được quản lý dùng chung danh mục ảo "Network" ở /admin/nhan-su-danh-muc
+const STAFF_PAGE_CATEGORY = "Network";
 
 import { buildMeta } from "@/lib/utils/seo";
 export const metadata: Metadata = buildMeta({
@@ -103,11 +107,16 @@ interface PageNetworksKoc {
 export default async function NetworksPage() {
   await guardPublicPage("NetWorks");
 
-  const [pageHero, trustContent, kocContent, contactCms] = await Promise.all([
+  const [pageHero, trustContent, kocContent, contactCms, categoryStaff] = await Promise.all([
     getSiteContent<PageNetworksHero>(SITE_CONTENT_KEYS.PAGE_NETWORKS),
     getSiteContent<PageNetworksTrust>(SITE_CONTENT_KEYS.PAGE_NETWORKS_TRUST),
     getSiteContent<PageNetworksKoc>(SITE_CONTENT_KEYS.PAGE_NETWORKS_KOC),
     getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT),
+    prisma.categoryStaff.findMany({
+      where: { category: STAFF_PAGE_CATEGORY, isActive: true },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
+      select: { id: true, name: true, role: true, description: true, avatarUrl: true },
+    }),
   ]);
   const telegramBtn = contactCms.quickButtons?.find((b) => b.id === "telegram");
   const telegramHref = telegramBtn?.href ?? "https://t.me/BossMeta789";
@@ -273,6 +282,15 @@ export default async function NetworksPage() {
           <KocGalleryClient items={kocContent.items} />
         </div>
       </section>
+
+      {/* ── ĐỘI NGŨ NHÂN SỰ ── */}
+      {categoryStaff.length > 0 && (
+        <section style={{ padding: "0 16px 64px" }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+            <CategoryStaffSection staff={categoryStaff} />
+          </div>
+        </section>
+      )}
 
       {/* ── CTA ── */}
       <section style={{ padding: "0 16px 80px" }}>
