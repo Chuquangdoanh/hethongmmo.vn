@@ -29,6 +29,13 @@ const addSchema = z.object({
   apiKey:  z.string().min(8, "API key quá ngắn").trim(),
 });
 
+// ID cố định theo domain (không random) — nếu provider bị xóa rồi thêm lại với cùng baseUrl,
+// ID sẽ trùng ID cũ, tự động khớp lại với sản phẩm đã đồng bộ trước đó thay vì bị "mồ côi"
+function buildProviderIdFromUrl(baseUrl: string): string {
+  const host = new URL(baseUrl).hostname.replace(/^www\./, "");
+  return host.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+}
+
 // POST — thêm provider mới
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
@@ -40,7 +47,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (!parsed.success) return apiValidationError(parsed.error.issues);
 
     const configs = await getProviderConfigs();
-    const newId = randomBytes(4).toString("hex");
+    const baseId = buildProviderIdFromUrl(parsed.data.baseUrl);
+    if (configs.some(c => c.id === baseId)) {
+      return apiValidationError([{ message: "Domain này đã được thêm rồi" }]);
+    }
+    const newId = baseId || randomBytes(4).toString("hex");
     const newEntry: ProviderEntry = {
       id:      newId,
       name:    parsed.data.name,

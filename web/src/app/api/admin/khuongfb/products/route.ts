@@ -25,6 +25,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const providerFilter  = req.nextUrl.searchParams.get("provider");
     const kfbCategory     = req.nextUrl.searchParams.get("kfbCategory");
     const categoriesOnly  = req.nextUrl.searchParams.get("categoriesOnly") === "1";
+    const onlyEnabled     = req.nextUrl.searchParams.get("enabled") === "1";
 
     // Return distinct externalCategory list for filter UI
     if (categoriesOnly) {
@@ -40,6 +41,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       ...(validSection   ? { displaySection: validSection }     : {}),
       ...(providerFilter ? { provider: providerFilter }         : {}),
       ...(kfbCategory    ? { externalCategory: kfbCategory }    : {}),
+      ...(onlyEnabled    ? { isEnabled: true }                  : {}),
     };
 
     const [raw, total] = await Promise.all([

@@ -81,7 +81,7 @@ export default function ProviderManager({ onProvidersChanged }: Props) {
         credentials: "include",
       });
       const json = await res.json() as {
-        data?: { results: Record<string, { created: number; updated: number; deactivated: number; total: number } | { error: string }> };
+        data?: { results: Record<string, { created: number; updated: number; deactivated: number; total: number; durationMs: number } | { error: string }> };
         error?: string;
       };
       if (!res.ok) {
@@ -92,7 +92,8 @@ export default function ProviderManager({ onProvidersChanged }: Props) {
       if (r && "error" in r) {
         setMsg({ type: "err", text: `${p.name}: ❌ ${r.error}` });
       } else if (r) {
-        setMsg({ type: "ok", text: `${p.name}: ✓ ${r.total} sp (mới: ${r.created}, cập nhật: ${r.updated})` });
+        const duration = r.durationMs < 1000 ? `${r.durationMs}ms` : `${(r.durationMs / 1000).toFixed(1)}s`;
+        setMsg({ type: "ok", text: `${p.name}: ✓ ${r.total} sp (mới: ${r.created}, cập nhật: ${r.updated}) — ${duration}` });
       }
       onProvidersChanged();
     } catch {

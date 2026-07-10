@@ -50,7 +50,11 @@ interface ProviderTab {
   name: string;
 }
 
-type SyncProviderResult = { created: number; updated: number; deactivated: number; total: number } | { error: string };
+type SyncProviderResult = { created: number; updated: number; deactivated: number; total: number; durationMs: number } | { error: string };
+
+function formatDuration(ms: number): string {
+  return ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
+}
 
 export default function KhuongfbAdminPage() {
   const [products,        setProducts]        = useState<KhuongfbProduct[]>([]);
@@ -65,14 +69,16 @@ export default function KhuongfbAdminPage() {
   const [activeProvider,  setActiveProvider]  = useState<string>("");
   const [kfbCategory,     setKfbCategory]     = useState<string>("");
   const [kfbCategories,   setKfbCategories]   = useState<string[]>([]);
+  const [statusFilter,    setStatusFilter]    = useState<string>("");
 
-  const fetchProducts = useCallback(async (p: number, sec: string, provId: string, kfbCat: string) => {
+  const fetchProducts = useCallback(async (p: number, sec: string, provId: string, kfbCat: string, status: string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(p), limit: "50" });
       if (sec)    params.set("section",     sec);
       if (provId) params.set("provider",    provId);
       if (kfbCat) params.set("kfbCategory", kfbCat);
+      if (status) params.set("enabled",     status);
       const res  = await fetch(`/api/admin/khuongfb/products?${params.toString()}`);
       const json = await res.json() as { data?: KhuongfbProduct[]; meta?: Meta };
 
@@ -116,8 +122,8 @@ export default function KhuongfbAdminPage() {
   }, [fetchProviders, fetchCategories, fetchKfbCategories]);
 
   useEffect(() => {
-    void fetchProducts(page, section, activeProvider, kfbCategory);
-  }, [page, section, activeProvider, kfbCategory, fetchProducts]);
+    void fetchProducts(page, section, activeProvider, kfbCategory, statusFilter);
+  }, [page, section, activeProvider, kfbCategory, statusFilter, fetchProducts]);
 
   function handleSectionChange(val: string) {
     setSection(val);
@@ -131,6 +137,11 @@ export default function KhuongfbAdminPage() {
 
   function handleKfbCategoryChange(val: string) {
     setKfbCategory(val);
+    setPage(1);
+  }
+
+  function handleStatusChange(val: string) {
+    setStatusFilter(val);
     setPage(1);
   }
 
@@ -156,12 +167,12 @@ export default function KhuongfbAdminPage() {
           hasError = true;
         } else {
           const deactivatedNote = r.deactivated > 0 ? `, tắt: ${r.deactivated}` : "";
-          lines.push(`${label}: ✓ ${r.total} sp (mới: ${r.created}, cập nhật: ${r.updated}${deactivatedNote})`);
+          lines.push(`${label}: ✓ ${r.total} sp (mới: ${r.created}, cập nhật: ${r.updated}${deactivatedNote}) — ${formatDuration(r.durationMs)}`);
         }
       }
 
       setSyncMsg({ type: hasError ? "err" : "ok", text: lines.join(" | ") });
-      await fetchProducts(1, section, activeProvider, kfbCategory);
+      await fetchProducts(1, section, activeProvider, kfbCategory, statusFilter);
       setPage(1);
     } catch {
       setSyncMsg({ type: "err", text: "Đồng bộ thất bại — không kết nối được server" });
@@ -188,8 +199,20 @@ export default function KhuongfbAdminPage() {
             Tổng: {meta.total} sản phẩm · Đang hiển thị: {enabledCount}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <ProviderManager onProvidersChanged={() => { void fetchProviders(); void fetchProducts(1, section, activeProvider, kfbCategory); }} />
+        <div className="flex items-center gap-3">
+          {/* Toggle chỉ hiện sản phẩm đang bán */}
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+            Chỉ đang bán
+            <button
+              type="button"
+              onClick={() => handleStatusChange(statusFilter === "1" ? "" : "1")}
+              className={`relative shrink-0 inline-flex h-5 w-9 items-center rounded-full transition-colors ${statusFilter === "1" ? "bg-emerald-500" : "bg-gray-300"}`}
+            >
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${statusFilter === "1" ? "translate-x-[18px]" : "translate-x-0.5"}`} />
+            </button>
+          </label>
+
+          <ProviderManager onProvidersChanged={() => { void fetchProviders(); void fetchProducts(1, section, activeProvider, kfbCategory, statusFilter); }} />
           <button
             onClick={() => void handleSync()}
             disabled={syncing}
@@ -287,7 +310,7 @@ export default function KhuongfbAdminPage() {
         <KhuongfbProductTable
           products={products}
           categories={categories}
-          onRefresh={() => void fetchProducts(page, section, activeProvider, kfbCategory)}
+          onRefresh={() => void fetchProducts(page, section, activeProvider, kfbCategory, statusFilter)}
         />
       )}
 

@@ -3,6 +3,7 @@ import { extractKhuongfbStockAmount } from "@/lib/khuongfb/types";
 import type { ExternalProductProvider, SyncResult } from "./types";
 
 export async function syncProvider(provider: ExternalProductProvider): Promise<SyncResult> {
+  const startedAt = Date.now();
   const products = await provider.getProducts();
   const incomingIds = products.map(p => p.externalId);
   let created = 0;
@@ -66,5 +67,12 @@ export async function syncProvider(provider: ExternalProductProvider): Promise<S
       })
     : { count: 0 };
 
-  return { created, updated, deactivated, total: products.length, syncedAt: new Date() };
+  return {
+    created,
+    updated,
+    deactivated,
+    total:      products.length,
+    syncedAt:   new Date(),
+    durationMs: Date.now() - startedAt,
+  };
 }

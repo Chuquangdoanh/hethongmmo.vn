@@ -36,4 +36,5 @@ export interface SyncResult {
   deactivated: number;
   total:       number;
   syncedAt:    Date;
+  durationMs:  number;
 }
