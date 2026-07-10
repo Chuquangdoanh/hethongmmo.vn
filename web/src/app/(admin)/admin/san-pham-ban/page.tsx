@@ -13,9 +13,9 @@ export const metadata: Metadata = { title: "Sản phẩm nhà bán" };
 const PAGE_SIZE = 20;
 
 const PRODUCT_SELECT = {
-  id: true, name: true, price: true, isActive: true,
+  id: true, name: true, price: true, isActive: true, sellerCategory: true,
   isRestricted: true, isHidden: true, createdAt: true,
-  seller: { select: { id: true, fullName: true, email: true, sellerCategory: true, sellerRequest: { select: { id: true } } } },
+  seller: { select: { id: true, fullName: true, email: true, sellerRequest: { select: { id: true } } } },
   _count: {
     select: {
       orders: true,
@@ -237,7 +237,7 @@ export default async function AdminSellerProductsPage({
                       >
                         <td className="px-4 py-3">
                           <p className="text-sm font-medium text-gray-800 truncate max-w-50">{p.name}</p>
-                          <p className="text-[11px] text-gray-400">{p.seller.sellerCategory}</p>
+                          <p className="text-[11px] text-gray-400">{p.sellerCategory}</p>
                         </td>
                         <td className="px-4 py-3">
                           <Link

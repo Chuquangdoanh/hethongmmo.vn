@@ -34,9 +34,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         skip: (page - 1) * PAGE_SIZE,
         take: PAGE_SIZE,
         select: {
-          id: true, name: true, price: true, isActive: true,
+          id: true, name: true, price: true, isActive: true, sellerCategory: true,
           isRestricted: true, createdAt: true,
-          seller: { select: { id: true, fullName: true, email: true, sellerCategory: true } },
+          seller: { select: { id: true, fullName: true, email: true } },
           _count: {
             select: {
               orders: true,
