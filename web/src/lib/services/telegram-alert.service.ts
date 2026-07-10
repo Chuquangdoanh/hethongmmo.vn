@@ -42,6 +42,16 @@ async function _getUserLabel(userId: string): Promise<string> {
   return `${escTelegramHtml(user.fullName)} (${escTelegramHtml(user.email)})`;
 }
 
+/** Lấy tên user KHÔNG kèm email — dùng cho tin gửi nhóm / gửi seller (không lộ email). */
+async function _getUserName(userId: string): Promise<string> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { fullName: true },
+  });
+  if (!user) return escTelegramHtml(userId);
+  return escTelegramHtml(user.fullName);
+}
+
 /** Gửi cảnh báo nạp tiền thành công — fire-and-forget, áp dụng cho mọi user. */
 export function notifyDepositSuccess(
   userId: string,
@@ -113,17 +123,44 @@ export type OrderSource =
   | { kind: "SELLER"; sellerId?: string }    // Nhà bán hàng — kèm tên/email seller
   | { kind: "KHUONGFB" };                    // KhuongFB
 
-/** Trả về dòng "Nguồn" cho tin đơn hàng theo nơi mua. */
-async function _getSourceLine(source: OrderSource): Promise<string> {
+/**
+ * Trả về dòng "Nguồn" cho tin đơn hàng theo nơi mua.
+ * withEmail = true: tin gửi chat gốc (admin) → seller kèm email.
+ * withEmail = false: tin gửi nhóm → chỉ tên seller.
+ */
+async function _getSourceLine(source: OrderSource, withEmail: boolean): Promise<string> {
   if (source.kind === "KHUONGFB") return `🌐 Nguồn: KhuongFB`;
   if (source.kind === "SYSTEM")   return `🏢 Nguồn: Hệ Thống MMO`;
 
-  // SELLER — hiển thị tên + email nhà bán hàng
-  const sellerLabel = source.sellerId ? await _getUserLabel(source.sellerId) : "Không rõ";
+  const sellerLabel = source.sellerId
+    ? await (withEmail ? _getUserLabel(source.sellerId) : _getUserName(source.sellerId))
+    : "Không rõ";
   return `🏪 Nhà bán hàng: ${sellerLabel}`;
 }
 
-/** Gửi cảnh báo mua hàng thành công — fire-and-forget, áp dụng cho mọi user. */
+/** Dựng nội dung tin đơn hàng mới với dòng user + nguồn cho trước. */
+function _buildOrderText(
+  userLine: string,
+  sourceLine: string,
+  itemName: string,
+  amount: string,
+  orderCode: string,
+): string {
+  return [
+    `🛒 <b>Đơn hàng mới</b>`,
+    ``,
+    `👤 User: ${userLine}`,
+    sourceLine,
+    `📦 Sản phẩm: ${escTelegramHtml(itemName)}`,
+    `💵 Số tiền: <b>${amount}đ</b>`,
+    `🔖 Mã đơn: <code>${escTelegramHtml(orderCode)}</code>`,
+  ].join("\n");
+}
+
+/**
+ * Gửi cảnh báo đơn hàng mới — fire-and-forget.
+ * Chat gốc (admin): hiển thị Tên + email. Nhóm đơn hàng: chỉ hiển thị Tên (không lộ email).
+ */
 export function notifyPurchaseSuccess(
   userId: string,
   itemName: string,
@@ -132,25 +169,20 @@ export function notifyPurchaseSuccess(
   source: OrderSource,
 ): void {
   void (async () => {
-    const [label, sourceLine] = await Promise.all([
+    const [nameWithEmail, nameOnly, sourceWithEmail, sourceNoEmail] = await Promise.all([
       _getUserLabel(userId),
-      _getSourceLine(source),
+      _getUserName(userId),
+      _getSourceLine(source, true),
+      _getSourceLine(source, false),
     ]);
-    const text = [
-      `🛒 <b>Đơn hàng mới</b>`,
-      ``,
-      `👤 User: ${label}`,
-      sourceLine,
-      `📦 Sản phẩm: ${escTelegramHtml(itemName)}`,
-      `💵 Số tiền: <b>${amount}đ</b>`,
-      `🔖 Mã đơn: <code>${escTelegramHtml(orderCode)}</code>`,
-    ].join("\n");
 
-    // Luôn gửi về chat gốc (như trước) + gửi thêm vào nhóm đơn hàng nếu có cấu hình
-    sendTelegramAlert(text);
+    // Chat gốc (admin) — kèm email
+    sendTelegramAlert(_buildOrderText(nameWithEmail, sourceWithEmail, itemName, amount, orderCode));
+
+    // Nhóm đơn hàng — chỉ tên, không email
     const orderChatId = process.env.TELEGRAM_ORDER_CHAT_ID;
     if (orderChatId && orderChatId !== process.env.TELEGRAM_ALERT_CHAT_ID) {
-      sendTelegramAlert(text, orderChatId);
+      sendTelegramAlert(_buildOrderText(nameOnly, sourceNoEmail, itemName, amount, orderCode), orderChatId);
     }
   })();
 }
@@ -196,7 +228,7 @@ export function notifySellerNewSupportMessage(
     if (!chatId) return;
 
     const [buyerLabel, order] = await Promise.all([
-      _getUserLabel(buyerId),
+      _getUserName(buyerId),
       prisma.order.findUnique({ where: { id: orderId }, select: { orderCode: true, itemName: true } }),
     ]);
     const preview = content.length > 300 ? `${content.slice(0, 300)}...` : content;
