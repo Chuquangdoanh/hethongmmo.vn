@@ -22,6 +22,18 @@ export default function RuleActions({ ruleId, isActive }: { ruleId: string; isAc
     }
   }
 
+  async function handleDelete() {
+    if (!window.confirm("Xóa rule hoa hồng này? Hành động không thể hoàn tác.")) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/affiliate-rules/${ruleId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      router.refresh();
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleEditPercent() {
     const input = window.prompt("Nhập % hoa hồng mới (0–100):");
     if (input === null) return;
@@ -61,6 +73,14 @@ export default function RuleActions({ ruleId, isActive }: { ruleId: string; isAc
         className={`rounded-md px-3 py-1 text-xs font-medium text-white disabled:opacity-50 ${isActive ? "bg-red-600" : "bg-green-600"}`}
       >
         {isActive ? "Tắt" : "Bật"}
+      </button>
+      <button
+        type="button"
+        disabled={loading}
+        onClick={handleDelete}
+        className="rounded-md bg-white border border-red-300 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+      >
+        Xóa
       </button>
     </div>
   );
