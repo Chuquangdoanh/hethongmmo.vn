@@ -122,7 +122,7 @@ export default async function SellerProfilePage({
       _count: { id: true },
     }),
     prisma.sellerProduct.findMany({
-      where: { sellerId, isActive: true, isHidden: false, isRestricted: false, deletedAt: null },
+      where: { sellerId, isActive: true, isHidden: false, isRestricted: false, approvalStatus: "APPROVED", deletedAt: null },
       select: {
         id: true, name: true, imageUrl: true, sellerCategory: true,
         price: true, salesCount: true, createdAt: true,

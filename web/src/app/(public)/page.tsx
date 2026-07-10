@@ -119,7 +119,7 @@ const getHomepageDbData = unstable_cache(
       }),
       prisma.sellerProduct.findMany({
         where: {
-          isActive: true, isHidden: false, isRestricted: false, deletedAt: null,
+          isActive: true, isHidden: false, isRestricted: false, approvalStatus: "APPROVED", deletedAt: null,
           stockItems: { some: { status: "AVAILABLE" } },
         },
         orderBy: [{ salesCount: "desc" }, { createdAt: "desc" }],

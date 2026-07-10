@@ -87,6 +87,7 @@ export default async function KhoTaiNguyenPage({
     isActive: true,
     isHidden: false,
     isRestricted: false,
+    approvalStatus: "APPROVED" as const,
     deletedAt: null,
     storeType: "KHO_TAI_NGUYEN" as const,
     stockItems: { some: { status: "AVAILABLE" as const } },

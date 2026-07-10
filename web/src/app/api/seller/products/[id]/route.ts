@@ -44,6 +44,7 @@ export async function GET(
         id: true, sellerId: true, sellerCategory: true, name: true,
         price: true, warrantyInfo: true, description: true, imageUrl: true,
         publishDate: true, isActive: true, isHidden: true, isRestricted: true,
+        approvalStatus: true, approvalRejectReason: true,
         salesCount: true, revenue: true, createdAt: true, updatedAt: true,
       },
     });
@@ -105,6 +106,7 @@ export async function PATCH(
       select: {
         id: true, sellerId: true, name: true, price: true,
         description: true, isHidden: true, isActive: true, isRestricted: true,
+        approvalStatus: true,
       },
     });
     if (!product) {
@@ -153,13 +155,18 @@ export async function PATCH(
     const updateData = {
       ...rest,
       ...(description !== undefined ? { description: sanitizeHtml(description) } : {}),
+      // Sản phẩm bị từ chối mà seller sửa lại → gửi duyệt lại tự động
+      ...(product.approvalStatus === "REJECTED"
+        ? { approvalStatus: "PENDING" as const, approvalRejectReason: null }
+        : {}),
     };
 
     const updated = await prisma.sellerProduct.update({
       where: { id },
       data: updateData,
       select: {
-        id: true, name: true, price: true, isActive: true, isHidden: true, updatedAt: true,
+        id: true, name: true, price: true, isActive: true, isHidden: true,
+        approvalStatus: true, updatedAt: true,
       },
     });
 

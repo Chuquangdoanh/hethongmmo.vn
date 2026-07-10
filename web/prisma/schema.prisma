@@ -167,6 +167,12 @@ enum StoreType {
   KHO_TAI_NGUYEN
 }
 
+enum SellerProductApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum AffiliateStatus {
   ACTIVE
   LOCKED
@@ -413,6 +419,11 @@ model Service {
   displayOrder        Int       @default(0) @map("display_order")
   requiresAccountType Boolean   @default(false) @map("requires_account_type")
   requiresCccd        Boolean   @default(false) @map("requires_cccd")
+  requiresTitle       Boolean   @default(false) @map("requires_title")
+  requiresSampleFile  Boolean   @default(false) @map("requires_sample_file")
+  showAccountPass     Boolean   @default(true)  @map("show_account_pass")
+  showGmailPass       Boolean   @default(true)  @map("show_gmail_pass")
+  showLinkUrl         Boolean   @default(true)  @map("show_link_url")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
   deletedAt           DateTime? @map("deleted_at")
@@ -872,6 +883,10 @@ model SellerProduct {
   isRestricted    Boolean   @default(false) @map("is_restricted")
   salesCount      Int       @default(0) @map("sales_count")
   revenue         Decimal   @default(0) @db.Decimal(18, 2)
+  // Duyệt đăng sản phẩm — mặc định APPROVED để sản phẩm đã tồn tại trước migration không bị ẩn;
+  // sản phẩm tạo mới sau migration được service set về PENDING tường minh
+  approvalStatus       SellerProductApprovalStatus @default(APPROVED) @map("approval_status")
+  approvalRejectReason String?   @map("approval_reject_reason")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
@@ -883,6 +898,7 @@ model SellerProduct {
   @@index([sellerId])
   @@index([isActive, isHidden, isRestricted])
   @@index([subCategoryId])
+  @@index([approvalStatus])
   @@map("seller_products")
 }
 

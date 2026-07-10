@@ -7,6 +7,7 @@ import { Prisma } from "@prisma/client";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import RestrictButton from "./_components/RestrictButton";
+import ApprovalButton from "./_components/ApprovalButton";
 
 export const metadata: Metadata = { title: "Sản phẩm nhà bán" };
 
@@ -14,7 +15,7 @@ const PAGE_SIZE = 20;
 
 const PRODUCT_SELECT = {
   id: true, name: true, price: true, isActive: true, sellerCategory: true,
-  isRestricted: true, isHidden: true, createdAt: true,
+  isRestricted: true, isHidden: true, approvalStatus: true, approvalRejectReason: true, createdAt: true,
   seller: { select: { id: true, fullName: true, email: true, sellerRequest: { select: { id: true } } } },
   _count: {
     select: {
@@ -27,14 +28,15 @@ const PRODUCT_SELECT = {
 export default async function AdminSellerProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; sellerId?: string; restricted?: string; sort?: string }>;
+  searchParams: Promise<{ page?: string; sellerId?: string; restricted?: string; sort?: string; approvalStatus?: string }>;
 }) {
   const session = await auth();
   requireStaff(session);
 
-  const { page, sellerId, restricted, sort } = await searchParams;
+  const { page, sellerId, restricted, sort, approvalStatus } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
   const offset      = (currentPage - 1) * PAGE_SIZE;
+  const isValidApprovalStatus = approvalStatus === "PENDING" || approvalStatus === "APPROVED" || approvalStatus === "REJECTED";
 
   const isRatingSort = sort === "rating_desc" || sort === "rating_asc";
 
@@ -46,11 +48,15 @@ export default async function AdminSellerProductsPage({
     restricted === "1" ? Prisma.sql`AND p.is_restricted = true`
     : restricted === "0" ? Prisma.sql`AND p.is_restricted = false`
     : Prisma.empty;
+  const approvalStatusFilter = isValidApprovalStatus
+    ? Prisma.sql`AND p.approval_status = ${approvalStatus}::"SellerProductApprovalStatus"`
+    : Prisma.empty;
 
   const where = {
     deletedAt: null as null,
     ...(sellerId ? { sellerId } : {}),
     ...(restricted === "1" ? { isRestricted: true } : restricted === "0" ? { isRestricted: false } : {}),
+    ...(isValidApprovalStatus ? { approvalStatus: approvalStatus as "PENDING" | "APPROVED" | "REJECTED" } : {}),
   };
 
   // Total count (always via Prisma)
@@ -75,6 +81,7 @@ export default async function AdminSellerProductsPage({
       WHERE p.deleted_at IS NULL
       ${sellerFilter}
       ${restrictedFilter}
+      ${approvalStatusFilter}
       GROUP BY p.id
       ORDER BY avg_rating ${sortDir} NULLS LAST
       LIMIT ${PAGE_SIZE} OFFSET ${offset}
@@ -117,17 +124,19 @@ export default async function AdminSellerProductsPage({
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const searchParamsObj: Record<string, string> = {};
-  if (sellerId)    searchParamsObj.sellerId    = sellerId;
-  if (restricted)  searchParamsObj.restricted  = restricted;
-  if (sort)        searchParamsObj.sort         = sort;
+  if (sellerId)       searchParamsObj.sellerId       = sellerId;
+  if (restricted)      searchParamsObj.restricted     = restricted;
+  if (sort)            searchParamsObj.sort           = sort;
+  if (isValidApprovalStatus) searchParamsObj.approvalStatus = approvalStatus;
 
   // Build URL helper preserving current filters
   function filterUrl(overrides: Record<string, string | undefined>) {
     const sp = new URLSearchParams();
-    const merged = { sellerId, restricted, sort, ...overrides };
+    const merged = { sellerId, restricted, sort, approvalStatus, ...overrides };
     if (merged.sellerId)   sp.set("sellerId",   merged.sellerId);
     if (merged.restricted) sp.set("restricted", merged.restricted);
     if (merged.sort)       sp.set("sort",        merged.sort);
+    if (merged.approvalStatus) sp.set("approvalStatus", merged.approvalStatus);
     const str = sp.toString();
     return `/admin/san-pham-ban${str ? `?${str}` : ""}`;
   }
@@ -172,10 +181,36 @@ export default async function AdminSellerProductsPage({
         {/* Divider */}
         <span className="text-gray-200 select-none">|</span>
 
+        {/* Approval status filter */}
+        {[
+          { label: "Chờ duyệt",  val: "PENDING"  },
+          { label: "Đã duyệt",   val: "APPROVED" },
+          { label: "Bị từ chối", val: "REJECTED" },
+        ].map(({ label, val }) => {
+          const active = approvalStatus === val;
+          return (
+            <Link
+              key={label}
+              href={filterUrl({ approvalStatus: active ? undefined : val, page: undefined })}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                active
+                  ? "bg-amber-500 text-white border-amber-500"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-amber-400 hover:text-amber-600"
+              }`}
+            >
+              {label}
+            </Link>
+          );
+        })}
+
+        {/* Divider */}
+        <span className="text-gray-200 select-none">|</span>
+
         {/* Rating sort dropdown */}
         <form method="get" action="/admin/san-pham-ban">
           {sellerId   && <input type="hidden" name="sellerId"   value={sellerId} />}
           {restricted && <input type="hidden" name="restricted" value={restricted} />}
+          {isValidApprovalStatus && <input type="hidden" name="approvalStatus" value={approvalStatus} />}
           <div className="flex items-center gap-1">
             <select
               name="sort"
@@ -286,11 +321,27 @@ export default async function AdminSellerProductsPage({
                                 {p.isActive ? "Đang bán" : "Ẩn"}
                               </span>
                             )}
+                            {p.approvalStatus === "PENDING" && (
+                              <span
+                                title="Sản phẩm đang chờ admin duyệt, chưa hiển thị công khai"
+                                className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 cursor-help"
+                              >
+                                Chờ duyệt
+                              </span>
+                            )}
+                            {p.approvalStatus === "REJECTED" && (
+                              <span
+                                title={p.approvalRejectReason ?? "Không có lý do"}
+                                className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-600 border border-red-200 cursor-help"
+                              >
+                                Bị từ chối
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="px-4 py-3 text-xs text-gray-400">{formatDate(p.createdAt)}</td>
                         <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-2 flex-wrap">
                             <Link
                               prefetch={false}
                               href={`/admin/san-pham-ban/${p.id}`}
@@ -298,6 +349,11 @@ export default async function AdminSellerProductsPage({
                             >
                               Chi tiết
                             </Link>
+                            <ApprovalButton
+                              productId={p.id}
+                              productName={p.name}
+                              approvalStatus={p.approvalStatus}
+                            />
                             <RestrictButton
                               productId={p.id}
                               productName={p.name}

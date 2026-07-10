@@ -38,7 +38,7 @@ export default async function SellerSanPhamPage({
       take: PAGE_SIZE,
       select: {
         id: true, name: true, price: true, imageUrl: true, isActive: true,
-        isRestricted: true, createdAt: true,
+        isRestricted: true, approvalStatus: true, approvalRejectReason: true, createdAt: true,
         _count: {
           select: {
             orders: true,
@@ -147,6 +147,22 @@ export default async function SellerSanPhamPage({
                                   className="px-1.5 py-0.5 rounded text-[9px] bg-red-50 text-red-600 border border-red-200 cursor-help"
                                 >
                                   Bị khóa
+                                </span>
+                              )}
+                              {p.approvalStatus === "PENDING" && (
+                                <span
+                                  title="Sản phẩm đang chờ admin duyệt, chưa hiển thị công khai trên marketplace"
+                                  className="px-1.5 py-0.5 rounded text-[9px] bg-amber-50 text-amber-600 border border-amber-200 cursor-help"
+                                >
+                                  Chờ duyệt
+                                </span>
+                              )}
+                              {p.approvalStatus === "REJECTED" && (
+                                <span
+                                  title={p.approvalRejectReason ? `Lý do: ${p.approvalRejectReason}` : "Sản phẩm bị admin từ chối"}
+                                  className="px-1.5 py-0.5 rounded text-[9px] bg-red-50 text-red-600 border border-red-200 cursor-help"
+                                >
+                                  Bị từ chối
                                 </span>
                               )}
                             </div>

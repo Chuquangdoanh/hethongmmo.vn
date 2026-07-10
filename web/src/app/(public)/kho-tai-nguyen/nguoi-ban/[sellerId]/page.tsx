@@ -105,6 +105,7 @@ export default async function KhoSellerProfilePage({
         isActive: true,
         isHidden: false,
         isRestricted: false,
+        approvalStatus: "APPROVED",
         deletedAt: null,
         storeType: "KHO_TAI_NGUYEN",
       },

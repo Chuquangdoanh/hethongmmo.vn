@@ -20,11 +20,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const page = Math.max(1, parseInt(sp.get("page") ?? "1", 10));
     const sellerId = sp.get("sellerId") ?? undefined;
     const restricted = sp.get("restricted");
+    const approvalStatus = sp.get("approvalStatus");
 
     const where = {
       deletedAt: null as null,
       ...(sellerId ? { sellerId } : {}),
       ...(restricted === "1" ? { isRestricted: true } : restricted === "0" ? { isRestricted: false } : {}),
+      ...(approvalStatus === "PENDING" || approvalStatus === "APPROVED" || approvalStatus === "REJECTED"
+        ? { approvalStatus: approvalStatus as "PENDING" | "APPROVED" | "REJECTED" }
+        : {}),
     };
 
     const [products, total] = await Promise.all([
@@ -35,7 +39,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         take: PAGE_SIZE,
         select: {
           id: true, name: true, price: true, isActive: true, sellerCategory: true,
-          isRestricted: true, createdAt: true,
+          isRestricted: true, approvalStatus: true, approvalRejectReason: true, createdAt: true,
           seller: { select: { id: true, fullName: true, email: true } },
           _count: {
             select: {

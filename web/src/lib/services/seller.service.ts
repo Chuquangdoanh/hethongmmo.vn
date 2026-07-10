@@ -157,6 +157,7 @@ export async function addSellerProduct(params: AddProductParams): Promise<string
       warrantyInfo,
       description,
       imageUrl,
+      approvalStatus: "PENDING",
       stockItems: {
         create: encryptedItems.map((item) => ({ contentEnc: item.contentEnc })),
       },

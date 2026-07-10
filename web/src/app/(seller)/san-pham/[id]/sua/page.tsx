@@ -28,6 +28,7 @@ export default async function SuaSanPhamPage({
         id: true, name: true, price: true, warrantyInfo: true, description: true,
         imageUrl: true, isActive: true, isHidden: true,
         isRestricted: true, sellerCategory: true, subCategoryId: true, storeType: true,
+        approvalStatus: true, approvalRejectReason: true,
       },
     }),
     prisma.user.findUnique({
@@ -99,6 +100,32 @@ export default async function SuaSanPhamPage({
               <div>
                 <p className="text-sm text-red-600 font-medium">Sản phẩm bị hạn chế</p>
                 <p className="text-xs text-red-500 mt-0.5">Sản phẩm này đang bị admin hạn chế. Bạn không thể chỉnh sửa cho đến khi được mở khóa.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Approval status notice */}
+          {product.approvalStatus === "PENDING" && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                <AlertTriangle size={16} className="text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm text-amber-600 font-medium">Đang chờ admin duyệt</p>
+                <p className="text-xs text-amber-500 mt-0.5">Sản phẩm chỉ hiển thị công khai trên marketplace sau khi được admin duyệt.</p>
+              </div>
+            </div>
+          )}
+          {product.approvalStatus === "REJECTED" && (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                <AlertTriangle size={16} className="text-red-600" />
+              </div>
+              <div>
+                <p className="text-sm text-red-600 font-medium">Sản phẩm bị từ chối</p>
+                <p className="text-xs text-red-500 mt-0.5">
+                  {product.approvalRejectReason ? `Lý do: ${product.approvalRejectReason}` : "Không có lý do cụ thể."} Sửa và lưu lại thông tin để gửi duyệt lại.
+                </p>
               </div>
             </div>
           )}

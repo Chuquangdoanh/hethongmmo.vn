@@ -25,7 +25,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const product = await prisma.sellerProduct.findUnique({
-    where: { id, isActive: true, isHidden: false, isRestricted: false, deletedAt: null },
+    where: { id, isActive: true, isHidden: false, isRestricted: false, approvalStatus: "APPROVED", deletedAt: null },
     select: { name: true, description: true, imageUrl: true },
   });
   if (!product) return { title: "Không tìm thấy" };
@@ -115,7 +115,7 @@ export default async function SellerProductDetailPage({
 
   const [product, session] = await Promise.all([
     prisma.sellerProduct.findUnique({
-      where: { id, isActive: true, isHidden: false, isRestricted: false, deletedAt: null },
+      where: { id, isActive: true, isHidden: false, isRestricted: false, approvalStatus: "APPROVED", deletedAt: null },
       select: {
         id: true, name: true, imageUrl: true, sellerCategory: true,
         price: true, salesCount: true, warrantyInfo: true, description: true, createdAt: true,
@@ -187,7 +187,7 @@ export default async function SellerProductDetailPage({
       where: {
         sellerCategory: product.sellerCategory,
         id: { not: product.id },
-        isActive: true, isHidden: false, isRestricted: false, deletedAt: null,
+        isActive: true, isHidden: false, isRestricted: false, approvalStatus: "APPROVED", deletedAt: null,
         stockItems: { some: { status: "AVAILABLE" } },
       },
       take: 4,

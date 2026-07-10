@@ -137,7 +137,7 @@ export default async function TaiNguyenMmoPage({
     }),
     prisma.sellerProduct.findMany({
       where: {
-        isActive: true, isHidden: false, isRestricted: false, deletedAt: null,
+        isActive: true, isHidden: false, isRestricted: false, approvalStatus: "APPROVED", deletedAt: null,
         storeType: "TAI_NGUYEN_MMO",
         stockItems: { some: { status: "AVAILABLE" } },
         ...(lockedSellerIds.length > 0 ? { NOT: { sellerId: { in: lockedSellerIds } } } : {}),
@@ -163,7 +163,7 @@ export default async function TaiNguyenMmoPage({
     }),
     prisma.sellerProduct.findMany({
       where: {
-        isActive: true, isHidden: false, isRestricted: false, deletedAt: null,
+        isActive: true, isHidden: false, isRestricted: false, approvalStatus: "APPROVED", deletedAt: null,
         storeType: "TAI_NGUYEN_MMO",
         stockItems: { some: { status: "AVAILABLE" } },
         ...(lockedSellerIds.length > 0 ? { NOT: { sellerId: { in: lockedSellerIds } } } : {}),

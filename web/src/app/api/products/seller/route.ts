@@ -36,13 +36,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           isActive: true,
           isHidden: true,
           isRestricted: true,
+          approvalStatus: true,
           salesCount: true,
           publishDate: true,
           _count: { select: { stockItems: { where: { status: "AVAILABLE" } } } },
         },
       });
 
-      if (!item || !item.isActive || item.isHidden || item.isRestricted) {
+      if (!item || !item.isActive || item.isHidden || item.isRestricted || item.approvalStatus !== "APPROVED") {
         return apiError("Sản phẩm không tồn tại", "NOT_FOUND", 404);
       }
 
@@ -54,6 +55,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       isActive: true,
       isHidden: false,
       isRestricted: false,
+      approvalStatus: "APPROVED" as const,
       deletedAt: null,
       ...(category ? { sellerCategory: category } : {}),
       ...(sellerId ? { sellerId } : {}),

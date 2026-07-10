@@ -276,7 +276,7 @@ async function resolveItem(
   }
   if (orderType === "SELLER_PRODUCT") {
     const row = await prisma.sellerProduct.findUnique({
-      where: { id: itemId, isActive: true, isHidden: false, deletedAt: null },
+      where: { id: itemId, isActive: true, isHidden: false, approvalStatus: "APPROVED", deletedAt: null },
       select: { name: true, price: true },
     });
     if (!row) throw new AppError("Sản phẩm không khả dụng hoặc đã bị tắt.", "ITEM_INACTIVE", 400);
