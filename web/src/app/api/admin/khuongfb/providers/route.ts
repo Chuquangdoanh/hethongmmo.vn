@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth/rbac";
 import { z } from "zod";
 import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
 import { NotFoundError } from "@/lib/errors";
+import { prisma } from "@/lib/db/prisma";
 import { getProviderConfigs, saveProviderConfigs, maskApiKey, type ProviderEntry } from "@/lib/external-providers/providers-config";
 import { writeAuditLog } from "@/lib/security/audit";
 
@@ -118,14 +119,22 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
 
     await saveProviderConfigs(filtered, me.id);
 
+    // Provider bị xóa sẽ không còn được sync nữa — tự ẩn hết sản phẩm cũ của nó
+    // khỏi marketplace (giữ lại data để không mất lịch sử đơn hàng liên kết)
+    const { count: deactivated } = await prisma.externalProduct.updateMany({
+      where: { provider: id, isEnabled: true },
+      data:  { isEnabled: false },
+    });
+
     await writeAuditLog({
       actorId:    me.id,
       action:     "DELETE_EXTERNAL_PROVIDER",
       targetType: "SystemConfig",
       targetId:   id,
+      after:      { deactivatedProducts: deactivated },
     });
 
-    return apiOk({ deleted: true });
+    return apiOk({ deleted: true, deactivated });
   } catch (err) {
     return apiCatch(err);
   }

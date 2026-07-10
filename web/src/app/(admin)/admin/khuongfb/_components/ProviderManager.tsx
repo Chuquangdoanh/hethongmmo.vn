@@ -103,7 +103,7 @@ export default function ProviderManager({ onProvidersChanged }: Props) {
   }
 
   async function handleDelete(p: ProviderInfo) {
-    if (!confirm(`Xóa provider "${p.name}"? Sản phẩm đã đồng bộ sẽ bị deactivate khi sync lại.`)) return;
+    if (!confirm(`Xóa provider "${p.name}"? Toàn bộ sản phẩm đã đồng bộ từ provider này sẽ bị ẩn khỏi marketplace ngay lập tức (dữ liệu vẫn được giữ lại).`)) return;
     const res = await fetch(`/api/admin/khuongfb/providers?id=${p.id}`, {
       method: "DELETE",
       credentials: "include",
