@@ -16,8 +16,10 @@ interface Props {
   orderType: string;
   isDone: boolean;
   hasComplaint: boolean;
+  complaintStatus?: string | null;
   allowComplaint: boolean;
   orderCreatedAt: string;
+  systemComplaintHref?: string | null;
 }
 
 interface DeliveredData {
@@ -437,9 +439,24 @@ function DetailModal({ orderId, itemName, orderType, onClose }: {
   );
 }
 
-function SupportNoticeButton() {
+function SupportNoticeButton({ zaloHref }: { zaloHref?: string | null }) {
   const [show, setShow] = useState(false);
 
+  // Đã cấu hình link Zalo trong CMS → mở Zalo trực tiếp
+  if (zaloHref) {
+    return (
+      <a
+        href={zaloHref}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 border border-red-200 text-red-700 text-[11px] font-medium hover:bg-red-100 transition-colors whitespace-nowrap"
+      >
+        <Flag size={11} /> Khiếu nại
+      </a>
+    );
+  }
+
+  // Chưa cấu hình link Zalo → giữ hành vi cũ (tooltip nhắc liên hệ hỗ trợ)
   return (
     <div className="relative">
       <button
@@ -458,7 +475,7 @@ function SupportNoticeButton() {
   );
 }
 
-export default function OrderActions({ orderId, itemName, orderType, isDone, hasComplaint, allowComplaint, orderCreatedAt }: Props) {
+export default function OrderActions({ orderId, itemName, orderType, isDone, hasComplaint, complaintStatus, allowComplaint, orderCreatedAt, systemComplaintHref }: Props) {
   const [isWithin2h, setIsWithin2h] = useState(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -468,7 +485,9 @@ export default function OrderActions({ orderId, itemName, orderType, isDone, has
   const [showDetail, setShowDetail] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [openingSupportChat, setOpeningSupportChat] = useState(false);
+  const [supportChatError, setSupportChatError] = useState("");
   const [localHasComplaint, setLocalHasComplaint] = useState(hasComplaint);
+  const complaintResolved = complaintStatus === "RESOLVED" || complaintStatus === "REJECTED";
 
   function handleComplaintSuccess() {
     setShowPopup(false);
@@ -479,6 +498,7 @@ export default function OrderActions({ orderId, itemName, orderType, isDone, has
   async function handleOpenSupportChat() {
     if (openingSupportChat) return;
     setOpeningSupportChat(true);
+    setSupportChatError("");
     try {
       const res = await fetch("/api/user/support-tickets", {
         method: "POST",
@@ -487,7 +507,13 @@ export default function OrderActions({ orderId, itemName, orderType, isDone, has
         body: JSON.stringify({ orderId }),
       });
       const json = await res.json() as { data?: { id: string }; error?: string };
-      if (json.data) router.push(`/ho-tro?id=st-${json.data.id}`);
+      if (json.data) {
+        router.push(`/ho-tro?id=st-${json.data.id}`);
+      } else {
+        setSupportChatError(json.error ?? "Không mở được chat hỗ trợ.");
+      }
+    } catch {
+      setSupportChatError("Lỗi kết nối, vui lòng thử lại.");
     } finally {
       setOpeningSupportChat(false);
     }
@@ -524,16 +550,28 @@ export default function OrderActions({ orderId, itemName, orderType, isDone, has
         {allowComplaint && (
           orderType !== "SELLER_PRODUCT" ? (
             isWithin2h ? (
-              <SupportNoticeButton />
+              <SupportNoticeButton zaloHref={systemComplaintHref} />
             ) : (
               <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 text-gray-400 text-[11px] font-medium whitespace-nowrap" title="Chỉ có thể khiếu nại trong 2 giờ đầu sau khi mua">
                 <Flag size={11} /> Hết hạn KN
               </span>
             )
           ) : localHasComplaint ? (
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-medium whitespace-nowrap">
-              <CheckCircle size={11} /> Đã khiếu nại
-            </span>
+            <>
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-medium whitespace-nowrap">
+                <CheckCircle size={11} /> Đã khiếu nại
+              </span>
+              {complaintResolved && (
+                <button
+                  onClick={() => void handleOpenSupportChat()}
+                  disabled={openingSupportChat}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-[11px] font-medium hover:bg-blue-100 disabled:opacity-60 transition-colors whitespace-nowrap"
+                  title="Khiếu nại đã đóng — chat trực tiếp với người bán nếu bạn vẫn cần hỗ trợ"
+                >
+                  <MessageCircle size={11} /> Chat hỗ trợ
+                </button>
+              )}
+            </>
           ) : isWithin2h ? (
             <button
               onClick={() => setShowPopup(true)}
@@ -553,6 +591,9 @@ export default function OrderActions({ orderId, itemName, orderType, isDone, has
           )
         )}
       </div>
+      {supportChatError && (
+        <p className="text-[11px] text-red-500 text-center mt-1">{supportChatError}</p>
+      )}
     </>
   );
 }

@@ -229,6 +229,7 @@ export default function ContactSupportEditor({ initialData }: { initialData: Rec
             'ID "telegram" → Trang điều khoản dịch vụ (/dieu-khoan)',
             'ID "telegram" → Trang giới thiệu — nhóm cộng đồng (/gioi-thieu)',
             'ID "telegram" → Popup sau đăng ký dịch vụ Networks (/NetWorks)',
+            'ID "khieu-nai-he-thong" → Nút "Khiếu nại" của đơn Hệ thống (MMO) / KhuongFB tại /don-hang (đặt link Zalo, dạng https://zalo.me/0987654321)',
           ]} />
         </div>
         <p className="text-xs text-gray-500 -mt-2">

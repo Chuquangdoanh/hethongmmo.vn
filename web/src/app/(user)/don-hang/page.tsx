@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatVnd, formatDate } from "@/lib/utils/format";
+import { getSystemOrderComplaintHref } from "@/lib/utils/support-contact";
 import { Package, ShoppingBag } from "lucide-react";
 import UserProfileHero from "@/components/shared/UserProfileHero";
 import Pagination from "@/components/shared/Pagination";
@@ -65,6 +66,7 @@ export default async function DonHangPage({
 
   const [user, lastDeposit, orders, total,
     khoahocCount, dichvuCount, tuttrickCount, tainguyenCount,
+    systemComplaintHref,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: me.id },
@@ -95,18 +97,23 @@ export default async function DonHangPage({
     prisma.order.count({ where: { userId: me.id, orderType: "SERVICE" as never } }),
     prisma.order.count({ where: { userId: me.id, orderType: "TUTTRICK" as never, createdAt: { gte: sevenDaysAgo } } }),
     prisma.order.count({ where: { userId: me.id, orderType: { in: ["MMO_PRODUCT", "SELLER_PRODUCT", "KHUONGFB_PRODUCT"] as never[] }, createdAt: { gte: sevenDaysAgo } } }),
+    getSystemOrderComplaintHref(),
   ]);
 
   if (!user) redirect("/");
 
   const complainedOrderIds = new Set<string>();
+  const complaintStatusByOrderId = new Map<string, string>();
   if (orders.length > 0) {
     const complaints = await prisma.complaint.findMany({
       where: { userId: me.id, orderId: { in: orders.map((o) => o.id) } },
-      select: { orderId: true },
+      select: { orderId: true, status: true },
     });
     for (const c of complaints) {
-      if (c.orderId) complainedOrderIds.add(c.orderId);
+      if (c.orderId) {
+        complainedOrderIds.add(c.orderId);
+        complaintStatusByOrderId.set(c.orderId, c.status);
+      }
     }
   }
 
@@ -201,6 +208,7 @@ export default async function DonHangPage({
                   const isSeller = order.orderType === "SELLER_PRODUCT";
                   const isDone   = order.status === "DONE";
                   const hasComplaint = complainedOrderIds.has(order.id);
+                  const complaintStatus = complaintStatusByOrderId.get(order.id) ?? null;
 
                   const isDeposit = order.paymentType === "DEPOSIT";
                   const hasRemaining = isDeposit && Number(order.remainingAmount ?? 0) > 0;
@@ -248,6 +256,8 @@ export default async function DonHangPage({
                               orderType={order.orderType}
                               isDone={isDone}
                               hasComplaint={hasComplaint}
+                              complaintStatus={complaintStatus}
+                              systemComplaintHref={systemComplaintHref}
                               allowComplaint={activeTab === "tainguyen"}
                               orderCreatedAt={order.createdAt.toISOString()}
                             />
@@ -294,6 +304,8 @@ export default async function DonHangPage({
                               orderType={order.orderType}
                               isDone={isDone}
                               hasComplaint={hasComplaint}
+                              complaintStatus={complaintStatus}
+                              systemComplaintHref={systemComplaintHref}
                               allowComplaint={activeTab === "tainguyen"}
                               orderCreatedAt={order.createdAt.toISOString()}
                             />

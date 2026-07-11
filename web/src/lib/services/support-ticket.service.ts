@@ -19,7 +19,7 @@ export async function getOrCreateSupportTicket(userId: string, orderId: string) 
     throw new ValidationError("Đơn hàng này không hỗ trợ chat với nhà bán hàng.");
   }
   if (Date.now() - order.createdAt.getTime() < SUPPORT_TICKET_UNLOCK_MS) {
-    throw new ValidationError("Chat hỗ trợ chỉ mở sau khi hết hạn khiếu nại.");
+    throw new ValidationError("Chat hỗ trợ chỉ mở sau 2 giờ kể từ khi mua hàng.");
   }
 
   return prisma.supportTicket.upsert({
