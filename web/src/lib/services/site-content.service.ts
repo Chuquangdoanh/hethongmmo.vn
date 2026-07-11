@@ -300,6 +300,9 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
       { platform: "telegram", title: "Telegram Group",  subtitle: "Kết nối với cộng đồng",     href: "https://t.me/chuquangdoanh",        bgColor: "#0088CC" },
     ],
   },
+  notification_sound: {
+    url: "",
+  },
 };
 
 // ── Service functions ────────────────────────────────────────────────

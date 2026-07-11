@@ -6,9 +6,11 @@ import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import { getSystemOrderComplaintHref } from "@/lib/utils/support-contact";
+import { getNotificationSoundUrl } from "@/lib/utils/notification-sound";
 import { Package, ShoppingBag } from "lucide-react";
 import UserProfileHero from "@/components/shared/UserProfileHero";
 import Pagination from "@/components/shared/Pagination";
+import ReturnTabSound from "@/components/shared/ReturnTabSound";
 import OrderActions from "./_components/OrderActions";
 import PayRemainingButton from "./_components/PayRemainingButton";
 
@@ -66,7 +68,7 @@ export default async function DonHangPage({
 
   const [user, lastDeposit, orders, total,
     khoahocCount, dichvuCount, tuttrickCount, tainguyenCount,
-    systemComplaintHref,
+    systemComplaintHref, notificationSoundUrl,
   ] = await Promise.all([
     prisma.user.findUnique({
       where: { id: me.id },
@@ -98,6 +100,7 @@ export default async function DonHangPage({
     prisma.order.count({ where: { userId: me.id, orderType: "TUTTRICK" as never, createdAt: { gte: sevenDaysAgo } } }),
     prisma.order.count({ where: { userId: me.id, orderType: { in: ["MMO_PRODUCT", "SELLER_PRODUCT", "KHUONGFB_PRODUCT"] as never[] }, createdAt: { gte: sevenDaysAgo } } }),
     getSystemOrderComplaintHref(),
+    getNotificationSoundUrl(),
   ]);
 
   if (!user) redirect("/");
@@ -133,6 +136,7 @@ export default async function DonHangPage({
 
   return (
     <>
+      <ReturnTabSound soundUrl={notificationSoundUrl} />
       <UserProfileHero
         fullName={user.fullName}
         email={user.email}
@@ -258,6 +262,7 @@ export default async function DonHangPage({
                               hasComplaint={hasComplaint}
                               complaintStatus={complaintStatus}
                               systemComplaintHref={systemComplaintHref}
+                              notificationSoundUrl={notificationSoundUrl}
                               allowComplaint={activeTab === "tainguyen"}
                               orderCreatedAt={order.createdAt.toISOString()}
                             />
@@ -306,6 +311,7 @@ export default async function DonHangPage({
                               hasComplaint={hasComplaint}
                               complaintStatus={complaintStatus}
                               systemComplaintHref={systemComplaintHref}
+                              notificationSoundUrl={notificationSoundUrl}
                               allowComplaint={activeTab === "tainguyen"}
                               orderCreatedAt={order.createdAt.toISOString()}
                             />

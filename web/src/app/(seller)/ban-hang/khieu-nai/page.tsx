@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatVnd, formatDate } from "@/lib/utils/format";
+import { getNotificationSoundUrl } from "@/lib/utils/notification-sound";
 import {
   Clock, CheckCircle, MessageCircleWarning,
 } from "lucide-react";
@@ -13,6 +14,7 @@ import TicketChatPanel from "@/app/(user)/ho-tro/_components/TicketChatPanel";
 import SupportChatThread from "@/components/shared/SupportChatThread";
 import ScrollToTop from "@/components/shared/ScrollToTop";
 import BackBtn from "@/components/shared/BackBtn";
+import ReturnTabSound from "@/components/shared/ReturnTabSound";
 import "./seller-khieu-nai.css";
 
 export const metadata: Metadata = { title: "Khiếu nại từ khách — Nhà bán hàng" };
@@ -41,6 +43,7 @@ export default async function SellerKhieuNaiPage({
   const { id: activeId } = await searchParams;
   const session = await auth();
   const me = session!.user as AuthenticatedUser;
+  const notificationSoundUrl = await getNotificationSoundUrl();
 
   // Chat hỗ trợ (SupportTicket) dùng id có tiền tố "st-" để phân biệt với Complaint
   const isSupportTicket = activeId?.startsWith("st-") ?? false;
@@ -208,6 +211,7 @@ export default async function SellerKhieuNaiPage({
   return (
     <div className={`ht-wrapper${activeId ? " ht-wrapper--detail" : " ht-wrapper--list"}`}>
       <ScrollToTop />
+      <ReturnTabSound soundUrl={notificationSoundUrl} />
 
       {/* ══ LEFT — Danh sách hội thoại (gộp Khiếu nại + Chat hỗ trợ) ═══ */}
       <div className="ht-sidebar">
@@ -342,6 +346,7 @@ export default async function SellerKhieuNaiPage({
                 initialComplaintStatus={selected.status}
                 initialQuota={initialQuota}
                 initialResolution={initialResolution}
+                notificationSoundUrl={notificationSoundUrl}
               />
             ) : selected.status === "RESOLVED" ? (
               <div className="ht-state-box" style={{ background: "#f0fdf4", borderColor: "#bbf7d0" }}>
@@ -392,7 +397,11 @@ export default async function SellerKhieuNaiPage({
           {/* Chat area */}
           <div className="ht-chat-area">
             <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
-              <SupportChatThread ticketId={selectedSupportTicket.id} myRole="SELLER" />
+              <SupportChatThread
+                ticketId={selectedSupportTicket.id}
+                myRole="SELLER"
+                notificationSoundUrl={notificationSoundUrl}
+              />
             </div>
           </div>
         </div>

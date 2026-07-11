@@ -13,12 +13,16 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { PermissionCode } from "@/lib/constants/modules";
+import { useNotificationSound } from "@/lib/hooks/useNotificationSound";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type BadgeKey = "orders" | "complaints" | "withdrawals" | "deposits";
-interface Badges    { orders: number; complaints: number; withdrawals: number; deposits: number }
-interface Dismissed { orders: number; complaints: number; withdrawals: number; deposits: number }
+type BadgeKey = "orders" | "complaints" | "withdrawals" | "deposits" | "banTaiNguyen" | "dangKyDichVu";
+interface Badges    { orders: number; complaints: number; withdrawals: number; deposits: number; banTaiNguyen: number; dangKyDichVu: number }
+interface Dismissed { orders: number; complaints: number; withdrawals: number; deposits: number; banTaiNguyen: number; dangKyDichVu: number }
+
+// Chỉ phát âm thanh thông báo cho 4 mục: Đơn hàng, Bán tài nguyên, Đăng ký dịch vụ, Khiếu nại
+const SOUND_ENABLED_KEYS = new Set<BadgeKey>(["orders", "complaints", "banTaiNguyen", "dangKyDichVu"]);
 
 interface Toast {
   id: string;
@@ -49,10 +53,12 @@ interface NavSection {
 // ─── Toast metadata ──────────────────────────────────────────────────────────
 
 const TOAST_META: Record<BadgeKey, { label: string; Icon: LucideIcon; color: string; bg: string; border: string; href: string }> = {
-  orders:      { label: "đơn hàng mới chờ xử lý",   Icon: ShoppingBag,     color: "#f97316", bg: "#fff7ed", border: "#fed7aa", href: "/admin/orders"      },
-  complaints:  { label: "khiếu nại mới cần xem",     Icon: AlertTriangle,   color: "#ef4444", bg: "#fef2f2", border: "#fecaca", href: "/admin/complaints"  },
-  withdrawals: { label: "yêu cầu rút tiền đang chờ", Icon: ArrowUpCircle,   color: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe", href: "/admin/withdrawals" },
-  deposits:    { label: "giao dịch nạp tiền mới",    Icon: ArrowDownCircle, color: "#10b981", bg: "#f0fdf4", border: "#bbf7d0", href: "/admin/deposits"    },
+  orders:       { label: "đơn hàng mới chờ xử lý",     Icon: ShoppingBag,     color: "#f97316", bg: "#fff7ed", border: "#fed7aa", href: "/admin/orders"          },
+  complaints:   { label: "khiếu nại mới cần xem",       Icon: AlertTriangle,   color: "#ef4444", bg: "#fef2f2", border: "#fecaca", href: "/admin/complaints"      },
+  withdrawals:  { label: "yêu cầu rút tiền đang chờ",   Icon: ArrowUpCircle,   color: "#7c3aed", bg: "#f5f3ff", border: "#ddd6fe", href: "/admin/withdrawals"     },
+  deposits:     { label: "giao dịch nạp tiền mới",      Icon: ArrowDownCircle, color: "#10b981", bg: "#f0fdf4", border: "#bbf7d0", href: "/admin/deposits"        },
+  banTaiNguyen: { label: "đơn bán tài nguyên chờ xử lý", Icon: Package,         color: "#059669", bg: "#f0fdf4", border: "#bbf7d0", href: "/admin/ban-tai-nguyen"  },
+  dangKyDichVu: { label: "đăng ký dịch vụ mới",          Icon: Inbox,           color: "#b45309", bg: "#fffbeb", border: "#fde68a", href: "/admin/dang-ky-dich-vu" },
 };
 
 // ─── Nav config ──────────────────────────────────────────────────────────────
@@ -121,7 +127,7 @@ const SECTIONS: NavSection[] = [
   },
 ];
 
-const DEFAULT_DISMISSED: Dismissed = { orders: 0, complaints: 0, withdrawals: 0, deposits: 0 };
+const DEFAULT_DISMISSED: Dismissed = { orders: 0, complaints: 0, withdrawals: 0, deposits: 0, banTaiNguyen: 0, dangKyDichVu: 0 };
 const DEFAULT_OPEN = Object.fromEntries(SECTIONS.map((s) => [s.key, true]));
 const LS_OPEN      = "admin-sidebar-open";
 const LS_DISMISSED = "admin-sidebar-dismissed";
@@ -136,14 +142,16 @@ interface AdminSidebarProps {
    */
   permissions: PermissionCode[] | null;
   isAdmin: boolean;
+  notificationSoundUrl?: string | null;
 }
 
-export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }: AdminSidebarProps) {
+export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin, notificationSoundUrl }: AdminSidebarProps) {
   const permSet = permissions ? new Set(permissions) : null;
   const pathname = usePathname();
+  const playNotificationSound = useNotificationSound(notificationSoundUrl);
 
   const [badges, setBadges] = useState<Badges>({
-    orders: pendingOrderCount, complaints: 0, withdrawals: 0, deposits: 0,
+    orders: pendingOrderCount, complaints: 0, withdrawals: 0, deposits: 0, banTaiNguyen: 0, dangKyDichVu: 0,
   });
   const [dismissed, setDismissed] = useState<Dismissed>(DEFAULT_DISMISSED);
   const [open, setOpen]           = useState<Record<string, boolean>>(DEFAULT_OPEN);
@@ -167,50 +175,51 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
   const addToast = useCallback((key: BadgeKey, diff: number) => {
     const id = crypto.randomUUID();
     setToasts((prev) => [...prev.slice(-4), { id, key, diff }]);
+    if (SOUND_ENABLED_KEYS.has(key)) playNotificationSound();
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 6000);
-  }, []);
+  }, [playNotificationSound]);
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // ── Poll /api/admin/badges every 30s ──
+  // ── Real-time badges qua SSE — poll nằm ở server (không phụ thuộc tab trình duyệt
+  // bị ẩn/throttle như setInterval phía client trước đây) ──
   useEffect(() => {
-    async function fetchBadges() {
-      try {
-        const res = await fetch("/api/admin/badges", { credentials: "include" });
-        if (!res.ok) return;
-        const json = (await res.json()) as { data?: Badges };
-        if (!json.data) return;
-        const next = json.data;
+    function handleBadges(next: Badges) {
+      if (prevBadgesRef.current) {
+        const prev = prevBadgesRef.current;
+        (["orders", "complaints", "withdrawals", "deposits", "banTaiNguyen", "dangKyDichVu"] as BadgeKey[]).forEach((key) => {
+          const diff = next[key] - prev[key];
+          if (diff > 0) addToast(key, diff);
+        });
+      } else {
+        setDismissed((prev) => {
+          const init: Dismissed = {
+            orders:       prev.orders       === 0 ? next.orders       : prev.orders,
+            complaints:   prev.complaints   === 0 ? next.complaints   : prev.complaints,
+            withdrawals:  prev.withdrawals  === 0 ? next.withdrawals  : prev.withdrawals,
+            deposits:     prev.deposits     === 0 ? next.deposits     : prev.deposits,
+            banTaiNguyen: prev.banTaiNguyen === 0 ? next.banTaiNguyen : prev.banTaiNguyen,
+            dangKyDichVu: prev.dangKyDichVu === 0 ? next.dangKyDichVu : prev.dangKyDichVu,
+          };
+          try { localStorage.setItem(LS_DISMISSED, JSON.stringify(init)); } catch { /* ignore */ }
+          return init;
+        });
+      }
 
-        if (prevBadgesRef.current) {
-          const prev = prevBadgesRef.current;
-          (["orders", "complaints", "withdrawals", "deposits"] as BadgeKey[]).forEach((key) => {
-            const diff = next[key] - prev[key];
-            if (diff > 0) addToast(key, diff);
-          });
-        } else {
-          setDismissed((prev) => {
-            const init: Dismissed = {
-              orders:      prev.orders      === 0 ? next.orders      : prev.orders,
-              complaints:  prev.complaints  === 0 ? next.complaints  : prev.complaints,
-              withdrawals: prev.withdrawals === 0 ? next.withdrawals : prev.withdrawals,
-              deposits:    prev.deposits    === 0 ? next.deposits    : prev.deposits,
-            };
-            try { localStorage.setItem(LS_DISMISSED, JSON.stringify(init)); } catch { /* ignore */ }
-            return init;
-          });
-        }
-
-        prevBadgesRef.current = next;
-        setBadges(next);
-      } catch { /* silent */ }
+      prevBadgesRef.current = next;
+      setBadges(next);
     }
 
-    void fetchBadges();
-    const id = setInterval(fetchBadges, 30_000);
-    return () => clearInterval(id);
+    const es = new EventSource("/api/admin/badges/stream", { withCredentials: true });
+    es.addEventListener("badges", (evt) => {
+      try {
+        handleBadges(JSON.parse((evt as MessageEvent<string>).data) as Badges);
+      } catch { /* ignore malformed event */ }
+    });
+
+    return () => es.close();
   }, [addToast]);
 
   // ── Dismiss badge ──
@@ -252,8 +261,10 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
   const orderActive        = isActive("/admin/orders");
   const orderBadgeVisible  = hasBadge("orders");
   const productSaleActive  = isActive("/admin/ban-tai-nguyen");
+  const productSaleBadgeVisible = hasBadge("banTaiNguyen");
+  const leadsBadgeVisible  = hasBadge("dangKyDichVu");
 
-  const totalUnread = (["orders", "complaints", "withdrawals", "deposits"] as BadgeKey[])
+  const totalUnread = (["orders", "complaints", "withdrawals", "deposits", "banTaiNguyen", "dangKyDichVu"] as BadgeKey[])
     .filter((k) => hasBadge(k))
     .reduce((sum, k) => sum + Math.max(0, badges[k] - (dismissed[k] ?? 0)), 0);
 
@@ -372,6 +383,7 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
           {canSeeOrders && (
             <Link
               href="/admin/ban-tai-nguyen"
+              onClick={() => dismiss("banTaiNguyen")}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 productSaleActive
                   ? "bg-[#f0fdf4] text-[#065f46]"
@@ -385,6 +397,7 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
                 <Package size={13} strokeWidth={1.75} style={{ color: productSaleActive ? "#059669" : "#94a3b8" }} />
               </div>
               <span className="flex-1">Bán tài nguyên</span>
+              {productSaleBadgeVisible && <BadgeCount count={badges.banTaiNguyen} />}
             </Link>
           )}
 
@@ -394,6 +407,7 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
             return (
               <Link
                 href="/admin/dang-ky-dich-vu"
+                onClick={() => dismiss("dangKyDichVu")}
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   leadsActive
                     ? "bg-[#fef9c3] text-[#78350f]"
@@ -407,6 +421,7 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin }
                   <Inbox size={13} strokeWidth={1.75} style={{ color: leadsActive ? "#92400e" : "#94a3b8" }} />
                 </div>
                 <span className="flex-1">Đăng ký dịch vụ</span>
+                {leadsBadgeVisible && <BadgeCount count={badges.dangKyDichVu} />}
               </Link>
             );
           })()}

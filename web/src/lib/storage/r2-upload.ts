@@ -23,6 +23,9 @@ const ALLOWED_MIME_TYPES = [
   "image/avif",
   "image/gif",       // retained for backward compat — GIF thumbnails already in production DB
   "image/svg+xml",   // SVG icons (service categories, course icons)
+  "audio/mpeg",       // notification sound (CMS-uploaded .mp3)
+  "audio/ogg",        // notification sound (.ogg)
+  "audio/wav",        // notification sound (.wav)
 ] as const;
 
 export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];
@@ -35,7 +38,12 @@ const MIME_TO_EXT: Record<AllowedMimeType, string> = {
   "image/avif":    "avif",
   "image/gif":     "gif",
   "image/svg+xml": "svg",
+  "audio/mpeg":    "mp3",
+  "audio/ogg":     "ogg",
+  "audio/wav":     "wav",
 };
+
+const AUDIO_MIME_TYPES = new Set(["audio/mpeg", "audio/ogg", "audio/wav"]);
 
 // ---------------------------------------------------------------------------
 // Upload purposes — controls R2 key namespace (first path segment)
@@ -53,6 +61,7 @@ export const UPLOAD_PURPOSES = [
   "course-icon",
   "service-icon",
   "order-sample",
+  "notification-sound",
 ] as const;
 
 export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number];
@@ -200,10 +209,10 @@ export async function uploadToR2(params: {
     throw new Error("Invalid userId format");
   }
 
-  // Convert raster images to WebP (SVG and GIF are excluded)
+  // Convert raster images to WebP (SVG, GIF, and audio files are excluded)
   let finalBuffer = buffer;
   let finalMime   = mimeType as AllowedMimeType;
-  if (mimeType !== "image/svg+xml" && mimeType !== "image/gif") {
+  if (mimeType !== "image/svg+xml" && mimeType !== "image/gif" && !AUDIO_MIME_TYPES.has(mimeType)) {
     // Lazy import — tránh top-level import fail khi native binary chưa sẵn sàng ở standalone mode
     const sharp = (await import("sharp")).default;
     finalBuffer = await sharp(buffer)

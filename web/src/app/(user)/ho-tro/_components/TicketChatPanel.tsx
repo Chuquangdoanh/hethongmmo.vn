@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { Send, CheckCircle2, XCircle, Clock } from "lucide-react";
 import type { ChatMsg, ChatRoomInfo } from "@/components/shared/ChatWidget";
+import { useNotificationSound } from "@/lib/hooks/useNotificationSound";
 
 interface Quota {
   total: number;
@@ -29,6 +30,7 @@ interface Props {
   initialComplaintStatus?: string;
   initialQuota?: Quota;
   initialResolution?: Resolution;
+  notificationSoundUrl?: string | null;
 }
 
 const LABEL_BG: Record<string, string> = {
@@ -47,6 +49,7 @@ export default function TicketChatPanel({
   initialComplaintStatus,
   initialQuota,
   initialResolution,
+  notificationSoundUrl,
 }: Props) {
   const [messages, setMessages]       = useState<ChatMsg[]>(room.messages);
   const [input, setInput]             = useState("");
@@ -64,6 +67,7 @@ export default function TicketChatPanel({
   const [resolving, setResolving]     = useState(false);
   const [countdown, setCountdown]     = useState<number | null>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
+  const playNotificationSound = useNotificationSound(notificationSoundUrl);
 
   // useLayoutEffect: scroll chat xuống bottom trước paint để tránh flash nội dung cũ
   useLayoutEffect(() => {
@@ -88,46 +92,41 @@ export default function TicketChatPanel({
     return () => clearInterval(id);
   }, [resolution.sellerConfirmed, resolution.sellerConfirmedAt, resolution.userDone]);
 
-  // Polling messages + resolution state
-  const poll = useCallback(async () => {
-    const last   = messages[messages.length - 1];
-    const cursor = last?.createdAt ?? new Date(0).toISOString();
-    try {
-      const res  = await fetch(
-        `/api/chats/${room.id}/messages?after=${encodeURIComponent(cursor)}`,
-        { credentials: "include", cache: "no-store" },
-      );
-      if (!res.ok) return;
-      const json = (await res.json()) as {
-        data: {
+  // Real-time messages + resolution state qua SSE — poll nằm ở server (không phụ thuộc
+  // tab trình duyệt bị ẩn/throttle như setInterval phía client trước đây).
+  useEffect(() => {
+    if (chatEnded) return;
+    const cursor = messages[messages.length - 1]?.createdAt ?? new Date(0).toISOString();
+    const es = new EventSource(`/api/chats/${room.id}/stream?after=${encodeURIComponent(cursor)}`, { withCredentials: true });
+
+    es.addEventListener("chat", (evt) => {
+      try {
+        const d = JSON.parse((evt as MessageEvent<string>).data) as {
           messages: ChatMsg[];
           chatEnded: boolean;
           complaintStatus: string;
           quota: Quota;
           resolution: Resolution;
         };
-      };
-      const d = json.data;
-      if (d?.messages?.length) {
-        // Dedup để tránh trùng key khi poll trùng cursor với tin vừa gửi
-        setMessages(prev => {
-          const existingIds = new Set(prev.map(m => m.id));
-          const fresh = d.messages.filter((m: ChatMsg) => !existingIds.has(m.id));
-          return fresh.length > 0 ? [...prev, ...fresh] : prev;
-        });
-      }
-      if (d?.chatEnded)       setChatEnded(true);
-      if (d?.complaintStatus) setStatus(d.complaintStatus);
-      if (d?.quota)           setQuota(d.quota);
-      if (d?.resolution)      setResolution(d.resolution);
-    } catch { /* ignore polling errors */ }
-  }, [room.id, messages]);
+        if (d.messages?.length) {
+          // Dedup để tránh trùng key khi event trùng với tin vừa gửi
+          setMessages(prev => {
+            const existingIds = new Set(prev.map(m => m.id));
+            const fresh = d.messages.filter((m: ChatMsg) => !existingIds.has(m.id));
+            if (fresh.some(m => m.senderId !== currentUserId)) playNotificationSound();
+            return fresh.length > 0 ? [...prev, ...fresh] : prev;
+          });
+        }
+        if (d.chatEnded)       setChatEnded(true);
+        if (d.complaintStatus) setStatus(d.complaintStatus);
+        if (d.quota)           setQuota(d.quota);
+        if (d.resolution)      setResolution(d.resolution);
+      } catch { /* ignore malformed event */ }
+    });
 
-  useEffect(() => {
-    if (chatEnded) return;
-    const id = setInterval(() => { void poll(); }, 3000);
-    return () => clearInterval(id);
-  }, [chatEnded, poll]);
+    return () => es.close();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cursor chỉ dùng khi mở kết nối, không reconnect theo messages
+  }, [chatEnded, room.id, currentUserId, playNotificationSound]);
 
   // ── Gửi tin nhắn ──
   async function handleSend() {

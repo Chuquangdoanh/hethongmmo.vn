@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import SafeHtml from "@/components/shared/SafeHtml";
 import { FaReact } from "react-icons/fa";
+import { useNotificationSound } from "@/lib/hooks/useNotificationSound";
 
 
 interface Props {
@@ -20,6 +21,7 @@ interface Props {
   allowComplaint: boolean;
   orderCreatedAt: string;
   systemComplaintHref?: string | null;
+  notificationSoundUrl?: string | null;
 }
 
 interface DeliveredData {
@@ -475,7 +477,7 @@ function SupportNoticeButton({ zaloHref }: { zaloHref?: string | null }) {
   );
 }
 
-export default function OrderActions({ orderId, itemName, orderType, isDone, hasComplaint, complaintStatus, allowComplaint, orderCreatedAt, systemComplaintHref }: Props) {
+export default function OrderActions({ orderId, itemName, orderType, isDone, hasComplaint, complaintStatus, allowComplaint, orderCreatedAt, systemComplaintHref, notificationSoundUrl }: Props) {
   const [isWithin2h, setIsWithin2h] = useState(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -488,10 +490,12 @@ export default function OrderActions({ orderId, itemName, orderType, isDone, has
   const [supportChatError, setSupportChatError] = useState("");
   const [localHasComplaint, setLocalHasComplaint] = useState(hasComplaint);
   const complaintResolved = complaintStatus === "RESOLVED" || complaintStatus === "REJECTED";
+  const playNotificationSound = useNotificationSound(notificationSoundUrl);
 
   function handleComplaintSuccess() {
     setShowPopup(false);
     setLocalHasComplaint(true);
+    playNotificationSound();
     router.refresh();
   }
 

@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatDate } from "@/lib/utils/format";
+import { getNotificationSoundUrl } from "@/lib/utils/notification-sound";
 import {
   Search, Clock, CheckCircle, ShieldAlert, MessageCircle,
 } from "lucide-react";
@@ -12,6 +13,7 @@ import TicketChatPanel from "./_components/TicketChatPanel";
 import TicketScrollLink from "./_components/TicketScrollLink";
 import ScrollToTop from "@/components/shared/ScrollToTop";
 import BackBtn from "@/components/shared/BackBtn";
+import ReturnTabSound from "@/components/shared/ReturnTabSound";
 import SupportChatThread from "@/components/shared/SupportChatThread";
 import "./ho-tro.css";
 
@@ -92,6 +94,7 @@ export default async function HoTroPage({
   const { id: activeId } = await searchParams;
   const session = await auth();
   const me = session!.user as AuthenticatedUser;
+  const notificationSoundUrl = await getNotificationSoundUrl();
 
   // Chat hỗ trợ (SupportTicket) dùng id có tiền tố "st-" để phân biệt với Complaint
   const isSupportTicket = activeId?.startsWith("st-") ?? false;
@@ -282,6 +285,7 @@ export default async function HoTroPage({
   return (
     <div className={`ht-wrapper${activeId ? " ht-wrapper--detail" : " ht-wrapper--list"}`}>
       <ScrollToTop />
+      <ReturnTabSound soundUrl={notificationSoundUrl} />
 
       {/* ══ LEFT — Danh sách ticket ═══════════════════════════════ */}
       <div className="ht-sidebar">
@@ -503,6 +507,7 @@ export default async function HoTroPage({
                 initialComplaintStatus={selected.status}
                 initialQuota={initialQuota}
                 initialResolution={initialResolution}
+                notificationSoundUrl={notificationSoundUrl}
               />
             ) : selected.status === "RESOLVED" ? (
               <div className="ht-state-box" style={{ background: "#f0fdf4", borderColor: "#bbf7d0" }}>
@@ -565,7 +570,11 @@ export default async function HoTroPage({
           {/* Chat area */}
           <div className="ht-chat-area">
             <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
-              <SupportChatThread ticketId={selectedSupportTicket.id} myRole="USER" />
+              <SupportChatThread
+                ticketId={selectedSupportTicket.id}
+                myRole="USER"
+                notificationSoundUrl={notificationSoundUrl}
+              />
             </div>
           </div>
         </div>

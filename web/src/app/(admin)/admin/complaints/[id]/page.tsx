@@ -7,6 +7,7 @@ import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import { decrypt } from "@/lib/security/encryption";
+import { getNotificationSoundUrl } from "@/lib/utils/notification-sound";
 import ComplaintChatPanel, { type ChatRoomData } from "./_components/ComplaintChatPanel";
 
 export const metadata: Metadata = { title: "Admin — Chi tiết khiếu nại" };
@@ -44,6 +45,8 @@ export default async function AdminComplaintDetailPage({
     include: { user: { select: { id: true, email: true, fullName: true } } },
   });
   if (!complaint) notFound();
+
+  const notificationSoundUrl = await getNotificationSoundUrl();
 
   // Fetch linked order info
   let orderInfo: {
@@ -274,6 +277,7 @@ export default async function AdminComplaintDetailPage({
         complaintStatus={complaint.status}
         orderId={complaint.orderId}
         initialRoundTwoOpened={adminR2opened}
+        notificationSoundUrl={notificationSoundUrl}
       />
     </div>
   );

@@ -64,6 +64,12 @@ const PAGES = [
     desc: "Popup nút liên hệ cố định góc phải: Facebook, Zalo, Telegram, TikTok...",
     icon: "💬",
   },
+  {
+    href: "/admin/cai-dat-giao-dien/am-thanh-thong-bao",
+    title: "Âm thanh thông báo",
+    desc: "File âm thanh 'ting' khi quay lại tab, bấm khiếu nại, có tin nhắn mới",
+    icon: "🔔",
+  },
 ];
 
 export default function CaiDatGiaoDienPage() {

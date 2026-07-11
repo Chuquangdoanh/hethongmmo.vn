@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useNotificationSound } from "@/lib/hooks/useNotificationSound";
 
 type Participant = { userId: string; label: string; userName: string };
 type ChatMsg = {
@@ -25,6 +26,7 @@ interface Props {
   complaintStatus: string;
   orderId: string | null;
   initialRoundTwoOpened?: boolean;
+  notificationSoundUrl?: string | null;
 }
 
 export default function ComplaintChatPanel({
@@ -33,6 +35,7 @@ export default function ComplaintChatPanel({
   currentUserId,
   complaintStatus: initialStatus,
   initialRoundTwoOpened = false,
+  notificationSoundUrl,
 }: Props) {
   const [room, setRoom] = useState<ChatRoomData | null>(initialRoom);
   const [messages, setMessages] = useState<ChatMsg[]>(initialRoom?.messages ?? []);
@@ -49,6 +52,7 @@ export default function ComplaintChatPanel({
   const [resolvedOutcome, setResolvedOutcome] = useState<"user_wins" | "seller_wins" | null>(null);
   const [error, setError] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const playNotificationSound = useNotificationSound(notificationSoundUrl);
 
   // Trạng thái PENDING_ADMIN: chờ admin mở vòng 2 (chat đóng với user/seller)
   const waitingAdmin = status === "PENDING_ADMIN" && !roundTwoOpened;
@@ -59,41 +63,38 @@ export default function ComplaintChatPanel({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const poll = useCallback(async () => {
-    if (!room || isResolved) return;
-    const last = messages[messages.length - 1];
-    const cursor = last?.createdAt ?? new Date(0).toISOString();
-    try {
-      const res = await fetch(
-        `/api/chats/${room.id}/messages?after=${encodeURIComponent(cursor)}`,
-        { credentials: "include", cache: "no-store" },
-      );
-      if (!res.ok) return;
-      const json = (await res.json()) as {
-        success: boolean;
-        data: { messages: ChatMsg[]; chatEnded: boolean; complaintStatus: string; resolution?: { roundTwoOpened: boolean } };
-      };
-      if (json.data?.messages?.length) {
-        setMessages((prev) => {
-          const existingIds = new Set(prev.map((m) => m.id));
-          const fresh = json.data.messages.filter((m: ChatMsg) => !existingIds.has(m.id));
-          return fresh.length > 0 ? [...prev, ...fresh] : prev;
-        });
-      }
-      if (json.data?.complaintStatus) setStatus(json.data.complaintStatus);
-      if (json.data?.resolution?.roundTwoOpened) setRoundTwoOpened(true);
-      if (json.data?.chatEnded) {
-        if (json.data.complaintStatus === "RESOLVED") setResolvedOutcome("seller_wins");
-        if (json.data.complaintStatus === "REJECTED") setResolvedOutcome("user_wins");
-      }
-    } catch { /* ignore polling errors */ }
-  }, [room, messages, isResolved]);
-
+  // Real-time messages + trạng thái qua SSE — poll nằm ở server (không phụ thuộc
+  // tab trình duyệt bị ẩn/throttle như setInterval phía client trước đây).
   useEffect(() => {
     if (!room || isResolved) return;
-    const intervalId = setInterval(() => { void poll(); }, 3000);
-    return () => clearInterval(intervalId);
-  }, [poll, room, isResolved]);
+    const cursor = messages[messages.length - 1]?.createdAt ?? new Date(0).toISOString();
+    const es = new EventSource(`/api/chats/${room.id}/stream?after=${encodeURIComponent(cursor)}`, { withCredentials: true });
+
+    es.addEventListener("chat", (evt) => {
+      try {
+        const d = JSON.parse((evt as MessageEvent<string>).data) as {
+          messages: ChatMsg[]; chatEnded: boolean; complaintStatus: string; resolution?: { roundTwoOpened: boolean };
+        };
+        if (d.messages?.length) {
+          setMessages((prev) => {
+            const existingIds = new Set(prev.map((m) => m.id));
+            const fresh = d.messages.filter((m: ChatMsg) => !existingIds.has(m.id));
+            if (fresh.some((m) => m.senderId !== currentUserId)) playNotificationSound();
+            return fresh.length > 0 ? [...prev, ...fresh] : prev;
+          });
+        }
+        if (d.complaintStatus) setStatus(d.complaintStatus);
+        if (d.resolution?.roundTwoOpened) setRoundTwoOpened(true);
+        if (d.chatEnded) {
+          if (d.complaintStatus === "RESOLVED") setResolvedOutcome("seller_wins");
+          if (d.complaintStatus === "REJECTED") setResolvedOutcome("user_wins");
+        }
+      } catch { /* ignore malformed event */ }
+    });
+
+    return () => es.close();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cursor chỉ dùng khi mở kết nối, không reconnect theo messages
+  }, [room, isResolved, currentUserId, playNotificationSound]);
 
   async function handleCreate() {
     setCreating(true);

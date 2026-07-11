@@ -19,6 +19,7 @@ export const SITE_CONTENT_KEYS = {
   FOOTER:       "footer",
   THANK_YOU:    "thank_you",
   CONTACT_SUPPORT: "contact_support",
+  NOTIFICATION_SOUND: "notification_sound",
 } as const;
 
 export type SiteContentKey = (typeof SITE_CONTENT_KEYS)[keyof typeof SITE_CONTENT_KEYS];

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { Send } from "lucide-react";
+import { useNotificationSound } from "@/lib/hooks/useNotificationSound";
 
 export interface SupportChatMessage {
   id: string;
@@ -15,9 +16,8 @@ export interface SupportChatMessage {
 interface Props {
   ticketId: string;
   myRole: "USER" | "SELLER";
+  notificationSoundUrl?: string | null;
 }
-
-const POLL_INTERVAL_MS = 8000;
 
 async function fetchMessages(ticketId: string): Promise<SupportChatMessage[]> {
   const res = await fetch(`/api/support-tickets/${ticketId}/messages`, { credentials: "include", cache: "no-store" });
@@ -25,36 +25,43 @@ async function fetchMessages(ticketId: string): Promise<SupportChatMessage[]> {
   return json.data?.messages ?? [];
 }
 
-export default function SupportChatThread({ ticketId, myRole }: Props) {
+export default function SupportChatThread({ ticketId, myRole, notificationSoundUrl }: Props) {
   const [messages, setMessages] = useState<SupportChatMessage[]>([]);
   const [loading, setLoading]   = useState(true);
   const [input, setInput]       = useState("");
   const [sending, setSending]   = useState(false);
   const [error, setError]       = useState("");
   const msgsRef = useRef<HTMLDivElement>(null);
+  const playNotificationSound = useNotificationSound(notificationSoundUrl);
 
   useEffect(() => {
     let cancelled = false;
+    let es: EventSource | null = null;
 
     fetchMessages(ticketId).then((msgs) => {
       if (cancelled) return;
       setMessages(msgs);
       setLoading(false);
+
+      // Real-time tin nhắn mới qua SSE — poll nằm ở server (không phụ thuộc tab
+      // trình duyệt bị ẩn/throttle như setInterval phía client trước đây).
+      const cursor = msgs[msgs.length - 1]?.createdAt ?? new Date(0).toISOString();
+      es = new EventSource(`/api/support-tickets/${ticketId}/stream?after=${encodeURIComponent(cursor)}`, { withCredentials: true });
+      es.addEventListener("message", (evt) => {
+        try {
+          const d = JSON.parse((evt as MessageEvent<string>).data) as { messages: SupportChatMessage[] };
+          setMessages((prev) => {
+            const existingIds = new Set(prev.map((m) => m.id));
+            const fresh = d.messages.filter((m) => !existingIds.has(m.id));
+            if (fresh.some((m) => m.senderRole !== myRole)) playNotificationSound();
+            return fresh.length > 0 ? [...prev, ...fresh] : prev;
+          });
+        } catch { /* ignore malformed event */ }
+      });
     });
 
-    const interval = setInterval(() => {
-      fetchMessages(ticketId).then((msgs) => {
-        if (cancelled) return;
-        setMessages((prev) => {
-          const existingIds = new Set(prev.map((m) => m.id));
-          const fresh = msgs.filter((m) => !existingIds.has(m.id));
-          return fresh.length > 0 ? [...prev, ...fresh] : prev;
-        });
-      });
-    }, POLL_INTERVAL_MS);
-
-    return () => { cancelled = true; clearInterval(interval); };
-  }, [ticketId]);
+    return () => { cancelled = true; es?.close(); };
+  }, [ticketId, myRole, playNotificationSound]);
 
   useLayoutEffect(() => {
     const el = msgsRef.current;
