@@ -38,6 +38,7 @@ interface Props {
   currentBankAccountNumber: string | null;
   currentBankAccountHolder: string | null;
   recentRequests:           BankRequest[];
+  apiEndpoint:              string;
 }
 
 export default function BankChangeRequestForm({
@@ -45,6 +46,7 @@ export default function BankChangeRequestForm({
   currentBankAccountNumber,
   currentBankAccountHolder,
   recentRequests,
+  apiEndpoint,
 }: Props) {
   const router = useRouter();
   const [open, setOpen]       = useState(false);
@@ -64,7 +66,7 @@ export default function BankChangeRequestForm({
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("/api/seller/bank-change-request", {
+      const res = await fetch(apiEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

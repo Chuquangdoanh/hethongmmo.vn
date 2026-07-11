@@ -41,6 +41,7 @@ const ACTION_VI: Record<string, string> = {
   SELLER_PRODUCT_DELETE:    "Xóa sản phẩm nhà bán hàng",
   UPDATE_SELLER_SETTINGS:   "Cập nhật cài đặt nhà bán hàng",
   UPDATE_SELLER_TIER_CONFIG:"Cập nhật cấu hình hạng bán hàng",
+  UPDATE_AFFILIATE_SETTINGS:"Cập nhật cấu hình affiliate",
   CREATE_SELLER_TIER:       "Tạo hạng nhà bán hàng",
   UPDATE_SELLER_TIER:       "Cập nhật hạng nhà bán hàng",
   DELETE_SELLER_TIER:       "Xóa hạng nhà bán hàng",

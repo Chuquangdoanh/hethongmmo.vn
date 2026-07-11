@@ -10,12 +10,22 @@ interface QualifyingCommission {
   customerName: string;
 }
 
-export default function RequestWithdrawalForm({ commissions }: { commissions: QualifyingCommission[] }) {
+interface Props {
+  commissions: QualifyingCommission[];
+  feePercent: number;
+  minAmount: number;
+  hasBankInfo: boolean;
+}
+
+export default function RequestWithdrawalForm({ commissions, feePercent, minAmount, hasBankInfo }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const total = commissions.reduce((sum, c) => sum + c.amount, 0);
+  const feeAmount = Math.floor((total * feePercent) / 100);
+  const netTotal = total - feeAmount;
+  const belowMinimum = total < minAmount;
 
   async function handleSubmit() {
     setLoading(true);
@@ -36,6 +46,12 @@ export default function RequestWithdrawalForm({ commissions }: { commissions: Qu
     return <p className="text-sm text-gray-400">Không có hoa hồng nào đủ điều kiện rút.</p>;
   }
 
+  const disabledReason = !hasBankInfo
+    ? "Vui lòng đăng ký thông tin ngân hàng trước khi rút hoa hồng"
+    : belowMinimum
+      ? `Số tiền chưa đạt mức tối thiểu ${formatVnd(minAmount)}`
+      : null;
+
   return (
     <div className="space-y-3">
       <div className="max-h-64 overflow-y-auto rounded-lg border border-gray-200 divide-y divide-gray-100">
@@ -47,11 +63,19 @@ export default function RequestWithdrawalForm({ commissions }: { commissions: Qu
         ))}
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {disabledReason && <p className="text-sm text-amber-600">{disabledReason}</p>}
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-600">Tổng: <strong>{formatVnd(total)}</strong></span>
+        <div className="text-sm text-gray-600">
+          <p>Tổng: <strong>{formatVnd(total)}</strong></p>
+          {feePercent > 0 && (
+            <p className="text-xs text-gray-400">
+              Phí {feePercent}% (-{formatVnd(feeAmount)}) → Thực nhận <strong>{formatVnd(netTotal)}</strong>
+            </p>
+          )}
+        </div>
         <button
           type="button"
-          disabled={loading}
+          disabled={loading || !!disabledReason}
           onClick={handleSubmit}
           className="rounded-md bg-violet-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >

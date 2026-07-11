@@ -8,7 +8,7 @@ import ShopLockAdminButton from "./ShopLockAdminButton";
 import SellerTierForm from "./SellerTierForm";
 import ImageZoom from "./ImageZoom";
 import SellerCategoryManager from "./SellerCategoryManager";
-import BankChangeRequestAdmin from "./BankChangeRequestAdmin";
+import BankChangeRequestAdmin from "@/components/shared/BankChangeRequestAdmin";
 import { getSellerBankChangeRequests } from "@/lib/services/bank-change-request.service";
 import { decrypt } from "@/lib/security/encryption";
 import AdminEscrowAdjust from "@/app/(admin)/admin/users/[id]/AdminEscrowAdjust";

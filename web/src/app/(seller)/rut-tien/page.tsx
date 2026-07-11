@@ -9,7 +9,7 @@ import {
   ReceiptText, AlertTriangle, PackageX, Shield,
 } from "lucide-react";
 import WithdrawalForm from "./WithdrawalForm";
-import BankChangeRequestForm from "./BankChangeRequestForm";
+import BankChangeRequestForm from "@/components/shared/BankChangeRequestForm";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
 import { decrypt } from "@/lib/security/encryption";
 import { getSellerBankChangeRequests } from "@/lib/services/bank-change-request.service";
@@ -304,6 +304,7 @@ export default async function RutTienPage() {
             currentBankAccountNumber={currentBankAccountNumber}
             currentBankAccountHolder={currentBankAccountHolder}
             recentRequests={bankChangeRequests}
+            apiEndpoint="/api/seller/bank-change-request"
           />
 
           {/* History */}

@@ -6,15 +6,38 @@ import { logger } from "@/lib/utils/logger";
 /** Hoa hồng chỉ đủ điều kiện rút sau khi đơn hàng phát sinh (order.createdAt) đủ N ngày. */
 export const AFFILIATE_WITHDRAWAL_HOLD_DAYS = 3;
 
-export function affiliateWithdrawalHoldCutoff(): Date {
+export function affiliateWithdrawalHoldCutoff(holdDays: number = AFFILIATE_WITHDRAWAL_HOLD_DAYS): Date {
   const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - AFFILIATE_WITHDRAWAL_HOLD_DAYS);
+  cutoff.setDate(cutoff.getDate() - holdDays);
   return cutoff;
+}
+
+export interface AffiliateWithdrawalSettings {
+  hold_days: number;
+  min_withdrawal_amount: number;
+  withdrawal_fee_percent: number;
+}
+
+const DEFAULT_AFFILIATE_WITHDRAWAL_SETTINGS: AffiliateWithdrawalSettings = {
+  hold_days: AFFILIATE_WITHDRAWAL_HOLD_DAYS,
+  min_withdrawal_amount: 0,
+  withdrawal_fee_percent: 0,
+};
+
+/** Đọc cấu hình rút hoa hồng affiliate (CMS) — merge với default an toàn nếu chưa cấu hình. */
+export async function getAffiliateWithdrawalSettings(): Promise<AffiliateWithdrawalSettings> {
+  const config = await prisma.systemConfig.findUnique({
+    where: { key: "affiliate_withdrawal_settings" },
+    select: { value: true },
+  });
+  return { ...DEFAULT_AFFILIATE_WITHDRAWAL_SETTINGS, ...(config?.value as object ?? {}) };
 }
 
 interface AffiliateWithdrawalResult {
   id: string;
   netAmount: string;
+  feeAmount: string;
+  feePercent: number;
 }
 
 /**
@@ -28,6 +51,7 @@ export async function requestAffiliateWithdrawal(
   params: { affiliateId: string },
 ): Promise<AffiliateWithdrawalResult> {
   const { affiliateId } = params;
+  const settings = await getAffiliateWithdrawalSettings();
 
   const result = await prisma.$transaction(async (tx) => {
     const pending = await tx.affiliateWithdrawal.findFirst({
@@ -36,29 +60,51 @@ export async function requestAffiliateWithdrawal(
     });
     if (pending) throw new ValidationError("Bạn đã có yêu cầu rút tiền đang chờ duyệt");
 
+    const user = await tx.user.findUnique({
+      where: { id: affiliateId },
+      select: { bankNameEnc: true, bankAccountNumberEnc: true, bankAccountHolderEnc: true },
+    });
+    if (!user?.bankNameEnc || !user.bankAccountNumberEnc || !user.bankAccountHolderEnc) {
+      throw new ValidationError("Vui lòng đăng ký thông tin ngân hàng trước khi rút hoa hồng");
+    }
+
     const commissions = await tx.affiliateCommission.findMany({
       where: {
         affiliateId,
         status: "APPROVED",
         withdrawn: false,
-        order: { createdAt: { lte: affiliateWithdrawalHoldCutoff() } },
+        order: { createdAt: { lte: affiliateWithdrawalHoldCutoff(settings.hold_days) } },
       },
       select: { id: true, amount: true },
     });
     if (commissions.length === 0) {
       throw new ValidationError(
-        `Không có hoa hồng nào đủ điều kiện rút (đơn hàng phải phát sinh trên ${AFFILIATE_WITHDRAWAL_HOLD_DAYS} ngày)`,
+        `Không có hoa hồng nào đủ điều kiện rút (đơn hàng phải phát sinh trên ${settings.hold_days} ngày)`,
       );
     }
 
     const commissionIds = commissions.map((c) => c.id);
-    const netAmount = commissions.reduce((sum, c) => sum.add(c.amount), new Decimal(0));
+    const grossAmount = commissions.reduce((sum, c) => sum.add(c.amount), new Decimal(0));
+    if (grossAmount.lt(settings.min_withdrawal_amount)) {
+      throw new ValidationError(
+        `Số tiền rút tối thiểu là ${settings.min_withdrawal_amount.toLocaleString("vi")}đ. ` +
+        `Hoa hồng đủ điều kiện hiện tại: ${grossAmount.toFixed(0)}đ`,
+      );
+    }
+
+    const feeAmount = grossAmount.mul(settings.withdrawal_fee_percent).div(100).toDecimalPlaces(0);
+    const netAmount = grossAmount.sub(feeAmount);
 
     const withdrawal = await tx.affiliateWithdrawal.create({
       data: {
         affiliateId,
-        amount: netAmount.toFixed(2),
+        amount: grossAmount.toFixed(2),
+        feePercent: settings.withdrawal_fee_percent,
+        feeAmount: feeAmount.toFixed(2),
         netAmount: netAmount.toFixed(2),
+        bankNameEnc:          user.bankNameEnc          as unknown as Uint8Array<ArrayBuffer>,
+        bankAccountNumberEnc: user.bankAccountNumberEnc as unknown as Uint8Array<ArrayBuffer>,
+        bankAccountHolderEnc: user.bankAccountHolderEnc as unknown as Uint8Array<ArrayBuffer>,
         qualifyingCommissionIds: commissionIds,
       },
     });
@@ -69,11 +115,21 @@ export async function requestAffiliateWithdrawal(
         action: "AFFILIATE_WITHDRAWAL_REQUESTED",
         targetType: "AffiliateWithdrawal",
         targetId: withdrawal.id,
-        metadata: { netAmount: netAmount.toFixed(2), commissionCount: commissions.length },
+        metadata: {
+          grossAmount: grossAmount.toFixed(2),
+          feeAmount: feeAmount.toFixed(2),
+          netAmount: netAmount.toFixed(2),
+          commissionCount: commissions.length,
+        },
       },
     });
 
-    return { id: withdrawal.id, netAmount: netAmount.toFixed(2) };
+    return {
+      id: withdrawal.id,
+      netAmount: netAmount.toFixed(2),
+      feeAmount: feeAmount.toFixed(2),
+      feePercent: settings.withdrawal_fee_percent,
+    };
   });
 
   logger.info({ affiliateId }, "Affiliate withdrawal requested");

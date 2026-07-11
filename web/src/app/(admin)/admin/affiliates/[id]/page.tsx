@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { getAffiliateStats, buildReferralLink } from "@/lib/services/affiliate.service";
+import { getSellerBankChangeRequests } from "@/lib/services/bank-change-request.service";
 import { APP_URL } from "@/config/env";
 import { formatVnd } from "@/lib/utils/format";
+import BankChangeRequestAdmin from "@/components/shared/BankChangeRequestAdmin";
 import AffiliateStatusToggle from "./_components/AffiliateStatusToggle";
 import RevokeAffiliateButton from "./_components/RevokeAffiliateButton";
 import ReassignCustomerForm from "./_components/ReassignCustomerForm";
@@ -34,6 +36,7 @@ export default async function AdminAffiliateDetailPage({
 
   const stats = await getAffiliateStats(id);
   const referralLink = affiliate.affiliateCode ? buildReferralLink(affiliate.affiliateCode, APP_URL) : null;
+  const bankChangeRequests = await getSellerBankChangeRequests(id);
 
   return (
     <div className="space-y-6">
@@ -82,6 +85,8 @@ export default async function AdminAffiliateDetailPage({
         <h2 className="text-sm font-semibold text-gray-700 mb-2">Chuyển / gỡ liên kết khách hàng</h2>
         <ReassignCustomerForm affiliateId={affiliate.id} />
       </div>
+
+      <BankChangeRequestAdmin requests={bankChangeRequests} />
 
       <div className="rounded-xl border border-gray-200 bg-white overflow-x-auto">
         <p className="px-4 pt-4 text-xs text-gray-400">Bấm vào 1 khách hàng để xem chi tiết đơn hàng của khách đó.</p>

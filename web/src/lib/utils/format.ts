@@ -27,3 +27,9 @@ export function formatPhone(phone: string): string {
   if (!phone || phone.length < 7) return phone;
   return phone.slice(0, 4) + "***" + phone.slice(-3);
 }
+
+/** Masks a bank account number, showing only the last 3 digits: "1234567" → "****567" */
+export function maskBankAccountNumber(accountNumber: string): string {
+  if (!accountNumber || accountNumber.length <= 3) return accountNumber;
+  return "*".repeat(accountNumber.length - 3) + accountNumber.slice(-3);
+}
