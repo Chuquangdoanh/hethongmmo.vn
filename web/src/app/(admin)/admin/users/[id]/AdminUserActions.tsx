@@ -107,7 +107,7 @@ export default function AdminUserActions({ userId, currentRole, currentStatus, d
       )}
 
       {/* Giảm giá — 1 ô nhập set chung cho cả 2 nhóm (Service/Course/Tut và Tài nguyên MMO/Kho/Khương FB) */}
-      {/* <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
+      <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
         <p className="text-xs text-gray-500 font-medium">
           Giảm giá (Service / Khóa học / Tut / Tài nguyên MMO / Kho nguyên liệu / Khương FB)
         </p>
@@ -145,7 +145,7 @@ export default function AdminUserActions({ userId, currentRole, currentStatus, d
             {agentDiscountPercent > 0 ? `${agentDiscountPercent}% (Tài nguyên/Kho/Khương FB)` : "Tài nguyên/Kho/Khương FB: không giảm"}
           </span>
         </p>
-      </div> */}
+      </div>
 
       {/* Confirm modal for STAFF/ADMIN */}
       {confirmRole && (
