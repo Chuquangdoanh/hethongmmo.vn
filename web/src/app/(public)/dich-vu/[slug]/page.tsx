@@ -47,13 +47,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: "hethongmmo.vn",
       locale: "vi_VN",
       type: "website",
-      images: [{ url: image ?? "/images/facebook_cover_professional.png", width: 1200, height: 630, alt: title }],
+      images: [{ url: image ?? "/images/hethong.png", width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [image ?? "/images/facebook_cover_professional.png"],
+      images: [image ?? "/images/hethong.png"],
     },
   };
 }

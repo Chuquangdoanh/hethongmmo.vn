@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 const SITE_NAME = "hethongmmo.vn";
-export const DEFAULT_OG_IMAGE = "/images/facebook_cover_professional.png";
+export const DEFAULT_OG_IMAGE = "/images/hethong.png";
 
 export function buildMeta(opts: {
   title: string;
