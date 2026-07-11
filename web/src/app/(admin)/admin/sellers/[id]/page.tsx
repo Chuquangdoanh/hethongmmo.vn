@@ -13,6 +13,7 @@ import { getSellerBankChangeRequests } from "@/lib/services/bank-change-request.
 import { decrypt } from "@/lib/security/encryption";
 import AdminEscrowAdjust from "@/app/(admin)/admin/users/[id]/AdminEscrowAdjust";
 import ProductRevenueFilter from "./ProductRevenueFilter";
+import { getSellerTierConfig } from "@/lib/services/seller.service";
 
 export const metadata: Metadata = { title: "Duyệt Seller" };
 
@@ -68,7 +69,7 @@ export default async function AdminSellerDetailPage({
   const sellerCategory = request.approvedCategory ?? request.category;
 
   type ShopRow = { shop_locked: boolean };
-  const [shopRows, products, orderStats, withdrawalStats, allTiers, allSubCategories, productRevenueGroups] = await Promise.all([
+  const [shopRows, products, orderStats, withdrawalStats, allTiers, allSubCategories, productRevenueGroups, tierCfg] = await Promise.all([
     prisma.$queryRaw<ShopRow[]>`SELECT shop_locked FROM users WHERE id = ${request.userId}`,
     prisma.sellerProduct.findMany({
       where: { sellerId: request.userId, deletedAt: null },
@@ -88,12 +89,18 @@ export default async function AdminSellerDetailPage({
       orderBy: { createdAt: "desc" },
     }),
     prisma.order.aggregate({
-      where: { sellerId: request.userId, status: "DONE" },
+      where: {
+        sellerId: request.userId, status: "DONE",
+        ...(completedAtFilter ? { completedAt: completedAtFilter } : {}),
+      },
       _sum: { finalPrice: true },
       _count: true,
     }),
     prisma.sellerWithdrawal.aggregate({
-      where: { sellerId: request.userId, status: "COMPLETED" },
+      where: {
+        sellerId: request.userId, status: "COMPLETED",
+        ...(completedAtFilter ? { processedAt: completedAtFilter } : {}),
+      },
       _sum: { amount: true, netAmount: true },
     }),
     prisma.sellerTierDefinition.findMany({
@@ -119,8 +126,26 @@ export default async function AdminSellerDetailPage({
       _sum: { finalPrice: true },
       _count: { _all: true },
     }),
+    getSellerTierConfig(request.user.sellerTier),
   ]);
   const shopLocked = shopRows[0]?.shop_locked ?? false;
+
+  // "Có thể rút" — tính giống hệt công thức bên trang seller /rut-tien:
+  // đơn DONE, chưa withdrawn, đã qua đủ ngày hold, trừ phí rút theo tier.
+  const holdDate = new Date(Date.now() - tierCfg.hold_days * 24 * 60 * 60 * 1000);
+  const withdrawableStats = await prisma.order.aggregate({
+    where: {
+      sellerId: request.userId,
+      status: "DONE",
+      withdrawn: false,
+      createdAt: { lt: holdDate },
+      ...(completedAtFilter ? { completedAt: completedAtFilter } : {}),
+    },
+    _sum: { finalPrice: true },
+  });
+  const withdrawableGross = Number(withdrawableStats._sum.finalPrice ?? 0);
+  const withdrawableFee   = Math.floor(withdrawableGross * tierCfg.fee_percent / 100);
+  const withdrawableNet   = withdrawableGross - withdrawableFee;
 
   const productRevenueMap = new Map<string, { orders: number; revenue: number }>();
   for (const g of productRevenueGroups) {
@@ -157,7 +182,7 @@ export default async function AdminSellerDetailPage({
       <h1 className="text-2xl font-bold text-gray-900">Yêu cầu Seller</h1>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
             label: "Tổng doanh số",
@@ -182,6 +207,14 @@ export default async function AdminSellerDetailPage({
             color: "text-violet-600",
             bg: "bg-violet-50 border-violet-200",
             icon: "💳",
+          },
+          {
+            label: "Có thể rút",
+            value: formatVnd(withdrawableNet),
+            sub: `Trước phí: ${formatVnd(withdrawableGross)} — đã qua ${tierCfg.hold_days} ngày hold`,
+            color: "text-teal-600",
+            bg: "bg-teal-50 border-teal-200",
+            icon: "🔓",
           },
         ].map(({ label, value, sub, color, bg, icon }) => (
           <div key={label} className={`rounded-xl border p-5 ${bg}`}>
