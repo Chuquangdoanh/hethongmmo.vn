@@ -59,6 +59,7 @@ export default async function AdminSellerProductDetailPage({
     where: { id, deletedAt: null },
     select: {
       id: true, name: true, price: true, description: true,
+      warrantyInfo: true,
       imageUrl: true, sellerCategory: true, publishDate: true,
       isActive: true, isHidden: true, isRestricted: true,
       salesCount: true, revenue: true, createdAt: true, updatedAt: true,
@@ -266,6 +267,13 @@ export default async function AdminSellerProductDetailPage({
           <div className="mt-4">
             <p className="text-[10px] text-gray-500 mb-1">Mô tả</p>
             <p className="text-sm text-gray-700 whitespace-pre-line">{product.description}</p>
+          </div>
+        )}
+
+        {product.warrantyInfo && (
+          <div className="mt-4">
+            <p className="text-[10px] text-gray-500 mb-1">Thông tin bảo hành</p>
+            <p className="text-sm text-gray-700 whitespace-pre-line">{product.warrantyInfo}</p>
           </div>
         )}
       </div>
