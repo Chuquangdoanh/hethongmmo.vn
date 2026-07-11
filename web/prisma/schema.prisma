@@ -1601,6 +1601,21 @@ model ProductFavorite {
 }
 
 // ====================================================================
+// 29B. PRODUCT_IMAGES (Gallery ảnh sản phẩm — tối đa 10 ảnh/sản phẩm)
+// ====================================================================
+
+model ProductImage {
+  id          String              @id @default(uuid()) @db.Uuid
+  productType FavoriteProductType @map("product_type")
+  productId   String              @map("product_id") @db.Uuid
+  imageUrl    String              @map("image_url")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  @@index([productType, productId, createdAt])
+  @@map("product_images")
+}
+
+// ====================================================================
 // 30. COUPONS (Mã giảm giá — Kho tài nguyên / Tài nguyên MMO / Khương FB)
 // ====================================================================
 

@@ -12,6 +12,7 @@ import RestrictButton from "../_components/RestrictButton";
 import ImageZoom from "../_components/ImageZoom";
 import ReviewActions from "./_components/ReviewActions";
 import VariantManager from "@/components/shared/VariantManager";
+import ProductGalleryManager from "@/components/shared/ProductGalleryManager";
 
 export const metadata: Metadata = { title: "Chi tiết sản phẩm" };
 
@@ -281,6 +282,18 @@ export default async function AdminSellerProductDetailPage({
       {/* Biến thể sản phẩm */}
       <div className="rounded-xl border border-gray-200 bg-white p-5">
         <VariantManager productId={product.id} isAdmin apiBase="/api/seller/products" />
+      </div>
+
+      {/* Thư viện ảnh sản phẩm */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5">
+        <ProductGalleryManager
+          productId={product.id}
+          apiBase="/api/seller/products"
+          uploadUrl="/api/storage/upload"
+          uploadResponseKey="publicUrl"
+          uploadPurpose="product-image"
+          isAdmin
+        />
       </div>
 
       {/* Stock summary */}

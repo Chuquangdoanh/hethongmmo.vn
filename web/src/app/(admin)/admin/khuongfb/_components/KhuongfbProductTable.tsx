@@ -2,7 +2,8 @@
 
 import { useState, useRef, Fragment } from "react";
 import type { KhuongfbProduct, ResourceCategoryWithSubs } from "../page";
-import { Image as ImageIcon, X, Upload, ExternalLink, ChevronDown, ChevronUp, Save } from "lucide-react";
+import { Image as ImageIcon, X, Upload, ExternalLink, ChevronDown, ChevronUp, Save, Images } from "lucide-react";
+import ProductGalleryManager from "@/components/shared/ProductGalleryManager";
 
 const SECTION_OPTIONS = [
   { value: "TAI_NGUYEN_MMO", label: "Nguyên liệu MMO" },
@@ -36,6 +37,7 @@ export function KhuongfbProductTable({ products, categories, onRefresh }: Props)
   const [loadingId,   setLoadingId]   = useState<string | null>(null);
   const [expandedId,  setExpandedId]  = useState<string | null>(null);
   const [imgUploading, setImgUploading] = useState(false);
+  const [galleryModalProduct, setGalleryModalProduct] = useState<KhuongfbProduct | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Per-product edit state
@@ -329,6 +331,13 @@ export function KhuongfbProductTable({ products, categories, onRefresh }: Props)
                                 Xóa ảnh
                               </button>
                             )}
+                            <button
+                              onClick={() => setGalleryModalProduct(p)}
+                              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-700 text-xs font-semibold hover:bg-indigo-100 transition-colors"
+                            >
+                              <Images size={13} />
+                              Quản lý ảnh (gallery)
+                            </button>
                             <p className="text-[10px] text-gray-400">JPEG, PNG, WebP · Tối đa 5 MB</p>
                           </div>
                         </div>
@@ -479,6 +488,40 @@ export function KhuongfbProductTable({ products, categories, onRefresh }: Props)
       {products.length === 0 && (
         <div className="text-center py-12 text-gray-400">
           Chưa có sản phẩm nào. Nhấn &quot;Đồng bộ ngay&quot; để lấy từ Khuongfb.
+        </div>
+      )}
+
+      {/* Modal quản lý gallery ảnh */}
+      {galleryModalProduct && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => setGalleryModalProduct(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Quản lý ảnh sản phẩm</p>
+                <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{galleryModalProduct.name}</p>
+              </div>
+              <button
+                onClick={() => setGalleryModalProduct(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <ProductGalleryManager
+              productId={galleryModalProduct.id}
+              apiBase="/api/admin/khuongfb/products"
+              useQueryId
+              uploadUrl="/api/admin/upload/thumbnail?type=kfb-thumbnail"
+              uploadResponseKey="url"
+              isAdmin
+            />
+          </div>
         </div>
       )}
     </div>

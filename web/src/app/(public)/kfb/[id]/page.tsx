@@ -13,6 +13,7 @@ import { getExternalProductSoldCount } from "@/lib/services/external-product-sta
 import FavoriteButton from "@/components/shared/FavoriteButton";
 import { KfbBuyButton } from "./_components/KfbBuyButton";
 import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
+import ProductImageGallery from "@/components/shared/ProductImageGallery";
 import {
   CheckCircle, ShieldCheck, Zap, ArrowLeft,
   ShoppingCart, Headphones, RotateCcw, BadgeCheck, Lock,
@@ -111,7 +112,7 @@ export default async function KfbProductDetailPage({
 
   const me = session?.user as AuthenticatedUser | undefined;
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, contactCms, favoriteStatus, soldCount, discountPct] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, contactCms, favoriteStatus, soldCount, discountPct, galleryRows] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "KHUONGFB_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -149,6 +150,11 @@ export default async function KfbProductDetailPage({
     getFavoriteStatus(me?.id, "KHUONGFB_PRODUCT", product.id),
     getExternalProductSoldCount(product.id),
     me ? getUserResourceDiscountPercent(me.id) : Promise.resolve(0),
+    prisma.productImage.findMany({
+      where: { productType: "KHUONGFB_PRODUCT", productId: product.id },
+      orderBy: { createdAt: "asc" },
+      select: { imageUrl: true },
+    }),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
@@ -182,36 +188,33 @@ export default async function KfbProductDetailPage({
 
   // ── JSX SECTIONS ─────────────────────────────────────────────────
 
+  const galleryImages = [
+    ...(thumbnailSrc ? [thumbnailSrc] : []),
+    ...galleryRows.map((g) => g.imageUrl).filter((u) => u !== product.thumbnail),
+  ].map((u) => (u.startsWith("http") ? u : r2Url(u)));
+
   const sectionImage = (
-    <div className="rounded-2xl bg-[#f1f5f9] overflow-hidden relative" style={{ aspectRatio: "4/3" }}>
-      {thumbnailSrc ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={thumbnailSrc}
-          alt={product.name}
-          className="w-full h-full object-contain"
-          loading="eager"
-          decoding="async"
-        />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <ShoppingCart size={80} strokeWidth={1} className="text-[#cbd5e1]" />
+    <ProductImageGallery
+      images={galleryImages}
+      alt={product.name}
+      aspectRatio="4/3"
+      variant="plain-contain"
+      placeholderIcon={<ShoppingCart size={80} strokeWidth={1} className="text-[#cbd5e1]" />}
+      overlays={
+        <div style={{ position: "absolute", top: 12, right: 12, zIndex: 5 }}>
+          <FavoriteButton
+            productId={product.id}
+            productType="KHUONGFB_PRODUCT"
+            initialIsFavorite={favoriteStatus.isFavorite}
+            initialCount={favoriteStatus.favoriteCount}
+            isLoggedIn={!!me}
+            showCount
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white border border-white shadow-md hover:shadow-lg transition-shadow"
+            iconSize={18}
+          />
         </div>
-      )}
-      {/* Nút yêu thích — đứng trên ảnh nhưng thấp hơn thanh marquee (900) và popup (9999) */}
-      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 5 }}>
-        <FavoriteButton
-          productId={product.id}
-          productType="KHUONGFB_PRODUCT"
-          initialIsFavorite={favoriteStatus.isFavorite}
-          initialCount={favoriteStatus.favoriteCount}
-          isLoggedIn={!!me}
-          showCount
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white border border-white shadow-md hover:shadow-lg transition-shadow"
-          iconSize={18}
-        />
-      </div>
-    </div>
+      }
+    />
   );
 
   const sectionDescription = (

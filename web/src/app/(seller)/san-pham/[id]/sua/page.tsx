@@ -135,6 +135,7 @@ export default async function SuaSanPhamPage({
             sellerCategory={user.sellerCategory}
             subCategories={subCategories}
             allSubCats={allSubCats}
+            isRestricted={product.isRestricted}
             initialData={{
               id: product.id,
               name: product.name,
@@ -153,7 +154,7 @@ export default async function SuaSanPhamPage({
           {/* Biến thể sản phẩm — chỉ hiện khi sản phẩm không bị khóa */}
           {!product.isRestricted && (
             <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            
+
               <VariantManager productId={product.id} />
             </div>
           )}

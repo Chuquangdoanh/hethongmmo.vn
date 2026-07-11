@@ -19,6 +19,7 @@ import { getExternalProductSoldCounts } from "@/lib/services/external-product-st
 import FavoriteButton from "@/components/shared/FavoriteButton";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
+import ProductImageGallery from "@/components/shared/ProductImageGallery";
 
 export async function generateMetadata({
   params,
@@ -133,7 +134,7 @@ export default async function MmoProductDetailPage({
     isActive: v.isActive,
   }));
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, favoriteStatus, contactCms, relatedMmo, relatedKfb, discountPct] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, favoriteStatus, contactCms, relatedMmo, relatedKfb, discountPct, galleryRows] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "MMO_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -198,6 +199,11 @@ export default async function MmoProductDetailPage({
       },
     }),
     me ? getUserResourceDiscountPercent(me.id) : Promise.resolve(0),
+    prisma.productImage.findMany({
+      where: { productType: "MMO_PRODUCT", productId: product.id },
+      orderBy: { createdAt: "asc" },
+      select: { imageUrl: true },
+    }),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
@@ -249,52 +255,43 @@ export default async function MmoProductDetailPage({
 
   // ── JSX SECTIONS ──────────────────────────────────────────────
 
+  const galleryImages = [
+    ...(product.thumbnail ? [product.thumbnail] : []),
+    ...galleryRows.map((g) => g.imageUrl).filter((u) => u !== product.thumbnail),
+  ].map(r2Url);
+
   const sectionImage = (
-    <div
-      className="rounded-2xl bg-[#f1f5f9] overflow-hidden"
-      style={{ aspectRatio: "16/9", position: "relative" }}
-    >
-      {product.thumbnail ? (
+    <ProductImageGallery
+      images={galleryImages}
+      alt={product.name}
+      aspectRatio="16/9"
+      variant="blurred-cover"
+      placeholderIcon={<ShoppingCart size={80} strokeWidth={1} className="text-[#cbd5e1]" />}
+      overlays={
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={r2Url(product.thumbnail)} alt="" aria-hidden
-            className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-55 pointer-events-none"
-            loading="lazy" decoding="async"
-          />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={r2Url(product.thumbnail)} alt={product.name}
-            className="absolute inset-0 w-full h-full object-cover"
-            loading="eager" decoding="async"
-          />
+          {isOutOfStock && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center" style={{ zIndex: 10 }}>
+              <span className="px-5 py-2.5 rounded-xl bg-black/80 text-danger font-extrabold text-lg tracking-widest">
+                HẾT HÀNG
+              </span>
+            </div>
+          )}
+          {/* Nút yêu thích — đứng trên ảnh nhưng thấp hơn thanh marquee (900) và popup (9999) */}
+          <div style={{ position: "absolute", top: 12, right: 12, zIndex: 5 }}>
+            <FavoriteButton
+              productId={product.id}
+              productType="MMO_PRODUCT"
+              initialIsFavorite={favoriteStatus.isFavorite}
+              initialCount={favoriteStatus.favoriteCount}
+              isLoggedIn={!!me}
+              showCount
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white border border-white shadow-md hover:shadow-lg transition-shadow"
+              iconSize={18}
+            />
+          </div>
         </>
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <ShoppingCart size={80} strokeWidth={1} className="text-[#cbd5e1]" />
-        </div>
-      )}
-      {isOutOfStock && (
-        <div className="absolute inset-0 bg-black/60 flex items-center justify-center" style={{ zIndex: 10 }}>
-          <span className="px-5 py-2.5 rounded-xl bg-black/80 text-danger font-extrabold text-lg tracking-widest">
-            HẾT HÀNG
-          </span>
-        </div>
-      )}
-      {/* Nút yêu thích — đứng trên ảnh nhưng thấp hơn thanh marquee (900) và popup (9999) */}
-      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 5 }}>
-        <FavoriteButton
-          productId={product.id}
-          productType="MMO_PRODUCT"
-          initialIsFavorite={favoriteStatus.isFavorite}
-          initialCount={favoriteStatus.favoriteCount}
-          isLoggedIn={!!me}
-          showCount
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white border border-white shadow-md hover:shadow-lg transition-shadow"
-          iconSize={18}
-        />
-      </div>
-    </div>
+      }
+    />
   );
 
   const sectionWarranty = product.warrantyInfo ? (

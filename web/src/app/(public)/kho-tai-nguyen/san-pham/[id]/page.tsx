@@ -10,6 +10,7 @@ import ReviewSection from "@/components/shared/ReviewSection";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import { getFavoriteStatus } from "@/lib/services/favorite.service";
 import FavoriteButton from "@/components/shared/FavoriteButton";
+import ProductImageGallery from "@/components/shared/ProductImageGallery";
 import ProductBuyButton from "@/app/(public)/tai-nguyen-mmo/_components/ProductBuyButton";
 import type { ProductVariant } from "@/app/(public)/tai-nguyen-mmo/_components/ProductBuyButton";
 import {
@@ -144,7 +145,7 @@ export default async function KhoSellerProductDetailPage({
     isActive: v.isActive,
   }));
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, tierDef, relatedProducts, contactCms, favoriteStatus] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, tierDef, relatedProducts, contactCms, favoriteStatus, galleryRows] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "SELLER_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -199,6 +200,11 @@ export default async function KhoSellerProductDetailPage({
     }),
     getSiteContent<{ quickButtons?: { id: string; label: string; href: string }[] }>(SITE_CONTENT_KEYS.CONTACT_SUPPORT),
     getFavoriteStatus(me?.id, "SELLER_PRODUCT", product.id),
+    prisma.productImage.findMany({
+      where: { productType: "SELLER_PRODUCT", productId: product.id },
+      orderBy: { createdAt: "asc" },
+      select: { imageUrl: true },
+    }),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
@@ -222,41 +228,43 @@ export default async function KhoSellerProductDetailPage({
 
   // ── JSX SECTIONS ──────────────────────────────────────────────
 
+  const galleryImages = [
+    ...(product.imageUrl ? [product.imageUrl] : []),
+    ...galleryRows.map((g) => g.imageUrl).filter((u) => u !== product.imageUrl),
+  ].map(r2Url);
+
   const sectionImage = (
-    <div className="rounded-2xl bg-[#f1f5f9] overflow-hidden relative aspect-video">
-      {product.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={r2Url(product.imageUrl)} alt={product.name}
-          className="w-full h-full object-contain"
-          loading="eager" decoding="async"
-        />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <ShoppingCart size={80} strokeWidth={1} className="text-[#cbd5e1]" />
-        </div>
-      )}
-      {isOutOfStock && (
-        <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
-          <span className="px-5 py-2.5 rounded-xl bg-black/80 text-danger font-extrabold text-lg tracking-widest">
-            HẾT HÀNG
-          </span>
-        </div>
-      )}
-      {/* Nút yêu thích — đứng trên ảnh nhưng thấp hơn thanh marquee (900) và popup (9999) */}
-      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 5 }}>
-        <FavoriteButton
-          productId={product.id}
-          productType="SELLER_PRODUCT"
-          initialIsFavorite={favoriteStatus.isFavorite}
-          initialCount={favoriteStatus.favoriteCount}
-          isLoggedIn={!!me}
-          showCount
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white border border-white shadow-md hover:shadow-lg transition-shadow"
-          iconSize={18}
-        />
-      </div>
-    </div>
+    <ProductImageGallery
+      images={galleryImages}
+      alt={product.name}
+      aspectRatio="16/9"
+      variant="plain-contain"
+      placeholderIcon={<ShoppingCart size={80} strokeWidth={1} className="text-[#cbd5e1]" />}
+      overlays={
+        <>
+          {isOutOfStock && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
+              <span className="px-5 py-2.5 rounded-xl bg-black/80 text-danger font-extrabold text-lg tracking-widest">
+                HẾT HÀNG
+              </span>
+            </div>
+          )}
+          {/* Nút yêu thích — đứng trên ảnh nhưng thấp hơn thanh marquee (900) và popup (9999) */}
+          <div style={{ position: "absolute", top: 12, right: 12, zIndex: 5 }}>
+            <FavoriteButton
+              productId={product.id}
+              productType="SELLER_PRODUCT"
+              initialIsFavorite={favoriteStatus.isFavorite}
+              initialCount={favoriteStatus.favoriteCount}
+              isLoggedIn={!!me}
+              showCount
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white border border-white shadow-md hover:shadow-lg transition-shadow"
+              iconSize={18}
+            />
+          </div>
+        </>
+      }
+    />
   );
 
   const sectionDescription = (

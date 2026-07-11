@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { r2Url } from "@/lib/utils/image-url";
 import { FileText, Upload, X, AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
 import VariantManager from "@/components/shared/VariantManager";
+import ProductGalleryManager from "@/components/shared/ProductGalleryManager";
 
 const MAX_STOCK_ITEMS = 5000;
 const MAX_FILE_SIZE_MB = 10;
@@ -34,6 +35,8 @@ interface ProductFormProps {
   sellerCategory: string;
   subCategories?: SubCategoryItem[];
   allSubCats?: SubCatFull[];
+  /** Ẩn khu vực thư viện ảnh khi sản phẩm đang bị admin hạn chế (chỉ áp dụng mode="edit") */
+  isRestricted?: boolean;
   initialData?: {
     id: string;
     name: string;
@@ -49,7 +52,7 @@ interface ProductFormProps {
   };
 }
 
-export default function ProductForm({ mode, sellerCategory, subCategories = [], allSubCats, initialData }: ProductFormProps) {
+export default function ProductForm({ mode, sellerCategory, subCategories = [], allSubCats, isRestricted = false, initialData }: ProductFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const txtInputRef = useRef<HTMLInputElement>(null);
@@ -686,6 +689,16 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
           <VariantManager productId={createdProductId} />
         </div>
 
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <ProductGalleryManager
+            productId={createdProductId}
+            apiBase="/api/seller/products"
+            uploadUrl="/api/storage/upload"
+            uploadResponseKey="publicUrl"
+            uploadPurpose="product-image"
+          />
+        </div>
+
         <div className="flex justify-end">
           <button
             type="button"
@@ -734,6 +747,17 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
               <div className="p-6 space-y-5">
                 <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Hình ảnh & Mô tả</p>
                 {imageUpload}
+                {initialData?.id && !isRestricted && (
+                  <div className="pt-4 border-t border-gray-100">
+                    <ProductGalleryManager
+                      productId={initialData.id}
+                      apiBase="/api/seller/products"
+                      uploadUrl="/api/storage/upload"
+                      uploadResponseKey="publicUrl"
+                      uploadPurpose="product-image"
+                    />
+                  </div>
+                )}
                 {warrantyInfoField}
                 {descField}
                 {error && <p className="text-xs text-red-500">{error}</p>}

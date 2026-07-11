@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import CategoryCombobox from "./CategoryCombobox";
 import SubCategoryCombobox from "./SubCategoryCombobox";
 import { r2Url } from "@/lib/utils/image-url";
+import ProductGalleryManager from "@/components/shared/ProductGalleryManager";
 
 interface MmoProductData {
   id?: string;
@@ -52,6 +53,13 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
   const [sgvlImporting, setSgvlImporting] = useState(false);
   const [previewFull, setPreviewFull] = useState(false);
 
+  // ── Thư viện ảnh (mode="create") — ảnh được upload trước, gắn vào sản phẩm ngay sau khi tạo ──
+  const MAX_GALLERY_IMAGES = 10;
+  const [pendingImages, setPendingImages] = useState<string[]>([]);
+  const [pendingUploading, setPendingUploading] = useState(false);
+  const [pendingError, setPendingError] = useState("");
+  const pendingFileInputRef = useRef<HTMLInputElement>(null);
+
   function set(field: string, value: string | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
@@ -87,6 +95,37 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
     const file = e.target.files?.[0];
     if (!file) return;
     await uploadFile(file);
+  }
+
+  async function handlePendingImageFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (pendingFileInputRef.current) pendingFileInputRef.current.value = "";
+    if (!file) return;
+    if (pendingImages.length >= MAX_GALLERY_IMAGES) {
+      setPendingError(`Đã đạt giới hạn tối đa ${MAX_GALLERY_IMAGES} ảnh`);
+      return;
+    }
+
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) { setPendingError("Chỉ chấp nhận JPG, PNG, WebP"); return; }
+    if (file.size > 5 * 1024 * 1024) { setPendingError("File quá lớn, tối đa 5 MB"); return; }
+
+    setPendingError("");
+    setPendingUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/upload/thumbnail?type=mmo-thumbnail", { credentials: "include", method: "POST", body: fd });
+      const json = (await res.json()) as { data?: { url: string }; error?: string };
+      if (!res.ok || !json.data?.url) { setPendingError(json.error ?? "Upload thất bại"); return; }
+      setPendingImages((imgs) => [...imgs, json.data!.url]);
+    } finally {
+      setPendingUploading(false);
+    }
+  }
+
+  function removePendingImage(url: string) {
+    setPendingImages((imgs) => imgs.filter((u) => u !== url));
   }
 
   const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
@@ -162,6 +201,18 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
       }
       const targetId = isEdit ? initial!.id : json.data?.id;
       if (targetId && !isEdit) {
+        if (pendingImages.length > 0) {
+          await Promise.all(
+            pendingImages.map((imageUrl) =>
+              fetch(`/api/products/mmo/${targetId}/images`, {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ imageUrl }),
+              }),
+            ),
+          );
+        }
         router.push(`/admin/mmo-products/${targetId}/sua`);
       } else {
         router.push("/admin/mmo-products");
@@ -445,10 +496,69 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
             {thumbError && <p className="text-xs text-red-500">{thumbError}</p>}
           </div>
 
+          {isEdit && initial?.id && (
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <ProductGalleryManager
+                productId={initial.id}
+                apiBase="/api/products/mmo"
+                uploadUrl="/api/admin/upload/thumbnail?type=mmo-thumbnail"
+                uploadResponseKey="url"
+                isAdmin
+              />
+            </div>
+          )}
+
           {!isEdit && (
-            <p className="text-xs text-gray-500 px-1">
-              Sau khi tạo, bạn sẽ được chuyển đến trang chỉnh sửa để thêm gói biến thể và nhập kho.
-            </p>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-[#7C3AED] uppercase tracking-wider">Thư viện ảnh sản phẩm</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">
+                    {pendingImages.length}/{MAX_GALLERY_IMAGES} ảnh — sẽ được gắn vào sản phẩm ngay khi tạo
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => pendingFileInputRef.current?.click()}
+                  disabled={pendingUploading || pendingImages.length >= MAX_GALLERY_IMAGES}
+                  className="px-3 py-1.5 rounded-lg bg-[#7C3AED] text-white text-xs font-semibold hover:bg-[#A855F7] disabled:opacity-50 transition-colors"
+                >
+                  {pendingUploading ? "Đang tải..." : "Thêm ảnh"}
+                </button>
+                <input
+                  ref={pendingFileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => void handlePendingImageFile(e)}
+                />
+              </div>
+
+              {pendingError && <p className="text-xs text-red-500">{pendingError}</p>}
+
+              {pendingImages.length > 0 && (
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                  {pendingImages.map((url) => (
+                    <div key={url} className="relative group aspect-square rounded-lg overflow-hidden border border-gray-200 bg-white">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={r2Url(url)} alt="" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removePendingImage(url)}
+                        className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                        title="Xóa ảnh"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="text-xs text-gray-500">
+                Sau khi tạo, bạn sẽ được chuyển đến trang chỉnh sửa để thêm gói biến thể và nhập kho.
+              </p>
+            </div>
           )}
 
           {error && <p className="text-xs text-[#EF4444]">{error}</p>}
