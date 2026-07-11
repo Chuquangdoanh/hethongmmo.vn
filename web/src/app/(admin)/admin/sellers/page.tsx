@@ -77,16 +77,28 @@ export default async function AdminSellersPage({
     ...(Object.keys(userFilter).length > 0 ? { user: userFilter } : {}),
   };
 
+  // Chờ duyệt STK lên đầu — tương tự trang /admin/affiliates
+  const pendingBankSellerRequests = await prisma.bankChangeRequest.findMany({
+    where: { status: "PENDING" },
+    select: { sellerId: true },
+  });
+  const pendingBankSellerIds = new Set(pendingBankSellerRequests.map((r) => r.sellerId));
+
+  const sellerRequestUserSelect = {
+    id: true, email: true, fullName: true, sellerTier: true, sellerEscrow: true,
+    bankNameEnc: true, bankAccountNumberEnc: true, bankAccountHolderEnc: true,
+  } as const;
+
   // Revenue sort: fetch ALL matching requests, sort in-memory, then paginate
   let requests: Awaited<ReturnType<typeof prisma.sellerRequest.findMany<{
-    include: { user: { select: { id: true; email: true; fullName: true; sellerTier: true; sellerEscrow: true } } }
+    include: { user: { select: typeof sellerRequestUserSelect } }
   }>>>;
   let total: number;
 
   if (activeSort) {
     const allRequests = await prisma.sellerRequest.findMany({
       where,
-      include: { user: { select: { id: true, email: true, fullName: true, sellerTier: true, sellerEscrow: true } } },
+      include: { user: { select: sellerRequestUserSelect } },
     });
     const allUserIds = allRequests.map((r) => r.userId);
 
@@ -117,6 +129,9 @@ export default async function AdminSellersPage({
     const allRatingMap  = new Map(allRatingRows.map((r) => [r.seller_id, r.avg_rating ?? 0]));
 
     allRequests.sort((a, b) => {
+      const aPending = pendingBankSellerIds.has(a.userId) ? 0 : 1;
+      const bPending = pendingBankSellerIds.has(b.userId) ? 0 : 1;
+      if (aPending !== bPending) return aPending - bPending;
       if (activeSort === "revenue_desc") return (allRevenueMap.get(b.userId) ?? 0) - (allRevenueMap.get(a.userId) ?? 0);
       if (activeSort === "revenue_asc")  return (allRevenueMap.get(a.userId) ?? 0) - (allRevenueMap.get(b.userId) ?? 0);
       if (activeSort === "rating_desc")  return (allRatingMap.get(b.userId) ?? 0) - (allRatingMap.get(a.userId) ?? 0);
@@ -126,16 +141,19 @@ export default async function AdminSellersPage({
     total = allRequests.length;
     requests = allRequests.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   } else {
-    [requests, total] = await Promise.all([
-      prisma.sellerRequest.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: (currentPage - 1) * PAGE_SIZE,
-        take: PAGE_SIZE,
-        include: { user: { select: { id: true, email: true, fullName: true, sellerTier: true, sellerEscrow: true } } },
-      }),
-      prisma.sellerRequest.count({ where }),
-    ]);
+    const allRequests = await prisma.sellerRequest.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: { user: { select: sellerRequestUserSelect } },
+    });
+    // Chờ duyệt STK lên đầu — sort ổn định nên vẫn giữ thứ tự createdAt desc trong từng nhóm
+    allRequests.sort((a, b) => {
+      const aPending = pendingBankSellerIds.has(a.userId) ? 0 : 1;
+      const bPending = pendingBankSellerIds.has(b.userId) ? 0 : 1;
+      return aPending - bPending;
+    });
+    total = allRequests.length;
+    requests = allRequests.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   }
 
   const userIds = requests.map((r) => r.userId);
@@ -196,6 +214,12 @@ export default async function AdminSellersPage({
     const tierColor = tierColorMap.get(r.user.sellerTier) ?? "gray";
     const tierColorClass = BADGE_COLOR_CLASSES[tierColor] ?? "bg-gray-100 text-gray-600";
     const rt = sellerRatingMap.get(r.userId);
+    const hasBankInfo = !!(r.user.bankNameEnc && r.user.bankAccountNumberEnc && r.user.bankAccountHolderEnc);
+    const bankStatus: SellerRowData["bankStatus"] = pendingBankSellerIds.has(r.userId)
+      ? "PENDING"
+      : hasBankInfo
+        ? "APPROVED"
+        : "NONE";
     return {
       requestId:    r.id,
       userId:       r.userId,
@@ -213,6 +237,7 @@ export default async function AdminSellersPage({
       avgRating:    rt?.avg ?? 0,
       reviewCount:  rt?.count ?? 0,
       shopLocked:   shopLockMap.get(r.userId) ?? false,
+      bankStatus,
       createdAt:    r.createdAt.toISOString(),
     };
   });

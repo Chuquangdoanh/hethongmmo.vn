@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, CheckCircle, AlertTriangle, Clock, XCircle } from "lucide-react";
+import { Building2, CheckCircle, AlertTriangle, Clock } from "lucide-react";
 import { formatDate } from "@/lib/utils/format";
 
 const BANKS = [
@@ -83,17 +83,6 @@ export default function BankChangeRequestForm({
       setLoading(false);
     }
   }
-
-  const STATUS_LABEL: Record<string, string> = {
-    PENDING:  "Chờ duyệt",
-    APPROVED: "Đã duyệt",
-    REJECTED: "Từ chối",
-  };
-  const STATUS_COLOR: Record<string, string> = {
-    PENDING:  "text-amber-600 bg-amber-50 border-amber-200",
-    APPROVED: "text-emerald-600 bg-emerald-50 border-emerald-200",
-    REJECTED: "text-red-600 bg-red-50 border-red-200",
-  };
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
@@ -215,38 +204,6 @@ export default function BankChangeRequestForm({
               </button>
             </form>
           )}
-        </div>
-      )}
-
-      {/* Lịch sử các yêu cầu gần đây */}
-      {recentRequests.length > 0 && (
-        <div className="border-t border-gray-100">
-          <div className="px-5 py-3 bg-gray-50">
-            <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Lịch sử yêu cầu</p>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {recentRequests.map((r) => (
-              <div key={r.id} className="flex items-center gap-3 px-5 py-3">
-                <div className="shrink-0">
-                  {r.status === "APPROVED" && <CheckCircle size={14} className="text-emerald-500" />}
-                  {r.status === "PENDING"  && <Clock       size={14} className="text-amber-500"   />}
-                  {r.status === "REJECTED" && <XCircle     size={14} className="text-red-400"     />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-700">
-                    {r.bankName} — <span className="font-mono">{r.bankAccountNumber}</span>
-                  </p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">
-                    {formatDate(r.createdAt)}
-                    {r.rejectReason && <span className="text-red-400"> · Lý do: {r.rejectReason}</span>}
-                  </p>
-                </div>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_COLOR[r.status] ?? "text-gray-500"}`}>
-                  {STATUS_LABEL[r.status] ?? r.status}
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
       )}
     </div>

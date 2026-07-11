@@ -23,8 +23,20 @@ export interface SellerRowData {
   avgRating: number;
   reviewCount: number;
   shopLocked: boolean;
+  bankStatus: "PENDING" | "APPROVED" | "NONE";
   createdAt: string;
 }
+
+const BANK_STATUS_LABEL: Record<SellerRowData["bankStatus"], string> = {
+  PENDING:  "Chờ duyệt",
+  APPROVED: "Đã duyệt",
+  NONE:     "Chưa có STK",
+};
+const BANK_STATUS_STYLES: Record<SellerRowData["bankStatus"], string> = {
+  PENDING:  "text-amber-600 bg-amber-50 border-amber-200",
+  APPROVED: "text-emerald-600 bg-emerald-50 border-emerald-200",
+  NONE:     "text-gray-400 bg-gray-50 border-gray-200",
+};
 
 const STATUS_STYLES: Record<string, string> = {
   PENDING:  "bg-[#F59E0B]/10 text-[#F59E0B]",
@@ -161,13 +173,14 @@ export default function SellersTableClient({ rows, revenueSortHref, ratingSortHr
                   </Link>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Shop</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Duyệt số tài khoản</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">Hành động</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={12} className="px-4 py-16 text-center">
+                  <td colSpan={13} className="px-4 py-16 text-center">
                     <p className="text-sm text-gray-500">Không có dữ liệu</p>
                   </td>
                 </tr>
@@ -270,6 +283,13 @@ export default function SellersTableClient({ rows, revenueSortHref, ratingSortHr
                       ) : (
                         <span className="text-xs text-gray-400">—</span>
                       )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Link href={`/admin/sellers/${r.requestId}`}>
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${BANK_STATUS_STYLES[r.bankStatus]}`}>
+                          {BANK_STATUS_LABEL[r.bankStatus]}
+                        </span>
+                      </Link>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link href={`/admin/sellers/${r.requestId}`} className="text-xs text-[#7C3AED] hover:text-[#A855F7]">
