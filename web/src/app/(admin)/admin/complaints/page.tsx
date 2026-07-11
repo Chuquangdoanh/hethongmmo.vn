@@ -15,17 +15,17 @@ export const metadata: Metadata = { title: "Admin — Khiếu nại" };
 const PAGE_SIZE = 20;
 
 const STATUS_BADGES: Record<string, string> = {
-  OPEN:      "bg-[#EF4444]/10 text-[#EF4444]",
-  IN_REVIEW: "bg-[#F59E0B]/10 text-[#F59E0B]",
-  RESOLVED:  "bg-[#10B981]/10 text-[#10B981]",
-  REJECTED:  "bg-[#EF4444]/10 text-[#EF4444]",
+  IN_REVIEW:     "bg-[#F59E0B]/10 text-[#F59E0B]",
+  PENDING_ADMIN: "bg-[#7C3AED]/10 text-[#7C3AED]",
+  RESOLVED:      "bg-[#10B981]/10 text-[#10B981]",
+  REJECTED:      "bg-[#EF4444]/10 text-[#EF4444]",
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  OPEN:      "Mở",
-  IN_REVIEW: "Đang xem xét",
-  RESOLVED:  "Hoàn thành",
-  REJECTED:  "Đóng băng",
+  IN_REVIEW:     "Đang xem xét",
+  PENDING_ADMIN: "Chờ phán quyết",
+  RESOLVED:      "Hoàn thành",
+  REJECTED:      "Đã hoàn tiền",
 };
 
 export default async function AdminComplaintsPage({
@@ -102,10 +102,10 @@ export default async function AdminComplaintsPage({
             label: "Trạng thái",
             placeholder: "Tất cả trạng thái",
             options: [
-              { value: "OPEN", label: "Mở" },
               { value: "IN_REVIEW", label: "Đang xem xét" },
-              { value: "RESOLVED", label: "Đã giải quyết" },
-              { value: "REJECTED", label: "Từ chối" },
+              { value: "PENDING_ADMIN", label: "Chờ phán quyết" },
+              { value: "RESOLVED", label: "Hoàn thành" },
+              { value: "REJECTED", label: "Đã hoàn tiền" },
             ],
           },
         ]}

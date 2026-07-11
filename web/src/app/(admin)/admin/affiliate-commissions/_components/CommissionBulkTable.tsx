@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import CommissionActionButtons from "./CommissionActionButtons";
 
 interface CommissionRow {
@@ -9,6 +10,9 @@ interface CommissionRow {
   affiliate: string;
   affiliateCode: string;
   customer: string;
+  orderId: string;
+  orderCode: string;
+  orderStatusLabel: string;
   orderAmount: string;
   amount: string;
   status: string;
@@ -91,6 +95,8 @@ export default function CommissionBulkTable({ rows }: { rows: CommissionRow[] })
               </th>
               <th className="px-4 py-3">Affiliate</th>
               <th className="px-4 py-3">Khách hàng</th>
+              <th className="px-4 py-3">Mã đơn hàng</th>
+              <th className="px-4 py-3">Trạng thái đơn hàng</th>
               <th className="px-4 py-3">Giá trị đơn</th>
               <th className="px-4 py-3">Hoa hồng</th>
               <th className="px-4 py-3">Trạng thái</th>
@@ -115,6 +121,16 @@ export default function CommissionBulkTable({ rows }: { rows: CommissionRow[] })
                   {r.affiliate} <span className="text-xs text-gray-400">({r.affiliateCode})</span>
                 </td>
                 <td className="px-4 py-3">{r.customer}</td>
+                <td className="px-4 py-3">
+                  <Link
+                    prefetch={false}
+                    href={`/admin/orders/${r.orderId}`}
+                    className="font-mono text-xs text-violet-600 hover:underline"
+                  >
+                    {r.orderCode}
+                  </Link>
+                </td>
+                <td className="px-4 py-3">{r.orderStatusLabel}</td>
                 <td className="px-4 py-3">{r.orderAmount}</td>
                 <td className="px-4 py-3 font-medium text-violet-600">{r.amount}</td>
                 <td className="px-4 py-3">{r.statusLabel}</td>
@@ -126,7 +142,7 @@ export default function CommissionBulkTable({ rows }: { rows: CommissionRow[] })
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={10} className="px-4 py-8 text-center text-gray-400">
                   Không có hoa hồng nào
                 </td>
               </tr>

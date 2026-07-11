@@ -11,8 +11,6 @@ import ApprovalButton from "./_components/ApprovalButton";
 
 export const metadata: Metadata = { title: "Sản phẩm nhà bán" };
 
-const PAGE_SIZE = 20;
-
 const PRODUCT_SELECT = {
   id: true, name: true, price: true, isActive: true, sellerCategory: true,
   isRestricted: true, isHidden: true, approvalStatus: true, approvalRejectReason: true, createdAt: true,
@@ -28,13 +26,15 @@ const PRODUCT_SELECT = {
 export default async function AdminSellerProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; sellerId?: string; restricted?: string; sort?: string; approvalStatus?: string }>;
+  searchParams: Promise<{ page?: string; sellerId?: string; restricted?: string; sort?: string; approvalStatus?: string; limit?: string }>;
 }) {
   const session = await auth();
   requireStaff(session);
 
-  const { page, sellerId, restricted, sort, approvalStatus } = await searchParams;
+  const { page, sellerId, restricted, sort, approvalStatus, limit } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
+  const _limit  = parseInt(limit ?? "20", 10);
+  const PAGE_SIZE = ([20, 50, 100] as number[]).includes(_limit) ? _limit : 20;
   const offset      = (currentPage - 1) * PAGE_SIZE;
   const isValidApprovalStatus = approvalStatus === "PENDING" || approvalStatus === "APPROVED" || approvalStatus === "REJECTED";
 
@@ -83,7 +83,7 @@ export default async function AdminSellerProductsPage({
       ${restrictedFilter}
       ${approvalStatusFilter}
       GROUP BY p.id
-      ORDER BY avg_rating ${sortDir} NULLS LAST
+      ORDER BY (p.approval_status = 'PENDING') DESC, avg_rating ${sortDir} NULLS LAST
       LIMIT ${PAGE_SIZE} OFFSET ${offset}
     `;
 
@@ -99,10 +99,10 @@ export default async function AdminSellerProductsPage({
     const detailMap = new Map(details.map((p) => [p.id, p]));
     products = idList.map((id) => detailMap.get(id)).filter((p): p is NonNullable<typeof p> => !!p);
   } else {
-    // Default: newest first
+    // Default: chờ duyệt lên đầu (enum PENDING < APPROVED < REJECTED), rồi mới tới sản phẩm mới nhất
     const list = await prisma.sellerProduct.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ approvalStatus: "asc" }, { createdAt: "desc" }],
       skip: offset,
       take: PAGE_SIZE,
       select: PRODUCT_SELECT,
@@ -128,15 +128,29 @@ export default async function AdminSellerProductsPage({
   if (restricted)      searchParamsObj.restricted     = restricted;
   if (sort)            searchParamsObj.sort           = sort;
   if (isValidApprovalStatus) searchParamsObj.approvalStatus = approvalStatus;
+  if (PAGE_SIZE !== 20) searchParamsObj.limit          = String(PAGE_SIZE);
 
   // Build URL helper preserving current filters
   function filterUrl(overrides: Record<string, string | undefined>) {
     const sp = new URLSearchParams();
-    const merged = { sellerId, restricted, sort, approvalStatus, ...overrides };
+    const merged = { sellerId, restricted, sort, approvalStatus, limit: PAGE_SIZE !== 20 ? String(PAGE_SIZE) : undefined, ...overrides };
     if (merged.sellerId)   sp.set("sellerId",   merged.sellerId);
     if (merged.restricted) sp.set("restricted", merged.restricted);
     if (merged.sort)       sp.set("sort",        merged.sort);
     if (merged.approvalStatus) sp.set("approvalStatus", merged.approvalStatus);
+    if (merged.limit)      sp.set("limit",       merged.limit);
+    const str = sp.toString();
+    return `/admin/san-pham-ban${str ? `?${str}` : ""}`;
+  }
+
+  // Build URL helper khi đổi số dòng/trang, giữ nguyên các filter khác
+  function limitUrl(n: number) {
+    const sp = new URLSearchParams();
+    if (sellerId) sp.set("sellerId", sellerId);
+    if (restricted) sp.set("restricted", restricted);
+    if (sort) sp.set("sort", sort);
+    if (isValidApprovalStatus) sp.set("approvalStatus", approvalStatus);
+    if (n !== 20) sp.set("limit", String(n));
     const str = sp.toString();
     return `/admin/san-pham-ban${str ? `?${str}` : ""}`;
   }
@@ -211,6 +225,7 @@ export default async function AdminSellerProductsPage({
           {sellerId   && <input type="hidden" name="sellerId"   value={sellerId} />}
           {restricted && <input type="hidden" name="restricted" value={restricted} />}
           {isValidApprovalStatus && <input type="hidden" name="approvalStatus" value={approvalStatus} />}
+          {PAGE_SIZE !== 20 && <input type="hidden" name="limit" value={PAGE_SIZE} />}
           <div className="flex items-center gap-1">
             <select
               name="sort"
@@ -240,6 +255,22 @@ export default async function AdminSellerProductsPage({
           </div>
         ) : (
           <>
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-end gap-2">
+              <span className="text-xs text-gray-400">Hiển thị:</span>
+              {[20, 50, 100].map((n) => (
+                <Link
+                  key={n}
+                  href={limitUrl(n)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
+                    PAGE_SIZE === n
+                      ? "bg-blue-600 border-blue-600 text-white"
+                      : "bg-white border-gray-200 text-gray-500 hover:border-blue-400 hover:text-blue-600"
+                  }`}
+                >
+                  {n}
+                </Link>
+              ))}
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -271,7 +302,7 @@ export default async function AdminSellerProductsPage({
                         className={`${i !== 0 ? "border-t border-gray-50" : ""} hover:bg-gray-50/60 transition-colors`}
                       >
                         <td className="px-4 py-3">
-                          <p className="text-sm font-medium text-gray-800 truncate max-w-50">{p.name}</p>
+                          <p className="text-sm font-medium text-gray-800">{p.name}</p>
                           <p className="text-[11px] text-gray-400">{p.sellerCategory}</p>
                         </td>
                         <td className="px-4 py-3">

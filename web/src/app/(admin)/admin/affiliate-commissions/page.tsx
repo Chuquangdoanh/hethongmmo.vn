@@ -12,6 +12,13 @@ const STATUS_LABEL: Record<string, string> = {
   VOIDED: "Đã hủy",
 };
 
+const ORDER_STATUS_LABEL: Record<string, string> = {
+  PENDING: "Chờ xử lý",
+  PROCESSING: "Đang xử lý",
+  DONE: "Hoàn thành",
+  FROZEN: "Đóng băng",
+};
+
 const STATUS_FILTERS: Array<{ label: string; value?: "PENDING" | "APPROVED" | "VOIDED" }> = [
   { label: "Tất cả" },
   { label: "Chờ duyệt", value: "PENDING" },
@@ -144,6 +151,7 @@ export default async function AdminAffiliateCommissionsPage({
       include: {
         affiliate: { select: { fullName: true, affiliateCode: true } },
         customer: { select: { fullName: true } },
+        order: { select: { id: true, orderCode: true, status: true } },
       },
       orderBy: { createdAt: "desc" },
       skip: (currentPage - 1) * PAGE_SIZE,
@@ -157,6 +165,9 @@ export default async function AdminAffiliateCommissionsPage({
     affiliate: c.affiliate.fullName,
     affiliateCode: c.affiliate.affiliateCode ?? "",
     customer: c.customer.fullName,
+    orderId: c.order.id,
+    orderCode: c.order.orderCode,
+    orderStatusLabel: ORDER_STATUS_LABEL[c.order.status] ?? c.order.status,
     orderAmount: formatVnd(Number(c.orderAmount)),
     amount: formatVnd(Number(c.amount)),
     status: c.status,
