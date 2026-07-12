@@ -53,3 +53,9 @@ redis_data/
 # Generated Prisma client
 web/src/generated/
 .claude/worktrees/
+
+# Database backups (chứa dữ liệu nhạy cảm — không đẩy lên GitHub)
+backups/
+
+# Ảnh CCCD/CMND, ảnh chân dung seller upload lên VPS (dữ liệu cá nhân nhạy cảm)
+web/uploads/
