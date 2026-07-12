@@ -9,6 +9,8 @@ import Pagination from "@/components/shared/Pagination";
 import RestrictButton from "./_components/RestrictButton";
 import ApprovalButton from "./_components/ApprovalButton";
 import CategorySubCategoryFilter from "@/components/admin/filters/CategorySubCategoryFilter";
+import RealtimeSelectFilter from "@/components/admin/filters/RealtimeSelectFilter";
+import { Warehouse } from "lucide-react";
 
 export const metadata: Metadata = { title: "Sản phẩm nhà bán" };
 
@@ -27,12 +29,12 @@ const PRODUCT_SELECT = {
 export default async function AdminSellerProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; sellerId?: string; restricted?: string; sort?: string; approvalStatus?: string; limit?: string; category?: string; subCategoryId?: string }>;
+  searchParams: Promise<{ page?: string; sellerId?: string; restricted?: string; sort?: string; approvalStatus?: string; limit?: string; category?: string; subCategoryId?: string; storeType?: string }>;
 }) {
   const session = await auth();
   requireStaff(session);
 
-  const { page, sellerId, restricted, sort, approvalStatus, limit, category, subCategoryId } = await searchParams;
+  const { page, sellerId, restricted, sort, approvalStatus, limit, category, subCategoryId, storeType } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
   const _limit  = parseInt(limit ?? "20", 10);
   const PAGE_SIZE = ([20, 50, 100] as number[]).includes(_limit) ? _limit : 20;
@@ -48,6 +50,7 @@ export default async function AdminSellerProductsPage({
   ]);
   const isValidCategory = !!category && resourceCategories.some((c) => c.name === category);
   const isValidSubCategory = !!subCategoryId && sellerSubCategories.some((s) => s.id === subCategoryId);
+  const isValidStoreType = storeType === "TAI_NGUYEN_MMO" || storeType === "KHO_TAI_NGUYEN";
 
   // WHERE fragments (shared between raw + Prisma)
   const sellerFilter     = sellerId
@@ -66,6 +69,9 @@ export default async function AdminSellerProductsPage({
   const subCategoryFilter = isValidSubCategory
     ? Prisma.sql`AND p.sub_category_id = ${subCategoryId}::uuid`
     : Prisma.empty;
+  const storeTypeFilter = isValidStoreType
+    ? Prisma.sql`AND p.store_type = ${storeType}::"StoreType"`
+    : Prisma.empty;
 
   const where = {
     deletedAt: null as null,
@@ -74,6 +80,7 @@ export default async function AdminSellerProductsPage({
     ...(isValidApprovalStatus ? { approvalStatus: approvalStatus as "PENDING" | "APPROVED" | "REJECTED" } : {}),
     ...(isValidCategory ? { sellerCategory: category } : {}),
     ...(isValidSubCategory ? { subCategoryId } : {}),
+    ...(isValidStoreType ? { storeType: storeType as "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN" } : {}),
   };
 
   // Total count (always via Prisma)
@@ -101,6 +108,7 @@ export default async function AdminSellerProductsPage({
       ${approvalStatusFilter}
       ${categoryFilter}
       ${subCategoryFilter}
+      ${storeTypeFilter}
       GROUP BY p.id
       ORDER BY (p.approval_status = 'PENDING') DESC, avg_rating ${sortDir} NULLS LAST
       LIMIT ${PAGE_SIZE} OFFSET ${offset}
@@ -150,6 +158,7 @@ export default async function AdminSellerProductsPage({
   if (PAGE_SIZE !== 20) searchParamsObj.limit          = String(PAGE_SIZE);
   if (isValidCategory) searchParamsObj.category        = category;
   if (isValidSubCategory) searchParamsObj.subCategoryId = subCategoryId;
+  if (isValidStoreType) searchParamsObj.storeType       = storeType;
 
   // Build URL helper preserving current filters
   function filterUrl(overrides: Record<string, string | undefined>) {
@@ -159,6 +168,7 @@ export default async function AdminSellerProductsPage({
       limit: PAGE_SIZE !== 20 ? String(PAGE_SIZE) : undefined,
       category: isValidCategory ? category : undefined,
       subCategoryId: isValidSubCategory ? subCategoryId : undefined,
+      storeType: isValidStoreType ? storeType : undefined,
       ...overrides,
     };
     if (merged.sellerId)   sp.set("sellerId",   merged.sellerId);
@@ -168,6 +178,7 @@ export default async function AdminSellerProductsPage({
     if (merged.limit)      sp.set("limit",       merged.limit);
     if (merged.category)   sp.set("category",    merged.category);
     if (merged.subCategoryId) sp.set("subCategoryId", merged.subCategoryId);
+    if (merged.storeType)  sp.set("storeType",   merged.storeType);
     const str = sp.toString();
     return `/admin/san-pham-ban${str ? `?${str}` : ""}`;
   }
@@ -181,6 +192,7 @@ export default async function AdminSellerProductsPage({
     if (isValidApprovalStatus) sp.set("approvalStatus", approvalStatus);
     if (isValidCategory) sp.set("category", category);
     if (isValidSubCategory) sp.set("subCategoryId", subCategoryId);
+    if (isValidStoreType) sp.set("storeType", storeType);
     if (n !== 20) sp.set("limit", String(n));
     const str = sp.toString();
     return `/admin/san-pham-ban${str ? `?${str}` : ""}`;
@@ -260,6 +272,7 @@ export default async function AdminSellerProductsPage({
             {PAGE_SIZE !== 20 && <input type="hidden" name="limit" value={PAGE_SIZE} />}
             {isValidCategory && <input type="hidden" name="category" value={category} />}
             {isValidSubCategory && <input type="hidden" name="subCategoryId" value={subCategoryId} />}
+            {isValidStoreType && <input type="hidden" name="storeType" value={storeType} />}
             <select
               name="sort"
               defaultValue={sort ?? ""}
@@ -278,12 +291,25 @@ export default async function AdminSellerProductsPage({
           </form>
         </div>
 
-        {/* Danh mục cha/con — lọc realtime, không cần bấm nút */}
-        <CategorySubCategoryFilter
-          basePath="/admin/san-pham-ban"
-          categories={resourceCategories}
-          subCategories={sellerSubCategories}
-        />
+        {/* Kho hàng + Danh mục cha/con — lọc realtime, không cần bấm nút */}
+        <div className="flex flex-wrap items-center gap-3">
+          <RealtimeSelectFilter
+            basePath="/admin/san-pham-ban"
+            paramKey="storeType"
+            label="Kho hàng"
+            icon={<Warehouse size={14} strokeWidth={2} />}
+            placeholder="Tất cả kho hàng"
+            options={[
+              { value: "TAI_NGUYEN_MMO", label: "Kho tài nguyên" },
+              { value: "KHO_TAI_NGUYEN", label: "Nguyên liệu" },
+            ]}
+          />
+          <CategorySubCategoryFilter
+            basePath="/admin/san-pham-ban"
+            categories={resourceCategories}
+            subCategories={sellerSubCategories}
+          />
+        </div>
       </div>
 
       {/* Table */}

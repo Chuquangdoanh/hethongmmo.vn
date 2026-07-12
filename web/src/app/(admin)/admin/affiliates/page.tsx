@@ -36,7 +36,7 @@ function TabNav({ tab }: { tab: "list" | "rules" }) {
 export default async function AdminAffiliatesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; page?: string }>;
+  searchParams: Promise<{ tab?: string; page?: string; q?: string }>;
 }) {
   const sp = await searchParams;
   const tab: "list" | "rules" = sp.tab === "rules" ? "rules" : "list";
@@ -113,7 +113,17 @@ export default async function AdminAffiliatesPage({
 
   // ── tab === "list" ────────────────────────────────────────────────
   const currentPage = Math.max(1, parseInt(sp.page ?? "1", 10));
-  const where = { isAffiliate: true };
+  const search = sp.q?.trim() || undefined;
+  const where = {
+    isAffiliate: true,
+    ...(search ? {
+      OR: [
+        { fullName: { contains: search, mode: "insensitive" as const } },
+        { email: { contains: search, mode: "insensitive" as const } },
+        { affiliateCode: { contains: search, mode: "insensitive" as const } },
+      ],
+    } : {}),
+  };
 
   const pendingBankRequests = await prisma.bankChangeRequest.findMany({
     where: { status: "PENDING", seller: { isAffiliate: true } },
@@ -152,8 +162,9 @@ export default async function AdminAffiliatesPage({
       <TabNav tab={tab} />
 
       <div className="rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Cấp quyền Affiliate cho tài khoản</h2>
-        <GrantAffiliateForm />
+        <h2 className="text-sm font-semibold text-gray-700 mb-1">Cấp quyền Affiliate cho tài khoản</h2>
+        <p className="text-xs text-gray-400 mb-3">Tìm theo tên, email hoặc mã Affiliate — nếu tài khoản đã là Affiliate, danh sách bên dưới sẽ tự lọc theo từ khóa.</p>
+        <GrantAffiliateForm basePath="/admin/affiliates" initialQuery={search ?? ""} />
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white overflow-x-auto">
@@ -207,13 +218,20 @@ export default async function AdminAffiliatesPage({
             })}
             {affiliates.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">Chưa có Affiliate nào</td>
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                  {search ? `Không tìm thấy Affiliate nào khớp "${search}"` : "Chưa có Affiliate nào"}
+                </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-      <Pagination currentPage={currentPage} totalPages={Math.ceil(total / PAGE_SIZE)} basePath="/admin/affiliates" />
+      <Pagination
+        currentPage={currentPage}
+        totalPages={Math.ceil(total / PAGE_SIZE)}
+        basePath="/admin/affiliates"
+        searchParams={search ? { q: search } : {}}
+      />
     </div>
   );
 }

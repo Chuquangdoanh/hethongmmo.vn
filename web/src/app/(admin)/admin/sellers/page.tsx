@@ -4,6 +4,8 @@ import Pagination from "@/components/shared/Pagination";
 import SellersTableClient, { type SellerRowData } from "./SellersTableClient";
 import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
 import CategorySubCategoryFilter from "@/components/admin/filters/CategorySubCategoryFilter";
+import RealtimeSelectFilter from "@/components/admin/filters/RealtimeSelectFilter";
+import { Warehouse } from "lucide-react";
 
 export const metadata: Metadata = { title: "Admin — Sellers" };
 
@@ -280,26 +282,30 @@ export default async function AdminSellersPage({
                 { value: "REJECTED", label: "Từ chối" },
               ],
             },
-            {
-              paramKey: "storeType",
-              label: "Loại gian hàng",
-              placeholder: "Tất cả loại",
-              options: [
-                { value: "TAI_NGUYEN_MMO", label: "Tài nguyên MMO" },
-                { value: "KHO_TAI_NGUYEN", label: "Kho tài nguyên" },
-              ],
-            },
           ]}
           dateRange={{ showQuickDates: true }}
-          preserveParams={["sort", "tier", "category", "subCategoryId"]}
+          preserveParams={["sort", "tier", "category", "subCategoryId", "storeType"]}
         />
 
-        {/* Danh mục cha/con — lọc realtime, không cần bấm nút */}
-        <CategorySubCategoryFilter
-          basePath="/admin/sellers"
-          categories={resourceCategories}
-          subCategories={sellerSubCategories}
-        />
+        {/* Loại gian hàng + Danh mục cha/con — lọc realtime, không cần bấm nút */}
+        <div className="flex flex-wrap items-center gap-3">
+          <RealtimeSelectFilter
+            basePath="/admin/sellers"
+            paramKey="storeType"
+            label="Kho hàng"
+            icon={<Warehouse size={14} strokeWidth={2} />}
+            placeholder="Tất cả kho hàng"
+            options={[
+              { value: "TAI_NGUYEN_MMO", label: "Kho tài nguyên" },
+              { value: "KHO_TAI_NGUYEN", label: "Nguyên liệu" },
+            ]}
+          />
+          <CategorySubCategoryFilter
+            basePath="/admin/sellers"
+            categories={resourceCategories}
+            subCategories={sellerSubCategories}
+          />
+        </div>
       </div>
 
       <SellersTableClient
@@ -323,6 +329,7 @@ export default async function AdminSellersPage({
             ...(dateTo     ? { dateTo }            : {}),
             ...(isValidCategory    ? { category }        : {}),
             ...(isValidSubCategory ? { subCategoryId }   : {}),
+            ...(validStoreType     ? { storeType: validStoreType } : {}),
           }}
         />
       )}
