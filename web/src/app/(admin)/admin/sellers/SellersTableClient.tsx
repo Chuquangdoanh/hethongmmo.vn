@@ -54,10 +54,11 @@ interface Props {
   rows: SellerRowData[];
   revenueSortHref: string;
   ratingSortHref: string;
+  escrowSortHref: string;
   activeSort?: string;
 }
 
-export default function SellersTableClient({ rows, revenueSortHref, ratingSortHref, activeSort }: Props) {
+export default function SellersTableClient({ rows, revenueSortHref, ratingSortHref, escrowSortHref, activeSort }: Props) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
@@ -160,7 +161,17 @@ export default function SellersTableClient({ rows, revenueSortHref, ratingSortHr
                     </span>
                   </Link>
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 whitespace-nowrap">Kí quỹ</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 whitespace-nowrap">
+                  <Link
+                    href={escrowSortHref}
+                    className="inline-flex items-center gap-1 justify-end hover:text-violet-600 transition-colors"
+                  >
+                    Kí quỹ
+                    <span className="text-gray-400 text-[10px]">
+                      {activeSort === "escrow_desc" ? "↓" : activeSort === "escrow_asc" ? "↑" : "↕"}
+                    </span>
+                  </Link>
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">
                   <Link
                     href={ratingSortHref}

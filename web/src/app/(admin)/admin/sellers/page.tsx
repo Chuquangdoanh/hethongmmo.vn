@@ -22,8 +22,8 @@ const BADGE_COLOR_CLASSES: Record<string, string> = {
   orange: "bg-orange-100 text-orange-700",
 };
 
-type SortKey = "revenue_desc" | "revenue_asc" | "rating_desc" | "rating_asc";
-const VALID_SORTS: SortKey[] = ["revenue_desc", "revenue_asc", "rating_desc", "rating_asc"];
+type SortKey = "revenue_desc" | "revenue_asc" | "rating_desc" | "rating_asc" | "escrow_desc" | "escrow_asc";
+const VALID_SORTS: SortKey[] = ["revenue_desc", "revenue_asc", "rating_desc", "rating_asc", "escrow_desc", "escrow_asc"];
 
 function buildHref(params: Record<string, string | undefined>) {
   const q = new URLSearchParams();
@@ -148,7 +148,9 @@ export default async function AdminSellersPage({
       if (activeSort === "revenue_desc") return (allRevenueMap.get(b.userId) ?? 0) - (allRevenueMap.get(a.userId) ?? 0);
       if (activeSort === "revenue_asc")  return (allRevenueMap.get(a.userId) ?? 0) - (allRevenueMap.get(b.userId) ?? 0);
       if (activeSort === "rating_desc")  return (allRatingMap.get(b.userId) ?? 0) - (allRatingMap.get(a.userId) ?? 0);
-      /* rating_asc */                   return (allRatingMap.get(a.userId) ?? 0) - (allRatingMap.get(b.userId) ?? 0);
+      if (activeSort === "rating_asc")   return (allRatingMap.get(a.userId) ?? 0) - (allRatingMap.get(b.userId) ?? 0);
+      if (activeSort === "escrow_desc")  return Number(b.user.sellerEscrow) - Number(a.user.sellerEscrow);
+      /* escrow_asc */                   return Number(a.user.sellerEscrow) - Number(b.user.sellerEscrow);
     });
 
     total = allRequests.length;
@@ -224,6 +226,9 @@ export default async function AdminSellersPage({
 
   const nextRatingSort = activeSort === "rating_desc" ? "rating_asc" : "rating_desc";
   const ratingSortHref = buildHref({ status, tier, q: search, sort: nextRatingSort, dateFrom, dateTo, storeType, category: categoryParam, subCategoryId: subCategoryIdParam, page: undefined });
+
+  const nextEscrowSort = activeSort === "escrow_desc" ? "escrow_asc" : "escrow_desc";
+  const escrowSortHref = buildHref({ status, tier, q: search, sort: nextEscrowSort, dateFrom, dateTo, storeType, category: categoryParam, subCategoryId: subCategoryIdParam, page: undefined });
 
   // Serialize data for client component
   const serializedRows: SellerRowData[] = requests.map((r) => {
@@ -312,6 +317,7 @@ export default async function AdminSellersPage({
         rows={serializedRows}
         revenueSortHref={revenueSortHref}
         ratingSortHref={ratingSortHref}
+        escrowSortHref={escrowSortHref}
         activeSort={activeSort}
       />
 

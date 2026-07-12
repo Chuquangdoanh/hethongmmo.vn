@@ -79,13 +79,14 @@ export default async function ViSellerPage({
 
   const sellerRow = await prisma.user.findUnique({
     where: { id: me.id },
-    select: { balance: true, sellerTier: true, sellerEscrow: true },
+    select: { balance: true, sellerTier: true, sellerEscrow: true, sellerEscrowRequired: true },
   });
 
-  const tierCfg     = await getSellerTierConfig(sellerRow?.sellerTier ?? "STANDARD");
-  const userBalance = Number(sellerRow?.balance ?? 0);
-  const sellerEscrow = Number(sellerRow?.sellerEscrow ?? 0);
-  const escrowMet   = sellerEscrow >= SELLER_ESCROW_MINIMUM;
+  const tierCfg        = await getSellerTierConfig(sellerRow?.sellerTier ?? "STANDARD");
+  const userBalance     = Number(sellerRow?.balance ?? 0);
+  const sellerEscrow    = Number(sellerRow?.sellerEscrow ?? 0);
+  const escrowRequired  = Number(sellerRow?.sellerEscrowRequired ?? SELLER_ESCROW_MINIMUM);
+  const escrowMet       = sellerEscrow >= escrowRequired;
 
   // ── History tab ──
   let fullWithdrawalHistory: WdRecord[] = [];
@@ -167,7 +168,7 @@ export default async function ViSellerPage({
                   <p className={`text-xs mt-0.5 ${escrowMet ? "text-emerald-600" : "text-amber-600"}`}>
                     {escrowMet
                       ? "Ký quỹ của bạn đã đáp ứng yêu cầu tối thiểu."
-                      : `Cần thêm ${formatVnd(SELLER_ESCROW_MINIMUM - sellerEscrow)} để đủ điều kiện.`
+                      : `Cần thêm ${formatVnd(escrowRequired - sellerEscrow)} để đủ điều kiện.`
                     }
                   </p>
                 </div>
@@ -177,13 +178,13 @@ export default async function ViSellerPage({
                 <div className="flex justify-between text-xs font-medium">
                   <span className="text-gray-600">Ký quỹ hiện tại</span>
                   <span className={escrowMet ? "text-emerald-700" : "text-amber-700"}>
-                    {formatVnd(sellerEscrow)} / {formatVnd(SELLER_ESCROW_MINIMUM)}
+                    {formatVnd(sellerEscrow)} / {formatVnd(escrowRequired)}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${escrowMet ? "bg-emerald-500" : "bg-amber-400"}`}
-                    style={{ width: `${Math.min(100, (sellerEscrow / SELLER_ESCROW_MINIMUM) * 100)}%` }}
+                    style={{ width: `${Math.min(100, (sellerEscrow / escrowRequired) * 100)}%` }}
                   />
                 </div>
               </div>
@@ -193,7 +194,7 @@ export default async function ViSellerPage({
               <p className="font-semibold text-gray-800 text-sm">Ký quỹ là gì?</p>
               <p>Ký quỹ là khoản tiền bạn gửi vào hệ thống để đảm bảo hoạt động bán hàng nghiêm túc và tin cậy.</p>
               <ul className="space-y-1 mt-2">
-                <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-0.5">•</span> Cần ít nhất <strong>{formatVnd(SELLER_ESCROW_MINIMUM)}</strong> để được rút tiền bán hàng.</li>
+                <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-0.5">•</span> Cần ít nhất <strong>{formatVnd(escrowRequired)}</strong> để được rút tiền bán hàng.</li>
                 <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-0.5">•</span> Tiền ký quỹ sẽ liên tục hoạt động trong thời gian bạn còn hoạt động bán hàng.</li>
                 <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-0.5">•</span> Tiền ký quỹ <strong>có thể rút lại</strong> — khi bạn không còn hoạt động bán hàng.</li>
                 <li className="flex items-start gap-1.5"><span className="text-violet-500 mt-0.5">•</span> Đơn hàng khi không xử lý khiếu nại sẽ ảnh hưởng đến ký quỹ.</li>
@@ -207,7 +208,7 @@ export default async function ViSellerPage({
               <EscrowDepositForm
                 currentEscrow={sellerEscrow}
                 userBalance={userBalance}
-                escrowMinimum={SELLER_ESCROW_MINIMUM}
+                escrowMinimum={escrowRequired}
               />
             </div>
           </div>

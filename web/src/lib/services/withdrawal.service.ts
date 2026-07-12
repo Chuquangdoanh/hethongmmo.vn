@@ -41,14 +41,17 @@ export async function requestWithdrawal(
       Array<{
         balance: string;
         seller_escrow: string;
+        seller_escrow_required: string;
         bank_name_enc: Buffer | null;
         bank_account_number_enc: Buffer | null;
         bank_account_holder_enc: Buffer | null;
         seller_status: string;
         seller_tier: string;
+        seller_reverify_required: boolean;
+        seller_reverify_approved: boolean;
       }>
     >`
-      SELECT balance, seller_escrow, bank_name_enc, bank_account_number_enc, bank_account_holder_enc, seller_status, seller_tier
+      SELECT balance, seller_escrow, seller_escrow_required, bank_name_enc, bank_account_number_enc, bank_account_holder_enc, seller_status, seller_tier, seller_reverify_required, seller_reverify_approved
       FROM users WHERE id = ${sellerId}::uuid FOR UPDATE
     `;
     const user = userRows[0];
@@ -57,11 +60,20 @@ export async function requestWithdrawal(
       throw new ValidationError("Tài khoản chưa được duyệt làm seller");
     }
 
-    // Kiểm tra ký quỹ tối thiểu
-    const sellerEscrow = Number(user.seller_escrow ?? 0);
-    if (sellerEscrow < SELLER_ESCROW_MINIMUM) {
+    // Admin có thể yêu cầu seller cụ thể xác minh lại danh tính trước khi rút tiền
+    if (user.seller_reverify_required && !user.seller_reverify_approved) {
       throw new ValidationError(
-        `Bạn cần ký quỹ tối thiểu ${SELLER_ESCROW_MINIMUM.toLocaleString("vi")}đ để được rút tiền. ` +
+        "Tài khoản của bạn cần xác minh lại danh tính (CCCD/CMND + ảnh chân dung) trước khi rút tiền. " +
+        "Vui lòng vào Ví Seller → Rút tiền để nộp ảnh xác minh.",
+      );
+    }
+
+    // Kiểm tra ký quỹ tối thiểu — theo mức riêng của seller (admin có thể nâng cao hơn mặc định)
+    const sellerEscrow = Number(user.seller_escrow ?? 0);
+    const escrowRequired = Number(user.seller_escrow_required ?? SELLER_ESCROW_MINIMUM);
+    if (sellerEscrow < escrowRequired) {
+      throw new ValidationError(
+        `Bạn cần ký quỹ tối thiểu ${escrowRequired.toLocaleString("vi")}đ để được rút tiền. ` +
         `Ký quỹ hiện tại: ${sellerEscrow.toLocaleString("vi")}đ. ` +
         `Vui lòng vào Ví Seller → Ký quỹ để nạp thêm.`,
       );

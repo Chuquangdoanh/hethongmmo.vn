@@ -9,10 +9,12 @@ import {
   ReceiptText, AlertTriangle, PackageX, Shield,
 } from "lucide-react";
 import WithdrawalForm from "./WithdrawalForm";
+import SellerReverifyForm from "./SellerReverifyForm";
 import BankChangeRequestForm from "@/components/shared/BankChangeRequestForm";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
 import { decrypt } from "@/lib/security/encryption";
 import { getSellerBankChangeRequests } from "@/lib/services/bank-change-request.service";
+import { getSellerReverifyRequests } from "@/lib/services/seller-reverify.service";
 import { SELLER_ESCROW_MINIMUM } from "@/lib/services/wallet.service";
 import Link from "next/link";
 
@@ -25,16 +27,23 @@ export default async function RutTienPage() {
   const sellerRow = await prisma.user.findUnique({
     where: { id: me.id },
     select: {
-      sellerTier:           true,
-      sellerEscrow:         true,
-      bankNameEnc:          true,
-      bankAccountNumberEnc: true,
-      bankAccountHolderEnc: true,
+      sellerTier:             true,
+      sellerEscrow:           true,
+      sellerEscrowRequired:   true,
+      bankNameEnc:            true,
+      bankAccountNumberEnc:   true,
+      bankAccountHolderEnc:   true,
+      sellerReverifyRequired: true,
+      sellerReverifyApproved: true,
     },
   });
 
-  const sellerEscrow = Number(sellerRow?.sellerEscrow ?? 0);
-  const escrowMet    = sellerEscrow >= SELLER_ESCROW_MINIMUM;
+  const sellerEscrow    = Number(sellerRow?.sellerEscrow ?? 0);
+  const escrowRequired  = Number(sellerRow?.sellerEscrowRequired ?? SELLER_ESCROW_MINIMUM);
+  const escrowMet       = sellerEscrow >= escrowRequired;
+
+  const reverifyBlocked = !!sellerRow?.sellerReverifyRequired && !sellerRow?.sellerReverifyApproved;
+  const reverifyRequests = reverifyBlocked ? await getSellerReverifyRequests(me.id) : [];
 
   const tierCfg = await getSellerTierConfig(sellerRow?.sellerTier ?? "STANDARD");
   const holdDays = tierCfg.hold_days;
@@ -177,6 +186,19 @@ export default async function RutTienPage() {
             </div>
           </div>
 
+          {/* Reverify required notice — admin yêu cầu seller này xác minh lại danh tính */}
+          {reverifyBlocked && (
+            <SellerReverifyForm
+              recentRequests={reverifyRequests.map((r) => ({
+                id: r.id,
+                status: r.status,
+                rejectReason: r.rejectReason,
+                createdAt: r.createdAt.toISOString(),
+                reviewedAt: r.reviewedAt ? r.reviewedAt.toISOString() : null,
+              }))}
+            />
+          )}
+
           {/* Shop locked notice */}
           {shopLocked && (
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex items-center gap-3">
@@ -216,12 +238,12 @@ export default async function RutTienPage() {
             </div>
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-semibold ${escrowMet ? "text-emerald-700" : "text-amber-700"}`}>
-                Ký quỹ: {formatVnd(sellerEscrow)} / {formatVnd(SELLER_ESCROW_MINIMUM)} tối thiểu
+                Ký quỹ: {formatVnd(sellerEscrow)} / {formatVnd(escrowRequired)} tối thiểu
               </p>
               <p className={`text-xs mt-0.5 ${escrowMet ? "text-emerald-600" : "text-amber-600"}`}>
                 {escrowMet
                   ? "Đủ điều kiện rút tiền bán hàng."
-                  : `Cần nạp thêm ${formatVnd(SELLER_ESCROW_MINIMUM - sellerEscrow)} để được rút tiền.`
+                  : `Cần nạp thêm ${formatVnd(escrowRequired - sellerEscrow)} để được rút tiền.`
                 }
               </p>
             </div>
@@ -282,7 +304,7 @@ export default async function RutTienPage() {
           )}
 
           {/* Withdrawal form */}
-          {!pendingWithdrawal && !shopLocked && (
+          {!pendingWithdrawal && !shopLocked && !reverifyBlocked && (
             <WithdrawalForm
               qualifyingOrders={qualifyingRaw.map((o) => ({
                 id: o.id,

@@ -12,6 +12,9 @@ import BankChangeRequestAdmin from "@/components/shared/BankChangeRequestAdmin";
 import { getSellerBankChangeRequests } from "@/lib/services/bank-change-request.service";
 import { decrypt } from "@/lib/security/encryption";
 import AdminEscrowAdjust from "@/app/(admin)/admin/users/[id]/AdminEscrowAdjust";
+import AdminEscrowRequiredForm from "@/app/(admin)/admin/users/[id]/AdminEscrowRequiredForm";
+import AdminSellerReverify from "@/app/(admin)/admin/users/[id]/AdminSellerReverify";
+import { getSellerReverifyRequests } from "@/lib/services/seller-reverify.service";
 import ProductRevenueFilter from "./ProductRevenueFilter";
 import { getSellerTierConfig } from "@/lib/services/seller.service";
 
@@ -158,12 +161,17 @@ export default async function AdminSellerDetailPage({
   const filteredTotalRevenue = Array.from(productRevenueMap.values()).reduce((acc, v) => acc + v.revenue, 0);
   const filteredTotalOrders  = Array.from(productRevenueMap.values()).reduce((acc, v) => acc + v.orders, 0);
 
-  const [bankChangeRequests, sellerUser] = await Promise.all([
+  const [bankChangeRequests, sellerUser, reverifyRequests] = await Promise.all([
     getSellerBankChangeRequests(request.userId),
     prisma.user.findUnique({
       where: { id: request.userId },
-      select: { bankNameEnc: true, bankAccountNumberEnc: true, bankAccountHolderEnc: true, sellerEscrow: true },
+      select: {
+        bankNameEnc: true, bankAccountNumberEnc: true, bankAccountHolderEnc: true,
+        sellerEscrow: true, sellerEscrowRequired: true,
+        sellerReverifyRequired: true, sellerReverifyApproved: true,
+      },
     }),
+    getSellerReverifyRequests(request.userId),
   ]);
   const currentBankName          = sellerUser?.bankNameEnc          ? decrypt(sellerUser.bankNameEnc          as unknown as Buffer) : null;
   const currentBankAccountNumber = sellerUser?.bankAccountNumberEnc ? decrypt(sellerUser.bankAccountNumberEnc as unknown as Buffer) : null;
@@ -324,6 +332,32 @@ export default async function AdminSellerDetailPage({
               <AdminEscrowAdjust
                 userId={request.userId}
                 sellerEscrow={Number(sellerUser?.sellerEscrow ?? 0)}
+              />
+              <AdminEscrowRequiredForm
+                userId={request.userId}
+                sellerEscrow={Number(sellerUser?.sellerEscrow ?? 0)}
+                sellerEscrowRequired={Number(sellerUser?.sellerEscrowRequired ?? 0)}
+              />
+            </div>
+          )}
+
+          {/* Xác minh lại danh tính seller — admin chỉ định seller cần nộp lại CCCD + ảnh chân dung trước khi rút tiền */}
+          {request.status === "APPROVED" && (
+            <div className="rounded-xl border border-gray-200 bg-white p-5">
+              <h2 className="text-sm font-semibold text-gray-900 mb-1">Xác minh lại danh tính</h2>
+              <AdminSellerReverify
+                userId={request.userId}
+                sellerReverifyRequired={sellerUser?.sellerReverifyRequired ?? false}
+                sellerReverifyApproved={sellerUser?.sellerReverifyApproved ?? false}
+                requests={reverifyRequests.map((r) => ({
+                  id: r.id,
+                  status: r.status,
+                  rejectReason: r.rejectReason,
+                  createdAt: r.createdAt.toISOString(),
+                  reviewedAt: r.reviewedAt ? r.reviewedAt.toISOString() : null,
+                  cccdImageUrl: r.cccdImageUrl,
+                  portraitImageUrl: r.portraitImageUrl,
+                }))}
               />
             </div>
           )}

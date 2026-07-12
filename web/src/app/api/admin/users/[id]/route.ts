@@ -43,6 +43,13 @@ const patchSchema = z.discriminatedUnion("action", [
     amount: z.number().refine((n) => n !== 0, "Số tiền không được bằng 0"),
     note: z.string().min(1).max(500).optional(),
   }),
+  z.object({
+    action: z.literal("set_escrow_required"),
+    amount: z.number().min(0, "Mức ký quỹ yêu cầu không được âm"),
+    note: z.string().min(1).max(500).optional(),
+  }),
+  z.object({ action: z.literal("request_seller_reverify") }),
+  z.object({ action: z.literal("cancel_seller_reverify") }),
 ]);
 
 export async function GET(
@@ -251,6 +258,106 @@ export async function PATCH(
         });
       });
       logger.info({ adminId: admin.id, targetUserId: id, amount }, "Admin adjusted seller escrow");
+      return apiSuccess();
+    }
+
+    if (action === "set_escrow_required") {
+      const { amount, note } = parsed.data as Extract<(typeof parsed)["data"], { action: "set_escrow_required" }>;
+      await prisma.$transaction(async (tx) => {
+        const locked = await tx.user.findUniqueOrThrow({
+          where: { id },
+          select: { sellerEscrowRequired: true, sellerEscrow: true },
+        });
+        const requiredBefore = locked.sellerEscrowRequired;
+        const currentEscrow  = Number(locked.sellerEscrow);
+        const gap = amount - currentEscrow;
+
+        await tx.user.update({ where: { id }, data: { sellerEscrowRequired: amount } });
+
+        if (gap > 0) {
+          await tx.notification.create({
+            data: {
+              userId: id,
+              title: "Mức ký quỹ yêu cầu đã được nâng",
+              body: `Quản trị viên đã nâng mức ký quỹ yêu cầu lên ${amount.toLocaleString("vi")}đ. ` +
+                `Vui lòng nạp thêm ${gap.toLocaleString("vi")}đ vào ký quỹ tại Ví Seller → Ký quỹ để tiếp tục đủ điều kiện rút tiền.`,
+              type: "SYSTEM",
+            },
+          });
+        }
+
+        await tx.auditLog.create({
+          data: {
+            actorId: admin.id,
+            action: "ADMIN_SET_ESCROW_REQUIRED",
+            targetType: "User",
+            targetId: id,
+            before: { sellerEscrowRequired: Number(requiredBefore) },
+            after: { sellerEscrowRequired: amount, note },
+          },
+        });
+      });
+      logger.info({ adminId: admin.id, targetUserId: id, amount }, "Admin set seller escrow requirement");
+      return apiSuccess();
+    }
+
+    if (action === "request_seller_reverify") {
+      await prisma.$transaction(async (tx) => {
+        const locked = await tx.user.findUniqueOrThrow({
+          where: { id },
+          select: { sellerReverifyRequired: true, sellerReverifyApproved: true },
+        });
+
+        await tx.user.update({ where: { id }, data: { sellerReverifyRequired: true } });
+
+        if (!locked.sellerReverifyApproved) {
+          await tx.notification.create({
+            data: {
+              userId: id,
+              title: "Cần xác minh lại tài khoản",
+              body: "Quản trị viên yêu cầu bạn xác minh lại danh tính (CCCD/CMND + ảnh chân dung) trước khi rút tiền. " +
+                "Vui lòng vào Ví Seller → Rút tiền để nộp ảnh xác minh.",
+              type: "SYSTEM",
+            },
+          });
+        }
+
+        await tx.auditLog.create({
+          data: {
+            actorId: admin.id,
+            action: "ADMIN_REQUEST_SELLER_REVERIFY",
+            targetType: "User",
+            targetId: id,
+            before: { sellerReverifyRequired: locked.sellerReverifyRequired },
+            after: { sellerReverifyRequired: true },
+          },
+        });
+      });
+      logger.info({ adminId: admin.id, targetUserId: id }, "Admin requested seller reverify");
+      return apiSuccess();
+    }
+
+    if (action === "cancel_seller_reverify") {
+      await prisma.$transaction(async (tx) => {
+        const locked = await tx.user.findUniqueOrThrow({
+          where: { id },
+          select: { sellerReverifyRequired: true },
+        });
+
+        await tx.user.update({ where: { id }, data: { sellerReverifyRequired: false } });
+
+        await tx.auditLog.create({
+          data: {
+            actorId: admin.id,
+            action: "ADMIN_CANCEL_SELLER_REVERIFY",
+            targetType: "User",
+            targetId: id,
+            before: { sellerReverifyRequired: locked.sellerReverifyRequired },
+            after: { sellerReverifyRequired: false },
+          },
+        });
+      });
+      logger.info({ adminId: admin.id, targetUserId: id }, "Admin cancelled seller reverify requirement");
       return apiSuccess();
     }
 

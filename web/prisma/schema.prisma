@@ -215,6 +215,8 @@ model User {
   totalDeposited       Decimal       @default(0) @db.Decimal(18, 2) @map("total_deposited")
   totalSpent           Decimal       @default(0) @db.Decimal(18, 2) @map("total_spent")
   sellerEscrow         Decimal       @default(0) @db.Decimal(18, 2) @map("seller_escrow")
+  // Mức ký quỹ tối thiểu yêu cầu riêng cho seller này — admin nâng lên thì seller phải tự nạp thêm để đủ điều kiện rút tiền
+  sellerEscrowRequired Decimal       @default(1000000) @db.Decimal(18, 2) @map("seller_escrow_required")
 
   // Giảm giá khi mua Service/Course/TutTrick
   // 0 = dùng tier tự động theo totalDeposited; > 0 = admin override cứng
@@ -260,6 +262,11 @@ model User {
   twoFactorEnabled     Boolean       @default(false) @map("two_factor_enabled")
   shopLocked           Boolean       @default(false) @map("shop_locked")
 
+  // Admin gắn cờ này cho seller cụ thể cần nộp lại CCCD + ảnh chân dung trước khi rút tiền
+  sellerReverifyRequired Boolean     @default(false) @map("seller_reverify_required")
+  // Một khi được duyệt xác minh lại thì luôn giữ true — không cần xác minh lại lần nữa
+  sellerReverifyApproved Boolean     @default(false) @map("seller_reverify_approved")
+
   lastLoginAt          DateTime?     @map("last_login_at")
   lastLoginIp          String?       @map("last_login_ip")
   failedLoginCount     Int           @default(0) @map("failed_login_count")
@@ -281,6 +288,7 @@ model User {
   sellerProducts       SellerProduct[]
   sellerWithdrawals    SellerWithdrawal[]
   bankChangeRequests   BankChangeRequest[]
+  reverifyRequests     SellerReverifyRequest[]
   reviews              Review[]
   complaints           Complaint[]
   auditLogsAsActor     AuditLog[]    @relation("AuditActor")
@@ -982,6 +990,26 @@ model BankChangeRequest {
   @@index([sellerId, status])
   @@index([status, createdAt])
   @@map("bank_change_requests")
+}
+
+model SellerReverifyRequest {
+  id               String           @id @default(uuid()) @db.Uuid
+  sellerId         String           @map("seller_id") @db.Uuid
+  seller           User             @relation(fields: [sellerId], references: [id])
+
+  cccdImageUrl     String           @map("cccd_image_url")
+  portraitImageUrl String           @map("portrait_image_url")
+
+  status           BankChangeStatus @default(PENDING)
+  rejectReason     String?          @map("reject_reason")
+  reviewedByUserId String?          @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt       DateTime?        @map("reviewed_at")
+
+  createdAt        DateTime         @default(now()) @map("created_at")
+
+  @@index([sellerId, status])
+  @@index([status, createdAt])
+  @@map("seller_reverify_requests")
 }
 
 // ====================================================================
