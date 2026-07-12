@@ -1,4 +1,4 @@
-import { mkdir, writeFile, readFile } from "fs/promises";
+import { mkdir, writeFile, readFile, unlink } from "fs/promises";
 import { join } from "path";
 
 const ALLOWED_SUBDIRS = ["cccd", "portrait"] as const;
@@ -52,6 +52,23 @@ export async function saveLocalFile(params: {
 
   const key = `${subDir}/${userId}/${filename}`;
   return `/api/admin/secure-image?key=${encodeURIComponent(key)}`;
+}
+
+/** Xóa file cũ trên disk VPS theo URL nội bộ (/api/admin/secure-image?key=...) — best-effort, không throw nếu URL không hợp lệ hoặc file không còn tồn tại. */
+export async function deleteLocalFile(url: string | null | undefined): Promise<void> {
+  if (!url) return;
+  const match = /[?&]key=([^&]+)/.exec(url);
+  if (!match?.[1]) return;
+
+  const key = decodeURIComponent(match[1]);
+  if (!isValidLocalKey(key)) return;
+
+  const filePath = join(getUploadDir(), key);
+  try {
+    await unlink(filePath);
+  } catch {
+    // File có thể đã bị xóa trước đó — bỏ qua
+  }
 }
 
 /** Đọc file từ disk — chỉ dùng sau khi đã validate key bằng isValidLocalKey(). */

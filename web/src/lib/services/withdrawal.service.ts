@@ -64,7 +64,7 @@ export async function requestWithdrawal(
     if (user.seller_reverify_required && !user.seller_reverify_approved) {
       throw new ValidationError(
         "Tài khoản của bạn cần xác minh lại danh tính (CCCD/CMND + ảnh chân dung) trước khi rút tiền. " +
-        "Vui lòng vào Ví Seller → Rút tiền để nộp ảnh xác minh.",
+        "Vui lòng reload lại trang để xác minh tài khoản.",
       );
     }
 

@@ -302,25 +302,35 @@ export async function PATCH(
     }
 
     if (action === "request_seller_reverify") {
+      const pendingReverify = await prisma.sellerReverifyRequest.findFirst({
+        where: { sellerId: id, status: "PENDING" },
+        select: { id: true },
+      });
+      if (pendingReverify) {
+        return apiError("Seller đã có ảnh xác minh đang chờ duyệt — hãy duyệt/từ chối trước", "PENDING_EXISTS", 400);
+      }
+
+      // Admin có thể bấm xác thực lại bất cứ lúc nào — luôn reset về trạng thái chưa xác minh
       await prisma.$transaction(async (tx) => {
         const locked = await tx.user.findUniqueOrThrow({
           where: { id },
           select: { sellerReverifyRequired: true, sellerReverifyApproved: true },
         });
 
-        await tx.user.update({ where: { id }, data: { sellerReverifyRequired: true } });
+        await tx.user.update({
+          where: { id },
+          data: { sellerReverifyRequired: true, sellerReverifyApproved: false },
+        });
 
-        if (!locked.sellerReverifyApproved) {
-          await tx.notification.create({
-            data: {
-              userId: id,
-              title: "Cần xác minh lại tài khoản",
-              body: "Quản trị viên yêu cầu bạn xác minh lại danh tính (CCCD/CMND + ảnh chân dung) trước khi rút tiền. " +
-                "Vui lòng vào Ví Seller → Rút tiền để nộp ảnh xác minh.",
-              type: "SYSTEM",
-            },
-          });
-        }
+        await tx.notification.create({
+          data: {
+            userId: id,
+            title: "Cần xác minh lại tài khoản",
+            body: "Quản trị viên yêu cầu bạn xác minh lại danh tính (CCCD/CMND + ảnh chân dung) trước khi rút tiền. " +
+              "Vui lòng vào Ví Seller → Rút tiền để nộp ảnh xác minh.",
+            type: "SYSTEM",
+          },
+        });
 
         await tx.auditLog.create({
           data: {
@@ -328,8 +338,8 @@ export async function PATCH(
             action: "ADMIN_REQUEST_SELLER_REVERIFY",
             targetType: "User",
             targetId: id,
-            before: { sellerReverifyRequired: locked.sellerReverifyRequired },
-            after: { sellerReverifyRequired: true },
+            before: { sellerReverifyRequired: locked.sellerReverifyRequired, sellerReverifyApproved: locked.sellerReverifyApproved },
+            after: { sellerReverifyRequired: true, sellerReverifyApproved: false },
           },
         });
       });

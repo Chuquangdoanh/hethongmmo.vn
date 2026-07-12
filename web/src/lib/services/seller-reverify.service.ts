@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { ValidationError, NotFoundError } from "@/lib/errors";
+import { deleteLocalFile } from "@/lib/storage/local";
 import type { SubmitSellerReverifyInput } from "@/lib/validation/seller-reverify.schema";
 
 export async function submitSellerReverify(
@@ -48,7 +49,7 @@ export async function reviewSellerReverify(
 ) {
   const req = await prisma.sellerReverifyRequest.findUnique({
     where: { id: requestId },
-    select: { id: true, sellerId: true, status: true },
+    select: { id: true, sellerId: true, status: true, cccdImageUrl: true, portraitImageUrl: true },
   });
   if (!req) throw new NotFoundError("Yêu cầu xác minh lại");
   if (req.status !== "PENDING") {
@@ -56,10 +57,21 @@ export async function reviewSellerReverify(
   }
 
   if (action === "approve") {
+    // Ảnh cũ cần xóa khỏi disk VPS sau khi ghi đè thành công — lấy trước khi update
+    const oldUser = await prisma.user.findUnique({
+      where: { id: req.sellerId },
+      select: { cccdImageUrl: true, portraitImageUrl: true },
+    });
+
     await prisma.$transaction([
+      // Ảnh xác minh lại thay thế luôn ảnh CCCD/chân dung gốc lúc đăng ký
       prisma.user.update({
         where: { id: req.sellerId },
-        data: { sellerReverifyApproved: true },
+        data: {
+          sellerReverifyApproved: true,
+          cccdImageUrl:           req.cccdImageUrl,
+          portraitImageUrl:       req.portraitImageUrl,
+        },
       }),
       prisma.sellerReverifyRequest.update({
         where: { id: requestId },
@@ -69,6 +81,13 @@ export async function reviewSellerReverify(
           reviewedAt:       new Date(),
         },
       }),
+    ]);
+
+    // Xóa file ảnh cũ trên disk — best-effort, không chặn kết quả duyệt nếu lỗi.
+    // Bỏ qua nếu ảnh cũ trùng ảnh mới (tránh xóa nhầm file vừa được duyệt).
+    await Promise.all([
+      oldUser?.cccdImageUrl !== req.cccdImageUrl ? deleteLocalFile(oldUser?.cccdImageUrl) : Promise.resolve(),
+      oldUser?.portraitImageUrl !== req.portraitImageUrl ? deleteLocalFile(oldUser?.portraitImageUrl) : Promise.resolve(),
     ]);
 
     await prisma.auditLog.create({

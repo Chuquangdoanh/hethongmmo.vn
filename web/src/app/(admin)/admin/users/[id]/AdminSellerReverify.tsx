@@ -102,22 +102,26 @@ export default function AdminSellerReverify({ userId, sellerReverifyRequired, se
             {sellerReverifyApproved ? "Đã xác minh" : sellerReverifyRequired ? "Đang yêu cầu — chờ seller nộp" : "Không yêu cầu"}
           </span>
         </p>
-        {!sellerReverifyRequired ? (
-          <button
-            onClick={() => { void toggleRequired("request_seller_reverify"); }}
-            disabled={toggleLoading}
-            className="px-3 py-1.5 rounded-md bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-60 transition-colors"
-          >
-            {toggleLoading ? "..." : "Yêu cầu xác minh lại"}
-          </button>
-        ) : (
-          <button
-            onClick={() => { void toggleRequired("cancel_seller_reverify"); }}
-            disabled={toggleLoading}
-            className="px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 text-xs font-semibold hover:border-gray-300 disabled:opacity-60 transition-colors"
-          >
-            {toggleLoading ? "..." : "Hủy yêu cầu"}
-          </button>
+        {pending.length === 0 && (
+          <div className="flex items-center gap-2">
+            {/* Admin có thể bấm xác thực lại bất cứ lúc nào, kể cả khi đã từng được duyệt trước đó */}
+            <button
+              onClick={() => { void toggleRequired("request_seller_reverify"); }}
+              disabled={toggleLoading}
+              className="px-3 py-1.5 rounded-md bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-60 transition-colors"
+            >
+              {toggleLoading ? "..." : "Xác thực lại"}
+            </button>
+            {sellerReverifyRequired && !sellerReverifyApproved && (
+              <button
+                onClick={() => { void toggleRequired("cancel_seller_reverify"); }}
+                disabled={toggleLoading}
+                className="px-3 py-1.5 rounded-md border border-gray-200 text-gray-600 text-xs font-semibold hover:border-gray-300 disabled:opacity-60 transition-colors"
+              >
+                {toggleLoading ? "..." : "Hủy yêu cầu"}
+              </button>
+            )}
+          </div>
         )}
       </div>
       {toggleError && <p className="text-xs text-[#EF4444]">{toggleError}</p>}
