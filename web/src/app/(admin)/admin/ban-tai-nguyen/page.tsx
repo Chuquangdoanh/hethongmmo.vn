@@ -118,8 +118,9 @@ export default async function BanTaiNguyenPage({
       take: PAGE_SIZE,
       select: {
         id: true, orderCode: true, itemName: true, orderType: true,
-        finalPrice: true, status: true, createdAt: true,
+        originalPrice: true, finalPrice: true, status: true, createdAt: true,
         externalOrderId: true,
+        coupon: { select: { code: true } },
         user: { select: { email: true, fullName: true } },
       },
     }),
@@ -397,6 +398,7 @@ export default async function BanTaiNguyenPage({
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Sản phẩm</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Người mua</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Giá</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Mã giảm giá</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Trạng thái</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Thời gian</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Hành động</th>
@@ -405,7 +407,7 @@ export default async function BanTaiNguyenPage({
             <tbody className="divide-y divide-gray-100">
               {orders.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-16 text-center">
+                  <td colSpan={8} className="px-4 py-16 text-center">
                     <p className="text-4xl mb-3">📦</p>
                     <p className="text-sm font-medium text-gray-600">Không có đơn hàng nào</p>
                     <p className="text-xs text-gray-400 mt-1">Thử thay đổi bộ lọc</p>
@@ -436,6 +438,18 @@ export default async function BanTaiNguyenPage({
                     </td>
                     <td className="px-4 py-3.5 text-right">
                       <p className="text-sm font-bold text-[#10B981]">{formatVnd(Number(order.finalPrice))}</p>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      {order.coupon ? (
+                        <>
+                          <p className="text-xs font-mono font-semibold text-[#2563eb]">{order.coupon.code}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            -{formatVnd(Number(order.originalPrice) - Number(order.finalPrice))}
+                          </p>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-300">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3.5 text-center">
                       <InlineStatusCell orderId={order.id} status={order.status} />

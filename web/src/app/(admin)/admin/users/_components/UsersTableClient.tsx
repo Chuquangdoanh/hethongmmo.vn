@@ -7,6 +7,7 @@ import { formatVnd, formatDate } from "@/lib/utils/format";
 import { Trash2, ArrowDownUp, ArrowDown } from "lucide-react";
 import InlineRoleCell from "./InlineRoleCell";
 import InlineUserStatusCell from "./InlineUserStatusCell";
+import { getDiscountDisplay } from "./discount-display";
 
 const ROLE_LABELS: Record<string, string> = {
   USER: "Người dùng", SELLER: "Nhà bán", STAFF: "Nhân viên", ADMIN: "Admin",
@@ -26,14 +27,6 @@ type User = {
   _count: { orders: number };
 };
 
-function getDiscountDisplay(totalDeposited: number, discountPercent: number) {
-  if (discountPercent > 0) return { pct: discountPercent, label: "Override", isOverride: true };
-  if (totalDeposited >= 200_000_000) return { pct: 10, label: "Gold",   isOverride: false };
-  if (totalDeposited >= 100_000_000) return { pct: 7,  label: "Silver", isOverride: false };
-  if (totalDeposited >= 50_000_000)  return { pct: 5,  label: "Thẻ",    isOverride: false };
-  return { pct: 0, label: "Thường", isOverride: false };
-}
-
 interface Props {
   users: User[];
   currentUserId: string;
@@ -41,9 +34,10 @@ interface Props {
   role?: string;
   q?: string;
   sort?: string;
+  limit: number;
 }
 
-export default function UsersTableClient({ users, currentUserId, total, role, q, sort }: Props) {
+export default function UsersTableClient({ users, currentUserId, total, role, q, sort, limit }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -52,6 +46,7 @@ export default function UsersTableClient({ users, currentUserId, total, role, q,
 
   const isSortedByDeposit = sort === "deposit";
   const isSortedByBalance = sort === "balance";
+  const isSortedByDiscount = sort === "discount";
 
   function handleDepositSort() {
     const params = new URLSearchParams(searchParams.toString());
@@ -72,6 +67,25 @@ export default function UsersTableClient({ users, currentUserId, total, role, q,
       params.set("sort", "balance");
       params.delete("page");
     }
+    router.push(`${pathname}?${params.toString()}`);
+  }
+
+  function handleDiscountSort() {
+    const params = new URLSearchParams(searchParams.toString());
+    if (isSortedByDiscount) {
+      params.delete("sort");
+    } else {
+      params.set("sort", "discount");
+      params.delete("page");
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  }
+
+  function handleLimitChange(n: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (n === 20) params.delete("limit");
+    else params.set("limit", String(n));
+    params.delete("page");
     router.push(`${pathname}?${params.toString()}`);
   }
 
@@ -117,26 +131,45 @@ export default function UsersTableClient({ users, currentUserId, total, role, q,
   return (
     <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
       {/* Table header bar */}
-      <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between gap-3">
+      <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
         <span className="text-sm font-semibold text-gray-700">
           {total.toLocaleString("vi-VN")} người dùng
           {role ? ` · ${ROLE_LABELS[role] ?? role}` : ""}
           {q ? ` · "${q}"` : ""}
         </span>
 
-        {selected.size > 0 && (
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-500">Đã chọn <strong>{selected.size}</strong></span>
-            <button
-              onClick={handleDelete}
-              disabled={isPending}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 text-xs font-semibold hover:bg-red-100 disabled:opacity-50 transition-colors"
-            >
-              <Trash2 size={13} strokeWidth={2} />
-              {isPending ? "Đang xóa..." : "Xóa được chọn"}
-            </button>
+        <div className="flex items-center gap-3">
+          {selected.size > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-500">Đã chọn <strong>{selected.size}</strong></span>
+              <button
+                onClick={handleDelete}
+                disabled={isPending}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 text-xs font-semibold hover:bg-red-100 disabled:opacity-50 transition-colors"
+              >
+                <Trash2 size={13} strokeWidth={2} />
+                {isPending ? "Đang xóa..." : "Xóa được chọn"}
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400">Hiển thị:</span>
+            {[20, 50, 100].map((n) => (
+              <button
+                key={n}
+                onClick={() => handleLimitChange(n)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
+                  limit === n
+                    ? "bg-violet-600 border-violet-600 text-white"
+                    : "bg-white border-gray-200 text-gray-500 hover:border-violet-400 hover:text-violet-600"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -181,7 +214,19 @@ export default function UsersTableClient({ users, currentUserId, total, role, q,
                   )}
                 </button>
               </th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Giảm giá</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide">
+                <button
+                  onClick={handleDiscountSort}
+                  className={`inline-flex items-center gap-1 transition-colors hover:text-violet-600 ${isSortedByDiscount ? "text-violet-600" : "text-gray-500"}`}
+                >
+                  Giảm giá
+                  {isSortedByDiscount ? (
+                    <ArrowDown size={13} strokeWidth={2.5} />
+                  ) : (
+                    <ArrowDownUp size={12} strokeWidth={2} className="opacity-40" />
+                  )}
+                </button>
+              </th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Đơn hàng</th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Ngày tạo</th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Hành động</th>

@@ -9,6 +9,7 @@ import { decrypt } from "@/lib/security/encryption";
 import { r2Url } from "@/lib/utils/image-url";
 import Pagination from "@/components/shared/Pagination";
 import RestrictButton from "../_components/RestrictButton";
+import ApprovalButton from "../_components/ApprovalButton";
 import ImageZoom from "../_components/ImageZoom";
 import ReviewActions from "./_components/ReviewActions";
 import VariantManager from "@/components/shared/VariantManager";
@@ -62,8 +63,10 @@ export default async function AdminSellerProductDetailPage({
       id: true, name: true, price: true, description: true,
       warrantyInfo: true,
       imageUrl: true, sellerCategory: true, publishDate: true,
+      subCategory: { select: { name: true } },
       isActive: true, isHidden: true, isRestricted: true,
-      salesCount: true, revenue: true, createdAt: true, updatedAt: true,
+      approvalStatus: true, approvalRejectReason: true,
+      salesCount: true, createdAt: true, updatedAt: true,
       seller: { select: { id: true, fullName: true, email: true } },
       _count: { select: { orders: true } },
     },
@@ -98,7 +101,7 @@ export default async function AdminSellerProductDetailPage({
 
   const [
     availableCount, reservedCount, soldCount,
-    reviews, filteredReviewTotal,
+    reviews, filteredReviewTotal, revenueByStatus,
   ] = await Promise.all([
     prisma.sellerProductStock.count({ where: { productId: id, status: "AVAILABLE" } }),
     prisma.sellerProductStock.count({ where: { productId: id, status: "RESERVED"  } }),
@@ -111,7 +114,17 @@ export default async function AdminSellerProductDetailPage({
       include: { user: { select: { email: true, fullName: true } } },
     }),
     prisma.review.count({ where: reviewWhere }),
+    // Doanh thu ghi nhận = tổng đơn hoàn thành - tổng đơn hoàn tiền
+    prisma.order.groupBy({
+      by: ["status"],
+      where: { sellerProductId: id, status: { in: ["DONE", "REFUNDED"] } },
+      _sum: { finalPrice: true },
+    }),
   ]);
+
+  const doneRevenue     = Number(revenueByStatus.find((r) => r.status === "DONE")?._sum.finalPrice ?? 0);
+  const refundedRevenue = Number(revenueByStatus.find((r) => r.status === "REFUNDED")?._sum.finalPrice ?? 0);
+  const recordedRevenue = doneRevenue - refundedRevenue;
 
   const reviewTotalPages = Math.ceil(filteredReviewTotal / REVIEW_PAGE_SIZE);
 
@@ -201,11 +214,18 @@ export default async function AdminSellerProductDetailPage({
             {" "}·{" "}{product.seller.email}
           </p>
         </div>
-        <RestrictButton
-          productId={product.id}
-          productName={product.name}
-          isRestricted={product.isRestricted}
-        />
+        <div className="flex items-center gap-2 shrink-0">
+          <ApprovalButton
+            productId={product.id}
+            productName={product.name}
+            approvalStatus={product.approvalStatus}
+          />
+          <RestrictButton
+            productId={product.id}
+            productName={product.name}
+            isRestricted={product.isRestricted}
+          />
+        </div>
       </div>
 
       {/* Product info */}
@@ -221,9 +241,10 @@ export default async function AdminSellerProductDetailPage({
         <div className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-3">
           {[
             { label: "Danh mục", value: product.sellerCategory },
+            { label: "Danh mục con", value: product.subCategory?.name ?? "—" },
             { label: "Giá bán", value: formatVnd(Number(product.price)) },
             { label: "Tổng đơn", value: product._count.orders.toLocaleString("vi-VN") },
-            { label: "Doanh thu ghi nhận", value: formatVnd(Number(product.revenue)) },
+            { label: "Doanh thu ghi nhận", value: formatVnd(recordedRevenue) },
             { label: "Tạo lúc", value: formatDate(product.createdAt) },
             { label: "Cập nhật", value: formatDate(product.updatedAt) },
           ].map(({ label, value }) => (

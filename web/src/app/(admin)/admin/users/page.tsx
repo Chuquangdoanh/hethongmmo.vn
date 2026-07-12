@@ -7,10 +7,9 @@ import Pagination from "@/components/shared/Pagination";
 import CreateUserModal from "./_components/CreateUserModal";
 import UsersTableClient from "./_components/UsersTableClient";
 import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
+import { getDiscountDisplay } from "./_components/discount-display";
 
 export const metadata: Metadata = { title: "Quản lý người dùng" };
-
-const PAGE_SIZE = 20;
 
 const ROLE_LABELS: Record<string, string> = {
   USER: "Người dùng", SELLER: "Nhà bán", STAFF: "Nhân viên", ADMIN: "Admin",
@@ -19,17 +18,20 @@ const ROLE_LABELS: Record<string, string> = {
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string; role?: string; depositMin?: string; depositMax?: string; sort?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; role?: string; depositMin?: string; depositMax?: string; sort?: string; limit?: string }>;
 }) {
   const session = await auth();
   const me = session?.user as AuthenticatedUser;
 
-  const { page, q, role, depositMin, depositMax, sort } = await searchParams;
+  const { page, q, role, depositMin, depositMax, sort, limit } = await searchParams;
   const currentPage  = Math.max(1, parseInt(page ?? "1", 10));
+  const _limit = parseInt(limit ?? "20", 10);
+  const PAGE_SIZE = ([20, 50, 100] as number[]).includes(_limit) ? _limit : 20;
   const depositMinNum = depositMin ? parseInt(depositMin, 10) : undefined;
   const depositMaxNum = depositMax ? parseInt(depositMax, 10) : undefined;
   const sortByDeposit = sort === "deposit";
   const sortByBalance = sort === "balance";
+  const sortByDiscount = sort === "discount";
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -55,30 +57,50 @@ export default async function AdminUsersPage({
     } : {}),
   };
 
-  const [users, total, allTotal, newToday, sellerCount, staffAdminCount] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      orderBy: sortByBalance
-        ? { balance: "desc" }
-        : sortByDeposit || depositMinNum !== undefined || depositMaxNum !== undefined
-        ? { totalDeposited: "desc" }
-        : { createdAt: "desc" },
-      skip: (currentPage - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-      select: {
-        id: true, uidPrefix: true, email: true, fullName: true, role: true,
-        status: true, balance: true,
-        totalDeposited: true, discountPercent: true,
-        createdAt: true,
-        _count: { select: { orders: true } },
-      },
-    }),
-    prisma.user.count({ where }),
+  const USER_SELECT = {
+    id: true, uidPrefix: true, email: true, fullName: true, role: true,
+    status: true, balance: true,
+    totalDeposited: true, discountPercent: true,
+    createdAt: true,
+    _count: { select: { orders: true } },
+  } as const;
+
+  let users: Awaited<ReturnType<typeof prisma.user.findMany<{ select: typeof USER_SELECT }>>>;
+  let total: number;
+
+  const [allTotal, newToday, sellerCount, staffAdminCount] = await Promise.all([
     prisma.user.count({ where: { deletedAt: null } }),
     prisma.user.count({ where: { deletedAt: null, createdAt: { gte: today } } }),
     prisma.user.count({ where: { deletedAt: null, role: "SELLER" } }),
     prisma.user.count({ where: { deletedAt: null, role: { in: ["STAFF", "ADMIN"] as never[] } } }),
   ]);
+
+  if (sortByDiscount) {
+    // Discount % là giá trị tính toán (override hoặc theo tier totalDeposited) — không phải cột DB
+    // nên sort trong bộ nhớ giống pattern revenue/rating sort ở /admin/sellers.
+    const allUsers = await prisma.user.findMany({ where, select: USER_SELECT });
+    total = allUsers.length;
+    users = allUsers
+      .map((u) => ({ user: u, pct: getDiscountDisplay(Number(u.totalDeposited), u.discountPercent).pct }))
+      .sort((a, b) => b.pct - a.pct)
+      .map((x) => x.user)
+      .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  } else {
+    [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        orderBy: sortByBalance
+          ? { balance: "desc" }
+          : sortByDeposit || depositMinNum !== undefined || depositMaxNum !== undefined
+          ? { totalDeposited: "desc" }
+          : { createdAt: "desc" },
+        skip: (currentPage - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
+        select: USER_SELECT,
+      }),
+      prisma.user.count({ where }),
+    ]);
+  }
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -154,6 +176,7 @@ export default async function AdminUsersPage({
         role={role}
         q={q}
         sort={sort}
+        limit={PAGE_SIZE}
       />
 
       {totalPages > 1 && (
@@ -167,6 +190,7 @@ export default async function AdminUsersPage({
             ...(depositMin ? { depositMin } : {}),
             ...(depositMax ? { depositMax } : {}),
             ...(sort ? { sort } : {}),
+            ...(PAGE_SIZE !== 20 ? { limit: String(PAGE_SIZE) } : {}),
           }}
         />
       )}

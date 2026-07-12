@@ -177,6 +177,20 @@ const ACTION_VI: Record<string, string> = {
   DELETE_EXTERNAL_PROVIDER:     "Xóa nhà cung cấp ngoài",
   // Cấu hình hệ thống (bổ sung)
   UPDATE_DEPOSIT_BANK_CONFIG: "Cập nhật cấu hình ngân hàng nạp tiền",
+  // Trang công khai (bổ sung)
+  CREATE_PUBLIC_PAGE_CONFIG: "Tạo cấu hình trang công khai",
+  DELETE_PUBLIC_PAGE_CONFIG: "Xóa cấu hình trang công khai",
+  // Khiếu nại (bổ sung)
+  DISPUTE_ROUND_1:          "Từ chối vòng 1 tranh chấp — chuyển admin xử lý",
+  // Rút hoa hồng affiliate (bổ sung)
+  AFFILIATE_WITHDRAWAL_APPROVED: "Duyệt rút hoa hồng affiliate",
+  AFFILIATE_WITHDRAWAL_REJECTED: "Từ chối rút hoa hồng affiliate",
+  // Hoa hồng affiliate (bổ sung)
+  AFFILIATE_COMMISSION_APPROVED: "Duyệt hoa hồng affiliate",
+  AFFILIATE_COMMISSION_VOIDED:   "Hủy hoa hồng affiliate",
+  // Duyệt sản phẩm nhà bán hàng (bổ sung)
+  SELLER_PRODUCT_APPROVED: "Duyệt sản phẩm nhà bán hàng",
+  SELLER_PRODUCT_REJECTED: "Từ chối sản phẩm nhà bán hàng",
 };
 
 const TARGET_TYPE_VI: Record<string, string> = {

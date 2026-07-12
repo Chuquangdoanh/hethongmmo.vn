@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import Pagination from "@/components/shared/Pagination";
 import SellersTableClient, { type SellerRowData } from "./SellersTableClient";
 import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
+import CategorySubCategoryFilter from "@/components/admin/filters/CategorySubCategoryFilter";
 
 export const metadata: Metadata = { title: "Admin — Sellers" };
 
@@ -34,12 +35,20 @@ function buildHref(params: Record<string, string | undefined>) {
 export default async function AdminSellersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; tier?: string; q?: string; sort?: string; dateFrom?: string; dateTo?: string; storeType?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; tier?: string; q?: string; sort?: string; dateFrom?: string; dateTo?: string; storeType?: string; category?: string; subCategoryId?: string }>;
 }) {
-  const { page, status, tier, q, sort: sortParam, dateFrom, dateTo, storeType } = await searchParams;
+  const { page, status, tier, q, sort: sortParam, dateFrom, dateTo, storeType, category, subCategoryId } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
   const search = q?.trim() || undefined;
   const activeSort = VALID_SORTS.includes(sortParam as SortKey) ? sortParam as SortKey : undefined;
+
+  // Danh mục cha/con để lọc theo danh mục sản phẩm seller đăng ký
+  const [resourceCategories, sellerSubCategories] = await Promise.all([
+    prisma.resourceCategory.findMany({ orderBy: { displayOrder: "asc" }, select: { name: true } }),
+    prisma.sellerSubCategory.findMany({ orderBy: [{ categoryName: "asc" }, { displayOrder: "asc" }], select: { id: true, name: true, categoryName: true } }),
+  ]);
+  const isValidCategory = !!category && resourceCategories.some((c) => c.name === category);
+  const isValidSubCategory = !!subCategoryId && sellerSubCategories.some((s) => s.id === subCategoryId);
 
   // Revenue date filter from dateFrom/dateTo params
   const isAllTime = dateFrom === "all";
@@ -68,12 +77,14 @@ export default async function AdminSellersPage({
     { fullName: { contains: search, mode: "insensitive" } },
     { email:    { contains: search, mode: "insensitive" } },
   ];
+  if (isValidSubCategory) userFilter.subCategories = { some: { subCategoryId } };
 
   const validStoreType = storeType === "TAI_NGUYEN_MMO" || storeType === "KHO_TAI_NGUYEN" ? storeType : undefined;
 
   const where = {
     ...(status          ? { status: status as never }            : {}),
     ...(validStoreType  ? { storeType: validStoreType as never } : {}),
+    ...(isValidCategory ? { category }                           : {}),
     ...(Object.keys(userFilter).length > 0 ? { user: userFilter } : {}),
   };
 
@@ -203,11 +214,14 @@ export default async function AdminSellersPage({
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
+  const categoryParam = isValidCategory ? category : undefined;
+  const subCategoryIdParam = isValidSubCategory ? subCategoryId : undefined;
+
   const nextRevenueSort = activeSort === "revenue_desc" ? "revenue_asc" : "revenue_desc";
-  const revenueSortHref = buildHref({ status, tier, q: search, sort: nextRevenueSort, dateFrom, dateTo, storeType, page: undefined });
+  const revenueSortHref = buildHref({ status, tier, q: search, sort: nextRevenueSort, dateFrom, dateTo, storeType, category: categoryParam, subCategoryId: subCategoryIdParam, page: undefined });
 
   const nextRatingSort = activeSort === "rating_desc" ? "rating_asc" : "rating_desc";
-  const ratingSortHref = buildHref({ status, tier, q: search, sort: nextRatingSort, dateFrom, dateTo, storeType, page: undefined });
+  const ratingSortHref = buildHref({ status, tier, q: search, sort: nextRatingSort, dateFrom, dateTo, storeType, category: categoryParam, subCategoryId: subCategoryIdParam, page: undefined });
 
   // Serialize data for client component
   const serializedRows: SellerRowData[] = requests.map((r) => {
@@ -251,33 +265,42 @@ export default async function AdminSellersPage({
       </div>
 
       {/* ── Search + Filters ── */}
-      <AdminFilterBar
-        basePath="/admin/sellers"
-        search={{ placeholder: "Tìm tên, email người bán..." }}
-        selects={[
-          {
-            paramKey: "status",
-            label: "Trạng thái",
-            placeholder: "Tất cả trạng thái",
-            options: [
-              { value: "PENDING", label: "Chờ duyệt" },
-              { value: "APPROVED", label: "Đã duyệt" },
-              { value: "REJECTED", label: "Từ chối" },
-            ],
-          },
-          {
-            paramKey: "storeType",
-            label: "Loại gian hàng",
-            placeholder: "Tất cả loại",
-            options: [
-              { value: "TAI_NGUYEN_MMO", label: "Tài nguyên MMO" },
-              { value: "KHO_TAI_NGUYEN", label: "Kho tài nguyên" },
-            ],
-          },
-        ]}
-        dateRange={{ showQuickDates: true }}
-        preserveParams={["sort", "tier"]}
-      />
+      <div className="space-y-3">
+        <AdminFilterBar
+          basePath="/admin/sellers"
+          search={{ placeholder: "Tìm tên, email người bán..." }}
+          selects={[
+            {
+              paramKey: "status",
+              label: "Trạng thái",
+              placeholder: "Tất cả trạng thái",
+              options: [
+                { value: "PENDING", label: "Chờ duyệt" },
+                { value: "APPROVED", label: "Đã duyệt" },
+                { value: "REJECTED", label: "Từ chối" },
+              ],
+            },
+            {
+              paramKey: "storeType",
+              label: "Loại gian hàng",
+              placeholder: "Tất cả loại",
+              options: [
+                { value: "TAI_NGUYEN_MMO", label: "Tài nguyên MMO" },
+                { value: "KHO_TAI_NGUYEN", label: "Kho tài nguyên" },
+              ],
+            },
+          ]}
+          dateRange={{ showQuickDates: true }}
+          preserveParams={["sort", "tier", "category", "subCategoryId"]}
+        />
+
+        {/* Danh mục cha/con — lọc realtime, không cần bấm nút */}
+        <CategorySubCategoryFilter
+          basePath="/admin/sellers"
+          categories={resourceCategories}
+          subCategories={sellerSubCategories}
+        />
+      </div>
 
       <SellersTableClient
         rows={serializedRows}
@@ -298,6 +321,8 @@ export default async function AdminSellersPage({
             ...(activeSort ? { sort: activeSort } : {}),
             ...(dateFrom   ? { dateFrom }          : {}),
             ...(dateTo     ? { dateTo }            : {}),
+            ...(isValidCategory    ? { category }        : {}),
+            ...(isValidSubCategory ? { subCategoryId }   : {}),
           }}
         />
       )}

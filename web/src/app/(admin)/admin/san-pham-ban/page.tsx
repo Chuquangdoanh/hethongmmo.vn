@@ -8,6 +8,7 @@ import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import RestrictButton from "./_components/RestrictButton";
 import ApprovalButton from "./_components/ApprovalButton";
+import CategorySubCategoryFilter from "@/components/admin/filters/CategorySubCategoryFilter";
 
 export const metadata: Metadata = { title: "Sản phẩm nhà bán" };
 
@@ -26,12 +27,12 @@ const PRODUCT_SELECT = {
 export default async function AdminSellerProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; sellerId?: string; restricted?: string; sort?: string; approvalStatus?: string; limit?: string }>;
+  searchParams: Promise<{ page?: string; sellerId?: string; restricted?: string; sort?: string; approvalStatus?: string; limit?: string; category?: string; subCategoryId?: string }>;
 }) {
   const session = await auth();
   requireStaff(session);
 
-  const { page, sellerId, restricted, sort, approvalStatus, limit } = await searchParams;
+  const { page, sellerId, restricted, sort, approvalStatus, limit, category, subCategoryId } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
   const _limit  = parseInt(limit ?? "20", 10);
   const PAGE_SIZE = ([20, 50, 100] as number[]).includes(_limit) ? _limit : 20;
@@ -39,6 +40,14 @@ export default async function AdminSellerProductsPage({
   const isValidApprovalStatus = approvalStatus === "PENDING" || approvalStatus === "APPROVED" || approvalStatus === "REJECTED";
 
   const isRatingSort = sort === "rating_desc" || sort === "rating_asc";
+
+  // Danh mục cha/con để hiển thị bộ lọc
+  const [resourceCategories, sellerSubCategories] = await Promise.all([
+    prisma.resourceCategory.findMany({ orderBy: { displayOrder: "asc" }, select: { name: true } }),
+    prisma.sellerSubCategory.findMany({ orderBy: [{ categoryName: "asc" }, { displayOrder: "asc" }], select: { id: true, name: true, categoryName: true } }),
+  ]);
+  const isValidCategory = !!category && resourceCategories.some((c) => c.name === category);
+  const isValidSubCategory = !!subCategoryId && sellerSubCategories.some((s) => s.id === subCategoryId);
 
   // WHERE fragments (shared between raw + Prisma)
   const sellerFilter     = sellerId
@@ -51,12 +60,20 @@ export default async function AdminSellerProductsPage({
   const approvalStatusFilter = isValidApprovalStatus
     ? Prisma.sql`AND p.approval_status = ${approvalStatus}::"SellerProductApprovalStatus"`
     : Prisma.empty;
+  const categoryFilter = isValidCategory
+    ? Prisma.sql`AND p.seller_category = ${category}`
+    : Prisma.empty;
+  const subCategoryFilter = isValidSubCategory
+    ? Prisma.sql`AND p.sub_category_id = ${subCategoryId}::uuid`
+    : Prisma.empty;
 
   const where = {
     deletedAt: null as null,
     ...(sellerId ? { sellerId } : {}),
     ...(restricted === "1" ? { isRestricted: true } : restricted === "0" ? { isRestricted: false } : {}),
     ...(isValidApprovalStatus ? { approvalStatus: approvalStatus as "PENDING" | "APPROVED" | "REJECTED" } : {}),
+    ...(isValidCategory ? { sellerCategory: category } : {}),
+    ...(isValidSubCategory ? { subCategoryId } : {}),
   };
 
   // Total count (always via Prisma)
@@ -82,6 +99,8 @@ export default async function AdminSellerProductsPage({
       ${sellerFilter}
       ${restrictedFilter}
       ${approvalStatusFilter}
+      ${categoryFilter}
+      ${subCategoryFilter}
       GROUP BY p.id
       ORDER BY (p.approval_status = 'PENDING') DESC, avg_rating ${sortDir} NULLS LAST
       LIMIT ${PAGE_SIZE} OFFSET ${offset}
@@ -129,16 +148,26 @@ export default async function AdminSellerProductsPage({
   if (sort)            searchParamsObj.sort           = sort;
   if (isValidApprovalStatus) searchParamsObj.approvalStatus = approvalStatus;
   if (PAGE_SIZE !== 20) searchParamsObj.limit          = String(PAGE_SIZE);
+  if (isValidCategory) searchParamsObj.category        = category;
+  if (isValidSubCategory) searchParamsObj.subCategoryId = subCategoryId;
 
   // Build URL helper preserving current filters
   function filterUrl(overrides: Record<string, string | undefined>) {
     const sp = new URLSearchParams();
-    const merged = { sellerId, restricted, sort, approvalStatus, limit: PAGE_SIZE !== 20 ? String(PAGE_SIZE) : undefined, ...overrides };
+    const merged = {
+      sellerId, restricted, sort, approvalStatus,
+      limit: PAGE_SIZE !== 20 ? String(PAGE_SIZE) : undefined,
+      category: isValidCategory ? category : undefined,
+      subCategoryId: isValidSubCategory ? subCategoryId : undefined,
+      ...overrides,
+    };
     if (merged.sellerId)   sp.set("sellerId",   merged.sellerId);
     if (merged.restricted) sp.set("restricted", merged.restricted);
     if (merged.sort)       sp.set("sort",        merged.sort);
     if (merged.approvalStatus) sp.set("approvalStatus", merged.approvalStatus);
     if (merged.limit)      sp.set("limit",       merged.limit);
+    if (merged.category)   sp.set("category",    merged.category);
+    if (merged.subCategoryId) sp.set("subCategoryId", merged.subCategoryId);
     const str = sp.toString();
     return `/admin/san-pham-ban${str ? `?${str}` : ""}`;
   }
@@ -150,6 +179,8 @@ export default async function AdminSellerProductsPage({
     if (restricted) sp.set("restricted", restricted);
     if (sort) sp.set("sort", sort);
     if (isValidApprovalStatus) sp.set("approvalStatus", approvalStatus);
+    if (isValidCategory) sp.set("category", category);
+    if (isValidSubCategory) sp.set("subCategoryId", subCategoryId);
     if (n !== 20) sp.set("limit", String(n));
     const str = sp.toString();
     return `/admin/san-pham-ban${str ? `?${str}` : ""}`;
@@ -169,68 +200,70 @@ export default async function AdminSellerProductsPage({
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Status filter */}
-        {[
-          { label: "Tất cả",     val: undefined },
-          { label: "Bị hạn chế", val: "1"       },
-          { label: "Bình thường", val: "0"       },
-        ].map(({ label, val }) => {
-          const active = val === undefined ? !restricted : restricted === val;
-          return (
-            <Link
-              key={label}
-              href={filterUrl({ restricted: val, page: undefined })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                active
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600"
-              }`}
-            >
-              {label}
-            </Link>
-          );
-        })}
+      <div className="space-y-3">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap items-center gap-x-6 gap-y-3">
+          {/* Status filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-gray-400 shrink-0">Trạng thái:</span>
+            {[
+              { label: "Tất cả",     val: undefined },
+              { label: "Bị hạn chế", val: "1"       },
+              { label: "Bình thường", val: "0"       },
+            ].map(({ label, val }) => {
+              const active = val === undefined ? !restricted : restricted === val;
+              return (
+                <Link
+                  key={label}
+                  href={filterUrl({ restricted: val, page: undefined })}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                    active
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600"
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
 
-        {/* Divider */}
-        <span className="text-gray-200 select-none">|</span>
+          {/* Approval status filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium text-gray-400 shrink-0">Duyệt:</span>
+            {[
+              { label: "Chờ duyệt",  val: "PENDING"  },
+              { label: "Đã duyệt",   val: "APPROVED" },
+              { label: "Bị từ chối", val: "REJECTED" },
+            ].map(({ label, val }) => {
+              const active = approvalStatus === val;
+              return (
+                <Link
+                  key={label}
+                  href={filterUrl({ approvalStatus: active ? undefined : val, page: undefined })}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                    active
+                      ? "bg-amber-500 text-white border-amber-500"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-amber-400 hover:text-amber-600"
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
 
-        {/* Approval status filter */}
-        {[
-          { label: "Chờ duyệt",  val: "PENDING"  },
-          { label: "Đã duyệt",   val: "APPROVED" },
-          { label: "Bị từ chối", val: "REJECTED" },
-        ].map(({ label, val }) => {
-          const active = approvalStatus === val;
-          return (
-            <Link
-              key={label}
-              href={filterUrl({ approvalStatus: active ? undefined : val, page: undefined })}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                active
-                  ? "bg-amber-500 text-white border-amber-500"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-amber-400 hover:text-amber-600"
-              }`}
-            >
-              {label}
-            </Link>
-          );
-        })}
-
-        {/* Divider */}
-        <span className="text-gray-200 select-none">|</span>
-
-        {/* Rating sort dropdown */}
-        <form method="get" action="/admin/san-pham-ban">
-          {sellerId   && <input type="hidden" name="sellerId"   value={sellerId} />}
-          {restricted && <input type="hidden" name="restricted" value={restricted} />}
-          {isValidApprovalStatus && <input type="hidden" name="approvalStatus" value={approvalStatus} />}
-          {PAGE_SIZE !== 20 && <input type="hidden" name="limit" value={PAGE_SIZE} />}
-          <div className="flex items-center gap-1">
+          {/* Rating sort dropdown */}
+          <form method="get" action="/admin/san-pham-ban" className="flex items-center gap-1.5 ml-auto">
+            {sellerId   && <input type="hidden" name="sellerId"   value={sellerId} />}
+            {restricted && <input type="hidden" name="restricted" value={restricted} />}
+            {isValidApprovalStatus && <input type="hidden" name="approvalStatus" value={approvalStatus} />}
+            {PAGE_SIZE !== 20 && <input type="hidden" name="limit" value={PAGE_SIZE} />}
+            {isValidCategory && <input type="hidden" name="category" value={category} />}
+            {isValidSubCategory && <input type="hidden" name="subCategoryId" value={subCategoryId} />}
             <select
               name="sort"
               defaultValue={sort ?? ""}
-              className="h-8 px-2 pr-7 text-xs border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:border-amber-400 hover:border-amber-400 transition-colors cursor-pointer"
+              className="h-9 px-3 pr-8 text-xs border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:border-amber-400 hover:border-amber-400 transition-colors cursor-pointer"
             >
               <option value="">Mặc định</option>
               <option value="rating_desc">★ Cao → Thấp</option>
@@ -238,12 +271,19 @@ export default async function AdminSellerProductsPage({
             </select>
             <button
               type="submit"
-              className="h-8 px-2.5 text-xs rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors border border-amber-500"
+              className="h-9 px-3 text-xs font-medium rounded-lg bg-amber-500 text-white hover:bg-amber-600 transition-colors border border-amber-500"
             >
               Lọc
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
+
+        {/* Danh mục cha/con — lọc realtime, không cần bấm nút */}
+        <CategorySubCategoryFilter
+          basePath="/admin/san-pham-ban"
+          categories={resourceCategories}
+          subCategories={sellerSubCategories}
+        />
       </div>
 
       {/* Table */}

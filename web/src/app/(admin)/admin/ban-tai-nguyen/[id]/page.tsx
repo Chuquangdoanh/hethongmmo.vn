@@ -47,6 +47,7 @@ export default async function BanTaiNguyenDetailPage({
       status: true, customerNote: true, externalOrderId: true, externalSource: true,
       createdAt: true, completedAt: true,
       deliveredItemId: true, kfbData: true,
+      coupon: { select: { code: true } },
       user: { select: { id: true, email: true, fullName: true } },
       sellerProduct: {
         select: { seller: { select: { id: true, email: true, fullName: true } } },
@@ -116,6 +117,12 @@ export default async function BanTaiNguyenDetailPage({
                 <Row label="Sản phẩm" value={order.itemName} span />
                 <Row label="Giá gốc"  value={formatVnd(Number(order.originalPrice))} />
                 <Row label="Giá cuối" value={formatVnd(Number(order.finalPrice))} highlight />
+                {order.coupon && (
+                  <>
+                    <Row label="Mã giảm giá" value={order.coupon.code} mono />
+                    <Row label="Số tiền đã giảm" value={formatVnd(Number(order.originalPrice) - Number(order.finalPrice))} />
+                  </>
+                )}
                 <Row label="Ngày tạo" value={formatDate(order.createdAt)} />
                 {order.completedAt && (
                   <Row label="Hoàn thành" value={formatDate(order.completedAt)} />
