@@ -13,6 +13,7 @@ import FavoriteButton from "@/components/shared/FavoriteButton";
 import ProductImageGallery from "@/components/shared/ProductImageGallery";
 import ProductBuyButton from "@/app/(public)/tai-nguyen-mmo/_components/ProductBuyButton";
 import type { ProductVariant } from "@/app/(public)/tai-nguyen-mmo/_components/ProductBuyButton";
+import MessageSellerButton from "@/components/shared/MessageSellerButton";
 import {
   CheckCircle, XCircle, ShieldCheck, Zap, ArrowLeft,
   Store, ExternalLink, ShoppingCart, Headphones,
@@ -355,6 +356,14 @@ export default async function KhoSellerProductDetailPage({
     </Link>
   );
 
+  const cardMessageSeller = (
+    <MessageSellerButton
+      sellerId={product.seller.id}
+      isLoggedIn={!!me}
+      isOwnProduct={me?.id === product.seller.id}
+    />
+  );
+
   const cardProductInfo = (
     <div className="rounded-2xl border border-border bg-white p-5 space-y-4">
       {/* Badges */}
@@ -667,6 +676,7 @@ export default async function KhoSellerProductDetailPage({
         {sectionDescription}
         {sectionIntroduction}
         {cardSeller}
+        {cardMessageSeller}
         {cardProductInfo}
         {cardCommitments}
         {sectionHowItWorks}
@@ -692,6 +702,7 @@ export default async function KhoSellerProductDetailPage({
           <div className="sticky top-24 space-y-4">
             {cardProductInfo}
             {cardSeller}
+            {cardMessageSeller}
             {cardSupport}
             {cardCommitments}
             {linkBack}

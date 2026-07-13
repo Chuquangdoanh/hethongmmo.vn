@@ -15,6 +15,7 @@ import ScrollToTop from "@/components/shared/ScrollToTop";
 import BackBtn from "@/components/shared/BackBtn";
 import ReturnTabSound from "@/components/shared/ReturnTabSound";
 import SupportChatThread from "@/components/shared/SupportChatThread";
+import PreSaleChatThread from "@/components/shared/PreSaleChatThread";
 import "./ho-tro.css";
 
 export const metadata: Metadata = { title: "Ticket hỗ trợ" };
@@ -38,9 +39,9 @@ const defaultStyle = { bg: "#f8fafc", color: "#64748b", border: "#e2e8f0" };
 
 const ticketCode = (id: string) => `#KN-${id.slice(0, 8).toUpperCase()}`;
 
-/* Item dùng chung cho danh sách hội thoại gộp (Khiếu nại + Chat hỗ trợ) */
+/* Item dùng chung cho danh sách hội thoại gộp (Khiếu nại + Chat hỗ trợ + Tư vấn trước mua) */
 type ConversationRow = {
-  kind: "complaint" | "support";
+  kind: "complaint" | "support" | "presale";
   id: string;
   href: string;
   updatedAt: string;
@@ -100,6 +101,10 @@ export default async function HoTroPage({
   const isSupportTicket = activeId?.startsWith("st-") ?? false;
   const supportTicketId = isSupportTicket ? activeId!.slice(3) : null;
 
+  // Chat tư vấn trước mua (PreSaleChat) dùng id có tiền tố "pc-"
+  const isPreSaleChat = activeId?.startsWith("pc-") ?? false;
+  const preSaleChatId = isPreSaleChat ? activeId!.slice(3) : null;
+
   /* ── Complaint list (left panel) ── */
   const complaints = await prisma.complaint.findMany({
     where: { userId: me.id },
@@ -139,8 +144,18 @@ export default async function HoTroPage({
     },
   });
 
+  /* ── Chat tư vấn trước mua (left panel) — độc lập, không giới hạn tin nhắn ── */
+  const preSaleChats = await prisma.preSaleChat.findMany({
+    where: { userId: me.id },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      seller: { select: { fullName: true } },
+      messages: { orderBy: { createdAt: "desc" }, take: 1, select: { senderName: true, content: true } },
+    },
+  });
+
   /* ── Selected complaint ── */
-  const selected = (activeId && !isSupportTicket)
+  const selected = (activeId && !isSupportTicket && !isPreSaleChat)
     ? await prisma.complaint.findFirst({
         where: { id: activeId, userId: me.id },
         include: {
@@ -156,7 +171,7 @@ export default async function HoTroPage({
       })
     : null;
 
-  if (activeId && !isSupportTicket && !selected) redirect("/ho-tro");
+  if (activeId && !isSupportTicket && !isPreSaleChat && !selected) redirect("/ho-tro");
 
   /* ── Selected support ticket ── */
   const selectedSupportTicket = supportTicketId
@@ -167,6 +182,16 @@ export default async function HoTroPage({
     : null;
 
   if (isSupportTicket && !selectedSupportTicket) redirect("/ho-tro");
+
+  /* ── Selected chat tư vấn trước mua ── */
+  const selectedPreSaleChat = preSaleChatId
+    ? await prisma.preSaleChat.findFirst({
+        where: { id: preSaleChatId, userId: me.id },
+        include: { seller: { select: { fullName: true } } },
+      })
+    : null;
+
+  if (isPreSaleChat && !selectedPreSaleChat) redirect("/ho-tro");
 
   const selectedOrder = selected?.orderId
     ? await prisma.order.findFirst({
@@ -273,6 +298,15 @@ export default async function HoTroPage({
       line2: t.order.itemName,
       lastMsg: t.messages[0],
     })),
+    ...preSaleChats.map((c): ConversationRow => ({
+      kind: "presale",
+      id: c.id,
+      href: `/ho-tro?id=pc-${c.id}`,
+      updatedAt: c.updatedAt.toISOString(),
+      titleLabel: c.seller.fullName,
+      line2: "Tư vấn trước khi mua",
+      lastMsg: c.messages[0],
+    })),
   ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   const STATUS_TABS = [
@@ -318,7 +352,11 @@ export default async function HoTroPage({
             </div>
           ) : (
             conversationItems.map((item) => {
-              const isActive = activeId === (item.kind === "complaint" ? item.id : `st-${item.id}`);
+              const isActive = activeId === (
+                item.kind === "complaint" ? item.id
+                : item.kind === "support"  ? `st-${item.id}`
+                : `pc-${item.id}`
+              );
 
               return (
                 <TicketScrollLink
@@ -333,7 +371,7 @@ export default async function HoTroPage({
                         color: isActive ? "#1d4ed8" : "#1e293b", marginBottom: "2px",
                         display: "flex", alignItems: "center", gap: "4px",
                       }}>
-                        {item.kind === "support" && <MessageCircle size={11} style={{ flexShrink: 0 }} />}
+                        {item.kind !== "complaint" && <MessageCircle size={11} style={{ flexShrink: 0 }} />}
                         {item.titleLabel}
                       </p>
                       <p style={{
@@ -378,7 +416,7 @@ export default async function HoTroPage({
                           borderRadius: "10px", fontWeight: "600",
                           background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe",
                         }}>
-                          Chat hỗ trợ
+                          {item.kind === "presale" ? "Tư vấn" : "Chat hỗ trợ"}
                         </span>
                       )}
                     </div>
@@ -572,6 +610,32 @@ export default async function HoTroPage({
             <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
               <SupportChatThread
                 ticketId={selectedSupportTicket.id}
+                myRole="USER"
+                notificationSoundUrl={notificationSoundUrl}
+              />
+            </div>
+          </div>
+        </div>
+      ) : selectedPreSaleChat ? (
+        <div className="ht-middle">
+          {/* Title bar — chat tư vấn trước mua, không progress steps, không status tabs */}
+          <div className="ht-title-bar">
+            <BackBtn href="/ho-tro" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a", margin: 0 }}>
+                Tư vấn với {selectedPreSaleChat.seller.fullName}
+              </h1>
+              <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
+                Trao đổi trước khi đặt mua
+              </p>
+            </div>
+          </div>
+
+          {/* Chat area */}
+          <div className="ht-chat-area">
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
+              <PreSaleChatThread
+                chatId={selectedPreSaleChat.id}
                 myRole="USER"
                 notificationSoundUrl={notificationSoundUrl}
               />

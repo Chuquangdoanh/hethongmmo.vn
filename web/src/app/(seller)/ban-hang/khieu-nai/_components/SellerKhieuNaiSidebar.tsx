@@ -40,14 +40,27 @@ export interface SupportTicketListItem {
   lastMsgContent?: string;
 }
 
+export interface PreSaleChatListItem {
+  id: string;
+  updatedAt: string;
+  buyerName: string;
+  orderCode?: string;
+  itemName?: string;
+  lastMsgSenderName?: string;
+  lastMsgContent?: string;
+}
+
 export type ConversationItem =
   | ({ kind: "complaint" } & ComplaintListItem)
-  | ({ kind: "support" } & SupportTicketListItem);
+  | ({ kind: "support" } & SupportTicketListItem)
+  | ({ kind: "presale" } & PreSaleChatListItem);
 
 const ticketCode = (id: string) => `#KN-${id.slice(0, 8).toUpperCase()}`;
 
 function codeLabel(item: ConversationItem): string {
-  return item.kind === "complaint" ? ticketCode(item.id) : `Đơn #${item.orderCode}`;
+  if (item.kind === "complaint") return ticketCode(item.id);
+  if (item.kind === "support") return `Đơn #${item.orderCode}`;
+  return "Tư vấn mua hàng";
 }
 
 interface Props {
@@ -132,7 +145,10 @@ export default function SellerKhieuNaiSidebar({ items, activeId }: Props) {
           </div>
         ) : (
           filtered.map((item) => {
-            const id = item.kind === "complaint" ? item.id : `st-${item.id}`;
+            const id =
+              item.kind === "complaint" ? item.id
+              : item.kind === "support"  ? `st-${item.id}`
+              : `pc-${item.id}`;
             const isActive = id === activeId;
 
             return (
@@ -148,7 +164,7 @@ export default function SellerKhieuNaiSidebar({ items, activeId }: Props) {
                       color: isActive ? "#ea580c" : "#1e293b", marginBottom: "2px",
                       display: "flex", alignItems: "center", gap: "4px",
                     }}>
-                      {item.kind === "support" && <MessageCircle size={11} style={{ flexShrink: 0 }} />}
+                      {item.kind !== "complaint" && <MessageCircle size={11} style={{ flexShrink: 0 }} />}
                       {codeLabel(item)}
                     </p>
                     <p style={{
@@ -164,7 +180,9 @@ export default function SellerKhieuNaiSidebar({ items, activeId }: Props) {
                     }}>
                       {item.kind === "complaint"
                         ? (item.orderCode ? `Đơn #${item.orderCode} · ${item.itemName}` : item.subject)
-                        : item.itemName}
+                        : item.kind === "support"
+                          ? item.itemName
+                          : "Trước khi đặt mua"}
                     </p>
                     {item.lastMsgContent && (
                       <p style={{
@@ -195,7 +213,7 @@ export default function SellerKhieuNaiSidebar({ items, activeId }: Props) {
                         borderRadius: "10px", fontWeight: "600",
                         background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe",
                       }}>
-                        Chat hỗ trợ
+                        {item.kind === "presale" ? "Tư vấn" : "Chat hỗ trợ"}
                       </span>
                     )}
                   </div>

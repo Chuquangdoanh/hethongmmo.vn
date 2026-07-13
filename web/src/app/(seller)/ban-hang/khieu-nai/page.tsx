@@ -12,6 +12,7 @@ import {
 import SellerKhieuNaiSidebar, { type ConversationItem } from "./_components/SellerKhieuNaiSidebar";
 import TicketChatPanel from "@/app/(user)/ho-tro/_components/TicketChatPanel";
 import SupportChatThread from "@/components/shared/SupportChatThread";
+import PreSaleChatThread from "@/components/shared/PreSaleChatThread";
 import ScrollToTop from "@/components/shared/ScrollToTop";
 import BackBtn from "@/components/shared/BackBtn";
 import ReturnTabSound from "@/components/shared/ReturnTabSound";
@@ -48,6 +49,10 @@ export default async function SellerKhieuNaiPage({
   // Chat hỗ trợ (SupportTicket) dùng id có tiền tố "st-" để phân biệt với Complaint
   const isSupportTicket = activeId?.startsWith("st-") ?? false;
   const supportTicketId = isSupportTicket ? activeId!.slice(3) : null;
+
+  // Chat tư vấn trước mua (PreSaleChat) dùng id có tiền tố "pc-"
+  const isPreSaleChat = activeId?.startsWith("pc-") ?? false;
+  const preSaleChatId = isPreSaleChat ? activeId!.slice(3) : null;
 
   /* ── Seller's order IDs ── */
   const sellerOrderIds = (
@@ -98,8 +103,18 @@ export default async function SellerKhieuNaiPage({
     },
   });
 
+  /* ── Chat tư vấn trước mua (left panel) — độc lập, không giới hạn tin nhắn ── */
+  const preSaleChats = await prisma.preSaleChat.findMany({
+    where: { sellerId: me.id },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      user: { select: { fullName: true, email: true } },
+      messages: { orderBy: { createdAt: "desc" }, take: 1, select: { senderName: true, content: true } },
+    },
+  });
+
   /* ── Selected complaint (middle + right panel) ── */
-  const selected = (activeId && !isSupportTicket)
+  const selected = (activeId && !isSupportTicket && !isPreSaleChat)
     ? await prisma.complaint.findFirst({
         where: { id: activeId, orderId: { in: sellerOrderIds } },
         include: {
@@ -116,7 +131,7 @@ export default async function SellerKhieuNaiPage({
       })
     : null;
 
-  if (activeId && !isSupportTicket && !selected) redirect("/ban-hang/khieu-nai");
+  if (activeId && !isSupportTicket && !isPreSaleChat && !selected) redirect("/ban-hang/khieu-nai");
 
   /* ── Selected support ticket ── */
   const selectedSupportTicket = supportTicketId
@@ -130,6 +145,16 @@ export default async function SellerKhieuNaiPage({
     : null;
 
   if (isSupportTicket && !selectedSupportTicket) redirect("/ban-hang/khieu-nai");
+
+  /* ── Selected chat tư vấn trước mua ── */
+  const selectedPreSaleChat = preSaleChatId
+    ? await prisma.preSaleChat.findFirst({
+        where: { id: preSaleChatId, sellerId: me.id },
+        include: { user: { select: { fullName: true, email: true } } },
+      })
+    : null;
+
+  if (isPreSaleChat && !selectedPreSaleChat) redirect("/ban-hang/khieu-nai");
 
   const selectedOrder = selected?.orderId
     ? await prisma.order.findFirst({
@@ -243,6 +268,17 @@ export default async function SellerKhieuNaiPage({
                 buyerName:          t.user.fullName ?? t.user.email,
                 orderCode:          t.order.orderCode,
                 itemName:           t.order.itemName,
+                lastMsgSenderName:  lastMsg?.senderName ?? undefined,
+                lastMsgContent:     lastMsg?.content    ?? undefined,
+              };
+            }),
+            ...preSaleChats.map((c): ConversationItem => {
+              const lastMsg = c.messages[0];
+              return {
+                kind:               "presale",
+                id:                 c.id,
+                updatedAt:          c.updatedAt.toISOString(),
+                buyerName:          c.user.fullName ?? c.user.email,
                 lastMsgSenderName:  lastMsg?.senderName ?? undefined,
                 lastMsgContent:     lastMsg?.content    ?? undefined,
               };
@@ -399,6 +435,32 @@ export default async function SellerKhieuNaiPage({
             <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
               <SupportChatThread
                 ticketId={selectedSupportTicket.id}
+                myRole="SELLER"
+                notificationSoundUrl={notificationSoundUrl}
+              />
+            </div>
+          </div>
+        </div>
+      ) : selectedPreSaleChat ? (
+        <div className="ht-middle">
+          {/* Title bar — chat tư vấn trước mua, không progress steps, không nút xác nhận/hoàn thành */}
+          <div className="ht-title-bar">
+            <BackBtn href="/ban-hang/khieu-nai" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a", margin: 0 }}>
+                Tư vấn với {selectedPreSaleChat.user.fullName ?? selectedPreSaleChat.user.email}
+              </h1>
+              <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
+                Trao đổi trước khi khách đặt mua
+              </p>
+            </div>
+          </div>
+
+          {/* Chat area */}
+          <div className="ht-chat-area">
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
+              <PreSaleChatThread
+                chatId={selectedPreSaleChat.id}
                 myRole="SELLER"
                 notificationSoundUrl={notificationSoundUrl}
               />

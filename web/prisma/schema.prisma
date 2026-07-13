@@ -298,6 +298,9 @@ model User {
   supportTicketsAsBuyer  SupportTicket[]  @relation("SupportTicketBuyer")
   supportTicketsAsSeller SupportTicket[]  @relation("SupportTicketSeller")
   supportMessages        SupportMessage[]
+  preSaleChatsAsBuyer    PreSaleChat[]    @relation("PreSaleChatBuyer")
+  preSaleChatsAsSeller   PreSaleChat[]    @relation("PreSaleChatSeller")
+  preSaleMessages        PreSaleMessage[]
   subCategories        UserSubCategory[]
   staffPermissions     StaffPermission[]
   siteContentUpdates   SiteContent[]
@@ -1246,6 +1249,41 @@ model SupportMessage {
 
   @@index([ticketId, createdAt])
   @@map("support_messages")
+}
+
+// ====================================================================
+// 20c. PRE-SALE CHAT (chat tư vấn User↔Seller trước khi mua hàng)
+// ====================================================================
+model PreSaleChat {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation("PreSaleChatBuyer", fields: [userId], references: [id])
+  sellerId  String   @map("seller_id") @db.Uuid
+  seller    User     @relation("PreSaleChatSeller", fields: [sellerId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  messages  PreSaleMessage[]
+
+  @@unique([userId, sellerId])
+  @@index([userId])
+  @@index([sellerId])
+  @@map("presale_chats")
+}
+
+model PreSaleMessage {
+  id         String      @id @default(uuid()) @db.Uuid
+  chatId     String      @map("chat_id") @db.Uuid
+  chat       PreSaleChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  senderId   String      @map("sender_id") @db.Uuid
+  sender     User        @relation(fields: [senderId], references: [id])
+  senderName String      @map("sender_name")
+  senderRole String      @map("sender_role") @db.VarChar(10)
+  content    String
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  @@index([chatId, createdAt])
+  @@map("presale_messages")
 }
 
 // ====================================================================

@@ -296,6 +296,34 @@ async function _sendToSellerIfConnected(sellerId: string, text: string): Promise
   await sendSellerTelegram(chatId, text);
 }
 
+/**
+ * Báo cho seller khi buyer nhắn tin tư vấn trước khi mua (PreSaleChat) — fire-and-forget.
+ * Không có order gắn kèm (chat mở trước khi phát sinh đơn hàng).
+ */
+export function notifySellerNewPreSaleMessage(
+  sellerId: string,
+  buyerId: string,
+  content: string,
+): void {
+  void (async () => {
+    const buyerLabel = await _getUserName(buyerId);
+    const preview = content.length > 300 ? `${content.slice(0, 300)}...` : content;
+
+    await _sendToSellerIfConnected(
+      sellerId,
+      [
+        `💬 <b>Tin nhắn tư vấn mới (trước khi mua)</b>`,
+        ``,
+        `👤 Người hỏi: ${buyerLabel}`,
+        ``,
+        `📝 ${escTelegramHtml(preview)}`,
+        ``,
+        `Đăng nhập gian hàng để trả lời nhé.`,
+      ].join("\n"),
+    );
+  })();
+}
+
 /** Báo cho seller khi trạng thái yêu cầu rút tiền thay đổi (duyệt / từ chối / đã chuyển khoản) — fire-and-forget. */
 export function notifySellerWithdrawalStatus(
   sellerId: string,
