@@ -42,10 +42,11 @@ function getDateFrom(range: string | undefined): Date | undefined {
 
 
 function getDateLabel(dateRange: string | undefined, from: string | undefined, to: string | undefined): string {
-  if (from || to) {
+  const hasRange = (from && from !== "all") || to;
+  if (hasRange) {
     const fmt = (s: string) => new Date(s).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
-    if (from && to) return `${fmt(from)} – ${fmt(to)}`;
-    if (from) return `Từ ${fmt(from)}`;
+    if (from && from !== "all" && to) return `${fmt(from)} – ${fmt(to)}`;
+    if (from && from !== "all") return `Từ ${fmt(from)}`;
     return `Đến ${fmt(to!)}`;
   }
   if (dateRange && DATE_RANGE_LABELS[dateRange]) return DATE_RANGE_LABELS[dateRange]!;
@@ -60,21 +61,34 @@ export default async function AdminWithdrawalsPage({
   const { page, status, dateRange, from, to } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
 
-  const where = status ? { status: status as never } : {};
-
+  // "all" là sentinel của nút nhanh "Tất cả" trong AdminFilterBar (không phải ngày thật) —
+  // cùng quy ước với admin/sellers, admin/orders, admin/ban-tai-nguyen.
+  const isAllTime = from === "all";
   // Custom date range takes precedence over quick filter
-  const hasCustomRange = Boolean(from || to);
-  const processedAtFilter = hasCustomRange
-    ? {
-        processedAt: {
+  const hasCustomRange = !isAllTime && Boolean(from || to);
+  const dateBounds = isAllTime
+    ? {}
+    : hasCustomRange
+      ? {
           ...(from ? { gte: new Date(from) } : {}),
           ...(to ? { lte: new Date(`${to}T23:59:59.999`) } : {}),
-        },
-      }
-    : (() => {
-        const d = getDateFrom(dateRange);
-        return d ? { processedAt: { gte: d } } : {};
-      })();
+        }
+      : (() => {
+          const d = getDateFrom(dateRange);
+          return d ? { gte: d } : {};
+        })();
+  const hasDateFilter = Object.keys(dateBounds).length > 0;
+
+  // Danh sách yêu cầu lọc theo ngày tạo (createdAt) — khớp với cột "Ngày tạo" hiển thị
+  // trong bảng, và hoạt động với mọi trạng thái (kể cả PENDING chưa có processedAt).
+  const createdAtFilter = hasDateFilter ? { createdAt: dateBounds } : {};
+  const where = {
+    ...(status ? { status: status as never } : {}),
+    ...createdAtFilter,
+  };
+
+  // Tổng đã chi vẫn tính theo ngày xử lý (processedAt) — tiền thực sự rời khỏi hệ thống
+  const processedAtFilter = hasDateFilter ? { processedAt: dateBounds } : {};
 
   // APPROVED = balance đã trừ, đang chờ chuyển khoản; COMPLETED = đã chuyển khoản xong
   // Cả hai đều tính vào "Tổng đã chi" vì tiền seller đã bị cam kết chi ra từ bước APPROVED
