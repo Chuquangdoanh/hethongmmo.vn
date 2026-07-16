@@ -12,15 +12,17 @@ export function sendTelegramAlert(text: string, chatId?: string): void {
 }
 
 const TELEGRAM_TIMEOUT_MS = 3000;
-// Độ trễ trước mỗi lần thử lại (không tính lần đầu) — giãn dần vì log production cho
-// thấy lỗi kết nối kéo dài hơn 1 giây, retry sát nhau (1s) không đủ để né được.
-const TELEGRAM_RETRY_DELAYS_MS = [2000, 4000];
+// Độ trễ trước mỗi lần thử lại (không tính lần đầu) — giãn dần. Đã xác nhận qua chẩn
+// đoán trực tiếp (host + trong container đều kết nối bình thường, conntrack dư thừa)
+// đây là độ trễ/gián đoạn ngẫu nhiên phía hạ tầng Telegram, không phải firewall/ISP/
+// Docker — chạy nền (fire-and-forget) nên kéo dài cửa sổ retry không ảnh hưởng user.
+const TELEGRAM_RETRY_DELAYS_MS = [2000, 4000, 8000, 16000];
 const TELEGRAM_MAX_ATTEMPTS = TELEGRAM_RETRY_DELAYS_MS.length + 1; // 1 lần thử + các lần thử lại
 
 /**
- * POST sendMessage tới Telegram, tự thử lại (giãn dần) nếu lỗi kết nối (timeout/network).
- * Một số IP trong dải api.telegram.org bị firewall/ISP chặn không liên tục — thử
- * lại (DNS/route có thể đổi IP đích) giúp giảm tỉ lệ mất thông báo do lỗi thoáng qua.
+ * POST sendMessage tới Telegram, tự thử lại (giãn dần, tối đa ~30s) nếu lỗi kết nối
+ * (timeout/network) — độ trễ/gián đoạn ngẫu nhiên phía hạ tầng Telegram, không thể
+ * loại bỏ hoàn toàn từ phía client, chỉ có thể tăng cơ hội gửi lại thành công.
  * Không thử lại nếu Telegram ĐÃ phản hồi (kể cả lỗi HTTP như 401/403) vì retry không
  * giúp ích cho lỗi cấu hình/quyền.
  */
