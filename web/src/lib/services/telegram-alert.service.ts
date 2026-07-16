@@ -1,6 +1,7 @@
 // Fire-and-forget: các hàm dưới đây không block luồng nghiệp vụ chính
 
 import { prisma } from "@/lib/db/prisma";
+import { logger } from "@/lib/utils/logger";
 
 /**
  * Gửi tin nhắn HTML tới Telegram (dùng chung bot/chat đã cấu hình cho rate-alert).
@@ -11,20 +12,31 @@ export function sendTelegramAlert(text: string, chatId?: string): void {
 }
 
 async function _send(text: string, chatIdOverride?: string): Promise<void> {
-  try {
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    // chatIdOverride cho phép gửi tới nhóm riêng (vd: nhóm đơn hàng); rỗng → dùng chat mặc định
-    const chatId   = chatIdOverride || process.env.TELEGRAM_ALERT_CHAT_ID;
-    if (!botToken || !chatId) return;
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  // chatIdOverride cho phép gửi tới nhóm riêng (vd: nhóm đơn hàng); rỗng → dùng chat mặc định
+  const chatId   = chatIdOverride || process.env.TELEGRAM_ALERT_CHAT_ID;
+  if (!botToken || !chatId) return;
 
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+  // AbortController thủ công (thay vì AbortSignal.timeout) + đọc hết response body —
+  // tránh bug race-condition "transformAlgorithm is not a function" của undici/Node khi
+  // stream bị bỏ dở dang (không consume), gây fetch âm thầm hỏng dưới tải thật.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3000);
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
-      signal: AbortSignal.timeout(3000),
+      signal: controller.signal,
     });
-  } catch {
-    // silent — không crash luồng nghiệp vụ chính
+    const body = await res.text();
+    if (!res.ok) {
+      logger.warn({ status: res.status, body, chatId }, "Telegram sendMessage thất bại (bot gốc)");
+    }
+  } catch (err) {
+    logger.warn({ err, chatId }, "Telegram sendMessage lỗi fetch (bot gốc)");
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -194,18 +206,29 @@ export function notifyPurchaseSuccess(
  * Tự bỏ qua nếu thiếu env hoặc chưa có chat_id — không throw để không block luồng bán hàng.
  */
 export async function sendSellerTelegram(chatId: string, text: string): Promise<void> {
-  try {
-    const botToken = process.env.TELEGRAM_SELLER_BOT_TOKEN;
-    if (!botToken || !chatId) return;
+  const botToken = process.env.TELEGRAM_SELLER_BOT_TOKEN;
+  if (!botToken || !chatId) return;
 
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+  // AbortController thủ công (thay vì AbortSignal.timeout) + đọc hết response body —
+  // tránh bug race-condition "transformAlgorithm is not a function" của undici/Node khi
+  // stream bị bỏ dở dang (không consume), gây fetch âm thầm hỏng dưới tải thật.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3000);
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
-      signal: AbortSignal.timeout(3000),
+      signal: controller.signal,
     });
-  } catch {
-    // silent — không crash luồng nghiệp vụ chính
+    const body = await res.text();
+    if (!res.ok) {
+      logger.warn({ status: res.status, body, chatId }, "Telegram sendMessage thất bại (bot seller)");
+    }
+  } catch (err) {
+    logger.warn({ err, chatId }, "Telegram sendMessage lỗi fetch (bot seller)");
+  } finally {
+    clearTimeout(timer);
   }
 }
 
