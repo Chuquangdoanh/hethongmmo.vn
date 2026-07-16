@@ -86,6 +86,22 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # VPS chỉ 2 CPU, chạy CI/CD (self-hosted) chung máy với production —
+      # buildx builder không giới hạn từng ăn >130% CPU, gây throttle container
+      # web (postgres/app bị khựng tạm thời trong lúc build, ảnh hưởng các luồng
+      # nhạy cảm timing như gọi Telegram). Giới hạn còn 1 CPU để dành phần còn
+      # lại ổn định cho production trong lúc build chạy.
+      - name: Giới hạn CPU cho buildx builder — tránh giành CPU với production
+        run: |
+          sleep 2
+          BUILDER_CONTAINER=$(docker ps -q --filter "name=buildx_buildkit")
+          if [ -n "$BUILDER_CONTAINER" ]; then
+            docker update --cpus="1.0" $BUILDER_CONTAINER
+            echo "Đã giới hạn buildx builder còn 1.0 CPU: $BUILDER_CONTAINER"
+          else
+            echo "Không tìm thấy container buildx builder để giới hạn (bỏ qua)"
+          fi
+
       - name: Build and push web image
         uses: docker/build-push-action@v6
         with:
@@ -125,6 +141,22 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      # VPS chỉ 2 CPU, chạy CI/CD (self-hosted) chung máy với production —
+      # buildx builder không giới hạn từng ăn >130% CPU, gây throttle container
+      # web (postgres/app bị khựng tạm thời trong lúc build, ảnh hưởng các luồng
+      # nhạy cảm timing như gọi Telegram). Giới hạn còn 1 CPU để dành phần còn
+      # lại ổn định cho production trong lúc build chạy.
+      - name: Giới hạn CPU cho buildx builder — tránh giành CPU với production
+        run: |
+          sleep 2
+          BUILDER_CONTAINER=$(docker ps -q --filter "name=buildx_buildkit")
+          if [ -n "$BUILDER_CONTAINER" ]; then
+            docker update --cpus="1.0" $BUILDER_CONTAINER
+            echo "Đã giới hạn buildx builder còn 1.0 CPU: $BUILDER_CONTAINER"
+          else
+            echo "Không tìm thấy container buildx builder để giới hạn (bỏ qua)"
+          fi
 
       - name: Build and push migrator image
         uses: docker/build-push-action@v6
