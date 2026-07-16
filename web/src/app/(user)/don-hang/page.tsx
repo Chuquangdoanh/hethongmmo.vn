@@ -43,8 +43,12 @@ const TAB_LABELS: Record<string, string> = {
 };
 
 const HAS_ACTIONS = new Set(["tuttrick", "tainguyen"]);
-// Các tab này chỉ hiển thị đơn trong 7 ngày gần nhất
-const EXPIRES_7_DAYS = new Set(["tuttrick", "tainguyen"]);
+// Các tab này chỉ hiển thị đơn trong AUTO_HIDE_DAYS ngày gần nhất (link nội dung hết hạn) —
+// CHỈ áp dụng cho Tài nguyên & Tut-Trick, không áp dụng Khóa học / Dịch vụ
+const RESOURCE_EXPIRY_TABS = new Set(["tuttrick", "tainguyen"]);
+// Số ngày giữ lịch sử của 2 tab trên: đơn DONE tự ẩn sau X ngày kể từ completedAt
+const AUTO_HIDE_DAYS = 3;
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 export default async function DonHangPage({
   searchParams,
@@ -60,10 +64,19 @@ export default async function DonHangPage({
 
   const orderTypeFilter = TAB_TYPES[activeTab as keyof typeof TAB_TYPES];
 
-  // Đơn tài nguyên / tut-trick chỉ hiện trong 7 ngày
   // eslint-disable-next-line react-hooks/purity -- Server Component, Date.now() is safe per-request
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const dateFilter = EXPIRES_7_DAYS.has(activeTab) ? { createdAt: { gte: sevenDaysAgo } } : {};
+  const autoHideCutoff = new Date(Date.now() - AUTO_HIDE_DAYS * ONE_DAY_MS);
+  // Tài nguyên / Tut-Trick: đơn mua thành công (DONE) tự ẩn khỏi lịch sử sau AUTO_HIDE_DAYS ngày kể từ completedAt
+  const hideCompletedFilter = {
+    OR: [
+      { status: { not: "DONE" as never } },
+      { completedAt: null },
+      { completedAt: { gte: autoHideCutoff } },
+    ],
+  };
+  const dateFilter = RESOURCE_EXPIRY_TABS.has(activeTab)
+    ? { createdAt: { gte: autoHideCutoff }, ...hideCompletedFilter }
+    : {};
   const ordersWhere = { userId: me.id, orderType: { in: orderTypeFilter }, ...dateFilter };
 
   const [user, lastDeposit, orders, total,
@@ -94,11 +107,11 @@ export default async function DonHangPage({
       },
     }),
     prisma.order.count({ where: ordersWhere }),
-    // Badge counts — tài nguyên & tut-trick lọc 7 ngày
+    // Badge counts — chỉ tài nguyên & tut-trick lọc theo AUTO_HIDE_DAYS ngày + ẩn đơn DONE quá hạn
     prisma.order.count({ where: { userId: me.id, orderType: "COURSE" as never } }),
     prisma.order.count({ where: { userId: me.id, orderType: "SERVICE" as never } }),
-    prisma.order.count({ where: { userId: me.id, orderType: "TUTTRICK" as never, createdAt: { gte: sevenDaysAgo } } }),
-    prisma.order.count({ where: { userId: me.id, orderType: { in: ["MMO_PRODUCT", "SELLER_PRODUCT", "KHUONGFB_PRODUCT"] as never[] }, createdAt: { gte: sevenDaysAgo } } }),
+    prisma.order.count({ where: { userId: me.id, orderType: "TUTTRICK" as never, createdAt: { gte: autoHideCutoff }, ...hideCompletedFilter } }),
+    prisma.order.count({ where: { userId: me.id, orderType: { in: ["MMO_PRODUCT", "SELLER_PRODUCT", "KHUONGFB_PRODUCT"] as never[] }, createdAt: { gte: autoHideCutoff }, ...hideCompletedFilter } }),
     getSystemOrderComplaintHref(),
     getNotificationSoundUrl(),
   ]);
