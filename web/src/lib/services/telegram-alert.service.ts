@@ -11,33 +11,50 @@ export function sendTelegramAlert(text: string, chatId?: string): void {
   void _send(text, chatId);
 }
 
+const TELEGRAM_TIMEOUT_MS = 3000;
+const TELEGRAM_RETRY_DELAY_MS = 1000;
+const TELEGRAM_MAX_ATTEMPTS = 2; // 1 lần thử + 1 lần thử lại
+
+/**
+ * POST sendMessage tới Telegram, tự thử lại 1 lần nếu lỗi kết nối (timeout/network).
+ * Một số IP trong dải api.telegram.org bị firewall/ISP timeout không liên tục — thử
+ * lại (DNS/route có thể đổi IP đích) giúp giảm tỉ lệ mất thông báo do lỗi thoáng qua.
+ * Không thử lại nếu Telegram ĐÃ phản hồi (kể cả lỗi HTTP như 401/403) vì retry không
+ * giúp ích cho lỗi cấu hình/quyền.
+ */
+async function _postTelegramMessage(botToken: string, chatId: string, text: string, label: string): Promise<void> {
+  for (let attempt = 1; attempt <= TELEGRAM_MAX_ATTEMPTS; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TELEGRAM_TIMEOUT_MS);
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+        signal: controller.signal,
+      });
+      const body = await res.text();
+      if (!res.ok) {
+        logger.warn({ status: res.status, body, chatId, attempt }, `Telegram sendMessage thất bại (${label})`);
+      }
+      return;
+    } catch (err) {
+      const isLastAttempt = attempt === TELEGRAM_MAX_ATTEMPTS;
+      logger.warn({ err, chatId, attempt, isLastAttempt }, `Telegram sendMessage lỗi fetch (${label})`);
+      if (!isLastAttempt) await new Promise((r) => setTimeout(r, TELEGRAM_RETRY_DELAY_MS));
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+}
+
 async function _send(text: string, chatIdOverride?: string): Promise<void> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   // chatIdOverride cho phép gửi tới nhóm riêng (vd: nhóm đơn hàng); rỗng → dùng chat mặc định
   const chatId   = chatIdOverride || process.env.TELEGRAM_ALERT_CHAT_ID;
   if (!botToken || !chatId) return;
 
-  // AbortController thủ công (thay vì AbortSignal.timeout) + đọc hết response body —
-  // tránh bug race-condition "transformAlgorithm is not a function" của undici/Node khi
-  // stream bị bỏ dở dang (không consume), gây fetch âm thầm hỏng dưới tải thật.
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 3000);
-  try {
-    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
-      signal: controller.signal,
-    });
-    const body = await res.text();
-    if (!res.ok) {
-      logger.warn({ status: res.status, body, chatId }, "Telegram sendMessage thất bại (bot gốc)");
-    }
-  } catch (err) {
-    logger.warn({ err, chatId }, "Telegram sendMessage lỗi fetch (bot gốc)");
-  } finally {
-    clearTimeout(timer);
-  }
+  await _postTelegramMessage(botToken, chatId, text, "bot gốc");
 }
 
 export function escTelegramHtml(s: string): string {
@@ -209,27 +226,7 @@ export async function sendSellerTelegram(chatId: string, text: string): Promise<
   const botToken = process.env.TELEGRAM_SELLER_BOT_TOKEN;
   if (!botToken || !chatId) return;
 
-  // AbortController thủ công (thay vì AbortSignal.timeout) + đọc hết response body —
-  // tránh bug race-condition "transformAlgorithm is not a function" của undici/Node khi
-  // stream bị bỏ dở dang (không consume), gây fetch âm thầm hỏng dưới tải thật.
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 3000);
-  try {
-    const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
-      signal: controller.signal,
-    });
-    const body = await res.text();
-    if (!res.ok) {
-      logger.warn({ status: res.status, body, chatId }, "Telegram sendMessage thất bại (bot seller)");
-    }
-  } catch (err) {
-    logger.warn({ err, chatId }, "Telegram sendMessage lỗi fetch (bot seller)");
-  } finally {
-    clearTimeout(timer);
-  }
+  await _postTelegramMessage(botToken, chatId, text, "bot seller");
 }
 
 /**
