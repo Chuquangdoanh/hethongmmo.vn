@@ -59,7 +59,12 @@ async function _send(text: string, chatIdOverride?: string): Promise<void> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   // chatIdOverride cho phép gửi tới nhóm riêng (vd: nhóm đơn hàng); rỗng → dùng chat mặc định
   const chatId   = chatIdOverride || process.env.TELEGRAM_ALERT_CHAT_ID;
-  if (!botToken || !chatId) return;
+  if (!botToken || !chatId) {
+    // Trước đây bỏ qua hoàn toàn không log — không phân biệt được "thiếu cấu hình"
+    // với "lỗi mạng/Telegram" khi debug production. Không log giá trị token/chatId.
+    logger.warn({ hasBotToken: !!botToken, hasChatId: !!chatId }, "Telegram sendMessage bỏ qua — thiếu TELEGRAM_BOT_TOKEN hoặc chat ID (bot gốc)");
+    return;
+  }
 
   await _postTelegramMessage(botToken, chatId, text, "bot gốc");
 }
@@ -231,7 +236,10 @@ export function notifyPurchaseSuccess(
  */
 export async function sendSellerTelegram(chatId: string, text: string): Promise<void> {
   const botToken = process.env.TELEGRAM_SELLER_BOT_TOKEN;
-  if (!botToken || !chatId) return;
+  if (!botToken || !chatId) {
+    logger.warn({ hasBotToken: !!botToken, hasChatId: !!chatId }, "Telegram sendMessage bỏ qua — thiếu TELEGRAM_SELLER_BOT_TOKEN hoặc chat ID (bot seller)");
+    return;
+  }
 
   await _postTelegramMessage(botToken, chatId, text, "bot seller");
 }
