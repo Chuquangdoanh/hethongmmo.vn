@@ -29,9 +29,12 @@ async function _postTelegramMessage(botToken: string, chatId: string, text: stri
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TELEGRAM_TIMEOUT_MS);
     try {
+      // Connection: close — buộc mở kết nối TCP mới mỗi lần, không tái dùng socket
+      // cũ từ pool keep-alive (nghi vấn: socket rảnh bị NAT/firewall âm thầm đóng,
+      // undici tái dùng phải "socket chết" gây timeout dù mạng vẫn thông bình thường).
       const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Connection": "close" },
         body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
         signal: controller.signal,
       });
