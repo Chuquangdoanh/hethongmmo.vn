@@ -1,5 +1,3 @@
-import dns from "node:dns";
-
 /**
  * Next.js instrumentation hook — chạy một lần khi server khởi động.
  * Validates critical environment variables before accepting any requests.
@@ -8,12 +6,6 @@ import dns from "node:dns";
 export async function register() {
   // Edge runtime không cần full env check (chỉ chạy middleware, không có DB)
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
-
-  // VPS có địa chỉ IPv6 cho các host bên ngoài (vd: api.telegram.org) nhưng outbound
-  // IPv6 bị chặn/blackhole → Node "Happy Eyeballs" thử IPv6 trước, timeout, khiến
-  // fetch() ra ngoài (Telegram, v.v.) báo "AggregateError: fetch failed" ngẫu nhiên.
-  // Ưu tiên IPv4 luôn để né lỗi kết nối này.
-  dns.setDefaultResultOrder("ipv4first");
 
   const REQUIRED: Record<string, string> = {
     DATABASE_URL:    "PostgreSQL connection string",
