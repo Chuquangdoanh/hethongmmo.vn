@@ -7,6 +7,9 @@ export async function register() {
   // Edge runtime không cần full env check (chỉ chạy middleware, không có DB)
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
+  // File riêng + dynamic import — bundler không được đưa "node:dns" vào chunk Edge Runtime
+  await import("./instrumentation-node");
+
   const REQUIRED: Record<string, string> = {
     DATABASE_URL:    "PostgreSQL connection string",
     AUTH_SECRET:     "Auth.js JWT signing secret (min 32 chars)",
