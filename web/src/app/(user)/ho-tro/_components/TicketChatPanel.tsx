@@ -66,6 +66,8 @@ export default function TicketChatPanel({
   });
   const [resolving, setResolving]     = useState(false);
   const [countdown, setCountdown]     = useState<number | null>(null);
+  const [confirmSellerRefund, setConfirmSellerRefund] = useState(false);
+  const [sellerRefunding, setSellerRefunding]         = useState(false);
   const msgsRef = useRef<HTMLDivElement>(null);
   const playNotificationSound = useNotificationSound(notificationSoundUrl);
 
@@ -201,6 +203,27 @@ export default function TicketChatPanel({
       setError("Lỗi kết nối, vui lòng thử lại.");
     } finally {
       setResolving(false);
+    }
+  }
+
+  // ── Seller: hoàn tiền ngay cho người mua, không cần chờ hệ thống ──
+  async function handleSellerRefund() {
+    setSellerRefunding(true);
+    setError("");
+    try {
+      const res  = await fetch(`/api/chats/${room.id}/seller-refund`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const json = (await res.json()) as { data?: { refundedAmount: number }; error?: string };
+      if (!res.ok) { setError(json.error ?? "Hoàn tiền thất bại"); return; }
+      setChatEnded(true);
+      setStatus("REJECTED");
+      setConfirmSellerRefund(false);
+    } catch {
+      setError("Lỗi kết nối, vui lòng thử lại.");
+    } finally {
+      setSellerRefunding(false);
     }
   }
 
@@ -502,6 +525,62 @@ export default function TicketChatPanel({
               )}
             </div>
           </>
+        )}
+
+        {/* ── Seller: hoàn tiền ngay cho người mua — không cần chờ hệ thống đủ thời gian ── */}
+        {!chatEnded && isSeller && (
+          <div style={{ marginTop: "10px" }}>
+            {confirmSellerRefund ? (
+              <div style={{
+                borderRadius: "10px", border: "1px solid #bfdbfe", background: "#eff6ff",
+                padding: "10px 12px",
+              }}>
+                <p style={{ fontSize: "12px", fontWeight: "700", color: "#1d4ed8", marginBottom: "4px" }}>
+                  💰 Xác nhận hoàn tiền ngay cho người mua?
+                </p>
+                <p style={{ fontSize: "11px", color: "#1e40af", lineHeight: "1.5", marginBottom: "8px" }}>
+                  Người mua nhận tiền ngay lập tức, không cần chờ hệ thống. Nếu bạn đã rút tiền đơn này, số tiền sẽ bị trừ lại từ số dư của bạn. Thao tác không thể hoàn tác.
+                </p>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    onClick={() => setConfirmSellerRefund(false)}
+                    disabled={sellerRefunding}
+                    style={{
+                      flex: 1, padding: "8px", borderRadius: "8px",
+                      background: "#fff", color: "#64748b", border: "1px solid #e2e8f0",
+                      fontSize: "12px", fontWeight: "600", cursor: "pointer",
+                    }}
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    onClick={() => { void handleSellerRefund(); }}
+                    disabled={sellerRefunding}
+                    style={{
+                      flex: 1, padding: "8px", borderRadius: "8px",
+                      background: "#2563eb", color: "#fff", border: "none",
+                      fontSize: "12px", fontWeight: "700",
+                      cursor: sellerRefunding ? "not-allowed" : "pointer",
+                      opacity: sellerRefunding ? 0.7 : 1,
+                    }}
+                  >
+                    {sellerRefunding ? "Đang xử lý..." : "Xác nhận hoàn tiền"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmSellerRefund(true)}
+                style={{
+                  width: "100%", padding: "7px 12px", borderRadius: "8px",
+                  background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe",
+                  fontSize: "11px", fontWeight: "600", cursor: "pointer",
+                }}
+              >
+                💰 Hoàn tiền ngay cho người mua — không cần chờ
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>
