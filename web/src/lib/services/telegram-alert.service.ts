@@ -12,12 +12,14 @@ export function sendTelegramAlert(text: string, chatId?: string): void {
 }
 
 const TELEGRAM_TIMEOUT_MS = 3000;
-const TELEGRAM_RETRY_DELAY_MS = 1000;
-const TELEGRAM_MAX_ATTEMPTS = 2; // 1 lần thử + 1 lần thử lại
+// Độ trễ trước mỗi lần thử lại (không tính lần đầu) — giãn dần vì log production cho
+// thấy lỗi kết nối kéo dài hơn 1 giây, retry sát nhau (1s) không đủ để né được.
+const TELEGRAM_RETRY_DELAYS_MS = [2000, 4000];
+const TELEGRAM_MAX_ATTEMPTS = TELEGRAM_RETRY_DELAYS_MS.length + 1; // 1 lần thử + các lần thử lại
 
 /**
- * POST sendMessage tới Telegram, tự thử lại 1 lần nếu lỗi kết nối (timeout/network).
- * Một số IP trong dải api.telegram.org bị firewall/ISP timeout không liên tục — thử
+ * POST sendMessage tới Telegram, tự thử lại (giãn dần) nếu lỗi kết nối (timeout/network).
+ * Một số IP trong dải api.telegram.org bị firewall/ISP chặn không liên tục — thử
  * lại (DNS/route có thể đổi IP đích) giúp giảm tỉ lệ mất thông báo do lỗi thoáng qua.
  * Không thử lại nếu Telegram ĐÃ phản hồi (kể cả lỗi HTTP như 401/403) vì retry không
  * giúp ích cho lỗi cấu hình/quyền.
@@ -41,7 +43,7 @@ async function _postTelegramMessage(botToken: string, chatId: string, text: stri
     } catch (err) {
       const isLastAttempt = attempt === TELEGRAM_MAX_ATTEMPTS;
       logger.warn({ err, chatId, attempt, isLastAttempt }, `Telegram sendMessage lỗi fetch (${label})`);
-      if (!isLastAttempt) await new Promise((r) => setTimeout(r, TELEGRAM_RETRY_DELAY_MS));
+      if (!isLastAttempt) await new Promise((r) => setTimeout(r, TELEGRAM_RETRY_DELAYS_MS[attempt - 1]));
     } finally {
       clearTimeout(timer);
     }
