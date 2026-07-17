@@ -62,4 +62,18 @@ export async function register() {
       );
     }
   }
+
+  // Background job — tự resolve khiếu nại quá hạn phản hồi (seller 12h / buyer 2h /
+  // buyer xác nhận 60') định kỳ, không phụ thuộc việc có ai đang mở tab chat hay không.
+  const { scanOpenComplaintsForAutoResolution } = await import("@/lib/services/complaint-auto-resolve");
+  const COMPLAINT_AUTO_RESOLVE_INTERVAL_MS = 5 * 60 * 1000; // 5 phút
+
+  const runComplaintAutoResolveScan = () => {
+    scanOpenComplaintsForAutoResolution().catch((err) => {
+      process.stderr.write(`[complaint-auto-resolve] scan failed: ${String(err)}\n`);
+    });
+  };
+
+  runComplaintAutoResolveScan();
+  setInterval(runComplaintAutoResolveScan, COMPLAINT_AUTO_RESOLVE_INTERVAL_MS);
 }

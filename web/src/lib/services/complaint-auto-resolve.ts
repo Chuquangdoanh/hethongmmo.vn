@@ -80,6 +80,25 @@ export async function checkAutoResolution(roomId: string): Promise<void> {
   }
 }
 
+// Quét toàn bộ phòng chat thuộc complaint đang mở (IN_REVIEW / PENDING_ADMIN) và
+// tự resolve nếu đã quá deadline — KHÔNG phụ thuộc việc có ai đang mở tab chat hay
+// không, vì SSE stream (/api/chats/[id]/stream) chỉ đọc snapshot, không tự trigger
+// checkAutoResolution(). Gọi định kỳ từ instrumentation.ts.
+export async function scanOpenComplaintsForAutoResolution(): Promise<void> {
+  const rooms = await prisma.chatRoom.findMany({
+    where: { complaint: { status: { in: ["IN_REVIEW", "PENDING_ADMIN"] } } },
+    select: { id: true },
+  });
+
+  for (const room of rooms) {
+    try {
+      await checkAutoResolution(room.id);
+    } catch {
+      // Không để 1 phòng lỗi chặn việc quét các phòng còn lại
+    }
+  }
+}
+
 async function autoResolve(complaintId: string, orderId: string | null, resolution: string) {
   await prisma.$transaction(async (tx) => {
     // Atomic guard — ngăn scheduler trigger 2 lần đồng thời gây double payment seller
