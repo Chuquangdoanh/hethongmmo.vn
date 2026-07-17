@@ -36,11 +36,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (SENSITIVE_TYPES.has(uploadType)) {
       // CCCD/portrait → VPS disk, supports PDF in addition to images
-      const SENSITIVE_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
-      if (!SENSITIVE_MIME.includes(file.type)) {
+      // Ext lấy theo MIME type đã xác thực (không lấy theo file.name) — tên file client gửi lên
+      // không đáng tin (VD ảnh forward qua Zalo/Messenger có thể không có phần mở rộng chuẩn),
+      // trước đây gây ra tình trạng lưu file thành công nhưng /api/admin/secure-image trả 404
+      // vì ext không khớp KEY_PATTERN trong lib/storage/local.ts
+      const SENSITIVE_MIME_EXT: Record<string, string> = {
+        "image/jpeg": "jpg",
+        "image/png":  "png",
+        "image/webp": "webp",
+        "image/gif":  "gif",
+        "application/pdf": "pdf",
+      };
+      const ext = SENSITIVE_MIME_EXT[file.type];
+      if (!ext) {
         return apiError("Chỉ chấp nhận JPEG, PNG, WebP, GIF hoặc PDF", "INVALID_TYPE", 400);
       }
-      const ext    = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ?? "jpg";
       const buffer = Buffer.from(await file.arrayBuffer());
       publicUrl = await saveLocalFile({
         buffer,
