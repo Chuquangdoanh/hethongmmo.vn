@@ -100,7 +100,13 @@ export default async function AdminSellersPage({
   const sellerRequestUserSelect = {
     id: true, email: true, fullName: true, sellerTier: true, sellerEscrow: true,
     bankNameEnc: true, bankAccountNumberEnc: true, bankAccountHolderEnc: true,
+    sellerReverifyRequired: true, sellerReverifyApproved: true,
   } as const;
+
+  // Chờ duyệt STK HOẶC đang xác minh lại CCCD (yêu cầu chưa được duyệt) — gộp chung 1 nhóm ưu tiên lên đầu
+  function isPendingPriority(userId: string, user: { sellerReverifyRequired: boolean; sellerReverifyApproved: boolean }): boolean {
+    return pendingBankSellerIds.has(userId) || (user.sellerReverifyRequired && !user.sellerReverifyApproved);
+  }
 
   // Revenue sort: fetch ALL matching requests, sort in-memory, then paginate
   let requests: Awaited<ReturnType<typeof prisma.sellerRequest.findMany<{
@@ -142,8 +148,8 @@ export default async function AdminSellersPage({
     const allRatingMap  = new Map(allRatingRows.map((r) => [r.seller_id, r.avg_rating ?? 0]));
 
     allRequests.sort((a, b) => {
-      const aPending = pendingBankSellerIds.has(a.userId) ? 0 : 1;
-      const bPending = pendingBankSellerIds.has(b.userId) ? 0 : 1;
+      const aPending = isPendingPriority(a.userId, a.user) ? 0 : 1;
+      const bPending = isPendingPriority(b.userId, b.user) ? 0 : 1;
       if (aPending !== bPending) return aPending - bPending;
       if (activeSort === "revenue_desc") return (allRevenueMap.get(b.userId) ?? 0) - (allRevenueMap.get(a.userId) ?? 0);
       if (activeSort === "revenue_asc")  return (allRevenueMap.get(a.userId) ?? 0) - (allRevenueMap.get(b.userId) ?? 0);
@@ -161,10 +167,10 @@ export default async function AdminSellersPage({
       orderBy: { createdAt: "desc" },
       include: { user: { select: sellerRequestUserSelect } },
     });
-    // Chờ duyệt STK lên đầu — sort ổn định nên vẫn giữ thứ tự createdAt desc trong từng nhóm
+    // Chờ duyệt STK hoặc đang xác minh lại CCCD lên đầu — sort ổn định nên vẫn giữ thứ tự createdAt desc trong từng nhóm
     allRequests.sort((a, b) => {
-      const aPending = pendingBankSellerIds.has(a.userId) ? 0 : 1;
-      const bPending = pendingBankSellerIds.has(b.userId) ? 0 : 1;
+      const aPending = isPendingPriority(a.userId, a.user) ? 0 : 1;
+      const bPending = isPendingPriority(b.userId, b.user) ? 0 : 1;
       return aPending - bPending;
     });
     total = allRequests.length;
@@ -241,6 +247,11 @@ export default async function AdminSellersPage({
       : hasBankInfo
         ? "APPROVED"
         : "NONE";
+    const reverifyStatus: SellerRowData["reverifyStatus"] = r.user.sellerReverifyApproved
+      ? "VERIFIED"
+      : r.user.sellerReverifyRequired
+        ? "IN_PROGRESS"
+        : "NONE";
     return {
       requestId:    r.id,
       userId:       r.userId,
@@ -259,6 +270,7 @@ export default async function AdminSellersPage({
       reviewCount:  rt?.count ?? 0,
       shopLocked:   shopLockMap.get(r.userId) ?? false,
       bankStatus,
+      reverifyStatus,
       createdAt:    r.createdAt.toISOString(),
     };
   });

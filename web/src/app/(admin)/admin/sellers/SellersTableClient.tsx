@@ -24,6 +24,7 @@ export interface SellerRowData {
   reviewCount: number;
   shopLocked: boolean;
   bankStatus: "PENDING" | "APPROVED" | "NONE";
+  reverifyStatus: "IN_PROGRESS" | "VERIFIED" | "NONE";
   createdAt: string;
 }
 
@@ -36,6 +37,17 @@ const BANK_STATUS_STYLES: Record<SellerRowData["bankStatus"], string> = {
   PENDING:  "text-amber-600 bg-amber-50 border-amber-200",
   APPROVED: "text-emerald-600 bg-emerald-50 border-emerald-200",
   NONE:     "text-gray-400 bg-gray-50 border-gray-200",
+};
+
+const REVERIFY_STATUS_LABEL: Record<SellerRowData["reverifyStatus"], string> = {
+  IN_PROGRESS: "Đang xác minh",
+  VERIFIED:    "Đã xác minh",
+  NONE:        "—",
+};
+const REVERIFY_STATUS_STYLES: Record<SellerRowData["reverifyStatus"], string> = {
+  IN_PROGRESS: "text-amber-600 bg-amber-50 border-amber-200",
+  VERIFIED:    "text-emerald-600 bg-emerald-50 border-emerald-200",
+  NONE:        "text-gray-400 bg-gray-50 border-gray-200",
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -184,7 +196,7 @@ export default function SellersTableClient({ rows, revenueSortHref, ratingSortHr
                   </Link>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Shop</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Duyệt số tài khoản</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">Xác minh tài khoản</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">Hành động</th>
               </tr>
             </thead>
@@ -297,8 +309,8 @@ export default function SellersTableClient({ rows, revenueSortHref, ratingSortHr
                     </td>
                     <td className="px-4 py-3">
                       <Link href={`/admin/sellers/${r.requestId}`}>
-                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${BANK_STATUS_STYLES[r.bankStatus]}`}>
-                          {BANK_STATUS_LABEL[r.bankStatus]}
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${REVERIFY_STATUS_STYLES[r.reverifyStatus]}`}>
+                          {REVERIFY_STATUS_LABEL[r.reverifyStatus]}
                         </span>
                       </Link>
                     </td>
