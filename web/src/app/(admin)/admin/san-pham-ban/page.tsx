@@ -8,6 +8,10 @@ import { formatVnd, formatDate } from "@/lib/utils/format";
 import Pagination from "@/components/shared/Pagination";
 import RestrictButton from "./_components/RestrictButton";
 import ApprovalButton from "./_components/ApprovalButton";
+import { BulkSelectionProvider } from "./_components/BulkSelectionContext";
+import SelectAllCheckbox from "./_components/SelectAllCheckbox";
+import ProductRowCheckbox from "./_components/ProductRowCheckbox";
+import BulkActionsToolbar from "./_components/BulkActionsToolbar";
 import CategorySubCategoryFilter from "@/components/admin/filters/CategorySubCategoryFilter";
 import RealtimeSelectFilter from "@/components/admin/filters/RealtimeSelectFilter";
 import { Warehouse } from "lucide-react";
@@ -313,6 +317,7 @@ export default async function AdminSellerProductsPage({
       </div>
 
       {/* Table */}
+      <BulkSelectionProvider>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {products.length === 0 ? (
           <div className="text-center py-16">
@@ -321,6 +326,7 @@ export default async function AdminSellerProductsPage({
           </div>
         ) : (
           <>
+            <BulkActionsToolbar />
             <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-end gap-2">
               <span className="text-xs text-gray-400">Hiển thị:</span>
               {[20, 50, 100].map((n) => (
@@ -341,6 +347,9 @@ export default async function AdminSellerProductsPage({
               <table className="w-full">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="px-4 py-3 w-10">
+                      <SelectAllCheckbox ids={products.map((p) => p.id)} />
+                    </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Sản phẩm</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Nhà bán</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Giá</th>
@@ -367,6 +376,9 @@ export default async function AdminSellerProductsPage({
                         key={p.id}
                         className={`${i !== 0 ? "border-t border-gray-50" : ""} hover:bg-gray-50/60 transition-colors`}
                       >
+                        <td className="px-4 py-3">
+                          <ProductRowCheckbox productId={p.id} />
+                        </td>
                         <td className="px-4 py-3">
                           <p className="text-sm font-medium text-gray-800">{p.name}</p>
                           <p className="text-[11px] text-gray-400">{p.sellerCategory}</p>
@@ -477,6 +489,7 @@ export default async function AdminSellerProductsPage({
           </>
         )}
       </div>
+      </BulkSelectionProvider>
     </div>
   );
 }
