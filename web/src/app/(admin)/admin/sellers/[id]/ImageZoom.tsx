@@ -1,14 +1,42 @@
 "use client";
 
 import { useState } from "react";
+import { FileText, ImageOff } from "lucide-react";
 
 interface Props {
   src: string;
   alt: string;
 }
 
+// Ảnh CCCD/chân dung có thể là PDF (upload API cho phép application/pdf) — thẻ <img> không render được PDF
+const isPdfUrl = (url: string): boolean => /\.pdf/i.test(url);
+
 export default function ImageZoom({ src, alt }: Props) {
   const [open, setOpen] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+
+  if (isPdfUrl(src)) {
+    return (
+      <a
+        href={src}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="h-32 w-28 rounded-lg border border-gray-200 bg-gray-50 flex flex-col items-center justify-center gap-1.5 text-gray-500 hover:border-violet-400 hover:text-violet-600 transition-colors"
+      >
+        <FileText size={22} />
+        <span className="text-[10px] font-medium px-1 text-center leading-tight">Xem file PDF</span>
+      </a>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="h-32 w-28 rounded-lg border border-red-200 bg-red-50 flex flex-col items-center justify-center gap-1.5 text-red-400">
+        <ImageOff size={20} />
+        <span className="text-[10px] font-medium px-1 text-center leading-tight">Không tải được ảnh</span>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -19,6 +47,7 @@ export default function ImageZoom({ src, alt }: Props) {
           alt={alt}
           className="h-32 rounded-lg border border-gray-200 object-cover cursor-zoom-in"
           onClick={() => setOpen(true)}
+          onError={() => setLoadError(true)}
         />
         <button
           type="button"
