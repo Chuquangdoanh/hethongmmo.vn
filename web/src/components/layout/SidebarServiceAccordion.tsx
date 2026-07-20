@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { ChevronDown, GalleryVerticalEnd } from "lucide-react";
+import { ChevronDown, GalleryVerticalEnd, ThumbsUp } from "lucide-react";
 import { r2Url } from "@/lib/utils/image-url";
 
 export interface SvcCategory {
@@ -22,6 +22,23 @@ export default function SidebarServiceAccordion({ categories }: { categories: Sv
   useEffect(() => {
     if (pathname.startsWith("/dich-vu")) setIsOpen(true);
   }, [pathname]);
+
+  const likeSubLink = (
+    <Link
+      href="https://likesubsieunhanh.vn/"
+      prefetch={false}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="sb-link"
+    >
+      <span className="sb-link-icon">
+        <span className="sb-icon-badge">
+          <ThumbsUp size={15} strokeWidth={1.75} />
+        </span>
+      </span>
+      <span className="sb-label sb-link-text">Like &amp; Sub</span>
+    </Link>
+  );
 
   return (
     <div className="sb-group">
@@ -52,6 +69,8 @@ export default function SidebarServiceAccordion({ categories }: { categories: Sv
           }}
         />
       </button>
+
+      {!isOpen && likeSubLink}
 
       {isOpen && (
         <div className="sb-svc-items">
@@ -84,6 +103,8 @@ export default function SidebarServiceAccordion({ categories }: { categories: Sv
           </Link>
         </div>
       )}
+
+      {isOpen && likeSubLink}
     </div>
   );
 }
