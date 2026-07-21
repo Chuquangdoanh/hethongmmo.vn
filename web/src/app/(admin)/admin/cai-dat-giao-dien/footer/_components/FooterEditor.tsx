@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { FieldText, FieldGrid, FieldSectionLabel } from "../../trang-chu/_components/FieldInput";
+import { ImageUpload } from "../../_components/ImageUpload";
 
 interface NavLink { href: string; label: string }
 
@@ -38,6 +39,7 @@ interface FooterData {
   // Copyright
   copyrightText: string;
   // Bộ Công Thương
+  bctImageUrl: string;
   bctHref: string;
 }
 
@@ -139,6 +141,7 @@ export default function FooterEditor({
     contactTelegramLabel: String(initialData["contactTelegramLabel"] ?? ""),
     contactTelegramSub:   String(initialData["contactTelegramSub"] ?? ""),
     copyrightText:        String(initialData["copyrightText"] ?? ""),
+    bctImageUrl:          String(initialData["bctImageUrl"] ?? ""),
     bctHref:              String(initialData["bctHref"] ?? ""),
   });
 
@@ -287,23 +290,19 @@ export default function FooterEditor({
 
       {/* Bộ Công Thương */}
       <div className={cardClass}>
-        <div className="flex items-start gap-4">
-          {/* Preview ảnh cố định */}
-          <div className="shrink-0 rounded-xl border border-gray-200 bg-gray-50 p-2 flex items-center justify-center" style={{ minWidth: 80 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/B%E1%BB%99%20C%C3%B4ng%20Th%C6%B0%C6%A1ng.png"
-              alt="Bộ Công Thương"
-              style={{ height: 48, width: "auto", display: "block" }}
-            />
-          </div>
-          <div className="flex-1 space-y-1">
-            <h2 className="text-base font-bold text-gray-800">Chứng nhận Bộ Công Thương</h2>
-            <p className="text-xs text-gray-400">
-              Logo hiển thị cố định tại bottom bar. Nhập đường dẫn xác nhận để logo trở thành link click được.
-            </p>
-          </div>
+        <div className="space-y-1">
+          <h2 className="text-base font-bold text-gray-800">Chứng nhận Bộ Công Thương</h2>
+          <p className="text-xs text-gray-400">
+            Logo hiển thị tại bottom bar. Tải ảnh lên để thay logo, xóa ảnh để ẩn logo. Nhập đường dẫn xác nhận để logo trở thành link click được.
+          </p>
         </div>
+        <ImageUpload
+          label="Ảnh logo Bộ Công Thương"
+          value={data.bctImageUrl}
+          onChange={(v) => set("bctImageUrl", v)}
+          uploadType="cms-footer-bct"
+          hint="Để trống = ẩn logo khỏi footer. Khuyến nghị PNG nền trong suốt."
+        />
         <FieldText
           label="Đường dẫn xác nhận BCT"
           value={data.bctHref}

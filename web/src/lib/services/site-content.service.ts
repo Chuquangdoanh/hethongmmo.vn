@@ -272,6 +272,7 @@ const DEFAULTS: Record<SiteContentKey, unknown> = {
     // Copyright
     copyrightText: "© 2026 hethongmmo.vn. Tất cả quyền được bảo lưu.",
     // Bộ Công Thương
+    bctImageUrl: "/images/B%E1%BB%99%20C%C3%B4ng%20Th%C6%B0%C6%A1ng.png",
     bctHref: "",
   },
   thank_you: {

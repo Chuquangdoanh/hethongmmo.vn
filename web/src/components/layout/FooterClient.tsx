@@ -5,6 +5,9 @@ import {
   Phone, Mail, MapPin, Clock, ChevronRight, ArrowUp,
   Shield, Lock, RefreshCw, Headphones, Award, Rocket,
 } from "lucide-react";
+import { r2Url } from "@/lib/utils/image-url";
+
+const BCT_DEFAULT_SRC = "/images/B%E1%BB%99%20C%C3%B4ng%20Th%C6%B0%C6%A1ng.png";
 
 interface NavLink { href: string; label: string }
 
@@ -34,6 +37,7 @@ interface FooterData {
   contactTelegramLabel?: string;
   contactTelegramSub?: string;
   copyrightText?: string;
+  bctImageUrl?: string;
   bctHref?: string;
 }
 
@@ -72,6 +76,9 @@ export default function FooterClient({ data }: { data: Record<string, unknown> }
 
   const serviceLinks: NavLink[] = Array.isArray(d.serviceLinks) ? d.serviceLinks : DEFAULT_SERVICES;
   const supportLinks: NavLink[] = Array.isArray(d.supportLinks) ? d.supportLinks : DEFAULT_SUPPORT;
+
+  // undefined = chưa từng cấu hình → dùng ảnh mặc định; "" = admin đã xóa → ẩn ảnh
+  const bctImgSrc = d.bctImageUrl === undefined ? BCT_DEFAULT_SRC : r2Url(d.bctImageUrl);
 
   return (
     <footer className="bg-white border-t border-[#e2e8f0]">
@@ -301,29 +308,31 @@ export default function FooterClient({ data }: { data: Record<string, unknown> }
         <div className="mx-auto max-w-[1200px] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Left: BCT seal + copyright */}
           <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
-            {d.bctHref ? (
-              <a
-                href={d.bctHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Đã đăng ký Bộ Công Thương"
-                className="shrink-0 hover:opacity-80 transition-opacity"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+            {bctImgSrc && (
+              d.bctHref ? (
+                <a
+                  href={d.bctHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Đã đăng ký Bộ Công Thương"
+                  className="shrink-0 hover:opacity-80 transition-opacity"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={bctImgSrc}
+                    alt="Đã đăng ký Bộ Công Thương"
+                    style={{ height: 40, width: "auto", display: "block" }}
+                  />
+                </a>
+              ) : (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
-                  src="/images/B%E1%BB%99%20C%C3%B4ng%20Th%C6%B0%C6%A1ng.png"
+                  src={bctImgSrc}
                   alt="Đã đăng ký Bộ Công Thương"
                   style={{ height: 40, width: "auto", display: "block" }}
+                  className="shrink-0"
                 />
-              </a>
-            ) : (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src="/images/B%E1%BB%99%20C%C3%B4ng%20Th%C6%B0%C6%A1ng.png"
-                alt="Đã đăng ký Bộ Công Thương"
-                style={{ height: 40, width: "auto", display: "block" }}
-                className="shrink-0"
-              />
+              )
             )}
             <span className="text-xs text-[#94a3b8]">
               {d.copyrightText ? (
