@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getDiscountInfo, getResourceDiscountInfo, applyDiscount } from "@/lib/utils/discount";
+import { getDiscountInfo, getResourceDiscountInfo, getSellerDiscountInfo, applyDiscount } from "@/lib/utils/discount";
 
 describe("getDiscountInfo", () => {
   it("returns 0% when no tier reached and no override", () => {
@@ -37,6 +37,16 @@ describe("getResourceDiscountInfo", () => {
 
   it("returns 0% when nothing applies", () => {
     expect(getResourceDiscountInfo(0, 0, 0).pct).toBe(0);
+  });
+});
+
+describe("getSellerDiscountInfo", () => {
+  it("returns 0% when sellerDiscountPercent is 0", () => {
+    expect(getSellerDiscountInfo(0)).toEqual({ pct: 0, label: "Thường", isOverride: false });
+  });
+
+  it("returns flat pct when sellerDiscountPercent > 0, no tier fallback", () => {
+    expect(getSellerDiscountInfo(12)).toEqual({ pct: 12, label: "Seller Discount", isOverride: true });
   });
 });
 

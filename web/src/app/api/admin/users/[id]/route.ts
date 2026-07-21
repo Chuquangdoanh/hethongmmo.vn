@@ -36,7 +36,9 @@ const patchSchema = z.discriminatedUnion("action", [
   }),
   z.object({
     action: z.literal("set_discount_all"),
-    percent: z.number().int().min(0).max(100),
+    discountPercent: z.number().int().min(0).max(100),
+    agentDiscountPercent: z.number().int().min(0).max(100),
+    sellerDiscountPercent: z.number().int().min(0).max(100),
   }),
   z.object({
     action: z.literal("adjust_escrow"),
@@ -68,7 +70,7 @@ export async function GET(
         id: true, email: true, fullName: true, phone: true,
         role: true, status: true,
         balance: true, totalDeposited: true, totalSpent: true,
-        discountPercent: true, agentDiscountPercent: true,
+        discountPercent: true, agentDiscountPercent: true, sellerDiscountPercent: true,
         sellerStatus: true, sellerCategory: true, maxSellerProducts: true,
         twoFactorEnabled: true,
         lastLoginAt: true, lastLoginIp: true,
@@ -412,25 +414,36 @@ export async function PATCH(
     }
 
     if (action === "set_discount_all") {
-      const { percent } = parsed.data as Extract<(typeof parsed)["data"], { action: "set_discount_all" }>;
+      const { discountPercent, agentDiscountPercent, sellerDiscountPercent } =
+        parsed.data as Extract<(typeof parsed)["data"], { action: "set_discount_all" }>;
       await prisma.$transaction(async (tx) => {
         const before = await tx.user.findUniqueOrThrow({
           where: { id },
-          select: { discountPercent: true, agentDiscountPercent: true },
+          select: { discountPercent: true, agentDiscountPercent: true, sellerDiscountPercent: true },
         });
-        await tx.user.update({ where: { id }, data: { discountPercent: percent, agentDiscountPercent: percent } });
+        await tx.user.update({
+          where: { id },
+          data: { discountPercent, agentDiscountPercent, sellerDiscountPercent },
+        });
         await tx.auditLog.create({
           data: {
             actorId: admin.id,
             action: "ADMIN_SET_DISCOUNT_ALL",
             targetType: "User",
             targetId: id,
-            before: { discountPercent: before.discountPercent, agentDiscountPercent: before.agentDiscountPercent },
-            after: { discountPercent: percent, agentDiscountPercent: percent },
+            before: {
+              discountPercent: before.discountPercent,
+              agentDiscountPercent: before.agentDiscountPercent,
+              sellerDiscountPercent: before.sellerDiscountPercent,
+            },
+            after: { discountPercent, agentDiscountPercent, sellerDiscountPercent },
           },
         });
       });
-      logger.info({ adminId: admin.id, targetUserId: id, percent }, "Admin set combined discount (all)");
+      logger.info(
+        { adminId: admin.id, targetUserId: id, discountPercent, agentDiscountPercent, sellerDiscountPercent },
+        "Admin set combined discount (all)",
+      );
       return apiSuccess();
     }
 

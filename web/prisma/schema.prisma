@@ -227,6 +227,10 @@ model User {
   // Ưu tiên cao hơn discountPercent/tier tự động cho các loại sản phẩm trên
   agentDiscountPercent Int           @default(0) @map("agent_discount_percent")
 
+  // Giảm giá cho sản phẩm Seller — 0 = không giảm; > 0 = % cố định, admin gán tay
+  // Hệ thống chịu 100% chi phí: seller vẫn nhận đủ 100% GIÁ GỐC (không trừ hoa hồng, không bị ảnh hưởng bởi discount này)
+  sellerDiscountPercent Int          @default(0) @map("seller_discount_percent")
+
   sellerStatus         SellerStatus  @default(NONE) @map("seller_status")
   sellerTier           String        @default("STANDARD") @map("seller_tier") @db.VarChar(50)
   sellerCategory       String?       @map("seller_category")

@@ -228,18 +228,14 @@ describe("POST /api/orders", () => {
     );
   });
 
-  it("does not apply any discount to SELLER_PRODUCT (freeze: sản phẩm seller không giảm giá)", async () => {
+  it("applies sellerDiscountPercent to SELLER_PRODUCT, independent of discountPercent/agentDiscountPercent", async () => {
     mockAuth.mockResolvedValueOnce(VALID_SESSION);
     mockSellerProductFindUnique.mockResolvedValueOnce({ name: "Seller Item", price: "100000" });
-    mockUserFindUnique.mockResolvedValueOnce({
-      discountPercent: 10,
-      totalDeposited: "200000000",
-      agentDiscountPercent: 20,
-    });
+    mockUserFindUnique.mockResolvedValueOnce({ sellerDiscountPercent: 10 });
     mockPurchaseProduct.mockResolvedValueOnce({
       order: {
         id: "order-seller", orderCode: "ORD-SELLER-01", orderType: "SELLER_PRODUCT",
-        itemName: "Seller Item", finalPrice: "100000", status: "DONE",
+        itemName: "Seller Item", finalPrice: "90000", status: "DONE",
       },
     });
 
@@ -251,8 +247,30 @@ describe("POST /api/orders", () => {
 
     expect(res.status).toBe(201);
     expect(mockPurchaseProduct).toHaveBeenCalledWith(
+      expect.objectContaining({ finalPrice: 90_000, discountPercent: 10 }),
+    );
+  });
+
+  it("gives no discount to SELLER_PRODUCT when sellerDiscountPercent is 0, even if user has discountPercent/agentDiscountPercent set", async () => {
+    mockAuth.mockResolvedValueOnce(VALID_SESSION);
+    mockSellerProductFindUnique.mockResolvedValueOnce({ name: "Seller Item", price: "100000" });
+    mockUserFindUnique.mockResolvedValueOnce({ sellerDiscountPercent: 0 });
+    mockPurchaseProduct.mockResolvedValueOnce({
+      order: {
+        id: "order-seller-2", orderCode: "ORD-SELLER-02", orderType: "SELLER_PRODUCT",
+        itemName: "Seller Item", finalPrice: "100000", status: "DONE",
+      },
+    });
+
+    const res = await POST(makePostRequest({
+      itemId: "11111111-1111-4111-8111-111111111111",
+      orderType: "SELLER_PRODUCT",
+      idempotencyKey: "55555555-5555-4555-8555-555555555555",
+    }));
+
+    expect(res.status).toBe(201);
+    expect(mockPurchaseProduct).toHaveBeenCalledWith(
       expect.objectContaining({ finalPrice: 100_000, discountPercent: 0 }),
     );
-    expect(mockUserFindUnique).not.toHaveBeenCalled();
   });
 });

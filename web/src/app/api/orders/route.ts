@@ -9,7 +9,7 @@ import { trackRateHit } from "@/lib/security/rate-alert";
 import { AppError } from "@/lib/errors";
 import { apiOk, apiList, apiCatch, apiValidationError, apiError } from "@/lib/api-response";
 import { getDiscountInfo, applyDiscount } from "@/lib/utils/discount";
-import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
+import { getUserResourceDiscountPercent, getUserSellerDiscountPercent } from "@/lib/services/discount.service";
 import { checkCouponEligibility, applyCouponDiscount } from "@/lib/services/coupon.service";
 
 export const runtime = "nodejs";
@@ -170,8 +170,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
 // SERVICE/COURSE/TUTTRICK dùng tier nạp tiền + override admin (discountPercent).
 // MMO_PRODUCT (Tài nguyên MMO / Kho nguyên liệu) dùng thêm agentDiscountPercent (Đại lý), ưu tiên cao hơn tier.
+// SELLER_PRODUCT dùng sellerDiscountPercent riêng — % cố định, admin gán tay.
 const SERVICE_DISCOUNTABLE: string[] = ["SERVICE", "COURSE", "TUTTRICK"];
 const RESOURCE_DISCOUNTABLE: string[] = ["MMO_PRODUCT"];
+const SELLER_DISCOUNTABLE: string[] = ["SELLER_PRODUCT"];
 
 async function resolveDiscountPercent(orderType: string, userId: string): Promise<number> {
   if (SERVICE_DISCOUNTABLE.includes(orderType)) {
@@ -184,6 +186,9 @@ async function resolveDiscountPercent(orderType: string, userId: string): Promis
   }
   if (RESOURCE_DISCOUNTABLE.includes(orderType)) {
     return getUserResourceDiscountPercent(userId);
+  }
+  if (SELLER_DISCOUNTABLE.includes(orderType)) {
+    return getUserSellerDiscountPercent(userId);
   }
   return 0;
 }

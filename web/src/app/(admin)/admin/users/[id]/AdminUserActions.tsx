@@ -16,16 +16,33 @@ interface Props {
   currentStatus: string;
   discountPercent: number;
   agentDiscountPercent: number;
+  sellerDiscountPercent: number;
   isSelf: boolean;
 }
 
-export default function AdminUserActions({ userId, currentRole, currentStatus, discountPercent, agentDiscountPercent, isSelf }: Props) {
+export default function AdminUserActions({ userId, currentRole, currentStatus, discountPercent, agentDiscountPercent, sellerDiscountPercent, isSelf }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [selectedRole, setSelectedRole] = useState(currentRole);
   const [confirmRole, setConfirmRole] = useState(false);
-  const [discountAllInput, setDiscountAllInput] = useState(String(discountPercent || agentDiscountPercent));
+  const [discountInput, setDiscountInput] = useState(String(discountPercent));
+  const [agentDiscountInput, setAgentDiscountInput] = useState(String(agentDiscountPercent));
+  const [sellerDiscountInput, setSellerDiscountInput] = useState(String(sellerDiscountPercent));
+
+  function handleSaveAllDiscounts() {
+    const d = parseInt(discountInput, 10);
+    const a = parseInt(agentDiscountInput, 10);
+    const s = parseInt(sellerDiscountInput, 10);
+    if ([d, a, s].some((v) => isNaN(v) || v < 0 || v > 100)) {
+      setError("% giảm giá phải từ 0-100.");
+      return;
+    }
+    void patch(
+      { action: "set_discount_all", discountPercent: d, agentDiscountPercent: a, sellerDiscountPercent: s },
+      "discountAll",
+    );
+  }
 
   async function patch(body: Record<string, unknown>, label: string) {
     setLoading(label);
@@ -106,45 +123,85 @@ export default function AdminUserActions({ userId, currentRole, currentStatus, d
         </div>
       )}
 
-      {/* Giảm giá — 1 ô nhập set chung cho cả 2 nhóm (Service/Course/Tut và Tài nguyên MMO/Kho/Khương FB) */}
-      <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
-        <p className="text-xs text-gray-500 font-medium">
-          Giảm giá (Service / Khóa học / Tut / Tài nguyên MMO / Kho nguyên liệu / Khương FB)
-        </p>
-        <p className="text-[10px] text-gray-400">
-          0 = Service/Course/Tut dùng tier tự động theo tổng nạp (Trên 15tr: +5%; Trên 50tr: +10%; Trên 100tr: +15%), Tài nguyên MMO/Kho/Khương FB không giảm.
-          &gt;0 = override cứng cho Service/Course/Tut, đồng thời set % Đại lý cho Tài nguyên MMO/Kho/Khương FB (không phụ thuộc tổng nạp, luôn ưu tiên hơn tier).
-        </p>
-        <div className="flex gap-2 items-center">
-          <input
-            type="number"
-            min={0}
-            max={100}
-            value={discountAllInput}
-            onChange={(e) => setDiscountAllInput(e.target.value)}
-            placeholder="0-100"
-            className="w-24 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-900 focus:border-[#7C3AED] focus:outline-none"
-          />
-          <span className="text-xs text-gray-500">%</span>
-          <button
-            onClick={() => {
-              const pct = parseInt(discountAllInput, 10);
-              if (isNaN(pct) || pct < 0 || pct > 100) { setError("% giảm giá phải từ 0-100."); return; }
-              void patch({ action: "set_discount_all", percent: pct }, "discountAll");
-            }}
-            disabled={!!loading}
-            className="px-3 py-1.5 rounded-md bg-[#7C3AED] text-white text-xs hover:bg-[#A855F7] disabled:opacity-60 transition-colors"
-          >
-            {loading === "discountAll" ? "..." : "Lưu"}
-          </button>
+      {/* Giảm giá — 3 ô độc lập, 1 nút Lưu chung */}
+      <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-3">
+        {/* Ô 1: Service / Khóa học / Tut */}
+        <div className="space-y-1.5">
+          <p className="text-xs text-gray-500 font-medium">Giảm giá — Service / Khóa học / Tut</p>
+          <p className="text-[10px] text-gray-400">
+            0 = dùng tier tự động theo tổng nạp (Trên 15tr: +5%; Trên 50tr: +10%; Trên 100tr: +15%). &gt;0 = override cứng.
+          </p>
+          <div className="flex gap-2 items-center">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={discountInput}
+              onChange={(e) => setDiscountInput(e.target.value)}
+              placeholder="0-100"
+              className="w-24 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-900 focus:border-[#7C3AED] focus:outline-none"
+            />
+            <span className="text-xs text-gray-500">%</span>
+          </div>
+          <p className="text-[10px] text-gray-400">
+            Hiện tại: <span className="font-semibold text-gray-600">{discountPercent > 0 ? `${discountPercent}% (admin override)` : "Tự động theo tier"}</span>
+          </p>
         </div>
-        <p className="text-[10px] text-gray-400">
-          Hiện tại: <span className="font-semibold text-gray-600">
-            {discountPercent > 0 ? `${discountPercent}% (Service/Course/Tut)` : "Service/Course/Tut: tự động theo tier"}
-            {" · "}
-            {agentDiscountPercent > 0 ? `${agentDiscountPercent}% (Tài nguyên/Kho/Khương FB)` : "Tài nguyên/Kho/Khương FB: không giảm"}
-          </span>
-        </p>
+
+        {/* Ô 2: Tài nguyên MMO / Kho nguyên liệu / Khương FB (Đại lý) */}
+        <div className="space-y-1.5 border-t border-gray-100 pt-3">
+          <p className="text-xs text-gray-500 font-medium">Giảm giá Đại lý — Tài nguyên MMO / Kho nguyên liệu / Khương FB</p>
+          <p className="text-[10px] text-gray-400">
+            0 = không phải đại lý. &gt;0 = % cố định (gợi ý 10% hoặc 15%), không phụ thuộc tổng nạp, luôn ưu tiên hơn tier thường.
+          </p>
+          <div className="flex gap-2 items-center">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={agentDiscountInput}
+              onChange={(e) => setAgentDiscountInput(e.target.value)}
+              placeholder="0-100"
+              className="w-24 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-900 focus:border-[#7C3AED] focus:outline-none"
+            />
+            <span className="text-xs text-gray-500">%</span>
+          </div>
+          <p className="text-[10px] text-gray-400">
+            Hiện tại: <span className="font-semibold text-gray-600">{agentDiscountPercent > 0 ? `${agentDiscountPercent}% (Đại lý)` : "Không phải đại lý"}</span>
+          </p>
+        </div>
+
+        {/* Ô 3: Sản phẩm Seller */}
+        <div className="space-y-1.5 border-t border-gray-100 pt-3">
+          <p className="text-xs text-gray-500 font-medium">Giảm giá — Sản phẩm Seller</p>
+          <p className="text-[10px] text-gray-400">
+            0 = không giảm. &gt;0 = % cố định. Hệ thống chịu 100% chi phí ở phần thống kê hiển thị — hiện chưa áp dụng cho số tiền seller rút thực tế (giống cách coupon đang hoạt động).
+          </p>
+          <div className="flex gap-2 items-center">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={sellerDiscountInput}
+              onChange={(e) => setSellerDiscountInput(e.target.value)}
+              placeholder="0-100"
+              className="w-24 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-900 focus:border-[#7C3AED] focus:outline-none"
+            />
+            <span className="text-xs text-gray-500">%</span>
+          </div>
+          <p className="text-[10px] text-gray-400">
+            Hiện tại: <span className="font-semibold text-gray-600">{sellerDiscountPercent > 0 ? `${sellerDiscountPercent}%` : "Không giảm"}</span>
+          </p>
+        </div>
+
+        {/* Nút Lưu chung cho cả 3 ô */}
+        <button
+          onClick={handleSaveAllDiscounts}
+          disabled={!!loading}
+          className="w-full px-3 py-1.5 rounded-md bg-[#7C3AED] text-white text-xs font-medium hover:bg-[#A855F7] disabled:opacity-60 transition-colors"
+        >
+          {loading === "discountAll" ? "Đang lưu..." : "Lưu"}
+        </button>
       </div>
 
       {/* Confirm modal for STAFF/ADMIN */}

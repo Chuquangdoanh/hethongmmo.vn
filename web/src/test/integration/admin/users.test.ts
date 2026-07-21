@@ -265,7 +265,7 @@ describe("PATCH /api/admin/users/[id]", () => {
     expect(json.code).toBe("VALIDATION_ERROR");
   });
 
-  it("sets both discountPercent and agentDiscountPercent to the same value via set_discount_all", async () => {
+  it("sets discountPercent, agentDiscountPercent and sellerDiscountPercent independently via set_discount_all", async () => {
     mockAuth.mockResolvedValueOnce(ADMIN_SESSION);
     mockPrisma.user.findUnique.mockResolvedValueOnce(TARGET_USER);
 
@@ -274,7 +274,7 @@ describe("PATCH /api/admin/users/[id]", () => {
     mockPrisma.$transaction.mockImplementationOnce(async (fn: (tx: unknown) => unknown) => {
       capturedTx = {
         user: {
-          findUniqueOrThrow: vi.fn().mockResolvedValue({ discountPercent: 0, agentDiscountPercent: 0 }),
+          findUniqueOrThrow: vi.fn().mockResolvedValue({ discountPercent: 0, agentDiscountPercent: 0, sellerDiscountPercent: 0 }),
           update: vi.fn(),
         },
         auditLog: { create: vi.fn() },
@@ -283,22 +283,32 @@ describe("PATCH /api/admin/users/[id]", () => {
     });
 
     const res = await PATCH(
-      makeRequest({ action: "set_discount_all", percent: 10 }) as never,
+      makeRequest({
+        action: "set_discount_all",
+        discountPercent: 5,
+        agentDiscountPercent: 10,
+        sellerDiscountPercent: 20,
+      }) as never,
       { params: PARAMS },
     );
     expect(res.status).toBe(200);
     expect(capturedTx.user.update).toHaveBeenCalledWith({
       where: { id: TARGET_USER_ID },
-      data: { discountPercent: 10, agentDiscountPercent: 10 },
+      data: { discountPercent: 5, agentDiscountPercent: 10, sellerDiscountPercent: 20 },
     });
     expect(capturedTx.auditLog.create).toHaveBeenCalledOnce();
   });
 
-  it("returns 400 when set_discount_all percent is out of range", async () => {
+  it("returns 400 when set_discount_all has a field out of range", async () => {
     mockAuth.mockResolvedValueOnce(ADMIN_SESSION);
 
     const res = await PATCH(
-      makeRequest({ action: "set_discount_all", percent: -1 }) as never,
+      makeRequest({
+        action: "set_discount_all",
+        discountPercent: -1,
+        agentDiscountPercent: 0,
+        sellerDiscountPercent: 0,
+      }) as never,
       { params: PARAMS },
     );
     expect(res.status).toBe(400);

@@ -52,6 +52,17 @@ export function getResourceDiscountInfo(
   return getDiscountInfo(totalDeposited, discountPercent);
 }
 
+/**
+ * Discount riêng cho sản phẩm Seller — sellerDiscountPercent > 0 → % cố định, admin gán tay.
+ * Không có tier tự động (khác Service/Course/TutTrick và Tài nguyên MMO/Khương FB).
+ */
+export function getSellerDiscountInfo(sellerDiscountPercent: number): DiscountInfo {
+  if (sellerDiscountPercent > 0) {
+    return { pct: sellerDiscountPercent, label: "Seller Discount", isOverride: true };
+  }
+  return { pct: 0, label: "Thường", isOverride: false };
+}
+
 /** Tính giá sau giảm — làm tròn đến VND (không có số lẻ). */
 export function applyDiscount(catalogPrice: number, pct: number): number {
   if (pct <= 0) return catalogPrice;
