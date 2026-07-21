@@ -570,7 +570,6 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
           <GraduationCap size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Khóa Học</span>
         </Link>
-        {/* Ẩn tạm 2 tab (Tài Nguyên / Nguyên liệu) theo yêu cầu — giữ nguyên code, không xóa
         <Link
           href="/kho-tai-nguyen"
           prefetch={false}
@@ -591,7 +590,6 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
           <Package size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Nguyên liệu</span>
         </Link>
-        */}
         {isLoggedIn ? (
           <button
             className={`mnav-tab${activePanel === "account" ? " mnav-tab--active" : ""}`}
