@@ -72,6 +72,7 @@ const SECTIONS: NavSection[] = [
       { href: "/admin/tut-tricks",   label: "Tut / Tricks", Icon: FileText, color: "#94a3b8", permission: "tut_tricks:read" },
       { href: "/admin/mmo-products", label: "Tài nguyên",   Icon: Gamepad2, color: "#94a3b8", permission: "resources:read"  },
       { href: "/admin/khuongfb",     label: "Khuongfb",     Icon: Globe,    color: "#94a3b8", adminOnly: true                },
+      { href: "/admin/vps",          label: "VPS (VNCloud)", Icon: Monitor, color: "#94a3b8", adminOnly: true                },
       { href: "/admin/coupons",      label: "Mã giảm giá",  Icon: Ticket,   color: "#94a3b8", adminOnly: true                },
     ],
   },
@@ -89,6 +90,7 @@ const SECTIONS: NavSection[] = [
     key: "quality", label: "Chất lượng", Icon: ShieldCheck, color: "#94a3b8", bg: "#f1f5f9",
     links: [
       { href: "/admin/complaints", label: "Khiếu nại", Icon: AlertTriangle, color: "#94a3b8", badge: "complaints", permission: "complaints:read" },
+      { href: "/admin/doi-tac-ho-tro", label: "Hỗ trợ đối tác", Icon: Store, color: "#94a3b8", adminOnly: true },
       { href: "/admin/danh-gia",   label: "Đánh giá",  Icon: Star,          color: "#94a3b8",                      permission: "products:read"    },
       { href: "/admin/tickers",    label: "Ticker",    Icon: Radio,         color: "#94a3b8",                      permission: "content:read"     },
     ],

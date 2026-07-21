@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-// Sản phẩm áp dụng coupon chỉ giới hạn 3 loại (Kho tài nguyên / Tài nguyên MMO / Khương FB),
+// Sản phẩm áp dụng coupon chỉ giới hạn (Kho tài nguyên / Tài nguyên MMO / Khương FB / VPS),
 // dùng lại OrderType nhưng ràng buộc riêng ở đây để tránh coupon gắn nhầm SERVICE/COURSE/TUTTRICK.
-export const COUPON_PRODUCT_TYPES = ["SELLER_PRODUCT", "MMO_PRODUCT", "KHUONGFB_PRODUCT"] as const;
+export const COUPON_PRODUCT_TYPES = ["SELLER_PRODUCT", "MMO_PRODUCT", "KHUONGFB_PRODUCT", "VPS_PRODUCT"] as const;
 export type CouponProductType = (typeof COUPON_PRODUCT_TYPES)[number];
 
 export const couponProductRefSchema = z.object({

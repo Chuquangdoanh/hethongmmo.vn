@@ -33,6 +33,7 @@ const ORDER_TYPE_TO_TX: Record<OrderType, string> = {
   MMO_PRODUCT:      "BUY_MMO_PRODUCT",
   SELLER_PRODUCT:   "BUY_SELLER_PRODUCT",
   KHUONGFB_PRODUCT: "BUY_KHUONGFB_PRODUCT",
+  VPS_PRODUCT:      "BUY_VPS_PRODUCT",
 };
 
 interface PurchaseParams {

@@ -158,11 +158,35 @@ export function notifyKhuongfbRefund(
   })();
 }
 
+export function notifyVpsRefund(
+  userId: string,
+  itemName: string,
+  amount: string,
+  orderCode: string,
+  errorMsg: string,
+): void {
+  void (async () => {
+    const label = await _getUserLabel(userId);
+    sendTelegramAlert(
+      [
+        `⚠️ <b>VNCloud lỗi — đã hoàn tiền</b>`,
+        ``,
+        `👤 User: ${label}`,
+        `📦 Sản phẩm: ${escTelegramHtml(itemName)}`,
+        `💵 Đã hoàn: <b>${amount}đ</b>`,
+        `🔖 Mã đơn: <code>${escTelegramHtml(orderCode)}</code>`,
+        `❌ Lỗi: ${escTelegramHtml(errorMsg)}`,
+      ].join("\n"),
+    );
+  })();
+}
+
 /** Nguồn của đơn hàng — nơi user mua. */
 export type OrderSource =
   | { kind: "SYSTEM" }                       // Hệ Thống MMO (service/course/tuttrick/mmo)
   | { kind: "SELLER"; sellerId?: string }    // Nhà bán hàng — kèm tên/email seller
-  | { kind: "KHUONGFB" };                    // KhuongFB
+  | { kind: "KHUONGFB" }                     // KhuongFB
+  | { kind: "VPS" };                         // VNCloud VPS
 
 /**
  * Trả về dòng "Nguồn" cho tin đơn hàng theo nơi mua.
@@ -171,6 +195,7 @@ export type OrderSource =
  */
 async function _getSourceLine(source: OrderSource, withEmail: boolean): Promise<string> {
   if (source.kind === "KHUONGFB") return `🌐 Nguồn: KhuongFB`;
+  if (source.kind === "VPS")      return `🌐 Nguồn: VNCloud VPS`;
   if (source.kind === "SYSTEM")   return `🏢 Nguồn: Hệ Thống MMO`;
 
   const sellerLabel = source.sellerId

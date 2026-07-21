@@ -9,6 +9,7 @@ import {
 import SafeHtml from "@/components/shared/SafeHtml";
 import { FaReact } from "react-icons/fa";
 import { useNotificationSound } from "@/lib/hooks/useNotificationSound";
+import PartnerSupportButton from "./PartnerSupportButton";
 
 
 interface Props {
@@ -22,6 +23,8 @@ interface Props {
   orderCreatedAt: string;
   systemComplaintHref?: string | null;
   notificationSoundUrl?: string | null;
+  /** Đơn gian hàng đối tác đã có thread hỗ trợ chưa (KHUONGFB_PRODUCT). */
+  hasPartnerThread?: boolean;
 }
 
 interface DeliveredData {
@@ -477,7 +480,7 @@ function SupportNoticeButton({ zaloHref }: { zaloHref?: string | null }) {
   );
 }
 
-export default function OrderActions({ orderId, itemName, orderType, isDone, hasComplaint, complaintStatus, allowComplaint, orderCreatedAt, systemComplaintHref, notificationSoundUrl }: Props) {
+export default function OrderActions({ orderId, itemName, orderType, isDone, hasComplaint, complaintStatus, allowComplaint, orderCreatedAt, systemComplaintHref, notificationSoundUrl, hasPartnerThread = false }: Props) {
   const [isWithin2h, setIsWithin2h] = useState(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -550,6 +553,10 @@ export default function OrderActions({ orderId, itemName, orderType, isDone, has
           >
             <Eye size={11} /> Xem chi tiết
           </button>
+        )}
+        {/* Chat trực tiếp với gian hàng đối tác — chỉ đơn KHUONGFB_PRODUCT */}
+        {orderType === "KHUONGFB_PRODUCT" && isDone && (
+          <PartnerSupportButton orderId={orderId} itemName={itemName} hasThread={hasPartnerThread} />
         )}
         {allowComplaint && (
           orderType !== "SELLER_PRODUCT" ? (

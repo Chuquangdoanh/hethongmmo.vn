@@ -71,6 +71,7 @@ enum OrderType {
   MMO_PRODUCT
   SELLER_PRODUCT
   KHUONGFB_PRODUCT
+  VPS_PRODUCT
 }
 
 enum FavoriteProductType {
@@ -80,6 +81,7 @@ enum FavoriteProductType {
   MMO_PRODUCT
   SELLER_PRODUCT
   KHUONGFB_PRODUCT
+  VPS_PRODUCT
 }
 
 enum OrderStatus {
@@ -101,6 +103,7 @@ enum TxType {
   BUY_MMO_PRODUCT
   BUY_SELLER_PRODUCT
   BUY_KHUONGFB_PRODUCT
+  BUY_VPS_PRODUCT
   COURSE_DEPOSIT
   COURSE_FINAL_PAYMENT
   REFUND
@@ -305,6 +308,7 @@ model User {
   preSaleChatsAsBuyer    PreSaleChat[]    @relation("PreSaleChatBuyer")
   preSaleChatsAsSeller   PreSaleChat[]    @relation("PreSaleChatSeller")
   preSaleMessages        PreSaleMessage[]
+  partnerSupportThreads  PartnerSupportThread[]
   subCategories        UserSubCategory[]
   staffPermissions     StaffPermission[]
   siteContentUpdates   SiteContent[]
@@ -786,6 +790,12 @@ model Order {
   idempotencyKey        String?        @unique @map("idempotency_key")
   withdrawn             Boolean        @default(false)
 
+  // Gian hàng đối tác (external): admin hoàn tiền cho khách nhưng GIỮ status DONE
+  // để doanh thu/lợi nhuận không bị trừ. Cờ này chỉ để hiển thị badge "Đã hoàn tiền".
+  partnerRefunded       Boolean        @default(false) @map("partner_refunded")
+  partnerRefundedAt     DateTime?      @map("partner_refunded_at")
+  partnerRefundReason   String?        @map("partner_refund_reason")
+
   // Deposit payment fields (used when course price is 25M–100M)
   paymentType     String         @default("FULL") @map("payment_type") @db.VarChar(20)
   depositAmount   Decimal?       @db.Decimal(18, 2) @map("deposit_amount")
@@ -800,6 +810,7 @@ model Order {
   review          Review?
   affiliateCommission AffiliateCommission?
   supportTicket       SupportTicket?
+  partnerSupport      PartnerSupportThread?
 
   @@index([userId, createdAt])
   @@index([status])
@@ -1291,6 +1302,52 @@ model PreSaleMessage {
 }
 
 // ====================================================================
+// 20c. PARTNER SUPPORT (Chat hỗ trợ/khiếu nại cho gian hàng đối tác — external)
+//      Tách biệt hoàn toàn với hệ khiếu nại seller (Complaint/ChatRoom).
+//      Admin đóng vai gian hàng để trả lời; hoàn tiền GIỮ status DONE.
+// ====================================================================
+enum PartnerSupportStatus {
+  OPEN
+  RESOLVED // đóng, không hoàn tiền
+  REFUNDED // đã hoàn tiền cho khách (đơn vẫn DONE + partnerRefunded=true)
+}
+
+model PartnerSupportThread {
+  id           String               @id @default(uuid()) @db.Uuid
+  orderId      String               @unique @map("order_id") @db.Uuid
+  order        Order                @relation(fields: [orderId], references: [id])
+  userId       String               @map("user_id") @db.Uuid
+  user         User                 @relation(fields: [userId], references: [id])
+  providerId   String               @map("provider_id") @db.VarChar(50)
+  providerName String               @map("provider_name")
+  subject      String
+  status       PartnerSupportStatus @default(OPEN)
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+
+  messages     PartnerSupportMessage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([providerId])
+  @@map("partner_support_threads")
+}
+
+model PartnerSupportMessage {
+  id         String               @id @default(uuid()) @db.Uuid
+  threadId   String               @map("thread_id") @db.Uuid
+  thread     PartnerSupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderId   String               @map("sender_id") @db.Uuid
+  senderName String               @map("sender_name")
+  senderRole String               @map("sender_role") @db.VarChar(10) // USER | PROVIDER
+  content    String
+  createdAt  DateTime             @default(now()) @map("created_at")
+
+  @@index([threadId, createdAt])
+  @@map("partner_support_messages")
+}
+
+// ====================================================================
 // 21. AUDIT_LOGS
 // ====================================================================
 model AuditLog {
@@ -1635,6 +1692,8 @@ model ExternalProduct {
   salePrice          Decimal            @db.Decimal(18, 2) @map("sale_price")
   isEnabled          Boolean            @default(false) @map("is_enabled")
   warrantyInfo       String?            @map("warranty_info")
+  // Admin ghi đè tồn kho thủ công — null = tự tính từ rawData (mặc định), không bị sync đè
+  stockOverride      Int?               @map("stock_override")
   displaySection     StoreType          @default(TAI_NGUYEN_MMO) @map("display_section")
   resourceCategoryId String?            @map("resource_category_id") @db.Uuid
   resourceCategory   ResourceCategory?  @relation(fields: [resourceCategoryId], references: [id], onDelete: SetNull)

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { extractKhuongfbStockAmount } from "@/lib/khuongfb/types";
+import { getEffectiveStock } from "@/lib/khuongfb/types";
 import type { ExternalProductProvider, SyncResult } from "./types";
 
 export async function syncProvider(provider: ExternalProductProvider): Promise<SyncResult> {
@@ -12,26 +12,26 @@ export async function syncProvider(provider: ExternalProductProvider): Promise<S
   for (const product of products) {
     const existing = await prisma.externalProduct.findFirst({
       where: { provider: provider.providerId, externalId: product.externalId },
-      select: { id: true, resourceCategoryId: true },
+      select: { id: true, resourceCategoryId: true, stockOverride: true },
     });
 
     if (existing) {
       // Tự động ẩn/hiện theo tồn kho — chỉ áp dụng cho sản phẩm admin đã duyệt (có resourceCategoryId),
       // tránh sản phẩm mới chưa được admin xét duyệt bị tự động hiện lên marketplace.
-      const stock = extractKhuongfbStockAmount(product.rawData);
+      // Ưu tiên stockOverride nếu admin đã tự đặt tay.
+      const stock = getEffectiveStock(product.rawData, existing.stockOverride);
       const stockToggle = existing.resourceCategoryId && stock !== null ? { isEnabled: stock > 0 } : {};
 
       await prisma.externalProduct.update({
         where: { id: existing.id },
         data: {
           name:             product.name,
-          externalCategory: product.externalCategory,
           description:      product.description,
           originalPrice:    product.originalPrice,
           rawData:          product.rawData,
           syncedAt:         new Date(),
           ...stockToggle,
-          // thumbnail, salePrice không bị ghi đè — admin tự quản lý
+          // thumbnail, salePrice, externalCategory, stockOverride không bị ghi đè — admin tự quản lý
         },
       });
       updated++;

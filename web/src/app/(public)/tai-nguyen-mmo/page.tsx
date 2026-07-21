@@ -19,7 +19,7 @@ import { getExternalProductSoldCounts } from "@/lib/services/external-product-st
 import { TaiNguyenProductList } from "./_components/TaiNguyenProductList";
 import type { TaiNguyenProductItem } from "./_components/TaiNguyenProductList";
 import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
-import { extractKhuongfbStockAmount } from "@/lib/khuongfb/types";
+import { getEffectiveStock } from "@/lib/khuongfb/types";
 import { getPublicProviders } from "@/lib/external-providers/providers-config";
 
 export const metadata: Metadata = buildMeta({
@@ -201,6 +201,7 @@ export default async function TaiNguyenMmoPage({
         externalCategory: true, description: true, createdAt: true, provider: true,
         resourceCategory: { select: { name: true } },
         rawData: true,
+        stockOverride: true,
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -333,7 +334,7 @@ export default async function TaiNguyenMmoPage({
       id: p.id, kind: "kfb", name: p.name,
       description: stripHtml(p.description ?? null), imageUrl: p.thumbnail,
       price: Number(p.salePrice), rating: 0, reviewCount: 0, salesCount: kfbSoldMap.get(p.id) ?? 0,
-      available: extractKhuongfbStockAmount(p.rawData) ?? 0, category: p.resourceCategory?.name ?? p.externalCategory,
+      available: getEffectiveStock(p.rawData, p.stockOverride) ?? 0, category: p.resourceCategory?.name ?? p.externalCategory,
       isNew: false, isHot: false,
       href: `/kfb/${p.id}`, shopHref: `${BASE_PATH}/gian-hang-ngoai/${p.provider}`,
       createdAt: p.createdAt, sellerName: providerNameMap.get(p.provider) ?? "Nguồn ngoài",

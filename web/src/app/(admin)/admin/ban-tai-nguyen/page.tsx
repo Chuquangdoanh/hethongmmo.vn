@@ -119,7 +119,7 @@ export default async function BanTaiNguyenPage({
       select: {
         id: true, orderCode: true, itemName: true, orderType: true,
         originalPrice: true, finalPrice: true, status: true, createdAt: true,
-        externalOrderId: true,
+        externalOrderId: true, partnerRefunded: true,
         coupon: { select: { code: true } },
         user: { select: { email: true, fullName: true } },
       },
@@ -453,6 +453,11 @@ export default async function BanTaiNguyenPage({
                     </td>
                     <td className="px-4 py-3.5 text-center">
                       <InlineStatusCell orderId={order.id} status={order.status} />
+                      {order.partnerRefunded && (
+                        <span className="mt-1 inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#3B82F6]/10 text-[#3B82F6]">
+                          Đã hoàn tiền
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3.5 text-xs text-gray-500">{formatDate(order.createdAt)}</td>
                     <td className="px-4 py-3.5 text-right">

@@ -10,9 +10,10 @@ import ReviewSection from "@/components/shared/ReviewSection";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import { getFavoriteStatus } from "@/lib/services/favorite.service";
 import { getExternalProductSoldCount } from "@/lib/services/external-product-stats.service";
-import { getPublicProviderInfo } from "@/lib/external-providers/providers-config";
+import { getPublicProviderInfo, getProviderType } from "@/lib/external-providers/providers-config";
 import FavoriteButton from "@/components/shared/FavoriteButton";
 import { KfbBuyButton } from "./_components/KfbBuyButton";
+import { VpsBuyButton } from "./_components/VpsBuyButton";
 import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
 import ProductImageGallery from "@/components/shared/ProductImageGallery";
 import {
@@ -102,6 +103,7 @@ export default async function KfbProductDetailPage({
         id: true, name: true, description: true, thumbnail: true,
         salePrice: true, originalPrice: true, warrantyInfo: true,
         externalCategory: true, displaySection: true, createdAt: true, provider: true,
+        rawData: true,
         resourceCategory: { select: { name: true } },
         subCategory:      { select: { name: true } },
       },
@@ -113,7 +115,7 @@ export default async function KfbProductDetailPage({
 
   const me = session?.user as AuthenticatedUser | undefined;
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, contactCms, favoriteStatus, soldCount, discountPct, galleryRows, providerInfo] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, contactCms, favoriteStatus, soldCount, discountPct, galleryRows, providerInfo, providerType] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "KHUONGFB_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -157,6 +159,7 @@ export default async function KfbProductDetailPage({
       select: { imageUrl: true },
     }),
     getPublicProviderInfo(product.provider),
+    getProviderType(product.provider),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
@@ -187,6 +190,31 @@ export default async function KfbProductDetailPage({
   const hasDiscount   = originalPrice > salePrice;
   // finalPrice = giá thực tế sẽ bị trừ khi mua (đã áp discount Đại lý/tier) — dùng cho preview + nút mua
   const finalPrice    = discountPct > 0 ? Math.round(salePrice * (1 - discountPct / 100)) : salePrice;
+
+  // Sản phẩm VNCloud: giá phụ thuộc chu kỳ thuê + bắt buộc chọn OS — khác hẳn model 1-giá của khuongfb
+  const isVps = providerType === "vncloud";
+  const markupRatio = originalPrice > 0 ? salePrice / originalPrice : 1;
+  const vpsRawData = product.rawData as unknown as {
+    pricing?: Record<string, { billing_cycle: string; amount: number }>;
+    limitOs?: Array<{ "os-id": number; "os-name": string }>;
+  } | null;
+  // Thứ tự tháng tăng dần — JSONB không đảm bảo giữ nguyên thứ tự key gốc từ API nên phải sort tường minh
+  const BILLING_CYCLE_MONTHS: Record<string, number> = {
+    monthly: 1, twomonthly: 2, quarterly: 3, semi_annually: 6,
+    annually: 12, biennially: 24, triennially: 36,
+  };
+  const vpsBillingCycles = isVps
+    ? Object.entries(vpsRawData?.pricing ?? {})
+        .map(([key, v]) => {
+          const catalogPrice = Math.round(v.amount * markupRatio);
+          const price = discountPct > 0 ? Math.round(catalogPrice * (1 - discountPct / 100)) : catalogPrice;
+          return { key, label: v.billing_cycle, price };
+        })
+        .sort((a, b) => (BILLING_CYCLE_MONTHS[a.key] ?? 999) - (BILLING_CYCLE_MONTHS[b.key] ?? 999))
+    : [];
+  const vpsOsOptions = isVps
+    ? (vpsRawData?.limitOs ?? []).map((o) => ({ id: o["os-id"], name: o["os-name"] }))
+    : [];
 
   // ── JSX SECTIONS ─────────────────────────────────────────────────
 
@@ -385,6 +413,7 @@ export default async function KfbProductDetailPage({
       {/* Price */}
       <div className="flex items-center justify-between">
         <div>
+          {isVps && <p className="text-xs text-text-muted mb-0.5">Giá từ (theo chu kỳ thuê bạn chọn)</p>}
           {discountPct > 0 ? (
             <>
               <p className="text-sm text-[#94a3b8] line-through">{formatVnd(salePrice)}</p>
@@ -407,12 +436,21 @@ export default async function KfbProductDetailPage({
       </div>
 
       {/* Buy button */}
-      <KfbBuyButton
-        productId={product.id}
-        productName={product.name}
-        price={finalPrice}
-        isLoggedIn={!!me}
-      />
+      {isVps ? (
+        <VpsBuyButton
+          productId={product.id}
+          isLoggedIn={!!me}
+          billingCycles={vpsBillingCycles}
+          osOptions={vpsOsOptions}
+        />
+      ) : (
+        <KfbBuyButton
+          productId={product.id}
+          productName={product.name}
+          price={finalPrice}
+          isLoggedIn={!!me}
+        />
+      )}
 
       {/* Pledges */}
       <div className="grid grid-cols-3 gap-2">

@@ -1,18 +1,27 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { KhuongfbCompatibleAdapter } from "./khuongfb-compatible";
+import { VnCloudAdapter } from "./vncloud-adapter";
 import type { ExternalProductProvider } from "./types";
 
 const PROVIDERS_KEY  = "external_provider_configs";
 const LEGACY_KFB_KEY = "khuongfb_api_config";
 
+export type ProviderType = "khuongfb" | "vncloud";
+
 export interface ProviderEntry {
-  id:      string;
-  name:    string;
-  baseUrl: string;
-  apiKey:  string;
-  enabled: boolean;
-  imageUrl?: string;
+  id:          string;
+  name:        string;
+  providerType?: ProviderType; // mặc định "khuongfb" nếu thiếu (config cũ trước khi có VNCloud)
+  // khuongfb-compatible
+  baseUrl?:    string;
+  apiKey?:     string;
+  // vncloud
+  apiUsername?: string;
+  apiApp?:      string;
+  apiSecret?:   string;
+  enabled:     boolean;
+  imageUrl?:   string;
 }
 
 /** Thông tin gian hàng provider an toàn để trả ra client (không có apiKey/baseUrl). */
@@ -61,7 +70,20 @@ export async function loadEnabledAdapters(): Promise<ExternalProductProvider[]> 
   const configs = await getProviderConfigs();
   return configs
     .filter(c => c.enabled)
-    .map(c => new KhuongfbCompatibleAdapter({ providerId: c.id, baseUrl: c.baseUrl, apiKey: c.apiKey }));
+    .map(c => buildAdapter(c));
+}
+
+function buildAdapter(c: ProviderEntry): ExternalProductProvider {
+  if ((c.providerType ?? "khuongfb") === "vncloud") {
+    if (!c.apiUsername || !c.apiApp || !c.apiSecret) {
+      throw new Error(`Provider VNCloud "${c.name}" thiếu apiUsername/apiApp/apiSecret`);
+    }
+    return new VnCloudAdapter({ providerId: c.id, apiUsername: c.apiUsername, apiApp: c.apiApp, apiSecret: c.apiSecret });
+  }
+  if (!c.baseUrl || !c.apiKey) {
+    throw new Error(`Provider "${c.name}" thiếu baseUrl/apiKey`);
+  }
+  return new KhuongfbCompatibleAdapter({ providerId: c.id, baseUrl: c.baseUrl, apiKey: c.apiKey });
 }
 
 export function maskApiKey(apiKey: string): string {
@@ -80,4 +102,11 @@ export async function getPublicProviderInfo(id: string): Promise<ProviderPublicI
   const found = configs.find((c) => c.id === id);
   if (!found) return null;
   return { id: found.id, name: found.name, imageUrl: found.imageUrl ?? null };
+}
+
+/** Loại provider (khuongfb-compatible hay vncloud) theo id — null nếu không tồn tại. */
+export async function getProviderType(id: string): Promise<ProviderType | null> {
+  const configs = await getProviderConfigs();
+  const found = configs.find((c) => c.id === id);
+  return found ? (found.providerType ?? "khuongfb") : null;
 }

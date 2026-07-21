@@ -26,7 +26,9 @@ export interface ExternalOrderStatus {
 export interface ExternalProductProvider {
   readonly providerId: string;
   getProducts(): Promise<NormalizedProduct[]>;
-  buyProduct(externalId: string, quantity: number): Promise<BuyResult>;
+  // options: tham số mua hàng đặc thù theo provider (vd. billingCycle/os cho VNCloud) — provider
+  // không cần tham số thêm (khuongfb/muaviaus) chỉ bỏ qua tham số này
+  buyProduct(externalId: string, quantity: number, options?: Record<string, unknown>): Promise<BuyResult>;
   getOrder(externalOrderId: string): Promise<ExternalOrderStatus>;
 }
 

@@ -26,6 +26,8 @@ type PatchPayload = {
   displaySection?:     string;
   thumbnail?:          string | null;
   warrantyInfo?:       string | null;
+  externalCategory?:   string;
+  stockOverride?:      number | null;
 };
 
 function thumbSrc(thumb: string): string {
@@ -48,6 +50,8 @@ export function KhuongfbProductTable({ products, categories, onRefresh }: Props)
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [subCatMap,   setSubCatMap]   = useState<Record<string, string>>({});
   const [sectionMap,  setSectionMap]  = useState<Record<string, string>>({});
+  const [kfbCategoryMap, setKfbCategoryMap] = useState<Record<string, string>>({});
+  const [stockMap,       setStockMap]       = useState<Record<string, string>>({});
 
   // Track which product the file input belongs to
   const activeProductRef = useRef<KhuongfbProduct | null>(null);
@@ -84,9 +88,18 @@ export function KhuongfbProductTable({ products, categories, onRefresh }: Props)
     const catId       = categoryMap[product.id]  ?? product.resourceCategory?.id  ?? null;
     const subCatId    = subCatMap[product.id]    ?? product.subCategory?.id       ?? null;
     const section     = sectionMap[product.id]   ?? product.displaySection;
+    const kfbCategory = (kfbCategoryMap[product.id] ?? product.externalCategory).trim();
+    const rawStock    = stockMap[product.id];
+    const stockOverride = rawStock === undefined
+      ? undefined
+      : rawStock.trim() === "" ? null : parseInt(rawStock, 10);
 
     if (!name) { alert("Tên sản phẩm không được trống"); return; }
     if (isNaN(salePrice) || salePrice <= 0) { alert("Giá bán phải là số dương"); return; }
+    if (!kfbCategory) { alert("Danh mục KFB không được trống"); return; }
+    if (stockOverride !== undefined && stockOverride !== null && (isNaN(stockOverride) || stockOverride < 0)) {
+      alert("Tồn kho phải là số nguyên không âm"); return;
+    }
 
     void patch(product.id, {
       name,
@@ -96,6 +109,8 @@ export function KhuongfbProductTable({ products, categories, onRefresh }: Props)
       resourceCategoryId: catId       || null,
       subCategoryId:      subCatId    || null,
       displaySection:     section     || undefined,
+      externalCategory:   kfbCategory,
+      ...(stockOverride !== undefined ? { stockOverride } : {}),
     });
   }
 
@@ -394,6 +409,32 @@ export function KhuongfbProductTable({ products, categories, onRefresh }: Props)
                               readOnly
                               value={`${Number(p.originalPrice).toLocaleString("vi-VN")}đ`}
                               className="w-full text-sm border border-gray-100 rounded-lg px-3 py-2 bg-gray-100 text-gray-400 cursor-not-allowed"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">
+                              Danh mục KFB
+                            </label>
+                            <input
+                              type="text"
+                              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-400"
+                              value={kfbCategoryMap[p.id] ?? p.externalCategory}
+                              onChange={(e) => setKfbCategoryMap((m) => ({ ...m, [p.id]: e.target.value }))}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">
+                              Tồn kho (để trống = tự động theo API)
+                            </label>
+                            <input
+                              type="number"
+                              min={0}
+                              placeholder={p.stockAmount != null ? String(p.stockAmount) : "Tự động"}
+                              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-400"
+                              value={stockMap[p.id] ?? (p.stockOverride != null ? String(p.stockOverride) : "")}
+                              onChange={(e) => setStockMap((m) => ({ ...m, [p.id]: e.target.value }))}
                             />
                           </div>
 

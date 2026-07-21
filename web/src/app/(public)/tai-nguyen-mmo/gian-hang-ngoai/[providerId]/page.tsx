@@ -7,7 +7,7 @@ import { r2Url } from "@/lib/utils/image-url";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import { getPublicProviderInfo } from "@/lib/external-providers/providers-config";
 import { getExternalProductSoldCounts } from "@/lib/services/external-product-stats.service";
-import { extractKhuongfbStockAmount } from "@/lib/khuongfb/types";
+import { getEffectiveStock } from "@/lib/khuongfb/types";
 import { FaTelegramPlane, FaFacebook } from "react-icons/fa";
 import {
   Store, BadgeCheck, ShoppingCart, Star,
@@ -99,7 +99,7 @@ export default async function ExternalShopPage({
     where: { provider: providerId, isEnabled: true },
     select: {
       id: true, name: true, thumbnail: true, salePrice: true,
-      externalCategory: true, createdAt: true, rawData: true,
+      externalCategory: true, createdAt: true, rawData: true, stockOverride: true,
       resourceCategory: { select: { name: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -115,7 +115,7 @@ export default async function ExternalShopPage({
     category:  p.resourceCategory?.name ?? p.externalCategory,
     createdAt: p.createdAt,
     salesCount: soldMap.get(p.id) ?? 0,
-    available:  extractKhuongfbStockAmount(p.rawData) ?? 0,
+    available:  getEffectiveStock(p.rawData, p.stockOverride) ?? 0,
   }));
 
   const totalSold = enriched.reduce((acc, p) => acc + p.salesCount, 0);

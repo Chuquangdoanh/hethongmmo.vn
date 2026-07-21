@@ -6,7 +6,7 @@ import { StoreType } from "@prisma/client";
 import { z } from "zod";
 import { apiOk, apiList, apiCatch, apiValidationError } from "@/lib/api-response";
 import { writeAuditLog } from "@/lib/security/audit";
-import { extractKhuongfbStockAmount } from "@/lib/khuongfb/types";
+import { getEffectiveStock } from "@/lib/khuongfb/types";
 
 export const runtime = "nodejs";
 
@@ -69,13 +69,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           subCategory:         { select: { id: true, name: true } },
           syncedAt:            true,
           rawData:             true,
+          stockOverride:       true,
         },
       }),
       prisma.externalProduct.count({ where }),
     ]);
 
     const data = raw.map((p) => {
-      const stockAmount = extractKhuongfbStockAmount(p.rawData);
+      const stockAmount = getEffectiveStock(p.rawData, p.stockOverride);
       const { rawData: _rawData, ...rest } = p;
       return { ...rest, stockAmount };
     });
@@ -96,6 +97,8 @@ const patchSchema = z.object({
   displaySection:     z.enum(["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"]).optional(),
   thumbnail:          z.string().url().nullable().optional(),
   warrantyInfo:       z.string().max(5000).nullable().optional(),
+  externalCategory:   z.string().min(1).max(200).trim().optional(),
+  stockOverride:      z.number().int().min(0).nullable().optional(),
 });
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {

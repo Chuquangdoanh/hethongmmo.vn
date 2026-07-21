@@ -81,3 +81,8 @@ export function extractKhuongfbStockAmount(rawData: unknown): number | null {
   if (typeof rd["số tiền"] === "number") return rd["số tiền"];
   return null;
 }
+
+/** Tồn kho hiệu lực — ưu tiên giá trị admin ghi đè thủ công (stockOverride), fallback về rawData tự động. */
+export function getEffectiveStock(rawData: unknown, stockOverride: number | null | undefined): number | null {
+  return stockOverride ?? extractKhuongfbStockAmount(rawData);
+}

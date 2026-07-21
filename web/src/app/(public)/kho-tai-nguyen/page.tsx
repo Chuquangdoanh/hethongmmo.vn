@@ -18,7 +18,7 @@ import {
 import { KhoProductList } from "./_components/KhoProductList";
 import type { KhoProductItem } from "./_components/KhoProductList";
 import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
-import { extractKhuongfbStockAmount } from "@/lib/khuongfb/types";
+import { getEffectiveStock } from "@/lib/khuongfb/types";
 import { getPublicProviders } from "@/lib/external-providers/providers-config";
 
 export const metadata: Metadata = buildMeta({
@@ -201,6 +201,7 @@ export default async function KhoTaiNguyenPage({
         resourceCategory: { select: { name: true } },
         subCategory:      { select: { name: true } },
         rawData: true,
+        stockOverride: true,
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -340,7 +341,7 @@ export default async function KhoTaiNguyenPage({
         category: p.resourceCategory?.name ?? p.externalCategory,
         description: stripHtml(p.description ?? null),
         price: Number(p.salePrice), salesCount: kfbSoldMap.get(p.id) ?? 0, createdAt: p.createdAt,
-        sellerPrefix: providerNameMap.get(p.provider) ?? "Nguồn ngoài", available: extractKhuongfbStockAmount(p.rawData) ?? 0,
+        sellerPrefix: providerNameMap.get(p.provider) ?? "Nguồn ngoài", available: getEffectiveStock(p.rawData, p.stockOverride) ?? 0,
         isNew: false, isHot: false,
         href: `/kfb/${p.id}`,
         bought: false, rated: false, review: undefined,

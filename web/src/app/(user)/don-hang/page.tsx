@@ -104,6 +104,8 @@ export default async function DonHangPage({
         id: true, orderCode: true, itemName: true,
         orderType: true, finalPrice: true, status: true, createdAt: true,
         paymentType: true, depositAmount: true, remainingAmount: true,
+        partnerRefunded: true,
+        partnerSupport: { select: { id: true } },
       },
     }),
     prisma.order.count({ where: ordersWhere }),
@@ -250,6 +252,11 @@ export default async function DonHangPage({
                           <span className={`shrink-0 inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium border ${st.cls}`}>
                             {st.label}
                           </span>
+                          {order.partnerRefunded && (
+                            <span className="shrink-0 inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200">
+                              Đã hoàn tiền
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-[11px] text-gray-400">{formatDate(order.createdAt)}</p>
@@ -278,6 +285,7 @@ export default async function DonHangPage({
                               notificationSoundUrl={notificationSoundUrl}
                               allowComplaint={activeTab === "tainguyen"}
                               orderCreatedAt={order.createdAt.toISOString()}
+                              hasPartnerThread={!!order.partnerSupport}
                             />
                           </div>
                         )}
@@ -310,6 +318,11 @@ export default async function DonHangPage({
                           <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium border ${st.cls}`}>
                             {st.label}
                           </span>
+                          {order.partnerRefunded && (
+                            <span className="mt-1 inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200">
+                              Đã hoàn tiền
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm font-semibold text-emerald-600 text-right">
                           {formatVnd(Number(order.finalPrice))}
@@ -327,6 +340,7 @@ export default async function DonHangPage({
                               notificationSoundUrl={notificationSoundUrl}
                               allowComplaint={activeTab === "tainguyen"}
                               orderCreatedAt={order.createdAt.toISOString()}
+                              hasPartnerThread={!!order.partnerSupport}
                             />
                           </div>
                         )}

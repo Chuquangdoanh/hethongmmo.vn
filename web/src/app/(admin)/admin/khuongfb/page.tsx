@@ -37,6 +37,7 @@ export interface KhuongfbProduct {
   subCategory:      { id: string; name: string } | null;
   syncedAt:         string | null;
   stockAmount:      number | null;
+  stockOverride:    number | null;
 }
 
 interface Meta {
