@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { requireStaff, AppAuthError } from "@/lib/auth/rbac";
@@ -118,6 +119,10 @@ export async function PATCH(
       select: { id: true, slug: true, name: true, isActive: true, updatedAt: true },
     });
 
+    // Trang /khoa-hoc cache danh sách khóa học qua unstable_cache (revalidate: 300s) —
+    // phải revalidate ngay để giá gốc/giá giảm mới không bị hiển thị sai (stale) tới 5 phút
+    revalidatePath("/khoa-hoc");
+
     await writeAuditLog({
       actorId: actor.id,
       action: "COURSE_UPDATE",
@@ -158,6 +163,8 @@ export async function DELETE(
     }
 
     await prisma.course.update({ where: { id }, data: { deletedAt: new Date(), isActive: false } });
+
+    revalidatePath("/khoa-hoc");
 
     await writeAuditLog({
       actorId: actor.id,

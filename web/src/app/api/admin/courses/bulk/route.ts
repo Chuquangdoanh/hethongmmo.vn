@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
@@ -31,6 +32,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const { action, ids } = parsed.data;
+
+    // Trang /khoa-hoc cache danh sách khóa học qua unstable_cache (revalidate: 300s) —
+    // phải revalidate ngay để show/hide/xóa hàng loạt không bị hiển thị sai (stale) tới 5 phút
+    revalidatePath("/khoa-hoc");
 
     if (action === "delete") {
       await prisma.course.updateMany({

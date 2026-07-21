@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { requireStaff, AppAuthError } from "@/lib/auth/rbac";
@@ -160,6 +161,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       },
       select: { id: true, slug: true, name: true },
     });
+
+    revalidatePath("/khoa-hoc");
 
     await writeAuditLog({
       actorId: actor.id,
