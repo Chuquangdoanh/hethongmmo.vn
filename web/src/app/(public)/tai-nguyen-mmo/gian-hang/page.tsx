@@ -8,6 +8,8 @@ import {
   Store, BadgeCheck, Star, ShoppingCart, Package, ChevronRight, Building2,
 } from "lucide-react";
 import { r2Url } from "@/lib/utils/image-url";
+import { getPublicProviders } from "@/lib/external-providers/providers-config";
+import { getExternalProductSoldCounts } from "@/lib/services/external-product-stats.service";
 import { SellerFilterSidebar } from "./_components/SellerFilterSidebar";
 import type { SellerCategoryItem } from "./_components/SellerFilterSidebar";
 import { SellerSortSelect } from "./_components/SellerSortSelect";
@@ -211,6 +213,48 @@ export default async function NhaBanHangPage({
     };
   });
 
+  // ── External providers (gian hàng đối tác) ─────────────────────
+  const externalProducts = await prisma.externalProduct.findMany({
+    where: { isEnabled: true, displaySection: "TAI_NGUYEN_MMO" },
+    select: {
+      id: true, provider: true, externalCategory: true,
+      resourceCategory: { select: { name: true } },
+    },
+  });
+  const externalSoldMap = await getExternalProductSoldCounts(externalProducts.map((p) => p.id));
+  const providerInfoMap = new Map((await getPublicProviders()).map((p) => [p.id, p]));
+
+  type ProviderCard = {
+    id: string;
+    name: string;
+    imageUrl: string | null;
+    productCount: number;
+    totalSold: number;
+    categories: Set<string>;
+  };
+  const providerAgg = new Map<string, ProviderCard>();
+  for (const ep of externalProducts) {
+    const info = providerInfoMap.get(ep.provider);
+    if (!info) continue; // provider không còn cấu hình → bỏ qua
+    const cat = ep.resourceCategory?.name ?? ep.externalCategory;
+    const cur = providerAgg.get(ep.provider) ?? {
+      id: info.id, name: info.name, imageUrl: info.imageUrl,
+      productCount: 0, totalSold: 0, categories: new Set<string>(),
+    };
+    cur.productCount += 1;
+    cur.totalSold += externalSoldMap.get(ep.id) ?? 0;
+    if (cat) cur.categories.add(cat);
+    providerAgg.set(ep.provider, cur);
+  }
+
+  let providerCards = [...providerAgg.values()].sort((a, b) => b.totalSold - a.totalSold);
+  if (activeCategory) providerCards = providerCards.filter((p) => p.categories.has(activeCategory));
+  if (q) {
+    const lq = q.toLowerCase();
+    providerCards = providerCards.filter((p) => p.name.toLowerCase().includes(lq));
+  }
+  if (minRating > 0) providerCards = []; // gian hàng đối tác chưa có đánh giá
+
   // Build category counts (before filtering, for the sidebar)
   const catCounts: Record<string, number> = {};
   for (const s of enriched) {
@@ -223,6 +267,12 @@ export default async function NhaBanHangPage({
   const mergedCatCounts: Record<string, number> = { ...catCounts };
   for (const cat of systemCategorySet) {
     mergedCatCounts[cat] = (mergedCatCounts[cat] ?? 0) + 1;
+  }
+  // Merge provider (gian hàng đối tác) categories: +1 mỗi provider cho mỗi danh mục
+  for (const pc of providerAgg.values()) {
+    for (const cat of pc.categories) {
+      mergedCatCounts[cat] = (mergedCatCounts[cat] ?? 0) + 1;
+    }
   }
   const categories: SellerCategoryItem[] = Object.entries(mergedCatCounts)
     .sort((a, b) => b[1] - a[1])
@@ -257,16 +307,18 @@ export default async function NhaBanHangPage({
     enriched = [...enriched].sort((a, b) => b.totalSales - a.totalSales);
   }
 
-  // Pagination (system card always on page 1)
-  const totalSellerCount = enriched.length + (shouldShowSystem ? 1 : 0);
+  // Pagination — thẻ ghim (Hệ Thống MMO + gian hàng đối tác) luôn nằm ở trang 1
+  const pinnedReserve = (shouldShowSystem ? 1 : 0) + providerCards.length;
+  const totalSellerCount = enriched.length + pinnedReserve;
   const totalSellerPages = Math.ceil(totalSellerCount / SELLER_PAGE_SIZE);
   const pagedEnriched = enriched.slice(
-    currentPage === 1 ? 0 : (currentPage - 1) * SELLER_PAGE_SIZE - (shouldShowSystem ? 1 : 0),
+    currentPage === 1 ? 0 : (currentPage - 1) * SELLER_PAGE_SIZE - pinnedReserve,
     currentPage === 1
-      ? SELLER_PAGE_SIZE - (shouldShowSystem ? 1 : 0)
-      : currentPage * SELLER_PAGE_SIZE - (shouldShowSystem ? 1 : 0),
+      ? SELLER_PAGE_SIZE - pinnedReserve
+      : currentPage * SELLER_PAGE_SIZE - pinnedReserve,
   );
   const showSystemOnThisPage = shouldShowSystem && currentPage === 1;
+  const showProvidersOnThisPage = currentPage === 1;
 
   // Preserve current filters for pagination
   const sellerPageParams: Record<string, string> = {};
@@ -391,6 +443,77 @@ export default async function NhaBanHangPage({
                   </Link>
                 </div>
               </div>}
+
+              {/* ── Gian hàng đối tác (provider ngoài) — ghim sau thẻ Hệ Thống MMO, trang 1 ── */}
+              {showProvidersOnThisPage && providerCards.map((pc) => (
+                <div
+                  key={`prov-${pc.id}`}
+                  className="bg-white rounded-xl border border-[#0d9488]/30 overflow-hidden hover:shadow-md hover:border-[#0d9488]/60 transition-all flex flex-col relative"
+                >
+                  <span className="absolute top-2 right-2 z-10 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#0d9488] text-white">
+                    Đối tác
+                  </span>
+                  <div className="h-14 bg-linear-to-br from-[#0d9488] to-[#0284c7]" />
+                  <div className="px-4 pb-4 flex flex-col gap-2.5 flex-1 -mt-7">
+                    {pc.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={r2Url(pc.imageUrl)}
+                        alt={pc.name}
+                        className="w-14 h-14 rounded-full object-cover ring-2 ring-white shadow-md"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-linear-to-br from-[#0d9488] to-[#0284c7] ring-2 ring-white flex items-center justify-center shadow-md">
+                        <Store size={24} strokeWidth={1.5} className="text-white" />
+                      </div>
+                    )}
+                    <div>
+                      <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                        <h3 className="text-sm font-extrabold text-text-dark">{pc.name}</h3>
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#dbeafe] text-[#1d4ed8]">
+                          <BadgeCheck size={9} strokeWidth={2.5} /> Xác minh
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] text-text-muted truncate">Gian hàng đối tác</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 bg-green-100 text-green-700">
+                          Đối tác
+                        </span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5 text-center">
+                      <div className="bg-light rounded-lg py-2 px-1">
+                        <p className="text-xs font-extrabold text-text-dark">—</p>
+                        <div className="flex items-center justify-center gap-0.5 mt-0.5">
+                          <Star size={8} fill="#f59e0b" className="text-warning" />
+                          <span className="text-[9px] text-text-muted">(0)</span>
+                        </div>
+                      </div>
+                      <div className="bg-light rounded-lg py-2 px-1">
+                        <p className="text-xs font-extrabold text-text-dark">{pc.productCount}</p>
+                        <p className="text-[9px] text-text-muted mt-0.5 flex items-center justify-center gap-0.5">
+                          <Package size={7} strokeWidth={2} /> SP
+                        </p>
+                      </div>
+                      <div className="bg-light rounded-lg py-2 px-1">
+                        <p className="text-xs font-extrabold text-text-dark">
+                          {pc.totalSold > 999 ? `${(pc.totalSold / 1000).toFixed(1)}k` : pc.totalSold}
+                        </p>
+                        <p className="text-[9px] text-text-muted mt-0.5 flex items-center justify-center gap-0.5">
+                          <ShoppingCart size={7} strokeWidth={2} /> Bán
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/tai-nguyen-mmo/gian-hang-ngoai/${pc.id}`}
+                      className="mt-auto w-full py-2 rounded-lg border border-[#0d9488] text-[#0d9488] text-xs font-bold hover:bg-[#0d9488] hover:text-white transition-all text-center flex items-center justify-center gap-1"
+                    >
+                      Xem gian hàng
+                      <ChevronRight size={12} strokeWidth={2.5} />
+                    </Link>
+                  </div>
+                </div>
+              ))}
 
               {pagedEnriched.map((seller) => {
                 const gradient = AVATAR_GRADIENTS[idToGradientIndex(seller.id)]!;
