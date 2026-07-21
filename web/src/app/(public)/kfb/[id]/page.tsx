@@ -10,6 +10,7 @@ import ReviewSection from "@/components/shared/ReviewSection";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
 import { getFavoriteStatus } from "@/lib/services/favorite.service";
 import { getExternalProductSoldCount } from "@/lib/services/external-product-stats.service";
+import { getPublicProviderInfo } from "@/lib/external-providers/providers-config";
 import FavoriteButton from "@/components/shared/FavoriteButton";
 import { KfbBuyButton } from "./_components/KfbBuyButton";
 import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
@@ -17,7 +18,7 @@ import ProductImageGallery from "@/components/shared/ProductImageGallery";
 import {
   CheckCircle, ShieldCheck, Zap, ArrowLeft,
   ShoppingCart, Headphones, RotateCcw, BadgeCheck, Lock,
-  ExternalLink, ChevronLeft, ChevronRight,
+  ExternalLink, ChevronLeft, ChevronRight, Store,
 } from "lucide-react";
 
 export async function generateMetadata({
@@ -100,7 +101,7 @@ export default async function KfbProductDetailPage({
       select: {
         id: true, name: true, description: true, thumbnail: true,
         salePrice: true, originalPrice: true, warrantyInfo: true,
-        externalCategory: true, displaySection: true, createdAt: true,
+        externalCategory: true, displaySection: true, createdAt: true, provider: true,
         resourceCategory: { select: { name: true } },
         subCategory:      { select: { name: true } },
       },
@@ -112,7 +113,7 @@ export default async function KfbProductDetailPage({
 
   const me = session?.user as AuthenticatedUser | undefined;
 
-  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, contactCms, favoriteStatus, soldCount, discountPct, galleryRows] = await Promise.all([
+  const [reviewStats, myReview, recentReviews, nextReviewableOrder, starBreakdown, contactCms, favoriteStatus, soldCount, discountPct, galleryRows, providerInfo] = await Promise.all([
     prisma.review.aggregate({
       where: { productType: "KHUONGFB_PRODUCT", productId: product.id },
       _avg: { rating: true },
@@ -155,6 +156,7 @@ export default async function KfbProductDetailPage({
       orderBy: { createdAt: "asc" },
       select: { imageUrl: true },
     }),
+    getPublicProviderInfo(product.provider),
   ]);
 
   const avgRating   = reviewStats._avg.rating ?? 0;
@@ -253,7 +255,47 @@ export default async function KfbProductDetailPage({
     </div>
   ) : null;
 
-  const cardSource = (
+  const providerLogoSrc = providerInfo?.imageUrl ? r2Url(providerInfo.imageUrl) : null;
+  const shopHref = `/tai-nguyen-mmo/gian-hang-ngoai/${product.provider}`;
+
+  // Card gian hàng — hiển thị provider như 1 seller (tên + logo), link tới trang gian hàng.
+  // Fallback về nhãn "Hệ Thống MMO" khi provider không còn cấu hình.
+  const cardSource = providerInfo ? (
+    <Link
+      href={shopHref}
+      className="rounded-2xl border border-border bg-white p-4 flex items-center gap-4 hover:border-primary hover:shadow-sm transition-all group"
+    >
+      {providerLogoSrc ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={providerLogoSrc}
+          alt={providerInfo.name}
+          className="w-14 h-14 rounded-2xl object-cover shrink-0 shadow-sm"
+        />
+      ) : (
+        <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-[#0052cc] to-[#0066ff] flex items-center justify-center shrink-0 shadow-sm">
+          <Store size={26} strokeWidth={1.75} className="text-white" />
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+          <p className="text-sm font-extrabold text-text-dark group-hover:text-primary transition-colors truncate">{providerInfo.name}</p>
+          <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-primary/10 text-primary border border-primary/20">
+            Gian hàng
+          </span>
+        </div>
+        <p className="text-[11px] text-text-muted">Sản phẩm được kiểm duyệt kỹ lưỡng</p>
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-sm font-bold text-[#10b981]">100%</span>
+          <span className="text-[10px] text-[#94a3b8]">Đánh giá tích cực</span>
+        </div>
+      </div>
+      <div className="flex flex-col items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <ExternalLink size={14} strokeWidth={2} className="text-primary" />
+        <span className="text-[10px] font-semibold text-primary">Xem gian hàng</span>
+      </div>
+    </Link>
+  ) : (
     <div className="rounded-2xl border border-border bg-white p-4 flex items-center gap-4">
       <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-[#0052cc] to-[#0066ff] flex items-center justify-center shrink-0 shadow-sm">
         <ShieldCheck size={26} strokeWidth={1.75} className="text-white" />
@@ -295,9 +337,21 @@ export default async function KfbProductDetailPage({
             {product.subCategory.name}
           </span>
         )}
-        <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
-          Hệ Thống MMO
-        </span>
+        {providerInfo ? (
+          <>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#f0fdf4] text-success border border-[#bbf7d0]">
+              <Store size={10} strokeWidth={2.5} />
+              {providerInfo.name}
+            </span>
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#fefce8] text-[#ca8a04] border border-[#fde68a]">
+              Nhà bán hàng uy tín
+            </span>
+          </>
+        ) : (
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
+            Hệ Thống MMO
+          </span>
+        )}
       </div>
 
       {/* Title */}

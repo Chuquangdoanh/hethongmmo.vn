@@ -12,6 +12,14 @@ export interface ProviderEntry {
   baseUrl: string;
   apiKey:  string;
   enabled: boolean;
+  imageUrl?: string;
+}
+
+/** Thông tin gian hàng provider an toàn để trả ra client (không có apiKey/baseUrl). */
+export interface ProviderPublicInfo {
+  id:       string;
+  name:     string;
+  imageUrl: string | null;
 }
 
 interface ProvidersConfig {
@@ -58,4 +66,18 @@ export async function loadEnabledAdapters(): Promise<ExternalProductProvider[]> 
 
 export function maskApiKey(apiKey: string): string {
   return apiKey.slice(0, 8) + "••••••••";
+}
+
+/** Danh sách gian hàng provider công khai (chỉ tên + logo) — an toàn cho public page. */
+export async function getPublicProviders(): Promise<ProviderPublicInfo[]> {
+  const configs = await getProviderConfigs();
+  return configs.map((c) => ({ id: c.id, name: c.name, imageUrl: c.imageUrl ?? null }));
+}
+
+/** Thông tin 1 gian hàng provider theo id (chỉ tên + logo) — null nếu không tồn tại. */
+export async function getPublicProviderInfo(id: string): Promise<ProviderPublicInfo | null> {
+  const configs = await getProviderConfigs();
+  const found = configs.find((c) => c.id === id);
+  if (!found) return null;
+  return { id: found.id, name: found.name, imageUrl: found.imageUrl ?? null };
 }

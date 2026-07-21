@@ -20,6 +20,7 @@ import { TaiNguyenProductList } from "./_components/TaiNguyenProductList";
 import type { TaiNguyenProductItem } from "./_components/TaiNguyenProductList";
 import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
 import { extractKhuongfbStockAmount } from "@/lib/khuongfb/types";
+import { getPublicProviders } from "@/lib/external-providers/providers-config";
 
 export const metadata: Metadata = buildMeta({
   title: "Nguyên Liệu MMO | Tài Khoản & Công Cụ Số Chất Lượng Cao",
@@ -197,13 +198,16 @@ export default async function TaiNguyenMmoPage({
       },
       select: {
         id: true, name: true, thumbnail: true, salePrice: true,
-        externalCategory: true, description: true, createdAt: true,
+        externalCategory: true, description: true, createdAt: true, provider: true,
         resourceCategory: { select: { name: true } },
         rawData: true,
       },
       orderBy: { createdAt: "desc" },
     }),
   ]);
+
+  // Map providerId -> tên gian hàng (thay nhãn "Nguồn ngoài")
+  const providerNameMap = new Map((await getPublicProviders()).map((p) => [p.id, p.name]));
 
   const [purchasedSellerIds, reviewedSellerIds, purchasedMmoIds, reviewedMmoIds, kfbSoldMap] =
     await Promise.all([
@@ -331,8 +335,8 @@ export default async function TaiNguyenMmoPage({
       price: Number(p.salePrice), rating: 0, reviewCount: 0, salesCount: kfbSoldMap.get(p.id) ?? 0,
       available: extractKhuongfbStockAmount(p.rawData) ?? 0, category: p.resourceCategory?.name ?? p.externalCategory,
       isNew: false, isHot: false,
-      href: `/kfb/${p.id}`, shopHref: "#",
-      createdAt: p.createdAt, sellerName: "Nguồn ngoài",
+      href: `/kfb/${p.id}`, shopHref: `${BASE_PATH}/gian-hang-ngoai/${p.provider}`,
+      createdAt: p.createdAt, sellerName: providerNameMap.get(p.provider) ?? "Nguồn ngoài",
       purchasedByMe: false, reviewedByMe: false,
       favoriteCount: 0, isFavorite: false,
     })),

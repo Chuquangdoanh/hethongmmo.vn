@@ -19,6 +19,7 @@ import { KhoProductList } from "./_components/KhoProductList";
 import type { KhoProductItem } from "./_components/KhoProductList";
 import { getUserResourceDiscountPercent } from "@/lib/services/discount.service";
 import { extractKhuongfbStockAmount } from "@/lib/khuongfb/types";
+import { getPublicProviders } from "@/lib/external-providers/providers-config";
 
 export const metadata: Metadata = buildMeta({
   title: "Kho Tài Nguyên MMO | Tài Khoản & Công Cụ Số Chất Lượng Cao",
@@ -196,7 +197,7 @@ export default async function KhoTaiNguyenPage({
       },
       select: {
         id: true, name: true, thumbnail: true, salePrice: true,
-        externalCategory: true, description: true, createdAt: true,
+        externalCategory: true, description: true, createdAt: true, provider: true,
         resourceCategory: { select: { name: true } },
         subCategory:      { select: { name: true } },
         rawData: true,
@@ -204,6 +205,9 @@ export default async function KhoTaiNguyenPage({
       orderBy: { createdAt: "desc" },
     }),
   ]);
+
+  // Map providerId -> tên gian hàng (thay nhãn "Nguồn ngoài")
+  const providerNameMap = new Map((await getPublicProviders()).map((p) => [p.id, p.name]));
 
   const [purchasedIds, reviewedIds, purchasedMmoIds, reviewedMmoIds, kfbSoldMap] = await Promise.all([
     me
@@ -336,7 +340,7 @@ export default async function KhoTaiNguyenPage({
         category: p.resourceCategory?.name ?? p.externalCategory,
         description: stripHtml(p.description ?? null),
         price: Number(p.salePrice), salesCount: kfbSoldMap.get(p.id) ?? 0, createdAt: p.createdAt,
-        sellerPrefix: "Nguồn ngoài", available: extractKhuongfbStockAmount(p.rawData) ?? 0,
+        sellerPrefix: providerNameMap.get(p.provider) ?? "Nguồn ngoài", available: extractKhuongfbStockAmount(p.rawData) ?? 0,
         isNew: false, isHot: false,
         href: `/kfb/${p.id}`,
         bought: false, rated: false, review: undefined,

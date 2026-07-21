@@ -1,14 +1,18 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Settings, X, Plus, Trash2, Check, Loader2, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Settings, X, Plus, Trash2, Check, Loader2, Eye, EyeOff, RefreshCw, ImagePlus } from "lucide-react";
+import { r2Url } from "@/lib/utils/image-url";
+
+const LOGO_UPLOAD_URL = "/api/admin/upload/thumbnail?type=provider-logo";
 
 export interface ProviderInfo {
-  id:      string;
-  name:    string;
-  baseUrl: string;
-  apiKey:  string;  // masked
-  enabled: boolean;
+  id:       string;
+  name:     string;
+  baseUrl:  string;
+  apiKey:   string;  // masked
+  enabled:  boolean;
+  imageUrl?: string | null;
 }
 
 interface Props {
@@ -24,6 +28,10 @@ export default function ProviderManager({ onProvidersChanged }: Props) {
   const [msg,       setMsg]       = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [showKey,   setShowKey]   = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [uploadingLogoId, setUploadingLogoId] = useState<string | null>(null);
+
+  const logoInputRef  = useRef<HTMLInputElement>(null);
+  const logoTargetRef = useRef<string | null>(null);
 
   // Add form state
   const [newName,    setNewName]    = useState("");
@@ -103,6 +111,65 @@ export default function ProviderManager({ onProvidersChanged }: Props) {
     }
   }
 
+  function openLogoPicker(providerId: string) {
+    logoTargetRef.current = providerId;
+    logoInputRef.current?.click();
+  }
+
+  async function handleLogoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    const providerId = logoTargetRef.current;
+    e.target.value = "";
+    logoTargetRef.current = null;
+    if (!file || !providerId) return;
+
+    setUploadingLogoId(providerId);
+    setMsg(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const uploadRes  = await fetch(LOGO_UPLOAD_URL, { method: "POST", credentials: "include", body: formData });
+      const uploadJson = await uploadRes.json() as { data?: { url?: string }; error?: string };
+      const imageUrl   = uploadJson.data?.url;
+      if (!uploadRes.ok || !imageUrl) {
+        setMsg({ type: "err", text: uploadJson.error ?? "Tải logo lên thất bại" });
+        return;
+      }
+
+      const patchRes = await fetch("/api/admin/khuongfb/providers", {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ id: providerId, imageUrl }),
+        credentials: "include",
+      });
+      if (!patchRes.ok) {
+        setMsg({ type: "err", text: "Lưu logo thất bại" });
+        return;
+      }
+      setMsg({ type: "ok", text: "Đã cập nhật logo gian hàng" });
+      await loadProviders();
+      onProvidersChanged();
+    } catch {
+      setMsg({ type: "err", text: "Lỗi kết nối khi tải logo" });
+    } finally {
+      setUploadingLogoId(null);
+    }
+  }
+
+  async function handleRemoveLogo(p: ProviderInfo) {
+    if (!confirm(`Gỡ logo gian hàng "${p.name}"?`)) return;
+    const res = await fetch("/api/admin/khuongfb/providers", {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ id: p.id, imageUrl: "" }),
+      credentials: "include",
+    });
+    if (res.ok) {
+      await loadProviders();
+      onProvidersChanged();
+    }
+  }
+
   async function handleDelete(p: ProviderInfo) {
     if (!confirm(`Xóa provider "${p.name}"? Toàn bộ sản phẩm đã đồng bộ từ provider này sẽ bị ẩn khỏi marketplace ngay lập tức (dữ liệu vẫn được giữ lại).`)) return;
     const res = await fetch(`/api/admin/khuongfb/providers?id=${p.id}`, {
@@ -146,6 +213,14 @@ export default function ProviderManager({ onProvidersChanged }: Props) {
 
   return (
     <div ref={ref} className="relative">
+      {/* Hidden input dùng chung cho upload logo mọi provider */}
+      <input
+        ref={logoInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => void handleLogoSelected(e)}
+      />
       <button
         onClick={() => { setOpen(o => !o); setMsg(null); setShowAdd(false); }}
         title="Quản lý API providers"
@@ -186,6 +261,36 @@ export default function ProviderManager({ onProvidersChanged }: Props) {
                 >
                   <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${p.enabled ? "translate-x-[18px]" : "translate-x-0.5"}`} />
                 </button>
+
+                {/* Logo gian hàng — click để upload, hover hiện nút gỡ */}
+                <div className="relative shrink-0 group">
+                  <button
+                    type="button"
+                    onClick={() => openLogoPicker(p.id)}
+                    disabled={uploadingLogoId === p.id}
+                    title="Đổi logo gian hàng"
+                    className="w-9 h-9 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center hover:border-gray-400 transition-colors disabled:opacity-60"
+                  >
+                    {uploadingLogoId === p.id ? (
+                      <Loader2 size={13} className="animate-spin text-gray-400" />
+                    ) : p.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={r2Url(p.imageUrl)} alt={p.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <ImagePlus size={13} className="text-gray-300" />
+                    )}
+                  </button>
+                  {p.imageUrl && uploadingLogoId !== p.id && (
+                    <button
+                      type="button"
+                      onClick={() => void handleRemoveLogo(p)}
+                      title="Gỡ logo"
+                      className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X size={9} strokeWidth={3} />
+                    </button>
+                  )}
+                </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">

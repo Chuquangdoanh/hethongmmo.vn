@@ -24,9 +24,10 @@ export async function GET(): Promise<NextResponse> {
 }
 
 const addSchema = z.object({
-  name:    z.string().min(1).max(100).trim(),
-  baseUrl: z.string().url("URL không hợp lệ").trim(),
-  apiKey:  z.string().min(8, "API key quá ngắn").trim(),
+  name:     z.string().min(1).max(100).trim(),
+  baseUrl:  z.string().url("URL không hợp lệ").trim(),
+  apiKey:   z.string().min(8, "API key quá ngắn").trim(),
+  imageUrl: z.string().url("URL ảnh không hợp lệ").max(2000).trim().optional(),
 });
 
 // ID cố định theo domain (không random) — nếu provider bị xóa rồi thêm lại với cùng baseUrl,
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       baseUrl: parsed.data.baseUrl,
       apiKey:  parsed.data.apiKey,
       enabled: true,
+      ...(parsed.data.imageUrl ? { imageUrl: parsed.data.imageUrl } : {}),
     };
     await saveProviderConfigs([...configs, newEntry], me.id);
 
@@ -76,11 +78,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 }
 
 const patchSchema = z.object({
-  id:      z.string(),
-  name:    z.string().min(1).max(100).trim().optional(),
-  baseUrl: z.string().url("URL không hợp lệ").trim().optional(),
-  apiKey:  z.string().min(8, "API key quá ngắn").trim().optional(),
-  enabled: z.boolean().optional(),
+  id:       z.string(),
+  name:     z.string().min(1).max(100).trim().optional(),
+  baseUrl:  z.string().url("URL không hợp lệ").trim().optional(),
+  apiKey:   z.string().min(8, "API key quá ngắn").trim().optional(),
+  enabled:  z.boolean().optional(),
+  // Cho phép "" để xóa ảnh (gỡ logo gian hàng)
+  imageUrl: z.union([z.string().url("URL ảnh không hợp lệ").max(2000).trim(), z.literal("")]).optional(),
 });
 
 // PATCH — cập nhật provider (bật/tắt, đổi key)
@@ -98,6 +102,8 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     if (idx === -1) throw new NotFoundError("Provider");
 
     const updated: ProviderEntry = { ...configs[idx]!, ...parsed.data };
+    // imageUrl === "" nghĩa là gỡ logo → bỏ hẳn field thay vì lưu chuỗi rỗng
+    if (parsed.data.imageUrl === "") delete updated.imageUrl;
     configs[idx] = updated;
     await saveProviderConfigs(configs, me.id);
 
