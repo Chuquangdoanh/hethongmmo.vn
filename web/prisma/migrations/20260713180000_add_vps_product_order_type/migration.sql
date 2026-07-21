@@ -1,0 +1,4 @@
+-- Thêm loại đơn hàng VPS_PRODUCT (tích hợp VNCloud) vào các enum liên quan
+ALTER TYPE "OrderType" ADD VALUE IF NOT EXISTS 'VPS_PRODUCT';
+ALTER TYPE "FavoriteProductType" ADD VALUE IF NOT EXISTS 'VPS_PRODUCT';
+ALTER TYPE "TxType" ADD VALUE IF NOT EXISTS 'BUY_VPS_PRODUCT';
