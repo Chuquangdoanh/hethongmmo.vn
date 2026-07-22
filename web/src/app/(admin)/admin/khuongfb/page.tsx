@@ -98,8 +98,10 @@ export default function KhuongfbAdminPage() {
     }
   }, []);
 
-  const fetchKfbCategories = useCallback(async () => {
-    const res  = await fetch("/api/admin/khuongfb/products?categoriesOnly=1");
+  const fetchKfbCategories = useCallback(async (provId: string) => {
+    const params = new URLSearchParams({ categoriesOnly: "1" });
+    if (provId) params.set("provider", provId);
+    const res  = await fetch(`/api/admin/khuongfb/products?${params.toString()}`);
     const json = await res.json() as { data?: string[] };
     setKfbCategories(json.data ?? []);
   }, []);
@@ -119,8 +121,12 @@ export default function KhuongfbAdminPage() {
   useEffect(() => {
     void fetchProviders();
     void fetchCategories();
-    void fetchKfbCategories();
-  }, [fetchProviders, fetchCategories, fetchKfbCategories]);
+  }, [fetchProviders, fetchCategories]);
+
+  // Danh mục KFB phụ thuộc provider đang chọn — provider đổi thì load lại danh sách danh mục riêng của provider đó
+  useEffect(() => {
+    void fetchKfbCategories(activeProvider);
+  }, [activeProvider, fetchKfbCategories]);
 
   useEffect(() => {
     void fetchProducts(page, section, activeProvider, kfbCategory, statusFilter);
@@ -133,6 +139,7 @@ export default function KhuongfbAdminPage() {
 
   function handleProviderChange(val: string) {
     setActiveProvider(val);
+    setKfbCategory(""); // reset danh mục KFB vì danh mục con chỉ thuộc riêng provider đang chọn
     setPage(1);
   }
 

@@ -27,9 +27,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const categoriesOnly  = req.nextUrl.searchParams.get("categoriesOnly") === "1";
     const onlyEnabled     = req.nextUrl.searchParams.get("enabled") === "1";
 
-    // Return distinct externalCategory list for filter UI
+    // Return distinct externalCategory list for filter UI — lọc theo provider nếu có chọn
     if (categoriesOnly) {
       const cats = await prisma.externalProduct.findMany({
+        where:    providerFilter ? { provider: providerFilter } : {},
         select:   { externalCategory: true },
         distinct: ["externalCategory"],
         orderBy:  { externalCategory: "asc" },
