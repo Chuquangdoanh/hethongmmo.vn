@@ -14,7 +14,7 @@ import ProductRowCheckbox from "./_components/ProductRowCheckbox";
 import BulkActionsToolbar from "./_components/BulkActionsToolbar";
 import CategorySubCategoryFilter from "@/components/admin/filters/CategorySubCategoryFilter";
 import RealtimeSelectFilter from "@/components/admin/filters/RealtimeSelectFilter";
-import { Warehouse } from "lucide-react";
+import { Warehouse, Store } from "lucide-react";
 
 export const metadata: Metadata = { title: "Sản phẩm nhà bán" };
 
@@ -55,6 +55,25 @@ export default async function AdminSellerProductsPage({
   const isValidCategory = !!category && resourceCategories.some((c) => c.name === category);
   const isValidSubCategory = !!subCategoryId && sellerSubCategories.some((s) => s.id === subCategoryId);
   const isValidStoreType = storeType === "TAI_NGUYEN_MMO" || storeType === "KHO_TAI_NGUYEN";
+
+  // Danh sách người bán để lọc — chỉ gồm seller có sản phẩm khớp kho hàng/danh mục đang chọn
+  const sellerGroups = await prisma.sellerProduct.groupBy({
+    by: ["sellerId"],
+    where: {
+      deletedAt: null,
+      ...(isValidStoreType ? { storeType: storeType as "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN" } : {}),
+      ...(isValidCategory ? { sellerCategory: category } : {}),
+      ...(isValidSubCategory ? { subCategoryId } : {}),
+    },
+  });
+  const sellerUsers = sellerGroups.length > 0
+    ? await prisma.user.findMany({
+        where: { id: { in: sellerGroups.map((g) => g.sellerId) } },
+        select: { id: true, fullName: true, email: true },
+        orderBy: { fullName: "asc" },
+      })
+    : [];
+  const sellerOptions = sellerUsers.map((u) => ({ value: u.id, label: u.fullName || u.email }));
 
   // WHERE fragments (shared between raw + Prisma)
   const sellerFilter     = sellerId
@@ -312,6 +331,14 @@ export default async function AdminSellerProductsPage({
             basePath="/admin/san-pham-ban"
             categories={resourceCategories}
             subCategories={sellerSubCategories}
+          />
+          <RealtimeSelectFilter
+            basePath="/admin/san-pham-ban"
+            paramKey="sellerId"
+            label="Người bán"
+            icon={<Store size={14} strokeWidth={2} />}
+            placeholder="Tất cả người bán"
+            options={sellerOptions}
           />
         </div>
       </div>
