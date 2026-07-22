@@ -5,7 +5,7 @@ import SellersTableClient, { type SellerRowData } from "./SellersTableClient";
 import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
 import CategorySubCategoryFilter from "@/components/admin/filters/CategorySubCategoryFilter";
 import RealtimeSelectFilter from "@/components/admin/filters/RealtimeSelectFilter";
-import { Warehouse } from "lucide-react";
+import { Warehouse, Store } from "lucide-react";
 
 export const metadata: Metadata = { title: "Admin — Sellers" };
 
@@ -37,9 +37,9 @@ function buildHref(params: Record<string, string | undefined>) {
 export default async function AdminSellersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; tier?: string; q?: string; sort?: string; dateFrom?: string; dateTo?: string; storeType?: string; category?: string; subCategoryId?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; tier?: string; q?: string; sort?: string; dateFrom?: string; dateTo?: string; storeType?: string; category?: string; subCategoryId?: string; sellerId?: string }>;
 }) {
-  const { page, status, tier, q, sort: sortParam, dateFrom, dateTo, storeType, category, subCategoryId } = await searchParams;
+  const { page, status, tier, q, sort: sortParam, dateFrom, dateTo, storeType, category, subCategoryId, sellerId } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
   const search = q?.trim() || undefined;
   const activeSort = VALID_SORTS.includes(sortParam as SortKey) ? sortParam as SortKey : undefined;
@@ -82,6 +82,28 @@ export default async function AdminSellersPage({
   if (isValidSubCategory) userFilter.subCategories = { some: { subCategoryId } };
 
   const validStoreType = storeType === "TAI_NGUYEN_MMO" || storeType === "KHO_TAI_NGUYEN" ? storeType : undefined;
+
+  // Danh sách seller để lọc — chỉ gồm seller thuộc kho hàng + danh mục cha/con đang chọn
+  const sellerOptionRequests = await prisma.sellerRequest.findMany({
+    where: {
+      ...(status          ? { status: status as never }            : {}),
+      ...(validStoreType  ? { storeType: validStoreType as never } : {}),
+      ...(isValidCategory ? { category }                           : {}),
+      ...(isValidSubCategory ? { user: { subCategories: { some: { subCategoryId } } } } : {}),
+    },
+    select: { userId: true, user: { select: { fullName: true, email: true } } },
+    orderBy: { user: { fullName: "asc" } },
+  });
+  const sellerOptionsMap = new Map<string, { value: string; label: string }>();
+  for (const r of sellerOptionRequests) {
+    if (!sellerOptionsMap.has(r.userId)) {
+      sellerOptionsMap.set(r.userId, { value: r.userId, label: r.user.fullName || r.user.email });
+    }
+  }
+  const sellerOptions = Array.from(sellerOptionsMap.values());
+
+  const isValidSeller = !!sellerId && sellerOptionsMap.has(sellerId);
+  if (isValidSeller) userFilter.id = sellerId;
 
   const where = {
     ...(status          ? { status: status as never }            : {}),
@@ -226,15 +248,16 @@ export default async function AdminSellersPage({
 
   const categoryParam = isValidCategory ? category : undefined;
   const subCategoryIdParam = isValidSubCategory ? subCategoryId : undefined;
+  const sellerIdParam = isValidSeller ? sellerId : undefined;
 
   const nextRevenueSort = activeSort === "revenue_desc" ? "revenue_asc" : "revenue_desc";
-  const revenueSortHref = buildHref({ status, tier, q: search, sort: nextRevenueSort, dateFrom, dateTo, storeType, category: categoryParam, subCategoryId: subCategoryIdParam, page: undefined });
+  const revenueSortHref = buildHref({ status, tier, q: search, sort: nextRevenueSort, dateFrom, dateTo, storeType, category: categoryParam, subCategoryId: subCategoryIdParam, sellerId: sellerIdParam, page: undefined });
 
   const nextRatingSort = activeSort === "rating_desc" ? "rating_asc" : "rating_desc";
-  const ratingSortHref = buildHref({ status, tier, q: search, sort: nextRatingSort, dateFrom, dateTo, storeType, category: categoryParam, subCategoryId: subCategoryIdParam, page: undefined });
+  const ratingSortHref = buildHref({ status, tier, q: search, sort: nextRatingSort, dateFrom, dateTo, storeType, category: categoryParam, subCategoryId: subCategoryIdParam, sellerId: sellerIdParam, page: undefined });
 
   const nextEscrowSort = activeSort === "escrow_desc" ? "escrow_asc" : "escrow_desc";
-  const escrowSortHref = buildHref({ status, tier, q: search, sort: nextEscrowSort, dateFrom, dateTo, storeType, category: categoryParam, subCategoryId: subCategoryIdParam, page: undefined });
+  const escrowSortHref = buildHref({ status, tier, q: search, sort: nextEscrowSort, dateFrom, dateTo, storeType, category: categoryParam, subCategoryId: subCategoryIdParam, sellerId: sellerIdParam, page: undefined });
 
   // Serialize data for client component
   const serializedRows: SellerRowData[] = requests.map((r) => {
@@ -301,7 +324,7 @@ export default async function AdminSellersPage({
             },
           ]}
           dateRange={{ showQuickDates: true }}
-          preserveParams={["sort", "tier", "category", "subCategoryId", "storeType"]}
+          preserveParams={["sort", "tier", "category", "subCategoryId", "storeType", "sellerId"]}
         />
 
         {/* Loại gian hàng + Danh mục cha/con — lọc realtime, không cần bấm nút */}
@@ -321,6 +344,14 @@ export default async function AdminSellersPage({
             basePath="/admin/sellers"
             categories={resourceCategories}
             subCategories={sellerSubCategories}
+          />
+          <RealtimeSelectFilter
+            basePath="/admin/sellers"
+            paramKey="sellerId"
+            label="Người bán"
+            icon={<Store size={14} strokeWidth={2} />}
+            placeholder="Tất cả người bán"
+            options={sellerOptions}
           />
         </div>
       </div>
@@ -348,6 +379,7 @@ export default async function AdminSellersPage({
             ...(isValidCategory    ? { category }        : {}),
             ...(isValidSubCategory ? { subCategoryId }   : {}),
             ...(validStoreType     ? { storeType: validStoreType } : {}),
+            ...(isValidSeller      ? { sellerId }        : {}),
           }}
         />
       )}
