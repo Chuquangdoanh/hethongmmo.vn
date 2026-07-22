@@ -866,18 +866,19 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
             </>
           ) : (
             <>
-              {/* EDIT — trái: tên + giá + trạng thái */}
+              {/* EDIT — trái: thông tin sản phẩm (bố cục giống form tạo mới) */}
               <div className="p-6 space-y-5">
-                <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Thông tin cơ bản</p>
+                <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Thông tin sản phẩm</p>
                 {nameField}
                 {priceField}
                 {categorySelector}
-                {checkboxes}
+                {descField}
+                {warrantyInfoField}
               </div>
 
-              {/* EDIT — phải: ảnh + giới thiệu + mô tả + buttons */}
+              {/* EDIT — phải: ảnh + nguồn gốc + trạng thái + buttons */}
               <div className="p-6 space-y-5">
-                <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Hình ảnh & Mô tả</p>
+                <p className="text-xs font-semibold text-[#e11d48] uppercase tracking-wider">Hình ảnh & Nguồn gốc</p>
                 {imageUpload}
                 {initialData?.id && !isRestricted && (
                   <div className="pt-4 border-t border-gray-100">
@@ -890,9 +891,8 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
                     />
                   </div>
                 )}
-                {warrantyInfoField}
-                {descField}
                 {originSection}
+                {checkboxes}
                 {error && <p className="text-xs text-red-500">{error}</p>}
                 {actionButtons}
               </div>
