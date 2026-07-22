@@ -14,7 +14,7 @@ export default async function TaoMoiSanPhamPage() {
   const session = await auth();
   const me = session!.user as AuthenticatedUser;
 
-  const [user, allSubCats] = await Promise.all([
+  const [user, allSubCats, allCategories] = await Promise.all([
     prisma.user.findUnique({
       where: { id: me.id },
       select: {
@@ -37,6 +37,19 @@ export default async function TaoMoiSanPhamPage() {
         showInTaiNguyenMmo: true,
       },
       orderBy: [{ categoryName: "asc" }, { displayOrder: "asc" }],
+    }),
+    prisma.resourceCategory.findMany({
+      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+      select: {
+        name: true,
+        showInKhoTaiNguyen: true,
+        showInTaiNguyenMmo: true,
+        subCategories: {
+          where: { isActive: true },
+          orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+          select: { id: true, name: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
+        },
+      },
     }),
   ]);
 
@@ -102,6 +115,7 @@ export default async function TaoMoiSanPhamPage() {
               sellerCategory={user.sellerCategory}
               subCategories={subCategories}
               allSubCats={allSubCats}
+              allCategories={allCategories}
             />
           )}
         </div>

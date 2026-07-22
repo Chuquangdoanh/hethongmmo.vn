@@ -30,11 +30,22 @@ interface SubCatFull {
   showInTaiNguyenMmo: boolean;
 }
 
+/** Danh mục cha (ResourceCategory) từ CMS + danh mục con — dùng để hiện đầy đủ
+ *  danh mục cha bất kể seller đã được gán danh mục con hay chưa. */
+interface CategoryFull {
+  name: string;
+  showInKhoTaiNguyen: boolean;
+  showInTaiNguyenMmo: boolean;
+  subCategories: { id: string; name: string; showInKhoTaiNguyen: boolean; showInTaiNguyenMmo: boolean }[];
+}
+
 interface ProductFormProps {
   mode: "create" | "edit";
   sellerCategory: string;
   subCategories?: SubCategoryItem[];
   allSubCats?: SubCatFull[];
+  /** Toàn bộ danh mục cha từ CMS. Khi có, danh mục cha/con lấy từ đây thay vì allSubCats. */
+  allCategories?: CategoryFull[];
   /** Ẩn khu vực thư viện ảnh khi sản phẩm đang bị admin hạn chế (chỉ áp dụng mode="edit") */
   isRestricted?: boolean;
   initialData?: {
@@ -52,7 +63,7 @@ interface ProductFormProps {
   };
 }
 
-export default function ProductForm({ mode, sellerCategory, subCategories = [], allSubCats, isRestricted = false, initialData }: ProductFormProps) {
+export default function ProductForm({ mode, sellerCategory, subCategories = [], allSubCats, allCategories, isRestricted = false, initialData }: ProductFormProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const txtInputRef = useRef<HTMLInputElement>(null);
@@ -72,9 +83,11 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
   const [storeType, setStoreType] = useState<StoreTypeKey>(() => {
     const fromInitial = initialData?.storeType as StoreTypeKey | undefined;
     if (fromInitial) return fromInitial;
-    // Mặc định chọn trang đầu tiên thực sự có danh mục cha cho seller này —
+    // Mặc định chọn trang đầu tiên thực sự có danh mục cha —
     // tránh mở form vào tab rỗng khiến khối "Danh mục cha" bị ẩn.
-    const firstPageWithCats = STORE_PAGES.find((pg) => allSubCats?.some((s) => s[pg.flag]));
+    const firstPageWithCats = STORE_PAGES.find((pg) =>
+      allCategories ? allCategories.some((c) => c[pg.flag]) : allSubCats?.some((s) => s[pg.flag]),
+    );
     return firstPageWithCats?.key ?? "KHO_TAI_NGUYEN";
   });
   const [sellerCat, setSellerCat] = useState(initialData?.productSellerCategory ?? "");
@@ -84,13 +97,22 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
     [storeType],
   );
   const parentCats = useMemo(() => {
+    // Ưu tiên danh mục cha từ CMS (hiện đủ mọi danh mục cha của trang).
+    if (allCategories) {
+      return allCategories.filter((c) => c[currentPageDef.flag]).map((c) => c.name).sort();
+    }
     if (!allSubCats) return [];
     return [...new Set(allSubCats.filter((s) => s[currentPageDef.flag]).map((s) => s.categoryName))].sort();
-  }, [allSubCats, storeType]);
+  }, [allCategories, allSubCats, storeType]);
   const filteredSubCats = useMemo(() => {
-    if (!allSubCats || !sellerCat) return [];
+    if (!sellerCat) return [];
+    if (allCategories) {
+      const parent = allCategories.find((c) => c.name === sellerCat);
+      return (parent?.subCategories ?? []).filter((s) => s[currentPageDef.flag]);
+    }
+    if (!allSubCats) return [];
     return allSubCats.filter((s) => s[currentPageDef.flag] && s.categoryName === sellerCat);
-  }, [allSubCats, storeType, sellerCat]);
+  }, [allCategories, allSubCats, storeType, sellerCat]);
 
   // ── Stock input state (create mode only) ──────────────────────────────────
   const [stockTab, setStockTab] = useState<"file" | "manual">("file");
@@ -231,7 +253,14 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
 
     if (!form.warrantyInfo.trim()) { setError("Vui lòng nhập thông tin bảo hành."); return; }
 
-    if (subCategories.length > 0 && !subCategoryId) { setError("Vui lòng chọn danh mục con."); return; }
+    // Path CMS/allSubCats: yêu cầu chọn danh mục con CHỈ khi danh mục cha đang chọn có danh mục con.
+    // Path cũ (subCategoryField): yêu cầu như trước.
+    const usingCategorySelector = !!allCategories || !!allSubCats;
+    if (usingCategorySelector) {
+      if (sellerCat && filteredSubCats.length > 0 && !subCategoryId) { setError("Vui lòng chọn danh mục con."); return; }
+    } else if (subCategories.length > 0 && !subCategoryId) {
+      setError("Vui lòng chọn danh mục con."); return;
+    }
 
     if (descWordCount() < 20) { setError("Mô tả sản phẩm phải có ít nhất 20 từ."); return; }
 
@@ -382,8 +411,8 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
     </div>
   ) : null;
 
-  // ── Category selector (3 tầng) — chỉ hiển thị khi allSubCats được truyền ──
-  const categorySelector = allSubCats && allSubCats.length > 0 ? (
+  // ── Category selector (3 tầng) — hiển thị khi có allCategories (CMS) hoặc allSubCats ──
+  const categorySelector = (allCategories && allCategories.length > 0) || (allSubCats && allSubCats.length > 0) ? (
     <div className="space-y-3">
       <label className="block text-xs font-medium text-gray-500">Trang & Danh mục *</label>
 
