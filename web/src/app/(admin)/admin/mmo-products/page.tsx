@@ -9,6 +9,7 @@ import { formatVnd } from "@/lib/utils/format";
 import { r2Url } from "@/lib/utils/image-url";
 import Pagination from "@/components/shared/Pagination";
 import AdminFilterBar from "@/components/admin/filters/AdminFilterBar";
+import BulkVisibilityButtons from "./_components/BulkVisibilityButtons";
 
 export const metadata: Metadata = { title: "Admin — Tài nguyên MMO" };
 
@@ -218,12 +219,15 @@ export default async function AdminMmoProductsPage({
 
       {/* Table */}
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
           <span className="text-sm font-semibold text-gray-700">
             {total.toLocaleString("vi-VN")} sản phẩm
             {activeSection === "TAI_NGUYEN_MMO" ? " · Nguyên liệu MMO" : activeSection === "KHO_TAI_NGUYEN" ? " · Kho tài nguyên" : ""}
             {group ? ` · ${group}` : ""}{q ? ` · "${q}"` : ""}
           </span>
+          {canUpdate && products.length > 0 && (
+            <BulkVisibilityButtons productIds={products.map((p) => p.id)} />
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px]">
