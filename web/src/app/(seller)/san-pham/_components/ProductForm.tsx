@@ -69,9 +69,14 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
   const [subCategoryId, setSubCategoryId] = useState<string | null>(initialData?.subCategoryId ?? null);
 
   // ── Category selector state (khi allSubCats được truyền vào) ─────────────
-  const [storeType, setStoreType] = useState<StoreTypeKey>(
-    (initialData?.storeType as StoreTypeKey | undefined) ?? "KHO_TAI_NGUYEN",
-  );
+  const [storeType, setStoreType] = useState<StoreTypeKey>(() => {
+    const fromInitial = initialData?.storeType as StoreTypeKey | undefined;
+    if (fromInitial) return fromInitial;
+    // Mặc định chọn trang đầu tiên thực sự có danh mục cha cho seller này —
+    // tránh mở form vào tab rỗng khiến khối "Danh mục cha" bị ẩn.
+    const firstPageWithCats = STORE_PAGES.find((pg) => allSubCats?.some((s) => s[pg.flag]));
+    return firstPageWithCats?.key ?? "KHO_TAI_NGUYEN";
+  });
   const [sellerCat, setSellerCat] = useState(initialData?.productSellerCategory ?? "");
 
   const currentPageDef = useMemo(
@@ -419,6 +424,13 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
             ))}
           </div>
         </div>
+      )}
+
+      {/* Empty state — trang được chọn không có danh mục cha nào hiển thị */}
+      {parentCats.length === 0 && (
+        <p className="text-xs text-gray-400">
+          Chưa có danh mục cha nào được cấu hình hiển thị cho trang này. Vui lòng chọn trang khác.
+        </p>
       )}
 
       {/* Sub-category */}
