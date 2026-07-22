@@ -555,7 +555,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
         Mô tả sản phẩm <span className="text-red-500">*</span>
       </label>
       <textarea value={form.description} onChange={set("description")} rows={3} maxLength={5000}
-        className={`w-full rounded-lg border bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:bg-white focus:outline-none transition-colors resize-none ${
+        className={`w-full max-h-48 overflow-y-auto rounded-lg border bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:bg-white focus:outline-none transition-colors resize-none ${
           form.description && descWordCount() < 20
             ? "border-amber-300 focus:border-amber-400"
             : "border-gray-200 focus:border-[#e11d48]/60"
@@ -636,7 +636,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
           rows={3}
           maxLength={ORIGIN_DESC_MAX}
           placeholder="Nhập chi tiết nguồn gốc sản phẩm, thời gian tạo/thu mua, hình thức sở hữu và các thông tin liên quan."
-          className={`w-full rounded-lg border bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:bg-white focus:outline-none transition-colors resize-none ${
+          className={`w-full max-h-40 overflow-y-auto rounded-lg border bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:bg-white focus:outline-none transition-colors resize-none ${
             originTouched.desc && originDescLen < ORIGIN_DESC_MIN ? "border-red-400" : "border-gray-200 focus:border-[#e11d48]/60"
           }`}
         />
@@ -787,7 +787,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
             onChange={(e) => setStockText(e.target.value)}
             rows={12}
             placeholder={"user1@gmail.com:pass123\nuser2@gmail.com:pass456\n..."}
-            className="flex-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-800 font-mono placeholder:text-gray-400 focus:border-[#e11d48]/60 focus:outline-none resize-none"
+            className="flex-1 w-full min-h-[220px] max-h-[360px] overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-800 font-mono placeholder:text-gray-400 focus:border-[#e11d48]/60 focus:outline-none resize-none"
           />
           <p className="text-[11px] text-gray-400">
             {manualLineCount.toLocaleString("vi-VN")} items · Dòng trùng sẽ tự bị loại trước khi lưu

@@ -32,6 +32,15 @@ const STOCK_STATUS_LABELS: Record<string, string> = {
   SOLD:      "Đã bán",
 };
 
+const ORIGIN_TYPE_LABELS: Record<string, string> = {
+  SELF_CREATED:      "Tự tạo",
+  SELF_RAISED:       "Tự nuôi",
+  BOUGHT_INDIVIDUAL: "Thu mua từ cá nhân",
+  BOUGHT_BUSINESS:   "Thu mua từ doanh nghiệp",
+  LEGAL_TRANSFER:    "Được chuyển nhượng hợp pháp",
+  OTHER:             "Khác",
+};
+
 const RATING_BADGE: Record<number, string> = {
   5: "bg-emerald-50 text-emerald-700 border-emerald-200",
   4: "bg-blue-50 text-blue-700 border-blue-200",
@@ -66,6 +75,7 @@ export default async function AdminSellerProductDetailPage({
       subCategory: { select: { name: true } },
       isActive: true, isHidden: true, isRestricted: true,
       approvalStatus: true, approvalRejectReason: true,
+      originType: true, originDescription: true, originCommitment: true,
       salesCount: true, createdAt: true, updatedAt: true,
       seller: { select: { id: true, fullName: true, email: true } },
       _count: { select: { orders: true } },
@@ -298,6 +308,45 @@ export default async function AdminSellerProductDetailPage({
             <p className="text-sm text-gray-700 whitespace-pre-line">{product.warrantyInfo}</p>
           </div>
         )}
+
+        {/* Nguồn gốc sản phẩm — khai báo của seller, phục vụ xác nhận khi duyệt */}
+        <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50/60 p-4">
+          <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5 mb-3">
+            🔒 Nguồn gốc sản phẩm (khai báo của seller)
+          </p>
+          {product.originType || product.originDescription ? (
+            <div className="space-y-3">
+              <div>
+                <p className="text-[10px] text-gray-500 mb-0.5">Loại nguồn gốc</p>
+                <p className="text-sm font-medium text-gray-800">
+                  {ORIGIN_TYPE_LABELS[product.originType ?? ""] ?? "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500 mb-0.5">Mô tả nguồn gốc</p>
+                <div className="max-h-40 overflow-y-auto rounded-md border border-amber-200 bg-white p-2.5">
+                  <p className="text-sm text-gray-700 whitespace-pre-line break-words">
+                    {product.originDescription ?? "—"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className={`text-sm leading-5 shrink-0 ${product.originCommitment ? "text-emerald-600" : "text-red-500"}`}>
+                  {product.originCommitment ? "✔" : "✖"}
+                </span>
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  {product.originCommitment
+                    ? "Seller đã cam kết sản phẩm được tạo lập hoặc sở hữu hợp pháp, không có nguồn gốc từ hành vi chiếm đoạt, hack, lừa đảo, đánh cắp hoặc vi phạm pháp luật; chịu hoàn toàn trách nhiệm trước Hệ thống MMO và pháp luật về tính trung thực của thông tin khai báo."
+                    : "Seller CHƯA tích cam kết nguồn gốc hợp pháp."}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500">
+              Sản phẩm chưa có khai báo nguồn gốc (được tạo trước khi áp dụng tính năng).
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Biến thể sản phẩm */}
