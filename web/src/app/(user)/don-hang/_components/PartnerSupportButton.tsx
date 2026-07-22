@@ -39,7 +39,7 @@ export default function PartnerSupportButton({ orderId, itemName, hasThread }: P
       });
       const json = await res.json() as { data?: { id: string }; error?: string };
       if (!res.ok || !json.data) { setError(json.error ?? "Không mở được cuộc trò chuyện."); return; }
-      router.push(`/ho-tro-doi-tac/${json.data.id}`);
+      router.push(`/ho-tro?id=ps-${json.data.id}`);
     } catch {
       setError("Lỗi kết nối, vui lòng thử lại.");
     } finally {
@@ -68,9 +68,9 @@ export default function PartnerSupportButton({ orderId, itemName, hasThread }: P
         onClick={handleClick}
         disabled={loading}
         className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#0d9488]/10 border border-[#0d9488]/30 text-[#0d9488] text-[11px] font-medium hover:bg-[#0d9488]/20 disabled:opacity-60 transition-colors whitespace-nowrap"
-        title="Chat trực tiếp với gian hàng đối tác"
+        title="Chat trực tiếp với seller"
       >
-        <MessageCircle size={11} /> Chat gian hàng
+        <MessageCircle size={11} /> Chat hỗ trợ
       </button>
 
       {open && (
@@ -86,7 +86,7 @@ export default function PartnerSupportButton({ orderId, itemName, hasThread }: P
                   <MessageCircle size={15} className="text-[#0d9488]" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900">Chat với gian hàng</h3>
+                  <h3 className="text-sm font-bold text-gray-900">Chat hỗ trợ với seller</h3>
                   <p className="text-[11px] text-gray-500 mt-0.5 truncate max-w-65">{itemName}</p>
                 </div>
               </div>
@@ -99,7 +99,7 @@ export default function PartnerSupportButton({ orderId, itemName, hasThread }: P
               <div className="flex gap-2.5 rounded-xl bg-teal-50 border border-teal-200 px-3.5 py-3">
                 <Info size={14} className="text-teal-600 shrink-0 mt-0.5" />
                 <p className="text-[11px] text-teal-800 leading-relaxed">
-                  Gian hàng đối tác sẽ phản hồi và hỗ trợ bạn về đơn hàng này.
+                  Người bán sẽ phản hồi và hỗ trợ bạn về đơn hàng này.
                 </p>
               </div>
 

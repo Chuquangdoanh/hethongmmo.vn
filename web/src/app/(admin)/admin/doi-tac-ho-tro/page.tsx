@@ -55,7 +55,7 @@ export default async function AdminPartnerSupportPage({
       skip: (currentPage - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       select: {
-        id: true, subject: true, providerName: true, status: true, createdAt: true,
+        id: true, kind: true, subject: true, providerName: true, status: true, createdAt: true,
         user: { select: { email: true, fullName: true } },
         order: { select: { orderCode: true, finalPrice: true } },
       },
@@ -114,10 +114,25 @@ export default async function AdminPartnerSupportPage({
                   <p className="text-sm text-gray-900">{t.user.fullName}</p>
                   <p className="text-[11px] text-gray-500">{t.user.email}</p>
                 </td>
-                <td className="px-4 py-3 text-sm text-gray-500 max-w-[200px] truncate">{t.subject}</td>
+                <td className="px-4 py-3 max-w-[220px]">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                      t.kind === "PRESALE" ? "bg-amber-100 text-amber-700" : "bg-[#0d9488]/10 text-[#0d9488]"
+                    }`}>
+                      {t.kind === "PRESALE" ? "Tư vấn" : "Hỗ trợ đơn"}
+                    </span>
+                    <span className="text-sm text-gray-500 truncate">{t.subject}</span>
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-xs text-gray-500">
-                  <p className="font-mono">#{t.order.orderCode}</p>
-                  <p className="text-emerald-600 font-semibold">{formatVnd(Number(t.order.finalPrice))}</p>
+                  {t.order ? (
+                    <>
+                      <p className="font-mono">#{t.order.orderCode}</p>
+                      <p className="text-emerald-600 font-semibold">{formatVnd(Number(t.order.finalPrice))}</p>
+                    </>
+                  ) : (
+                    <span className="text-gray-300">— (trước mua)</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${STATUS_BADGES[t.status] ?? ""}`}>

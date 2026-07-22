@@ -59,6 +59,32 @@ export async function openPartnerSupportThread(
   return thread;
 }
 
+// Buyer mở (hoặc lấy lại) chat TƯ VẤN TRƯỚC MUA với 1 gian hàng đối tác (không gắn đơn).
+// Một buyer = một thread pre-sale cho mỗi provider.
+export async function openPreSaleThread(buyerId: string, providerId: string) {
+  const providerInfo = await getPublicProviderInfo(providerId);
+  if (!providerInfo) throw new NotFoundError("Gian hàng đối tác");
+
+  const existing = await prisma.partnerSupportThread.findFirst({
+    where: { kind: "PRESALE", userId: buyerId, providerId },
+    select: { id: true },
+  });
+  if (existing) return existing;
+
+  const thread = await prisma.partnerSupportThread.create({
+    data: {
+      kind: "PRESALE",
+      orderId: null,
+      userId: buyerId,
+      providerId,
+      providerName: providerInfo.name,
+      subject: "Tư vấn trước khi mua",
+    },
+    select: { id: true },
+  });
+  return thread;
+}
+
 // Xác định vai trò của người đang truy cập thread. Admin/Staff luôn là "PROVIDER"
 // (đóng vai gian hàng để trả lời). Buyer là "USER". Người khác → 404.
 export async function assertPartnerThreadAccess(
@@ -144,14 +170,16 @@ export async function partnerRefund(threadId: string, adminId: string, reason?: 
   });
   if (!thread) throw new NotFoundError("Cuộc trò chuyện");
   if (thread.status === "REFUNDED") throw new ValidationError("Đơn này đã được hoàn tiền.");
+  if (!thread.orderId) throw new ValidationError("Cuộc tư vấn trước mua không gắn đơn — không thể hoàn tiền.");
+  const orderId = thread.orderId;
 
   let refundedAmount = 0;
 
   await prisma.$transaction(async (tx) => {
     // Lock order row — tránh race với các thao tác đơn khác
-    await tx.$queryRaw`SELECT id FROM orders WHERE id = ${thread.orderId}::uuid FOR UPDATE`;
+    await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`;
     const order = await tx.order.findUnique({
-      where: { id: thread.orderId },
+      where: { id: orderId },
       select: { id: true, finalPrice: true, partnerRefunded: true, userId: true },
     });
     if (!order) throw new ValidationError("Đơn hàng không tồn tại");
@@ -197,7 +225,7 @@ export async function partnerRefund(threadId: string, adminId: string, reason?: 
     action: "PARTNER_SUPPORT_REFUND",
     targetType: "PartnerSupportThread",
     targetId: threadId,
-    after: { orderId: thread.orderId, refundedAmount, keepRevenue: true },
+    after: { orderId, refundedAmount, keepRevenue: true },
   });
 
   return refundedAmount;

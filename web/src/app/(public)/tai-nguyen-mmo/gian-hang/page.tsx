@@ -226,8 +226,10 @@ export default async function NhaBanHangPage({
 
   type ProviderCard = {
     id: string;
+    slug: string;
     name: string;
     imageUrl: string | null;
+    tierKey: string | null;
     productCount: number;
     totalSold: number;
     categories: Set<string>;
@@ -238,7 +240,7 @@ export default async function NhaBanHangPage({
     if (!info) continue; // provider không còn cấu hình → bỏ qua
     const cat = ep.resourceCategory?.name ?? ep.externalCategory;
     const cur = providerAgg.get(ep.provider) ?? {
-      id: info.id, name: info.name, imageUrl: info.imageUrl,
+      id: info.id, slug: info.publicSlug, name: info.name, imageUrl: info.imageUrl, tierKey: info.tierKey,
       productCount: 0, totalSold: 0, categories: new Set<string>(),
     };
     cur.productCount += 1;
@@ -404,8 +406,8 @@ export default async function NhaBanHangPage({
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[11px] text-text-muted truncate">Nền tảng</span>
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 bg-violet-100 text-violet-700">
-                        Nền tảng
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 bg-blue-100 text-blue-700">
+                        Cấp 1
                       </span>
                     </div>
                   </div>
@@ -448,11 +450,8 @@ export default async function NhaBanHangPage({
               {showProvidersOnThisPage && providerCards.map((pc) => (
                 <div
                   key={`prov-${pc.id}`}
-                  className="bg-white rounded-xl border border-[#0d9488]/30 overflow-hidden hover:shadow-md hover:border-[#0d9488]/60 transition-all flex flex-col relative"
+                  className="bg-white rounded-xl border border-border overflow-hidden hover:shadow-md hover:border-primary/40 transition-all flex flex-col relative"
                 >
-                  <span className="absolute top-2 right-2 z-10 px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#0d9488] text-white">
-                    Đối tác
-                  </span>
                   <div className="h-14 bg-linear-to-br from-[#0d9488] to-[#0284c7]" />
                   <div className="px-4 pb-4 flex flex-col gap-2.5 flex-1 -mt-7">
                     {pc.imageUrl ? (
@@ -475,10 +474,15 @@ export default async function NhaBanHangPage({
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[11px] text-text-muted truncate">Gian hàng đối tác</span>
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 bg-green-100 text-green-700">
-                          Đối tác
-                        </span>
+                        <span className="text-[11px] text-text-muted truncate">{[...pc.categories][0] ?? "Sản phẩm số"}</span>
+                        {(() => {
+                          const t = pc.tierKey ? tierMap.get(pc.tierKey) : null;
+                          return (
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 ${BADGE_STYLE_MAP[t?.badgeColor ?? "blue"] ?? BADGE_STYLE_MAP["gray"]}`}>
+                              {t?.label ?? "Cấp 1"}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-1.5 text-center">
@@ -505,7 +509,7 @@ export default async function NhaBanHangPage({
                       </div>
                     </div>
                     <Link
-                      href={`/tai-nguyen-mmo/gian-hang-ngoai/${pc.id}`}
+                      href={`/tai-nguyen-mmo/cua-hang/${pc.slug}`}
                       className="mt-auto w-full py-2 rounded-lg border border-[#0d9488] text-[#0d9488] text-xs font-bold hover:bg-[#0d9488] hover:text-white transition-all text-center flex items-center justify-center gap-1"
                     >
                       Xem gian hàng

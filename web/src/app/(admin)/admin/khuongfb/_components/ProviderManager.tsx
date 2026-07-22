@@ -19,7 +19,10 @@ export interface ProviderInfo {
   apiSecret?:   string;  // masked
   enabled:      boolean;
   imageUrl?:    string | null;
+  tierKey?:     string | null;
 }
+
+interface TierOption { key: string; label: string; }
 
 interface Props {
   onProvidersChanged: () => void;
@@ -41,6 +44,7 @@ export default function ProviderManager({ onProvidersChanged, filterType, defaul
   const [uploadingLogoId, setUploadingLogoId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [tiers, setTiers] = useState<TierOption[]>([]);
 
   const logoInputRef  = useRef<HTMLInputElement>(null);
   const logoTargetRef = useRef<string | null>(null);
@@ -72,7 +76,27 @@ export default function ProviderManager({ onProvidersChanged, filterType, defaul
   useEffect(() => {
     if (!open) return;
     void loadProviders();
+    void (async () => {
+      try {
+        const res = await fetch("/api/admin/seller-tier-definitions", { credentials: "include" });
+        const json = await res.json() as { data?: Array<{ key: string; label: string; isActive: boolean }> };
+        setTiers((json.data ?? []).filter(t => t.isActive).map(t => ({ key: t.key, label: t.label })));
+      } catch { /* bỏ qua — dropdown hạng sẽ rỗng */ }
+    })();
   }, [open]);
+
+  async function handleSetTier(p: ProviderInfo, tierKey: string) {
+    const res = await fetch("/api/admin/khuongfb/providers", {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ id: p.id, tierKey }),
+      credentials: "include",
+    });
+    if (res.ok) {
+      await loadProviders();
+      onProvidersChanged();
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -365,6 +389,20 @@ export default function ProviderManager({ onProvidersChanged, filterType, defaul
                   )}
                   <p className="text-[10px] text-gray-400 font-mono truncate">{p.baseUrl ?? p.apiUsername}</p>
                   <p className="text-[10px] text-gray-400 font-mono truncate">{p.apiKey ?? p.apiSecret}</p>
+                  {/* Hạng gian hàng — gán từ danh sách SellerTierDefinition */}
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-[9px] text-gray-400 shrink-0">Hạng:</span>
+                    <select
+                      value={p.tierKey ?? ""}
+                      onChange={(e) => void handleSetTier(p, e.target.value)}
+                      className="flex-1 min-w-0 text-[10px] border border-gray-200 rounded px-1 py-0.5 bg-white text-gray-700 focus:outline-none focus:border-gray-400"
+                    >
+                      <option value="">— Chưa gán —</option>
+                      {tiers.map((t) => (
+                        <option key={t.key} value={t.key}>{t.label}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 {/* Đồng bộ riêng provider này */}

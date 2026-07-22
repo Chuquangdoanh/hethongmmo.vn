@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { createHash } from "crypto";
 import { prisma } from "@/lib/db/prisma";
 import { KhuongfbCompatibleAdapter } from "./khuongfb-compatible";
 import { VnCloudAdapter } from "./vncloud-adapter";
@@ -22,13 +23,27 @@ export interface ProviderEntry {
   apiSecret?:   string;
   enabled:     boolean;
   imageUrl?:   string;
+  /** Hạng gian hàng — key tham chiếu SellerTierDefinition (gán trong admin, hiện badge). */
+  tierKey?:    string;
 }
 
 /** Thông tin gian hàng provider an toàn để trả ra client (không có apiKey/baseUrl). */
 export interface ProviderPublicInfo {
-  id:       string;
-  name:     string;
-  imageUrl: string | null;
+  id:         string;
+  name:       string;
+  imageUrl:   string | null;
+  /** Slug công khai (opaque, cố định/provider) — dùng trong URL, ẩn id/nguồn thật. */
+  publicSlug: string;
+  /** Hạng gian hàng (key SellerTierDefinition) — null nếu chưa gán. */
+  tierKey:    string | null;
+}
+
+/**
+ * Slug công khai của provider dùng trong URL — chuỗi hex 12 ký tự, ổn định theo id,
+ * trông ngẫu nhiên nên KHÔNG lộ hostname/email nguồn. Không cần lưu thêm vào config.
+ */
+export function providerPublicSlug(id: string): string {
+  return createHash("sha256").update(`hethongmmo:provider:${id}`).digest("hex").slice(0, 12);
 }
 
 interface ProvidersConfig {
@@ -90,18 +105,31 @@ export function maskApiKey(apiKey: string): string {
   return apiKey.slice(0, 8) + "••••••••";
 }
 
-/** Danh sách gian hàng provider công khai (chỉ tên + logo) — an toàn cho public page. */
-export async function getPublicProviders(): Promise<ProviderPublicInfo[]> {
-  const configs = await getProviderConfigs();
-  return configs.map((c) => ({ id: c.id, name: c.name, imageUrl: c.imageUrl ?? null }));
+function toPublicInfo(c: ProviderEntry): ProviderPublicInfo {
+  return {
+    id: c.id, name: c.name, imageUrl: c.imageUrl ?? null,
+    publicSlug: providerPublicSlug(c.id), tierKey: c.tierKey ?? null,
+  };
 }
 
-/** Thông tin 1 gian hàng provider theo id (chỉ tên + logo) — null nếu không tồn tại. */
+/** Danh sách gian hàng provider công khai (chỉ tên + logo + slug) — an toàn cho public page. */
+export async function getPublicProviders(): Promise<ProviderPublicInfo[]> {
+  const configs = await getProviderConfigs();
+  return configs.map(toPublicInfo);
+}
+
+/** Thông tin 1 gian hàng provider theo id — null nếu không tồn tại. */
 export async function getPublicProviderInfo(id: string): Promise<ProviderPublicInfo | null> {
   const configs = await getProviderConfigs();
   const found = configs.find((c) => c.id === id);
-  if (!found) return null;
-  return { id: found.id, name: found.name, imageUrl: found.imageUrl ?? null };
+  return found ? toPublicInfo(found) : null;
+}
+
+/** Thông tin 1 gian hàng provider theo slug công khai — null nếu không tồn tại. */
+export async function getProviderInfoBySlug(slug: string): Promise<ProviderPublicInfo | null> {
+  const configs = await getProviderConfigs();
+  const found = configs.find((c) => providerPublicSlug(c.id) === slug);
+  return found ? toPublicInfo(found) : null;
 }
 
 /** Loại provider (khuongfb-compatible hay vncloud) theo id — null nếu không tồn tại. */

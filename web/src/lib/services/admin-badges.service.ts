@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 export async function getAdminBadgeCounts() {
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  const [orders, complaints, withdrawals, deposits, banTaiNguyen, adsRegPending, fanpageRegPending] = await Promise.all([
+  const [orders, complaints, withdrawals, deposits, banTaiNguyen, adsRegPending, fanpageRegPending, doiTacRows] = await Promise.all([
     prisma.order.count({ where: { status: "PENDING" } }),
     prisma.complaint.count({ where: { status: { in: ["IN_REVIEW", "PENDING_ADMIN"] } } }),
     prisma.sellerWithdrawal.count({ where: { status: "PENDING" } }),
@@ -17,11 +17,22 @@ export async function getAdminBadgeCounts() {
     }),
     prisma.adsRegistration.count({ where: { status: "PENDING" } }),
     prisma.fanpageRegistration.count({ where: { status: "PENDING" } }),
+    // Chat hỗ trợ gian hàng đối tác đang mở & tin cuối cùng của khách (chờ admin trả lời)
+    prisma.$queryRaw<Array<{ count: number }>>`
+      SELECT COUNT(*)::int AS count
+      FROM partner_support_threads t
+      WHERE t.status = 'OPEN'
+        AND (
+          SELECT m.sender_role FROM partner_support_messages m
+          WHERE m.thread_id = t.id ORDER BY m.created_at DESC LIMIT 1
+        ) = 'USER'
+    `,
   ]);
 
   return {
     orders, complaints, withdrawals, deposits,
     banTaiNguyen,
     dangKyDichVu: adsRegPending + fanpageRegPending,
+    doiTacHoTro: doiTacRows[0]?.count ?? 0,
   };
 }

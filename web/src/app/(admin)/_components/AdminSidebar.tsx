@@ -17,12 +17,12 @@ import { useNotificationSound } from "@/lib/hooks/useNotificationSound";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type BadgeKey = "orders" | "complaints" | "withdrawals" | "deposits" | "banTaiNguyen" | "dangKyDichVu";
-interface Badges    { orders: number; complaints: number; withdrawals: number; deposits: number; banTaiNguyen: number; dangKyDichVu: number }
-interface Dismissed { orders: number; complaints: number; withdrawals: number; deposits: number; banTaiNguyen: number; dangKyDichVu: number }
+type BadgeKey = "orders" | "complaints" | "withdrawals" | "deposits" | "banTaiNguyen" | "dangKyDichVu" | "doiTacHoTro";
+interface Badges    { orders: number; complaints: number; withdrawals: number; deposits: number; banTaiNguyen: number; dangKyDichVu: number; doiTacHoTro: number }
+interface Dismissed { orders: number; complaints: number; withdrawals: number; deposits: number; banTaiNguyen: number; dangKyDichVu: number; doiTacHoTro: number }
 
-// Chỉ phát âm thanh thông báo cho 4 mục: Đơn hàng, Bán tài nguyên, Đăng ký dịch vụ, Khiếu nại
-const SOUND_ENABLED_KEYS = new Set<BadgeKey>(["orders", "complaints", "banTaiNguyen", "dangKyDichVu"]);
+// Chỉ phát âm thanh thông báo cho: Đơn hàng, Bán tài nguyên, Đăng ký dịch vụ, Khiếu nại, Hỗ trợ đối tác
+const SOUND_ENABLED_KEYS = new Set<BadgeKey>(["orders", "complaints", "banTaiNguyen", "dangKyDichVu", "doiTacHoTro"]);
 
 interface Toast {
   id: string;
@@ -59,6 +59,7 @@ const TOAST_META: Record<BadgeKey, { label: string; Icon: LucideIcon; color: str
   deposits:     { label: "giao dịch nạp tiền mới",      Icon: ArrowDownCircle, color: "#10b981", bg: "#f0fdf4", border: "#bbf7d0", href: "/admin/deposits"        },
   banTaiNguyen: { label: "đơn bán tài nguyên chờ xử lý", Icon: Package,         color: "#059669", bg: "#f0fdf4", border: "#bbf7d0", href: "/admin/ban-tai-nguyen"  },
   dangKyDichVu: { label: "đăng ký dịch vụ mới",          Icon: Inbox,           color: "#b45309", bg: "#fffbeb", border: "#fde68a", href: "/admin/dang-ky-dich-vu" },
+  doiTacHoTro:  { label: "tin nhắn hỗ trợ đối tác mới",   Icon: Store,           color: "#0d9488", bg: "#f0fdfa", border: "#99f6e4", href: "/admin/doi-tac-ho-tro"  },
 };
 
 // ─── Nav config ──────────────────────────────────────────────────────────────
@@ -90,7 +91,7 @@ const SECTIONS: NavSection[] = [
     key: "quality", label: "Chất lượng", Icon: ShieldCheck, color: "#94a3b8", bg: "#f1f5f9",
     links: [
       { href: "/admin/complaints", label: "Khiếu nại", Icon: AlertTriangle, color: "#94a3b8", badge: "complaints", permission: "complaints:read" },
-      { href: "/admin/doi-tac-ho-tro", label: "Hỗ trợ đối tác", Icon: Store, color: "#94a3b8", adminOnly: true },
+      { href: "/admin/doi-tac-ho-tro", label: "Hỗ trợ đối tác", Icon: Store, color: "#94a3b8", badge: "doiTacHoTro", adminOnly: true },
       { href: "/admin/danh-gia",   label: "Đánh giá",  Icon: Star,          color: "#94a3b8",                      permission: "products:read"    },
       { href: "/admin/tickers",    label: "Ticker",    Icon: Radio,         color: "#94a3b8",                      permission: "content:read"     },
     ],
@@ -129,7 +130,7 @@ const SECTIONS: NavSection[] = [
   },
 ];
 
-const DEFAULT_DISMISSED: Dismissed = { orders: 0, complaints: 0, withdrawals: 0, deposits: 0, banTaiNguyen: 0, dangKyDichVu: 0 };
+const DEFAULT_DISMISSED: Dismissed = { orders: 0, complaints: 0, withdrawals: 0, deposits: 0, banTaiNguyen: 0, dangKyDichVu: 0, doiTacHoTro: 0 };
 const DEFAULT_OPEN = Object.fromEntries(SECTIONS.map((s) => [s.key, true]));
 const LS_OPEN      = "admin-sidebar-open";
 const LS_DISMISSED = "admin-sidebar-dismissed";
@@ -153,7 +154,7 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin, 
   const playNotificationSound = useNotificationSound(notificationSoundUrl);
 
   const [badges, setBadges] = useState<Badges>({
-    orders: pendingOrderCount, complaints: 0, withdrawals: 0, deposits: 0, banTaiNguyen: 0, dangKyDichVu: 0,
+    orders: pendingOrderCount, complaints: 0, withdrawals: 0, deposits: 0, banTaiNguyen: 0, dangKyDichVu: 0, doiTacHoTro: 0,
   });
   const [dismissed, setDismissed] = useState<Dismissed>(DEFAULT_DISMISSED);
   const [open, setOpen]           = useState<Record<string, boolean>>(DEFAULT_OPEN);
@@ -191,7 +192,7 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin, 
     function handleBadges(next: Badges) {
       if (prevBadgesRef.current) {
         const prev = prevBadgesRef.current;
-        (["orders", "complaints", "withdrawals", "deposits", "banTaiNguyen", "dangKyDichVu"] as BadgeKey[]).forEach((key) => {
+        (["orders", "complaints", "withdrawals", "deposits", "banTaiNguyen", "dangKyDichVu", "doiTacHoTro"] as BadgeKey[]).forEach((key) => {
           const diff = next[key] - prev[key];
           if (diff > 0) addToast(key, diff);
         });
@@ -204,6 +205,7 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin, 
             deposits:     prev.deposits     === 0 ? next.deposits     : prev.deposits,
             banTaiNguyen: prev.banTaiNguyen === 0 ? next.banTaiNguyen : prev.banTaiNguyen,
             dangKyDichVu: prev.dangKyDichVu === 0 ? next.dangKyDichVu : prev.dangKyDichVu,
+            doiTacHoTro:  prev.doiTacHoTro  === 0 ? next.doiTacHoTro  : prev.doiTacHoTro,
           };
           try { localStorage.setItem(LS_DISMISSED, JSON.stringify(init)); } catch { /* ignore */ }
           return init;
@@ -266,7 +268,7 @@ export default function AdminSidebar({ pendingOrderCount, permissions, isAdmin, 
   const productSaleBadgeVisible = hasBadge("banTaiNguyen");
   const leadsBadgeVisible  = hasBadge("dangKyDichVu");
 
-  const totalUnread = (["orders", "complaints", "withdrawals", "deposits", "banTaiNguyen", "dangKyDichVu"] as BadgeKey[])
+  const totalUnread = (["orders", "complaints", "withdrawals", "deposits", "banTaiNguyen", "dangKyDichVu", "doiTacHoTro"] as BadgeKey[])
     .filter((k) => hasBadge(k))
     .reduce((sum, k) => sum + Math.max(0, badges[k] - (dismissed[k] ?? 0)), 0);
 

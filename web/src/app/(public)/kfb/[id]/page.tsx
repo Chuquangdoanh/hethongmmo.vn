@@ -11,6 +11,7 @@ import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.s
 import { getFavoriteStatus } from "@/lib/services/favorite.service";
 import { getExternalProductSoldCount } from "@/lib/services/external-product-stats.service";
 import { getPublicProviderInfo, getProviderType } from "@/lib/external-providers/providers-config";
+import PartnerPreSaleButton from "@/components/shared/PartnerPreSaleButton";
 import FavoriteButton from "@/components/shared/FavoriteButton";
 import { KfbBuyButton } from "./_components/KfbBuyButton";
 import { VpsBuyButton } from "./_components/VpsBuyButton";
@@ -284,7 +285,7 @@ export default async function KfbProductDetailPage({
   ) : null;
 
   const providerLogoSrc = providerInfo?.imageUrl ? r2Url(providerInfo.imageUrl) : null;
-  const shopHref = `/tai-nguyen-mmo/gian-hang-ngoai/${product.provider}`;
+  const shopHref = providerInfo ? `/tai-nguyen-mmo/cua-hang/${providerInfo.publicSlug}` : "#";
 
   // Card gian hàng — hiển thị provider như 1 seller (tên + logo), link tới trang gian hàng.
   // Fallback về nhãn "Hệ Thống MMO" khi provider không còn cấu hình.
@@ -592,6 +593,10 @@ export default async function KfbProductDetailPage({
     </div>
   );
 
+  const cardMessageProvider = providerInfo ? (
+    <PartnerPreSaleButton providerSlug={providerInfo.publicSlug} isLoggedIn={!!me} />
+  ) : null;
+
   const cardSupport = (
     <div className="rounded-2xl border border-border bg-white p-4">
       <div className="flex items-start gap-3 mb-3">
@@ -650,6 +655,7 @@ export default async function KfbProductDetailPage({
         {sectionDescription}
         {sectionIntroduction}
         {cardSource}
+        {cardMessageProvider}
         {cardProductInfo}
         {cardCommitments}
         {sectionHowItWorks}
@@ -671,6 +677,7 @@ export default async function KfbProductDetailPage({
           <div className="sticky top-24 space-y-4">
             {cardProductInfo}
             {cardSource}
+            {cardMessageProvider}
             {cardSupport}
             {cardCommitments}
             {linkBack}

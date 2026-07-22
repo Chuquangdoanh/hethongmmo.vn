@@ -117,6 +117,8 @@ const patchSchema = z.object({
   enabled:     z.boolean().optional(),
   // Cho phép "" để xóa ảnh (gỡ logo gian hàng)
   imageUrl:    z.union([z.string().url("URL ảnh không hợp lệ").max(2000).trim(), z.literal("")]).optional(),
+  // Hạng gian hàng (key SellerTierDefinition); "" để bỏ gán hạng
+  tierKey:     z.union([z.string().max(50).trim(), z.literal("")]).optional(),
 });
 
 // PATCH — cập nhật provider (bật/tắt, đổi key, đổi tên)
@@ -136,6 +138,8 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     const updated: ProviderEntry = { ...configs[idx]!, ...parsed.data };
     // imageUrl === "" nghĩa là gỡ logo → bỏ hẳn field thay vì lưu chuỗi rỗng
     if (parsed.data.imageUrl === "") delete updated.imageUrl;
+    // tierKey === "" nghĩa là bỏ gán hạng
+    if (parsed.data.tierKey === "") delete updated.tierKey;
     configs[idx] = updated;
     await saveProviderConfigs(configs, me.id);
 

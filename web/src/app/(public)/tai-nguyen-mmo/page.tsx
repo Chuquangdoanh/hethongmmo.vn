@@ -208,7 +208,9 @@ export default async function TaiNguyenMmoPage({
   ]);
 
   // Map providerId -> tên gian hàng (thay nhãn "Nguồn ngoài")
-  const providerNameMap = new Map((await getPublicProviders()).map((p) => [p.id, p.name]));
+  const publicProviders = await getPublicProviders();
+  const providerNameMap = new Map(publicProviders.map((p) => [p.id, p.name]));
+  const providerSlugMap = new Map(publicProviders.map((p) => [p.id, p.publicSlug]));
 
   const [purchasedSellerIds, reviewedSellerIds, purchasedMmoIds, reviewedMmoIds, kfbSoldMap] =
     await Promise.all([
@@ -336,7 +338,8 @@ export default async function TaiNguyenMmoPage({
       price: Number(p.salePrice), rating: 0, reviewCount: 0, salesCount: kfbSoldMap.get(p.id) ?? 0,
       available: getEffectiveStock(p.rawData, p.stockOverride) ?? 0, category: p.resourceCategory?.name ?? p.externalCategory,
       isNew: false, isHot: false,
-      href: `/kfb/${p.id}`, shopHref: `${BASE_PATH}/gian-hang-ngoai/${p.provider}`,
+      href: `/kfb/${p.id}`,
+      shopHref: providerSlugMap.has(p.provider) ? `${BASE_PATH}/cua-hang/${providerSlugMap.get(p.provider)}` : "#",
       createdAt: p.createdAt, sellerName: providerNameMap.get(p.provider) ?? "Nguồn ngoài",
       purchasedByMe: false, reviewedByMe: false,
       favoriteCount: 0, isFavorite: false,
