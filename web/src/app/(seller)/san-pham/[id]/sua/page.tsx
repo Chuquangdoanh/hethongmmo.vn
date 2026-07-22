@@ -21,7 +21,7 @@ export default async function SuaSanPhamPage({
   const session = await auth();
   const me = session!.user as AuthenticatedUser;
 
-  const [product, user, allSubCats, allCategories] = await Promise.all([
+  const [product, user, allSubCats] = await Promise.all([
     prisma.sellerProduct.findFirst({
       where: { id, sellerId: me.id, deletedAt: null },
       select: {
@@ -50,19 +50,6 @@ export default async function SuaSanPhamPage({
         showInTaiNguyenMmo: true,
       },
       orderBy: [{ categoryName: "asc" }, { displayOrder: "asc" }],
-    }),
-    prisma.resourceCategory.findMany({
-      orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
-      select: {
-        name: true,
-        showInKhoTaiNguyen: true,
-        showInTaiNguyenMmo: true,
-        subCategories: {
-          where: { isActive: true },
-          orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
-          select: { id: true, name: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
-        },
-      },
     }),
   ]);
 
@@ -148,7 +135,6 @@ export default async function SuaSanPhamPage({
             sellerCategory={user.sellerCategory}
             subCategories={subCategories}
             allSubCats={allSubCats}
-            allCategories={allCategories}
             isRestricted={product.isRestricted}
             initialData={{
               id: product.id,
