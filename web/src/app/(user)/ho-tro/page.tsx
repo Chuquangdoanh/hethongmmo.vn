@@ -16,6 +16,8 @@ import BackBtn from "@/components/shared/BackBtn";
 import ReturnTabSound from "@/components/shared/ReturnTabSound";
 import SupportChatThread from "@/components/shared/SupportChatThread";
 import PreSaleChatThread from "@/components/shared/PreSaleChatThread";
+import PartnerChatPanel from "@/components/shared/PartnerChatPanel";
+import type { PartnerChatMessage } from "@/components/shared/PartnerChatPanel";
 import "./ho-tro.css";
 
 export const metadata: Metadata = { title: "Ticket hỗ trợ" };
@@ -41,7 +43,7 @@ const ticketCode = (id: string) => `#KN-${id.slice(0, 8).toUpperCase()}`;
 
 /* Item dùng chung cho danh sách hội thoại gộp (Khiếu nại + Chat hỗ trợ + Tư vấn trước mua) */
 type ConversationRow = {
-  kind: "complaint" | "support" | "presale";
+  kind: "complaint" | "support" | "presale" | "partner";
   id: string;
   href: string;
   updatedAt: string;
@@ -50,6 +52,7 @@ type ConversationRow = {
   line3?: string;
   lastMsg?: { senderName: string; content: string };
   statusBadge?: { label: string; bg: string; color: string; border: string };
+  badgeText?: string;
 };
 
 /* ─── Progress steps ──────────────────────────────────────────── */
@@ -105,6 +108,10 @@ export default async function HoTroPage({
   const isPreSaleChat = activeId?.startsWith("pc-") ?? false;
   const preSaleChatId = isPreSaleChat ? activeId!.slice(3) : null;
 
+  // Chat hỗ trợ/tư vấn gian hàng đối tác (PartnerSupportThread) dùng tiền tố "ps-"
+  const isPartnerThread = activeId?.startsWith("ps-") ?? false;
+  const partnerThreadId = isPartnerThread ? activeId!.slice(3) : null;
+
   /* ── Complaint list (left panel) ── */
   const complaints = await prisma.complaint.findMany({
     where: { userId: me.id },
@@ -155,7 +162,7 @@ export default async function HoTroPage({
   });
 
   /* ── Selected complaint ── */
-  const selected = (activeId && !isSupportTicket && !isPreSaleChat)
+  const selected = (activeId && !isSupportTicket && !isPreSaleChat && !isPartnerThread)
     ? await prisma.complaint.findFirst({
         where: { id: activeId, userId: me.id },
         include: {
@@ -171,7 +178,7 @@ export default async function HoTroPage({
       })
     : null;
 
-  if (activeId && !isSupportTicket && !isPreSaleChat && !selected) redirect("/ho-tro");
+  if (activeId && !isSupportTicket && !isPreSaleChat && !isPartnerThread && !selected) redirect("/ho-tro");
 
   /* ── Selected support ticket ── */
   const selectedSupportTicket = supportTicketId
@@ -182,6 +189,25 @@ export default async function HoTroPage({
     : null;
 
   if (isSupportTicket && !selectedSupportTicket) redirect("/ho-tro");
+
+  /* ── Chat gian hàng đối tác (left panel) — hỗ trợ đơn + tư vấn trước mua ── */
+  const partnerThreads = await prisma.partnerSupportThread.findMany({
+    where: { userId: me.id },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      order: { select: { orderCode: true, itemName: true } },
+      messages: { orderBy: { createdAt: "desc" }, take: 1, select: { senderName: true, content: true } },
+    },
+  });
+
+  const selectedPartnerThread = partnerThreadId
+    ? await prisma.partnerSupportThread.findFirst({
+        where: { id: partnerThreadId, userId: me.id },
+        include: { messages: { orderBy: { createdAt: "asc" }, take: 200 } },
+      })
+    : null;
+
+  if (isPartnerThread && !selectedPartnerThread) redirect("/ho-tro");
 
   /* ── Selected chat tư vấn trước mua ── */
   const selectedPreSaleChat = preSaleChatId
@@ -307,6 +333,19 @@ export default async function HoTroPage({
       line2: "Tư vấn trước khi mua",
       lastMsg: c.messages[0],
     })),
+    ...partnerThreads.map((t): ConversationRow => ({
+      kind: "partner",
+      id: t.id,
+      href: `/ho-tro?id=ps-${t.id}`,
+      updatedAt: t.updatedAt.toISOString(),
+      titleLabel: t.providerName,
+      line2: t.kind === "PRESALE"
+        ? "Tư vấn trước khi mua"
+        : (t.order ? `Đơn #${t.order.orderCode}` : "Hỗ trợ đơn hàng"),
+      line3: t.kind === "ORDER" ? (t.order?.itemName ?? undefined) : undefined,
+      lastMsg: t.messages[0],
+      badgeText: t.kind === "PRESALE" ? "Tư vấn" : (t.status === "REFUNDED" ? "Đã hoàn tiền" : "Chat hỗ trợ"),
+    })),
   ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   const STATUS_TABS = [
@@ -355,6 +394,7 @@ export default async function HoTroPage({
               const isActive = activeId === (
                 item.kind === "complaint" ? item.id
                 : item.kind === "support"  ? `st-${item.id}`
+                : item.kind === "partner"  ? `ps-${item.id}`
                 : `pc-${item.id}`
               );
 
@@ -416,7 +456,7 @@ export default async function HoTroPage({
                           borderRadius: "10px", fontWeight: "600",
                           background: "#eff6ff", color: "#1d4ed8", border: "1px solid #bfdbfe",
                         }}>
-                          {item.kind === "presale" ? "Tư vấn" : "Chat hỗ trợ"}
+                          {item.badgeText ?? (item.kind === "presale" ? "Tư vấn" : "Chat hỗ trợ")}
                         </span>
                       )}
                     </div>
@@ -637,6 +677,44 @@ export default async function HoTroPage({
               <PreSaleChatThread
                 chatId={selectedPreSaleChat.id}
                 myRole="USER"
+                notificationSoundUrl={notificationSoundUrl}
+              />
+            </div>
+          </div>
+        </div>
+      ) : selectedPartnerThread ? (
+        <div className="ht-middle">
+          {/* Title bar — chat gian hàng đối tác (hỗ trợ / tư vấn), clone kiểu seller */}
+          <div className="ht-title-bar">
+            <BackBtn href="/ho-tro" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{ fontSize: "16px", fontWeight: "700", color: "#0f172a", margin: 0 }}>
+                {selectedPartnerThread.kind === "PRESALE"
+                  ? `Tư vấn với ${selectedPartnerThread.providerName}`
+                  : `Chat hỗ trợ với ${selectedPartnerThread.providerName}`}
+              </h1>
+              <p style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
+                {selectedPartnerThread.kind === "PRESALE"
+                  ? "Trao đổi trước khi đặt mua"
+                  : "Trao đổi & hỗ trợ về đơn hàng"}
+              </p>
+            </div>
+          </div>
+
+          {/* Chat area */}
+          <div className="ht-chat-area">
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
+              <PartnerChatPanel
+                fill
+                threadId={selectedPartnerThread.id}
+                currentUserId={me.id}
+                providerName={selectedPartnerThread.providerName}
+                subject={selectedPartnerThread.subject}
+                initialMessages={selectedPartnerThread.messages.map((m): PartnerChatMessage => ({
+                  id: m.id, senderId: m.senderId, senderName: m.senderName,
+                  senderRole: m.senderRole, content: m.content, createdAt: m.createdAt.toISOString(),
+                }))}
+                initialStatus={selectedPartnerThread.status}
                 notificationSoundUrl={notificationSoundUrl}
               />
             </div>

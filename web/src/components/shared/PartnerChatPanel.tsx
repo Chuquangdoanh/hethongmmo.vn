@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Store, Send, Loader2 } from "lucide-react";
+import { useNotificationSound } from "@/lib/hooks/useNotificationSound";
 
 export type PartnerChatMessage = {
   id: string;
@@ -19,10 +20,16 @@ interface Props {
   currentUserId: string;
   /** true → admin đóng vai gian hàng (có nút hoàn tiền / đóng). */
   isAdmin?: boolean;
+  /** false → ẩn nút hoàn tiền (vd chat tư vấn trước mua, không gắn đơn). */
+  canRefund?: boolean;
   providerName: string;
   subject: string;
   initialMessages: PartnerChatMessage[];
   initialStatus: ThreadStatus;
+  notificationSoundUrl?: string | null;
+  /** true → panel lấp đầy chiều cao container (dùng ở /ho-tro để không dư khoảng trắng dưới chân).
+   *  false/undefined → dùng chiều cao clamp cố định (dùng ở grid admin). */
+  fill?: boolean;
 }
 
 const POLL_INTERVAL_MS = 4000;
@@ -31,10 +38,13 @@ export default function PartnerChatPanel({
   threadId,
   currentUserId,
   isAdmin = false,
+  canRefund = true,
   providerName,
   subject,
   initialMessages,
   initialStatus,
+  notificationSoundUrl,
+  fill = false,
 }: Props) {
   const [messages, setMessages] = useState<PartnerChatMessage[]>(initialMessages);
   const [status, setStatus] = useState<ThreadStatus>(initialStatus);
@@ -43,12 +53,16 @@ export default function PartnerChatPanel({
   const [acting, setActing] = useState(false);
   const [confirmRefund, setConfirmRefund] = useState(false);
   const [error, setError] = useState("");
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const playNotificationSound = useNotificationSound(notificationSoundUrl);
 
   const closed = status !== "OPEN";
 
+  // Chỉ cuộn BÊN TRONG khung tin nhắn xuống cuối — không dùng scrollIntoView
+  // (scrollIntoView sẽ cuộn cả trang xuống đáy khi mở /ho-tro?id=ps-...).
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = listRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
   // Polling các tin mới + trạng thái
@@ -66,11 +80,14 @@ export default function PartnerChatPanel({
         setMessages((prev) => {
           const ids = new Set(prev.map((m) => m.id));
           const fresh = json.data!.messages.filter((m) => !ids.has(m.id));
-          return fresh.length > 0 ? [...prev, ...fresh] : prev;
+          if (fresh.length === 0) return prev;
+          // Phát âm thanh khi có tin mới từ bên kia (không phải mình gửi)
+          if (fresh.some((m) => m.senderId !== currentUserId)) playNotificationSound();
+          return [...prev, ...fresh];
         });
       }
     } catch { /* im lặng — sẽ thử lại lần poll sau */ }
-  }, [messages, threadId]);
+  }, [messages, threadId, currentUserId, playNotificationSound]);
 
   useEffect(() => {
     if (closed) return;
@@ -138,7 +155,10 @@ export default function PartnerChatPanel({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col" style={{ height: "clamp(520px, calc(100vh - 300px), 860px)" }}>
+    <div
+      className="rounded-xl border border-gray-200 bg-white overflow-hidden flex flex-col min-h-0"
+      style={fill ? { height: "100%" } : { height: "clamp(520px, calc(100vh - 300px), 860px)" }}
+    >
       {/* Header */}
       <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 shrink-0 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
@@ -163,7 +183,7 @@ export default function PartnerChatPanel({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 min-h-0">
+      <div ref={listRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-3 min-h-0">
         {messages.length === 0 && (
           <p className="text-sm text-center text-gray-400 py-16">Chưa có tin nhắn.</p>
         )}
@@ -190,7 +210,6 @@ export default function PartnerChatPanel({
             </div>
           );
         })}
-        <div ref={bottomRef} />
       </div>
 
       {/* Closed banner */}
@@ -254,12 +273,14 @@ export default function PartnerChatPanel({
                 </button>
                 {isAdmin && (
                   <>
-                    <button
-                      onClick={() => setConfirmRefund(true)}
-                      className="px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 text-xs font-semibold hover:bg-blue-100 transition-colors whitespace-nowrap"
-                    >
-                      💰 Hoàn tiền
-                    </button>
+                    {canRefund && (
+                      <button
+                        onClick={() => setConfirmRefund(true)}
+                        className="px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 text-xs font-semibold hover:bg-blue-100 transition-colors whitespace-nowrap"
+                      >
+                        💰 Hoàn tiền
+                      </button>
+                    )}
                     <button
                       onClick={() => void handleResolve()}
                       disabled={acting}
