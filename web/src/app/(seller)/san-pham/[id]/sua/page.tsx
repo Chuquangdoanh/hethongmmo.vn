@@ -29,6 +29,7 @@ export default async function SuaSanPhamPage({
         imageUrl: true, isActive: true, isHidden: true,
         isRestricted: true, sellerCategory: true, subCategoryId: true, storeType: true,
         approvalStatus: true, approvalRejectReason: true,
+        originType: true, originDescription: true, originCommitment: true,
       },
     }),
     prisma.user.findUnique({
@@ -148,6 +149,9 @@ export default async function SuaSanPhamPage({
               subCategoryId: product.subCategoryId ?? null,
               storeType: product.storeType,
               productSellerCategory: product.sellerCategory,
+              originType: product.originType,
+              originDescription: product.originDescription,
+              originCommitment: product.originCommitment,
             }}
           />
 

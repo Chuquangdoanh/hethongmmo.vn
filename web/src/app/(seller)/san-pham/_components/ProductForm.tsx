@@ -61,6 +61,9 @@ interface ProductFormProps {
     subCategoryId?: string | null;
     storeType?: string;
     productSellerCategory?: string;
+    originType?: string | null;
+    originDescription?: string | null;
+    originCommitment?: boolean;
   };
 }
 
@@ -104,10 +107,10 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
     return allSubCats.filter((s) => s[currentPageDef.flag] && s.categoryName === sellerCat);
   }, [allSubCats, storeType, sellerCat]);
 
-  // ── Nguồn gốc sản phẩm (bắt buộc khi tạo mới) ─────────────────────────────
-  const [originType, setOriginType] = useState("");
-  const [originDescription, setOriginDescription] = useState("");
-  const [originCommitment, setOriginCommitment] = useState(false);
+  // ── Nguồn gốc sản phẩm (bắt buộc cả khi tạo mới lẫn khi sửa) ───────────────
+  const [originType, setOriginType] = useState(initialData?.originType ?? "");
+  const [originDescription, setOriginDescription] = useState(initialData?.originDescription ?? "");
+  const [originCommitment, setOriginCommitment] = useState(initialData?.originCommitment ?? false);
   const [originTouched, setOriginTouched] = useState({ type: false, desc: false, commit: false });
   const originDescLen = originDescription.trim().length;
   const originValid =
@@ -275,14 +278,14 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
         setError(`Kho tối đa 5.000 items khi tạo sản phẩm. Hiện có ${stockItems.length.toLocaleString("vi-VN")} items — hãy chia nhỏ.`);
         return;
       }
-
-      // Nguồn gốc sản phẩm — bắt buộc trước khi đăng bán
-      setOriginTouched({ type: true, desc: true, commit: true });
-      if (!originType) { setError("Vui lòng chọn loại nguồn gốc sản phẩm."); return; }
-      if (originDescLen < ORIGIN_DESC_MIN) { setError(`Mô tả nguồn gốc tối thiểu ${ORIGIN_DESC_MIN} ký tự.`); return; }
-      if (originDescLen > ORIGIN_DESC_MAX) { setError(`Mô tả nguồn gốc tối đa ${ORIGIN_DESC_MAX} ký tự.`); return; }
-      if (!originCommitment) { setError("Bạn phải cam kết nguồn gốc hợp pháp trước khi đăng bán."); return; }
     }
+
+    // Nguồn gốc sản phẩm — bắt buộc cả khi tạo mới lẫn khi sửa
+    setOriginTouched({ type: true, desc: true, commit: true });
+    if (!originType) { setError("Vui lòng chọn loại nguồn gốc sản phẩm."); return; }
+    if (originDescLen < ORIGIN_DESC_MIN) { setError(`Mô tả nguồn gốc tối thiểu ${ORIGIN_DESC_MIN} ký tự.`); return; }
+    if (originDescLen > ORIGIN_DESC_MAX) { setError(`Mô tả nguồn gốc tối đa ${ORIGIN_DESC_MAX} ký tự.`); return; }
+    if (!originCommitment) { setError("Bạn phải cam kết nguồn gốc hợp pháp trước khi lưu."); return; }
 
     setError("");
     setLoading(true);
@@ -310,12 +313,11 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
         subCategoryId: subCategoryId ?? null,
       };
       if (allSubCats) body.storeType = storeType;
-      if (mode === "create") {
-        body.stockItems = stockItems;
-        body.originType = originType;
-        body.originDescription = originDescription.trim();
-        body.originCommitment = originCommitment;
-      }
+      if (mode === "create") body.stockItems = stockItems;
+      // Nguồn gốc — gửi ở cả tạo mới lẫn sửa
+      body.originType = originType;
+      body.originDescription = originDescription.trim();
+      body.originCommitment = originCommitment;
 
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const json = await res.json() as { success?: boolean; data?: { productId?: string }; error?: string };
@@ -578,7 +580,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
 
   const actionButtons = (
     <div className="flex items-center gap-3 pt-1">
-      <button type="submit" disabled={loading || uploading || (mode === "create" && !originValid)}
+      <button type="submit" disabled={loading || uploading || !originValid}
         className="flex-1 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-[#0052cc] disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
         {loading ? "Đang lưu..." : mode === "create" ? "Tạo sản phẩm" : "Lưu thay đổi"}
       </button>
@@ -890,6 +892,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
                 )}
                 {warrantyInfoField}
                 {descField}
+                {originSection}
                 {error && <p className="text-xs text-red-500">{error}</p>}
                 {actionButtons}
               </div>
