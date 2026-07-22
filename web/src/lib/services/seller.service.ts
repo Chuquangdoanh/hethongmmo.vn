@@ -109,11 +109,15 @@ interface AddProductParams {
   subCategoryId?: string | null;
   stockItems: string[];
   storeType?: "KHO_TAI_NGUYEN" | "TAI_NGUYEN_MMO"; // nếu có, dùng thay vì fetch từ sellerRequest
+  // Nguồn gốc sản phẩm — bắt buộc khi đăng bán
+  originType: "SELF_CREATED" | "SELF_RAISED" | "BOUGHT_INDIVIDUAL" | "BOUGHT_BUSINESS" | "LEGAL_TRANSFER" | "OTHER";
+  originDescription: string;
+  originCommitment: true;
 }
 
 /** Adds a new product with encrypted stock items. Enforces product limit. */
 export async function addSellerProduct(params: AddProductParams): Promise<string> {
-  const { sellerId, name, price, warrantyInfo, description, imageUrl, sellerCategory, subCategoryId, stockItems } = params;
+  const { sellerId, name, price, warrantyInfo, description, imageUrl, sellerCategory, subCategoryId, stockItems, originType, originDescription, originCommitment } = params;
 
   const productCount = await checkProductLimit(sellerId);
   const [seller, sellerRequest] = await Promise.all([
@@ -157,6 +161,9 @@ export async function addSellerProduct(params: AddProductParams): Promise<string
       warrantyInfo,
       description,
       imageUrl,
+      originType,
+      originDescription,
+      originCommitment,
       approvalStatus: "PENDING",
       stockItems: {
         create: encryptedItems.map((item) => ({ contentEnc: item.contentEnc })),

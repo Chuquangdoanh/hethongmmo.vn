@@ -18,6 +18,13 @@ const addProductSchema = z.object({
   sellerCategory: z.string().min(1).max(100).trim(),
   subCategoryId: z.string().uuid().nullable().optional(),
   storeType: z.enum(["KHO_TAI_NGUYEN", "TAI_NGUYEN_MMO"]).optional(),
+  // Nguồn gốc sản phẩm — bắt buộc
+  originType: z.enum(
+    ["SELF_CREATED", "SELF_RAISED", "BOUGHT_INDIVIDUAL", "BOUGHT_BUSINESS", "LEGAL_TRANSFER", "OTHER"],
+    { message: "Vui lòng chọn loại nguồn gốc" },
+  ),
+  originDescription: z.string().trim().min(30, "Mô tả nguồn gốc tối thiểu 30 ký tự").max(500, "Mô tả nguồn gốc tối đa 500 ký tự"),
+  originCommitment: z.literal(true, { message: "Bạn phải cam kết nguồn gốc hợp pháp trước khi đăng bán" }),
   stockItems: z
     .array(z.string().min(1, "Item không được rỗng").max(2000, "Mỗi item tối đa 2000 ký tự"))
     .min(1, "Cần ít nhất 1 item kho")

@@ -176,6 +176,15 @@ enum SellerProductApprovalStatus {
   REJECTED
 }
 
+enum ProductOriginType {
+  SELF_CREATED       // Tự tạo
+  SELF_RAISED        // Tự nuôi
+  BOUGHT_INDIVIDUAL  // Thu mua từ cá nhân
+  BOUGHT_BUSINESS    // Thu mua từ doanh nghiệp
+  LEGAL_TRANSFER     // Được chuyển nhượng hợp pháp
+  OTHER              // Khác
+}
+
 enum AffiliateStatus {
   ACTIVE
   LOCKED
@@ -913,6 +922,10 @@ model SellerProduct {
   // sản phẩm tạo mới sau migration được service set về PENDING tường minh
   approvalStatus       SellerProductApprovalStatus @default(APPROVED) @map("approval_status")
   approvalRejectReason String?   @map("approval_reject_reason")
+  // Nguồn gốc sản phẩm — bắt buộc khi seller đăng bán (nullable cho dữ liệu cũ trước migration)
+  originType        ProductOriginType? @map("origin_type")
+  originDescription String?            @map("origin_description") @db.Text
+  originCommitment  Boolean            @default(false) @map("origin_commitment")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")

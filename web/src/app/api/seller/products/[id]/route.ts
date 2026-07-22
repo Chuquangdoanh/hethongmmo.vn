@@ -21,6 +21,10 @@ const patchSchema = z.object({
   subCategoryId:  z.string().uuid().nullable().optional(),
   sellerCategory: z.string().min(1).max(100).trim().optional(),
   storeType:      z.enum(["KHO_TAI_NGUYEN", "TAI_NGUYEN_MMO"]).optional(),
+  // Nguồn gốc sản phẩm — cập nhật khi seller sửa lại
+  originType:        z.enum(["SELF_CREATED", "SELF_RAISED", "BOUGHT_INDIVIDUAL", "BOUGHT_BUSINESS", "LEGAL_TRANSFER", "OTHER"]).optional(),
+  originDescription: z.string().trim().min(30, "Mô tả nguồn gốc tối thiểu 30 ký tự").max(500, "Mô tả nguồn gốc tối đa 500 ký tự").optional(),
+  originCommitment:  z.literal(true, { message: "Bạn phải cam kết nguồn gốc hợp pháp" }).optional(),
 });
 
 // ── GET — Chi tiết sản phẩm kèm stock count ──────────────────────────────────

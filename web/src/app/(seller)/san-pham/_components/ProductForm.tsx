@@ -10,6 +10,18 @@ import ProductGalleryManager from "@/components/shared/ProductGalleryManager";
 const MAX_STOCK_ITEMS = 5000;
 const MAX_FILE_SIZE_MB = 10;
 
+// Nguồn gốc sản phẩm
+const ORIGIN_OPTIONS: { value: string; label: string }[] = [
+  { value: "SELF_CREATED", label: "Tự tạo" },
+  { value: "SELF_RAISED", label: "Tự nuôi" },
+  { value: "BOUGHT_INDIVIDUAL", label: "Thu mua từ cá nhân" },
+  { value: "BOUGHT_BUSINESS", label: "Thu mua từ doanh nghiệp" },
+  { value: "LEGAL_TRANSFER", label: "Được chuyển nhượng hợp pháp" },
+  { value: "OTHER", label: "Khác" },
+];
+const ORIGIN_DESC_MIN = 30;
+const ORIGIN_DESC_MAX = 500;
+
 type StoreTypeKey = "KHO_TAI_NGUYEN" | "TAI_NGUYEN_MMO";
 
 const STORE_PAGES: { key: StoreTypeKey; label: string; flag: "showInKhoTaiNguyen" | "showInTaiNguyenMmo" }[] = [
@@ -91,6 +103,15 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
     if (!allSubCats || !sellerCat) return [];
     return allSubCats.filter((s) => s[currentPageDef.flag] && s.categoryName === sellerCat);
   }, [allSubCats, storeType, sellerCat]);
+
+  // ── Nguồn gốc sản phẩm (bắt buộc khi tạo mới) ─────────────────────────────
+  const [originType, setOriginType] = useState("");
+  const [originDescription, setOriginDescription] = useState("");
+  const [originCommitment, setOriginCommitment] = useState(false);
+  const [originTouched, setOriginTouched] = useState({ type: false, desc: false, commit: false });
+  const originDescLen = originDescription.trim().length;
+  const originValid =
+    !!originType && originDescLen >= ORIGIN_DESC_MIN && originDescLen <= ORIGIN_DESC_MAX && originCommitment;
 
   // ── Stock input state (create mode only) ──────────────────────────────────
   const [stockTab, setStockTab] = useState<"file" | "manual">("file");
@@ -254,6 +275,13 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
         setError(`Kho tối đa 5.000 items khi tạo sản phẩm. Hiện có ${stockItems.length.toLocaleString("vi-VN")} items — hãy chia nhỏ.`);
         return;
       }
+
+      // Nguồn gốc sản phẩm — bắt buộc trước khi đăng bán
+      setOriginTouched({ type: true, desc: true, commit: true });
+      if (!originType) { setError("Vui lòng chọn loại nguồn gốc sản phẩm."); return; }
+      if (originDescLen < ORIGIN_DESC_MIN) { setError(`Mô tả nguồn gốc tối thiểu ${ORIGIN_DESC_MIN} ký tự.`); return; }
+      if (originDescLen > ORIGIN_DESC_MAX) { setError(`Mô tả nguồn gốc tối đa ${ORIGIN_DESC_MAX} ký tự.`); return; }
+      if (!originCommitment) { setError("Bạn phải cam kết nguồn gốc hợp pháp trước khi đăng bán."); return; }
     }
 
     setError("");
@@ -282,7 +310,12 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
         subCategoryId: subCategoryId ?? null,
       };
       if (allSubCats) body.storeType = storeType;
-      if (mode === "create") body.stockItems = stockItems;
+      if (mode === "create") {
+        body.stockItems = stockItems;
+        body.originType = originType;
+        body.originDescription = originDescription.trim();
+        body.originCommitment = originCommitment;
+      }
 
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const json = await res.json() as { success?: boolean; data?: { productId?: string }; error?: string };
@@ -545,14 +578,97 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
 
   const actionButtons = (
     <div className="flex items-center gap-3 pt-1">
-      <button type="submit" disabled={loading || uploading}
-        className="flex-1 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-[#0052cc] disabled:opacity-60 transition-colors">
+      <button type="submit" disabled={loading || uploading || (mode === "create" && !originValid)}
+        className="flex-1 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-[#0052cc] disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
         {loading ? "Đang lưu..." : mode === "create" ? "Tạo sản phẩm" : "Lưu thay đổi"}
       </button>
       <button type="button" onClick={() => router.back()}
         className="px-4 py-2.5 rounded-lg border border-gray-200 text-gray-500 text-sm hover:border-gray-300 hover:text-gray-700 transition-colors">
         Hủy
       </button>
+    </div>
+  );
+
+  // ── Nguồn gốc sản phẩm (create mode) ───────────────────────────────────────
+  const originSection = (
+    <div className="pt-4 border-t border-gray-100 space-y-3">
+      <div>
+        <p className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+          🔒 Nguồn gốc sản phẩm <span className="text-red-500">*</span>
+        </p>
+        <p className="text-[11px] text-gray-400 mt-0.5">
+          Bắt buộc khai báo trước khi đăng bán — phục vụ kiểm duyệt, truy xuất nguồn gốc & xử lý khiếu nại.
+        </p>
+      </div>
+
+      {/* 1. Loại nguồn gốc */}
+      <div>
+        <label className="block text-[11px] font-medium text-gray-500 mb-1">
+          Loại nguồn gốc <span className="text-red-500">*</span>
+        </label>
+        <select
+          value={originType}
+          onChange={(e) => setOriginType(e.target.value)}
+          onBlur={() => setOriginTouched((t) => ({ ...t, type: true }))}
+          className={`w-full rounded-lg border bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:bg-white focus:outline-none transition-colors ${
+            originTouched.type && !originType ? "border-red-400" : "border-gray-200 focus:border-[#e11d48]/60"
+          }`}
+        >
+          <option value="">-- Chọn loại nguồn gốc --</option>
+          {ORIGIN_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+        {originTouched.type && !originType && (
+          <p className="text-[10px] text-red-500 mt-1">Vui lòng chọn loại nguồn gốc.</p>
+        )}
+      </div>
+
+      {/* 2. Mô tả nguồn gốc */}
+      <div>
+        <label className="block text-[11px] font-medium text-gray-500 mb-1">
+          Mô tả nguồn gốc <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          value={originDescription}
+          onChange={(e) => setOriginDescription(e.target.value)}
+          onBlur={() => setOriginTouched((t) => ({ ...t, desc: true }))}
+          rows={3}
+          maxLength={ORIGIN_DESC_MAX}
+          placeholder="Nhập chi tiết nguồn gốc sản phẩm, thời gian tạo/thu mua, hình thức sở hữu và các thông tin liên quan."
+          className={`w-full rounded-lg border bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:bg-white focus:outline-none transition-colors resize-none ${
+            originTouched.desc && originDescLen < ORIGIN_DESC_MIN ? "border-red-400" : "border-gray-200 focus:border-[#e11d48]/60"
+          }`}
+        />
+        <div className="flex items-center justify-between mt-1">
+          {originTouched.desc && originDescLen < ORIGIN_DESC_MIN ? (
+            <p className="text-[10px] text-red-500">
+              Cần tối thiểu {ORIGIN_DESC_MIN} ký tự (còn thiếu {ORIGIN_DESC_MIN - originDescLen}).
+            </p>
+          ) : (
+            <p className="text-[10px] text-gray-400">Tối thiểu {ORIGIN_DESC_MIN} · tối đa {ORIGIN_DESC_MAX} ký tự</p>
+          )}
+          <p className="text-[10px] text-gray-400">{originDescLen} / {ORIGIN_DESC_MAX}</p>
+        </div>
+      </div>
+
+      {/* 3. Cam kết */}
+      <div>
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={originCommitment}
+            onChange={(e) => { setOriginCommitment(e.target.checked); setOriginTouched((t) => ({ ...t, commit: true })); }}
+            className="h-4 w-4 rounded border-gray-300 text-[#e11d48] shrink-0 mt-0.5"
+          />
+          <span className="text-[11px] text-gray-600 leading-relaxed">
+            Tôi cam kết sản phẩm được tạo lập hoặc sở hữu hợp pháp, không có nguồn gốc từ hành vi chiếm đoạt, hack, lừa đảo, đánh cắp hoặc bất kỳ hành vi vi phạm pháp luật nào. Tôi chịu hoàn toàn trách nhiệm trước Hệ thống MMO và pháp luật về tính trung thực của thông tin đã khai báo. <span className="text-red-500">*</span>
+          </span>
+        </label>
+        {originTouched.commit && !originCommitment && (
+          <p className="text-[10px] text-red-500 mt-1">Bạn phải tích cam kết để tiếp tục.</p>
+        )}
+      </div>
     </div>
   );
 
@@ -678,6 +794,8 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
           </p>
         </div>
       )}
+
+      {originSection}
 
       {checkboxes}
       {error && <p className="text-xs text-red-500">{error}</p>}
