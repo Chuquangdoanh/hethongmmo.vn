@@ -107,7 +107,7 @@ export default function HomeWelcomePopup({ telegramHref, facebookHref }: { teleg
         className="hwp-dialog"
         style={{
           position: "relative", width: "100%", maxWidth: "704px",
-          maxHeight: "calc(100vh - 32px)", overflowY: "auto",
+          maxHeight: "calc(100dvh - 32px)", overflowY: "auto",
           borderRadius: "24px",
           border: "1px solid #dbeafe",
           background:
@@ -147,9 +147,11 @@ export default function HomeWelcomePopup({ telegramHref, facebookHref }: { teleg
           .hwp-trust-item { display: flex; align-items: center; gap: 10px; min-width: 0; }
           @media (max-width: 820px) { .hwp-cards { grid-template-columns: repeat(3, 1fr); } }
           @media (max-width: 520px) {
-            .hwp-cards { grid-template-columns: repeat(2, 1fr); }
+            .hwp-cards { grid-template-columns: repeat(2, 1fr); gap: 12px; }
             .hwp-contact { grid-template-columns: 1fr; }
             .hwp-trust { justify-content: flex-start; }
+            .hwp-header { padding: 40px 16px 14px; }
+            .hwp-body { padding: 0 12px 16px; }
           }
         `}</style>
 
