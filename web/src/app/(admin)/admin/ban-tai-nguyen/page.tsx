@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Admin — Bán tài nguyên" };
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Chờ xử lý", PROCESSING: "Đang xử lý", DONE: "Hoàn thành",
-  FROZEN: "Đóng băng", REFUNDED: "Đã hoàn tiền", CANCELLED: "Hủy đơn",
+  FROZEN: "Hủy đơn", REFUNDED: "Đã hoàn tiền", CANCELLED: "Đã hủy",
 };
 
 const PRODUCT_TYPES = [
@@ -332,9 +332,9 @@ export default async function BanTaiNguyenPage({
           { key: "",           label: "Tất cả",       color: "#10B981" },
           { key: "PROCESSING", label: "Đang xử lý",   color: "#10B981" },
           { key: "DONE",       label: "Hoàn thành",   color: "#10B981" },
-          { key: "FROZEN",     label: "Đóng băng",    color: "#0891b2" },
+          { key: "FROZEN",     label: "Hủy đơn",      color: "#EF4444" },
           { key: "REFUNDED",   label: "Đã hoàn tiền", color: "#EF4444" },
-          { key: "CANCELLED",  label: "Hủy đơn",      color: "#EF4444" },
+          { key: "CANCELLED",  label: "Đã hủy",       color: "#10B981" },
         ].map(({ key, label, color }) => (
           <Link
             key={key}
