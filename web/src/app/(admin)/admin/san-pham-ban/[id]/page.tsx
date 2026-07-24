@@ -435,8 +435,8 @@ export default async function AdminSellerProductDetailPage({
                           {(currentPage - 1) * PAGE_SIZE + i + 1}
                         </td>
                         <td className="px-4 py-3">
-                          <p className="text-xs font-mono text-gray-700 break-all max-w-[320px]">
-                            {item.content.length > 120 ? `${item.content.slice(0, 120)}…` : item.content}
+                          <p className="text-xs font-mono text-gray-700 break-all whitespace-pre-wrap max-w-[320px] max-h-32 overflow-y-auto">
+                            {item.content}
                           </p>
                         </td>
                         <td className="px-4 py-3">
