@@ -74,10 +74,8 @@ export function CategoryFilter({ categories, basePath }: Props) {
   function toggleSubcat(name: string) {
     const p = sidebarParams();
     if (selectedCat) p.set("category", selectedCat);
-    const next = selectedSubcats.includes(name)
-      ? selectedSubcats.filter((n) => n !== name)
-      : [...selectedSubcats, name];
-    if (next.length > 0) p.set("subcategory", next.join(","));
+    const isAlreadySelected = selectedSubcats.includes(name) && selectedSubcats.length === 1;
+    if (!isAlreadySelected) p.set("subcategory", name);
     go(p);
   }
 
