@@ -10,7 +10,6 @@ const STATUS_OPTIONS = [
   { value: "DONE",       label: "Hoàn thành",    cls: "bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20" },
   { value: "FROZEN",     label: "Hủy đơn",       cls: "bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20" },
   { value: "REFUNDED",   label: "Đã hoàn tiền",  cls: "bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20" },
-  { value: "CANCELLED",  label: "Đã hủy",        cls: "bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20" },
 ];
 
 export default function InlineStatusCell({

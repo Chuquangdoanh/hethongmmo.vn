@@ -334,7 +334,6 @@ export default async function BanTaiNguyenPage({
           { key: "DONE",       label: "Hoàn thành",   color: "#10B981" },
           { key: "FROZEN",     label: "Hủy đơn",      color: "#EF4444" },
           { key: "REFUNDED",   label: "Đã hoàn tiền", color: "#EF4444" },
-          { key: "CANCELLED",  label: "Đã hủy",       color: "#10B981" },
         ].map(({ key, label, color }) => (
           <Link
             key={key}
