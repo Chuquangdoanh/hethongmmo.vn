@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import MmoProductForm from "../../_components/MmoProductForm";
 import VariantManager from "@/components/shared/VariantManager";
+import FeatureMatrixManager from "../../_components/FeatureMatrixManager";
 
 export const metadata: Metadata = { title: "Admin — Sửa tài nguyên MMO" };
 
@@ -14,14 +15,22 @@ export default async function AdminMmoProductEditPage({
 }) {
   const { id } = await params;
 
-  const product = await prisma.mmoProduct.findUnique({
-    where: { id, deletedAt: null },
-    select: {
-      id: true, name: true, slug: true, category: true, categoryGroup: true,
-      price: true, description: true, warrantyInfo: true, thumbnail: true,
-      isActive: true, isFeatured: true, displayOrder: true, section: true,
-    },
-  });
+  const [product, adminUsers] = await Promise.all([
+    prisma.mmoProduct.findUnique({
+      where: { id, deletedAt: null },
+      select: {
+        id: true, name: true, slug: true, category: true, categoryGroup: true,
+        price: true, description: true, warrantyInfo: true, thumbnail: true,
+        isActive: true, isFeatured: true, displayOrder: true, section: true,
+        postedByUserId: true, packageFeatures: true,
+      },
+    }),
+    prisma.user.findMany({
+      where: { role: "ADMIN", deletedAt: null },
+      select: { id: true, fullName: true, avatarUrl: true },
+      orderBy: { fullName: "asc" },
+    }),
+  ]);
 
   if (!product) notFound();
 
@@ -48,7 +57,9 @@ export default async function AdminMmoProductEditPage({
           isFeatured: product.isFeatured,
           displayOrder: product.displayOrder,
           section: product.section,
+          postedByUserId: product.postedByUserId ?? undefined,
         }}
+        adminUsers={adminUsers}
       />
 
       {/* Step guide */}
@@ -69,7 +80,12 @@ export default async function AdminMmoProductEditPage({
       {/* Gói biến thể — Bảo hành & Giá */}
       <div id="variants-section" className="rounded-xl border border-[#7C3AED]/30 bg-[#faf8ff] p-5">
         <h2 className="text-sm font-semibold text-gray-900 mb-4">Gói sản phẩm (ví dụ: Gói 1 tháng, Gói 3 tháng...) — Bước 2</h2>
-        <VariantManager productId={product.id} isAdmin apiBase="/api/products/mmo" />
+        <VariantManager
+          productId={product.id}
+          isAdmin
+          apiBase="/api/products/mmo"
+          showPopularToggle={product.section === "TOOL_PHAN_MEM"}
+        />
         <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
           <p className="text-xs text-gray-500">Sau khi thêm đủ gói, tiếp tục nhập kho bên dưới.</p>
           <a href={`/admin/mmo-products/${product.id}/stock`}
@@ -78,6 +94,17 @@ export default async function AdminMmoProductEditPage({
           </a>
         </div>
       </div>
+
+      {/* Bảng so sánh tính năng theo gói — chỉ dành cho Tool - Phần mềm */}
+      {product.section === "TOOL_PHAN_MEM" && (
+        <div className="rounded-xl border border-amber-300/40 bg-amber-50/40 p-5">
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">Bảng so sánh tính năng theo gói</h2>
+          <FeatureMatrixManager
+            productId={product.id}
+            initialPackageFeatures={product.packageFeatures as { features: string[]; variantFlags: Record<string, boolean[]> } | null}
+          />
+        </div>
+      )}
     </div>
   );
 }

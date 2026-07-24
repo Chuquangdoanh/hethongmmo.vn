@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, PackageOpen } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Check, ChevronDown, ChevronUp, PackageOpen, Star } from "lucide-react";
 
 interface Variant {
   id: string;
@@ -9,6 +9,7 @@ interface Variant {
   variantPrice: number;
   warranty: string;
   isActive: boolean;
+  isPopular?: boolean;
   createdAt: string;
 }
 
@@ -33,9 +34,11 @@ export interface VariantManagerProps {
   isAdmin?: boolean;
   /** Base API path, default: /api/seller/products */
   apiBase?: string;
+  /** Cho phép chọn 1 gói làm "Phổ biến" (dùng cho Tool - Phần mềm) */
+  showPopularToggle?: boolean;
 }
 
-export default function VariantManager({ productId, isAdmin = false, apiBase = "/api/seller/products" }: VariantManagerProps) {
+export default function VariantManager({ productId, isAdmin = false, apiBase = "/api/seller/products", showPopularToggle = false }: VariantManagerProps) {
   const [variants, setVariants] = useState<Variant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -155,6 +158,16 @@ export default function VariantManager({ productId, isAdmin = false, apiBase = "
     }
   }
 
+  async function handleTogglePopular(variantId: string, current: boolean) {
+    const res = await fetch(`${baseUrl}/${variantId}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isPopular: !current }),
+    });
+    if (res.ok) void fetchVariants();
+  }
+
   async function handleDelete() {
     if (!deleteId) return;
     setDeleteLoading(true);
@@ -268,6 +281,7 @@ export default function VariantManager({ productId, isAdmin = false, apiBase = "
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Giá</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Bảo hành</th>
                   {isAdmin && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Trạng thái</th>}
+                  {showPopularToggle && <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500">Phổ biến</th>}
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500">Thao tác</th>
                 </tr>
               </thead>
@@ -275,7 +289,7 @@ export default function VariantManager({ productId, isAdmin = false, apiBase = "
                 {variants.map((v, i) => (
                   <tr key={v.id} className={`${i !== 0 ? "border-t border-gray-100" : ""} hover:bg-gray-50/60 transition-colors`}>
                     {editId === v.id ? (
-                      <td colSpan={isAdmin ? 5 : 4} className="px-4 py-3">
+                      <td colSpan={4 + (isAdmin ? 1 : 0) + (showPopularToggle ? 1 : 0)} className="px-4 py-3">
                         <form onSubmit={handleEdit} className="space-y-2">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <input
@@ -339,6 +353,22 @@ export default function VariantManager({ productId, isAdmin = false, apiBase = "
                             >
                               {v.isActive ? <ChevronDown size={10} /> : <ChevronUp size={10} />}
                               {v.isActive ? "Đang bán" : "Tắt"}
+                            </button>
+                          </td>
+                        )}
+                        {showPopularToggle && (
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => void handleTogglePopular(v.id, !!v.isPopular)}
+                              title={v.isPopular ? "Bỏ chọn phổ biến" : "Đặt làm phổ biến"}
+                              className={`inline-flex items-center justify-center w-7 h-7 rounded-full border transition-colors ${
+                                v.isPopular
+                                  ? "bg-amber-100 border-amber-300 text-amber-600"
+                                  : "bg-white border-gray-200 text-gray-300 hover:border-amber-300 hover:text-amber-400"
+                              }`}
+                            >
+                              <Star size={14} fill={v.isPopular ? "currentColor" : "none"} />
                             </button>
                           </td>
                         )}

@@ -15,6 +15,7 @@ const updateSchema = z.object({
   isActive:            z.boolean().optional(),
   showInKhoTaiNguyen:  z.boolean().optional(),
   showInTaiNguyenMmo:  z.boolean().optional(),
+  showInToolPhanMem:   z.boolean().optional(),
 });
 
 // PATCH /api/admin/sub-categories/[id]
@@ -37,17 +38,20 @@ export async function PATCH(
     if (!sub) throw new NotFoundError("SubCategory");
 
     // RULE 3: nếu update kho thì phải validate với cha
-    const isUpdatingWarehouse = parsed.data.showInKhoTaiNguyen !== undefined || parsed.data.showInTaiNguyenMmo !== undefined;
+    const isUpdatingWarehouse = parsed.data.showInKhoTaiNguyen !== undefined || parsed.data.showInTaiNguyenMmo !== undefined || parsed.data.showInToolPhanMem !== undefined;
     if (isUpdatingWarehouse) {
       const parent = await prisma.resourceCategory.findUnique({ where: { name: sub.categoryName } });
       if (parent) {
         const willShowKho = parsed.data.showInKhoTaiNguyen ?? sub.showInKhoTaiNguyen;
         const willShowMmo = parsed.data.showInTaiNguyenMmo ?? sub.showInTaiNguyenMmo;
+        const willShowTool = parsed.data.showInToolPhanMem ?? sub.showInToolPhanMem;
         if (willShowKho && !parent.showInKhoTaiNguyen)
           return apiError("Danh mục cha không thuộc Kho Tài Nguyên", "WAREHOUSE_MISMATCH", 400);
         if (willShowMmo && !parent.showInTaiNguyenMmo)
           return apiError("Danh mục cha không thuộc Nguyên Liệu", "WAREHOUSE_MISMATCH", 400);
-        if (!willShowKho && !willShowMmo)
+        if (willShowTool && !parent.showInToolPhanMem)
+          return apiError("Danh mục cha không thuộc Tool - Phần mềm", "WAREHOUSE_MISMATCH", 400);
+        if (!willShowKho && !willShowMmo && !willShowTool)
           return apiError("Phải giữ ít nhất 1 kho hiển thị", "VALIDATION_ERROR", 400);
       }
     }
@@ -55,7 +59,7 @@ export async function PATCH(
     const updated = await prisma.sellerSubCategory.update({
       where: { id },
       data: parsed.data,
-      select: { id: true, name: true, categoryName: true, displayOrder: true, isActive: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
+      select: { id: true, name: true, categoryName: true, displayOrder: true, isActive: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true, showInToolPhanMem: true },
     });
 
     return apiOk(updated);

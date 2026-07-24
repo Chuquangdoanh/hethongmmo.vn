@@ -10,7 +10,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/dich-vu", "/tai-nguyen-mmo", "/tut-tricks", "/khoa-hoc"],
+        allow: ["/", "/dich-vu", "/tai-nguyen-mmo", "/tool-phan-mem", "/tut-tricks", "/khoa-hoc"],
         disallow: [
           "/api/",
           "/admin/",

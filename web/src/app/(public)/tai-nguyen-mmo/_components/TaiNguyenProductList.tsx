@@ -248,10 +248,12 @@ function ListCard({ p, discountPct, priority = false }: { p: TaiNguyenProductIte
 export function TaiNguyenProductList({
   products,
   discountPct = 0,
+  basePath = "/tai-nguyen-mmo",
 }: {
   products: TaiNguyenProductItem[];
   /** % giảm giá preview cho Hệ Thống MMO (mmo/kfb) — không áp dụng sản phẩm seller. */
   discountPct?: number;
+  basePath?: string;
 }) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
@@ -259,7 +261,7 @@ export function TaiNguyenProductList({
     <div>
       {/* Header row */}
       <div className="flex items-center justify-between mb-3 gap-2">
-        <SortSelect />
+        <SortSelect basePath={basePath} />
         <div className="flex items-center gap-0.5 bg-white rounded-lg border border-border p-0.5">
           <button
             type="button"

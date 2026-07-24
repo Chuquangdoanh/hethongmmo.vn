@@ -56,6 +56,7 @@ export async function PATCH(
       name?: string;
       showInKhoTaiNguyen?: boolean;
       showInTaiNguyenMmo?: boolean;
+      showInToolPhanMem?: boolean;
     };
 
     if (body.name !== undefined && body.name !== category.name) {
@@ -70,8 +71,9 @@ export async function PATCH(
         ...(body.iconUrl !== undefined && { iconUrl: body.iconUrl || null }),
         ...(body.showInKhoTaiNguyen !== undefined && { showInKhoTaiNguyen: body.showInKhoTaiNguyen }),
         ...(body.showInTaiNguyenMmo !== undefined && { showInTaiNguyenMmo: body.showInTaiNguyenMmo }),
+        ...(body.showInToolPhanMem !== undefined && { showInToolPhanMem: body.showInToolPhanMem }),
       },
-      select: { id: true, name: true, iconUrl: true, displayOrder: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
+      select: { id: true, name: true, iconUrl: true, displayOrder: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true, showInToolPhanMem: true },
     });
 
     await writeAuditLog({

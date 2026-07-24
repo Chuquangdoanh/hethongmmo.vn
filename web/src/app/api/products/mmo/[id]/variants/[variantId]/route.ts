@@ -13,6 +13,7 @@ const patchVariantSchema = z.object({
   variantPrice: z.number().int("Giá phải là số nguyên").positive("Giá phải lớn hơn 0").optional(),
   warranty:     z.string().min(1, "Bảo hành không được trống").max(50).trim().optional(),
   isActive:     z.boolean().optional(),
+  isPopular:    z.boolean().optional(),
 });
 
 async function resolveVariant(productId: string, variantId: string, actorRole: string) {
@@ -64,10 +65,19 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: "Không có trường nào cần cập nhật", code: "VALIDATION_ERROR" }, { status: 400 });
     }
 
-    const updated = await prisma.mmoProductVariant.update({
-      where: { id: variantId },
-      data: parsed.data,
-      select: { id: true, variantName: true, variantPrice: true, warranty: true, isActive: true, updatedAt: true },
+    // Chỉ 1 gói được đánh dấu "Phổ biến" tại 1 thời điểm — bỏ chọn các gói khác cùng sản phẩm trước khi set true
+    const updated = await prisma.$transaction(async (tx) => {
+      if (parsed.data.isPopular === true) {
+        await tx.mmoProductVariant.updateMany({
+          where: { productId: id, id: { not: variantId } },
+          data: { isPopular: false },
+        });
+      }
+      return tx.mmoProductVariant.update({
+        where: { id: variantId },
+        data: parsed.data,
+        select: { id: true, variantName: true, variantPrice: true, warranty: true, isActive: true, isPopular: true, updatedAt: true },
+      });
     });
 
     await writeAuditLog({

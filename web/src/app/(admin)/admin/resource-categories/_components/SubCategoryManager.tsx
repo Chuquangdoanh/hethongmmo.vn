@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ChevronDown, ChevronUp, Plus, Pencil, Trash2, Check, X, Warehouse, Package } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Pencil, Trash2, Check, X, Package, Wrench } from "lucide-react";
 
 interface SubCategory {
   id: string;
@@ -11,35 +11,45 @@ interface SubCategory {
   isActive: boolean;
   showInKhoTaiNguyen: boolean;
   showInTaiNguyenMmo: boolean;
+  showInToolPhanMem: boolean;
 }
+
+// Kho Tài Nguyên đã gộp chung với Nguyên Liệu MMO ở trang public — chỉ còn 2 khu vực quản lý
+type ParentStore = "nguyen-lieu" | "tool";
 
 interface Props {
   categoryName: string;
-  parentStore: "kho" | "mmo";
+  parentStore: ParentStore;
   initialCount?: number;
   initialSubs?: SubCategory[];
   expanded?: boolean;
   onToggle?: () => void;
 }
 
+const SUB_STORE_META: Record<ParentStore, { label: string; shortLabel: string; Icon: typeof Package; badgeClass: string; fields: (keyof SubCategory)[] }> = {
+  "nguyen-lieu": { label: "Nguyên Liệu MMO", shortLabel: "NL",   Icon: Package, badgeClass: "bg-violet-100 text-violet-600", fields: ["showInTaiNguyenMmo", "showInKhoTaiNguyen"] },
+  tool:          { label: "Tool - Phần mềm", shortLabel: "Tool", Icon: Wrench,  badgeClass: "bg-amber-100 text-amber-600",  fields: ["showInToolPhanMem"] },
+};
+
+function subStoreMatches(sub: SubCategory, k: ParentStore): boolean {
+  return SUB_STORE_META[k].fields.some((f) => sub[f]);
+}
+
 function SubStoreBadge({ sub }: { sub: SubCategory }) {
-  if (sub.showInKhoTaiNguyen && sub.showInTaiNguyenMmo) {
+  const active = (Object.keys(SUB_STORE_META) as ParentStore[]).filter((k) => subStoreMatches(sub, k));
+  if (active.length > 1) {
     return (
       <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1 py-0.5 rounded bg-gray-100 text-gray-500">
-        <Warehouse size={8} /><Package size={8} />
+        {active.map((k) => { const Icon = SUB_STORE_META[k].Icon; return <Icon key={k} size={8} />; })}
       </span>
     );
   }
-  if (sub.showInKhoTaiNguyen) {
-    return (
-      <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1 py-0.5 rounded bg-blue-100 text-blue-600">
-        <Warehouse size={8} /> KhoTN
-      </span>
-    );
-  }
+  const only = active[0] ? SUB_STORE_META[active[0]] : null;
+  if (!only) return null;
+  const Icon = only.Icon;
   return (
-    <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1 py-0.5 rounded bg-violet-100 text-violet-600">
-      <Package size={8} /> NL
+    <span className={`inline-flex items-center gap-0.5 text-[9px] font-semibold px-1 py-0.5 rounded ${only.badgeClass}`}>
+      <Icon size={8} /> {only.shortLabel}
     </span>
   );
 }
@@ -78,10 +88,8 @@ export default function SubCategoryManager({
   const [deletingSubId, setDeletingSubId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Chỉ hiển thị sub thuộc kho đang xem — tránh sub KhoTN lọt vào tab NL và ngược lại
-  const visibleSubs = subs.filter((s) =>
-    parentStore === "kho" ? s.showInKhoTaiNguyen : s.showInTaiNguyenMmo
-  );
+  // Chỉ hiển thị sub thuộc khu vực đang xem
+  const visibleSubs = subs.filter((s) => subStoreMatches(s, parentStore));
 
   const fetchSubs = useCallback(async () => {
     setLoading(true);
@@ -117,9 +125,10 @@ export default function SubCategoryManager({
           name: addName.trim(),
           categoryName,
           displayOrder: addOrder,
-          // Kho của con tự động khớp với cha
-          showInKhoTaiNguyen: parentStore === "kho",
-          showInTaiNguyenMmo: parentStore === "mmo",
+          // Khu vực của con tự động khớp với cha
+          showInKhoTaiNguyen: parentStore === "nguyen-lieu",
+          showInTaiNguyenMmo: parentStore === "nguyen-lieu",
+          showInToolPhanMem: parentStore === "tool",
         }),
       });
       const json = await res.json() as { data?: SubCategory; error?: string };
@@ -303,10 +312,8 @@ export default function SubCategoryManager({
           <div className="space-y-2 pt-1 border-t border-violet-100">
             <div className="flex items-center justify-between">
               <p className="text-[10px] text-gray-500 font-medium">Thêm danh mục con mới:</p>
-              <span className={`inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded ${
-                parentStore === "kho" ? "bg-blue-100 text-blue-600" : "bg-violet-100 text-violet-600"
-              }`}>
-                {parentStore === "kho" ? <><Warehouse size={8} /> Kho Tài Nguyên</> : <><Package size={8} /> Nguyên Liệu</>}
+              <span className={`inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded ${SUB_STORE_META[parentStore].badgeClass}`}>
+                {(() => { const Icon = SUB_STORE_META[parentStore].Icon; return <><Icon size={8} /> {SUB_STORE_META[parentStore].label}</>; })()}
               </span>
             </div>
             <div className="flex items-center gap-2">

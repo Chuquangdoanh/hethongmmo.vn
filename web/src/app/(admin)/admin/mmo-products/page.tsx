@@ -39,16 +39,22 @@ export default async function AdminMmoProductsPage({
 
   const { page, group, q, section } = await searchParams;
   const currentPage = Math.max(1, parseInt(page ?? "1", 10));
-  const activeSection = section === "KHO_TAI_NGUYEN" ? "KHO_TAI_NGUYEN" : section === "TAI_NGUYEN_MMO" ? "TAI_NGUYEN_MMO" : undefined;
+  // Nguyên liệu MMO đã gộp chung với Kho tài nguyên ở trang public (/tai-nguyen-mmo) — lọc theo cả 2 giá trị cũ
+  const activeSection = section === "TOOL_PHAN_MEM" ? "TOOL_PHAN_MEM" : section === "TAI_NGUYEN_MMO" ? "TAI_NGUYEN_MMO" : undefined;
+  const sectionWhere = activeSection === "TAI_NGUYEN_MMO"
+    ? { section: { in: ["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] as ("TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN")[] } }
+    : activeSection === "TOOL_PHAN_MEM"
+    ? { section: "TOOL_PHAN_MEM" as const }
+    : {};
 
   const where = {
     deletedAt: null,
-    ...(activeSection ? { section: activeSection as "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN" } : {}),
+    ...sectionWhere,
     ...(group ? { categoryGroup: group } : {}),
     ...(q ? { name: { contains: q, mode: "insensitive" as never } } : {}),
   };
 
-  const [products, total, allTotal, activeCount, groups, outOfStockCount, ordersAgg, countTaiNguyen, countKho] = await Promise.all([
+  const [products, total, allTotal, activeCount, groups, outOfStockCount, ordersAgg, countNguyenLieu, countTool] = await Promise.all([
     prisma.mmoProduct.findMany({
       where,
       orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
@@ -66,7 +72,7 @@ export default async function AdminMmoProductsPage({
     prisma.mmoProduct.count({ where: { deletedAt: null } }),
     prisma.mmoProduct.count({ where: { deletedAt: null, isActive: true } }),
     prisma.mmoProduct.findMany({
-      where: { deletedAt: null, ...(activeSection ? { section: activeSection } : {}) },
+      where: { deletedAt: null, ...sectionWhere },
       select: { categoryGroup: true },
       distinct: ["categoryGroup"],
       orderBy: { categoryGroup: "asc" },
@@ -75,8 +81,8 @@ export default async function AdminMmoProductsPage({
       where: { deletedAt: null, items: { none: { status: "AVAILABLE" } } },
     }),
     prisma.mmoProduct.aggregate({ where: { deletedAt: null }, _sum: { totalOrders: true } }),
-    prisma.mmoProduct.count({ where: { deletedAt: null, section: "TAI_NGUYEN_MMO" } }),
-    prisma.mmoProduct.count({ where: { deletedAt: null, section: "KHO_TAI_NGUYEN" } }),
+    prisma.mmoProduct.count({ where: { deletedAt: null, section: { in: ["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] } } }),
+    prisma.mmoProduct.count({ where: { deletedAt: null, section: "TOOL_PHAN_MEM" } }),
   ]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -160,8 +166,8 @@ export default async function AdminMmoProductsPage({
       <div className="flex items-center gap-2 p-1 bg-gray-100 rounded-xl w-fit">
         {[
           { val: undefined, label: "Tất cả", count: allTotal },
-          { val: "TAI_NGUYEN_MMO", label: "🛒 Nguyên liệu MMO", count: countTaiNguyen },
-          { val: "KHO_TAI_NGUYEN", label: "📦 Kho tài nguyên", count: countKho },
+          { val: "TAI_NGUYEN_MMO", label: "🛒 Nguyên liệu MMO", count: countNguyenLieu },
+          { val: "TOOL_PHAN_MEM", label: "🧩 Tool - Phần mềm", count: countTool },
         ].map(({ val, label, count }) => {
           const active = activeSection === val;
           const href = (() => {
@@ -222,7 +228,7 @@ export default async function AdminMmoProductsPage({
         <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
           <span className="text-sm font-semibold text-gray-700">
             {total.toLocaleString("vi-VN")} sản phẩm
-            {activeSection === "TAI_NGUYEN_MMO" ? " · Nguyên liệu MMO" : activeSection === "KHO_TAI_NGUYEN" ? " · Kho tài nguyên" : ""}
+            {activeSection === "TAI_NGUYEN_MMO" ? " · Nguyên liệu MMO" : activeSection === "TOOL_PHAN_MEM" ? " · Tool - Phần mềm" : ""}
             {group ? ` · ${group}` : ""}{q ? ` · "${q}"` : ""}
           </span>
           {canUpdate && products.length > 0 && (
@@ -275,11 +281,11 @@ export default async function AdminMmoProductsPage({
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <p className="text-[10px] text-gray-400 font-mono">{product.slug}</p>
                           <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
-                            product.section === "KHO_TAI_NGUYEN"
-                              ? "bg-blue-50 text-blue-500"
+                            product.section === "TOOL_PHAN_MEM"
+                              ? "bg-amber-50 text-amber-600"
                               : "bg-[#7C3AED]/8 text-[#7C3AED]"
                           }`}>
-                            {product.section === "KHO_TAI_NGUYEN" ? "📦 Kho" : "🛒 Nguyên liệu"}
+                            {product.section === "TOOL_PHAN_MEM" ? "🧩 Tool" : "🛒 Nguyên liệu"}
                           </span>
                         </div>
                       </div>

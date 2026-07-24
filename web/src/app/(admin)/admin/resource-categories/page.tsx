@@ -14,6 +14,7 @@ export default async function AdminResourceCategoriesPage() {
       displayOrder: true,
       showInKhoTaiNguyen: true,
       showInTaiNguyenMmo: true,
+      showInToolPhanMem: true,
       _count: { select: { subCategories: true } },
       subCategories: {
         orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
@@ -25,6 +26,7 @@ export default async function AdminResourceCategoriesPage() {
           isActive: true,
           showInKhoTaiNguyen: true,
           showInTaiNguyenMmo: true,
+          showInToolPhanMem: true,
         },
       },
     },

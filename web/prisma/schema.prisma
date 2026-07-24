@@ -168,6 +168,7 @@ enum StockItemStatus {
 enum StoreType {
   TAI_NGUYEN_MMO
   KHO_TAI_NGUYEN
+  TOOL_PHAN_MEM
 }
 
 enum SellerProductApprovalStatus {
@@ -323,6 +324,7 @@ model User {
   siteContentUpdates   SiteContent[]
   favorites            ProductFavorite[]
   couponRedemptions    CouponRedemption[]
+  postedMmoProducts    MmoProduct[]
 
   affiliateCommissionRules       AffiliateCommissionRule[] @relation("AffiliateOwnerRules")
   affiliateCommissionsEarned     AffiliateCommission[]     @relation("AffiliateEarner")
@@ -639,10 +641,13 @@ model MmoProduct {
   requiresAccountType Boolean    @default(false) @map("requires_account_type")
   requiresCccd        Boolean    @default(false) @map("requires_cccd")
   section             StoreType  @default(TAI_NGUYEN_MMO)
+  postedByUserId      String?    @map("posted_by_user_id") @db.Uuid
+  packageFeatures     Json?      @map("package_features")
   createdAt           DateTime   @default(now()) @map("created_at")
   updatedAt           DateTime   @updatedAt @map("updated_at")
   deletedAt           DateTime?  @map("deleted_at")
 
+  postedBy      User?               @relation(fields: [postedByUserId], references: [id])
   items         MmoProductItem[]
   variants      MmoProductVariant[]
   orders        Order[]
@@ -651,6 +656,7 @@ model MmoProduct {
   @@index([category])
   @@index([isActive])
   @@index([section])
+  @@index([postedByUserId])
   @@map("mmo_products")
 }
 
@@ -662,6 +668,8 @@ model MmoProductVariant {
   variantPrice Decimal    @db.Decimal(18, 2) @map("variant_price")
   warranty     String     @default("") @map("warranty")
   isActive     Boolean    @default(true) @map("is_active")
+  // Admin tự chọn gói nào hiện nhãn "Phổ biến" ở trang Tool - Phần mềm — chỉ 1 gói/sản phẩm được true tại 1 thời điểm
+  isPopular    Boolean    @default(false) @map("is_popular")
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
   deletedAt    DateTime?  @map("deleted_at")
@@ -699,6 +707,7 @@ model ResourceCategory {
   displayOrder         Int                 @default(0) @map("display_order")
   showInKhoTaiNguyen   Boolean             @default(true) @map("show_in_kho_tai_nguyen")
   showInTaiNguyenMmo   Boolean             @default(true) @map("show_in_tai_nguyen_mmo")
+  showInToolPhanMem    Boolean             @default(false) @map("show_in_tool_phan_mem")
   createdAt            DateTime            @default(now()) @map("created_at")
   updatedAt            DateTime            @updatedAt @map("updated_at")
 
@@ -720,6 +729,7 @@ model SellerSubCategory {
   isActive             Boolean  @default(true) @map("is_active")
   showInKhoTaiNguyen   Boolean  @default(true) @map("show_in_kho_tai_nguyen")
   showInTaiNguyenMmo   Boolean  @default(true) @map("show_in_tai_nguyen_mmo")
+  showInToolPhanMem    Boolean  @default(false) @map("show_in_tool_phan_mem")
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 

@@ -7,6 +7,14 @@ import SubCategoryCombobox from "./SubCategoryCombobox";
 import { r2Url } from "@/lib/utils/image-url";
 import ProductGalleryManager from "@/components/shared/ProductGalleryManager";
 
+type MmoSection = "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN" | "TOOL_PHAN_MEM";
+
+interface AdminUserOption {
+  id: string;
+  fullName: string;
+  avatarUrl: string | null;
+}
+
 interface MmoProductData {
   id?: string;
   name?: string;
@@ -20,10 +28,21 @@ interface MmoProductData {
   isActive?: boolean;
   isFeatured?: boolean;
   displayOrder?: number;
-  section?: "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN";
+  section?: MmoSection;
+  postedByUserId?: string;
 }
 
-export default function MmoProductForm({ initial }: { initial?: MmoProductData }) {
+export default function MmoProductForm({
+  initial,
+  adminUsers = [],
+  currentAdminId,
+}: {
+  initial?: MmoProductData;
+  /** Danh sách admin để chọn "Người đăng" — chỉ dùng khi section = TOOL_PHAN_MEM */
+  adminUsers?: AdminUserOption[];
+  /** Admin đang đăng nhập — mặc định gán làm người đăng khi tạo mới */
+  currentAdminId?: string;
+}) {
   const router = useRouter();
   const isEdit = !!initial?.id;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -40,7 +59,9 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
     isActive: initial?.isActive ?? true,
     isFeatured: initial?.isFeatured ?? false,
     displayOrder: initial?.displayOrder?.toString() ?? "0",
-    section: initial?.section ?? "TAI_NGUYEN_MMO" as "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN",
+    // Kho tài nguyên đã gộp chung với Nguyên liệu MMO ở trang public — chuẩn hóa về 1 giá trị khi hiển thị form
+    section: (initial?.section === "KHO_TAI_NGUYEN" ? "TAI_NGUYEN_MMO" : initial?.section) ?? "TAI_NGUYEN_MMO" as MmoSection,
+    postedByUserId: initial?.postedByUserId ?? currentAdminId ?? "",
   });
 
 
@@ -183,6 +204,7 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
       isFeatured: form.isFeatured,
       displayOrder: parseInt(form.displayOrder, 10) || 0,
       section: form.section,
+      ...(form.section === "TOOL_PHAN_MEM" ? { postedByUserId: form.postedByUserId || undefined } : {}),
     };
 
     setLoading(true);
@@ -277,9 +299,9 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
           <div className="rounded-xl border border-gray-200 bg-white p-4">
             <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Hiển thị trong khu vực</p>
             <div className="flex gap-2">
-              {(["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] as const).map((val) => {
-                const label = val === "TAI_NGUYEN_MMO" ? "Nguyên liệu MMO" : "Kho tài nguyên";
-                const icon  = val === "TAI_NGUYEN_MMO" ? "🛒" : "📦";
+              {(["TAI_NGUYEN_MMO", "TOOL_PHAN_MEM"] as const).map((val) => {
+                const label = val === "TAI_NGUYEN_MMO" ? "Nguyên liệu MMO" : "Tool - Phần mềm";
+                const icon  = val === "TAI_NGUYEN_MMO" ? "🛒" : "🧩";
                 const active = form.section === val;
                 return (
                   <button
@@ -302,9 +324,29 @@ export default function MmoProductForm({ initial }: { initial?: MmoProductData }
             <p className="text-[11px] text-gray-400 mt-2">
               {form.section === "TAI_NGUYEN_MMO"
                 ? "Sản phẩm sẽ hiển thị tại trang Nguyên liệu MMO (/tai-nguyen-mmo)"
-                : "Sản phẩm sẽ hiển thị tại trang Kho tài nguyên (/kho-tai-nguyen)"}
+                : "Sản phẩm sẽ hiển thị tại trang Tool - Phần mềm (/tool-phan-mem)"}
             </p>
           </div>
+
+          {/* ── 0b. Người đăng (chỉ Tool - Phần mềm) ── */}
+          {form.section === "TOOL_PHAN_MEM" && (
+            <div className="rounded-xl border border-gray-200 bg-white p-4">
+              <p className="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">Người đăng</p>
+              <select
+                value={form.postedByUserId}
+                onChange={(e) => set("postedByUserId", e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none"
+              >
+                <option value="">— Chọn admin đăng sản phẩm —</option>
+                {adminUsers.map((u) => (
+                  <option key={u.id} value={u.id}>{u.fullName}</option>
+                ))}
+              </select>
+              <p className="text-[11px] text-gray-400 mt-2">
+                Hiển thị làm thẻ &quot;người đăng&quot; trên trang chi tiết sản phẩm (tên, avatar, số liệu bán hàng).
+              </p>
+            </div>
+          )}
 
           {/* ── 1. Thông tin sản phẩm ── */}
           <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 space-y-4">

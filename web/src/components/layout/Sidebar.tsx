@@ -105,6 +105,7 @@ export default async function Sidebar() {
     ...(isPageVisible("khoa-hoc")       ? [{ href: "/khoa-hoc",       label: navLabel("/khoa-hoc"),       icon: iconBadge("/khoa-hoc"),       isFeatured: isFeaturedPage("/khoa-hoc") }]       : []),
     ...(isPageVisible("tut-tricks")     ? [{ href: "/tut-tricks",     label: navLabel("/tut-tricks"),     icon: iconBadge("/tut-tricks"),     isFeatured: isFeaturedPage("/tut-tricks") }]     : []),
     ...(isPageVisible("tai-nguyen-mmo") ? [{ href: "/tai-nguyen-mmo", label: navLabel("/tai-nguyen-mmo"), icon: iconBadge("/tai-nguyen-mmo"), isFeatured: isFeaturedPage("/tai-nguyen-mmo") }] : []),
+    ...(isPageVisible("tool-phan-mem")  ? [{ href: "/tool-phan-mem",  label: navLabel("/tool-phan-mem"),  icon: iconBadge("/tool-phan-mem"),  isFeatured: isFeaturedPage("/tool-phan-mem") }]  : []),
     ...(isPageVisible("quang-cao")      ? [{ href: "/quang-cao",      label: navLabel("/quang-cao"),      icon: iconBadge("/quang-cao"),      isFeatured: isFeaturedPage("/quang-cao") }]      : []),
     ...(isPageVisible("NetWorks")       ? [{ href: "/NetWorks",       label: navLabel("/NetWorks"),       icon: iconBadge("/NetWorks"),       isFeatured: isFeaturedPage("/NetWorks") }]       : []),
     ...(sessionUser ? [{

@@ -17,6 +17,7 @@ export interface ProductVariant {
   variantPrice: number;
   warranty: string;
   isActive: boolean;
+  isPopular?: boolean;
 }
 
 interface ProductBuyButtonProps {
@@ -35,6 +36,8 @@ interface ProductBuyButtonProps {
   variants?: ProductVariant[];
   /** % giảm giá preview (Tài nguyên MMO/Kho nguyên liệu — Đại lý hoặc tier). Không truyền = không hiển thị (SELLER_PRODUCT không áp dụng). */
   discountPct?: number;
+  /** Bảng so sánh tính năng theo gói (Tool - Phần mềm) — có prop này + ≥2 variant thì hiện dạng card + bảng so sánh thay vì list. */
+  packageFeatures?: { features: string[]; variantFlags: Record<string, boolean[]> };
 }
 
 /** Giá hiển thị sau khi áp discount preview — chỉ để hiển thị, giá thật luôn tính lại ở server khi checkout. */
@@ -405,6 +408,13 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
   const activeVariants = (props.variants ?? []).filter((v) => v.isActive);
   const hasVariants = activeVariants.length > 0;
   const selectedVariant = activeVariants.find((v) => v.id === selectedVariantId) ?? null;
+  const showPackageCards = hasVariants && activeVariants.length >= 2 && !!props.packageFeatures;
+  const featureLabels = props.packageFeatures?.features ?? [];
+  const featureFlags = props.packageFeatures?.variantFlags ?? {};
+  // Admin tự chọn gói "Phổ biến" (isPopular) — fallback về gói ở giữa nếu chưa chọn gói nào
+  const popularVariantId = showPackageCards
+    ? (activeVariants.find((v) => v.isPopular)?.id ?? activeVariants[Math.floor((activeVariants.length - 1) / 2)]?.id)
+    : undefined;
 
   const minVariantPrice = hasVariants ? Math.min(...activeVariants.map((v) => v.variantPrice)) : null;
   const unitPrice = selectedVariant ? selectedVariant.variantPrice : (minVariantPrice ?? props.price);
@@ -535,8 +545,103 @@ export default function ProductBuyButton(props: ProductBuyButtonProps) {
       )}
 
       <div className="space-y-3">
+        {/* Package cards + bảng so sánh tính năng (Tool - Phần mềm) */}
+        {showPackageCards && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {activeVariants.map((v, i) => {
+                const isSelected = selectedVariantId === v.id;
+                const isPopular = v.id === popularVariantId;
+                const label = v.variantName?.trim() || `Gói ${i + 1}`;
+                const flags = featureFlags[v.id] ?? [];
+                const highlightFeatures = featureLabels
+                  .map((f, idx) => ({ f, on: flags[idx] ?? false }))
+                  .filter((x) => x.on)
+                  .slice(0, 4);
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => handleSelectVariant(v.id)}
+                    className={`relative text-left rounded-2xl border-2 p-4 transition-all duration-150 ${
+                      isSelected
+                        ? "border-[#C53030] bg-red-50/60 shadow-md"
+                        : isPopular
+                          ? "border-amber-300 bg-amber-50/40 hover:border-amber-400"
+                          : "border-gray-200 bg-white hover:border-red-200"
+                    }`}
+                  >
+                    {isPopular && (
+                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold whitespace-nowrap">
+                        Phổ biến
+                      </span>
+                    )}
+                    <p className={`text-sm font-bold ${isSelected ? "text-[#C53030]" : "text-gray-900"}`}>{label}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">{v.warranty}</p>
+                    <div className="mt-2">
+                      {discountPct > 0 && (
+                        <p className="text-[10px] text-gray-400 line-through leading-none">{formatVnd(v.variantPrice)}</p>
+                      )}
+                      <p className={`text-lg font-extrabold ${isSelected ? "text-[#C53030]" : "text-gray-800"}`}>
+                        {formatVnd(applyDiscountPreview(v.variantPrice, discountPct))}
+                      </p>
+                    </div>
+                    {highlightFeatures.length > 0 && (
+                      <ul className="mt-3 space-y-1">
+                        {highlightFeatures.map(({ f }) => (
+                          <li key={f} className="flex items-center gap-1.5 text-[11px] text-gray-600">
+                            <CheckCircle size={12} className="text-emerald-500 shrink-0" />
+                            <span className="truncate">{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Bảng so sánh đầy đủ */}
+            {featureLabels.length > 0 && (
+              <div className="rounded-xl border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200">
+                        <th className="px-3 py-2 text-left font-semibold text-gray-500">Tính năng</th>
+                        {activeVariants.map((v, i) => (
+                          <th key={v.id} className="px-3 py-2 text-center font-semibold text-gray-500 whitespace-nowrap">
+                            {v.variantName?.trim() || `Gói ${i + 1}`}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {featureLabels.map((label, idx) => (
+                        <tr key={idx} className="border-t border-gray-100">
+                          <td className="px-3 py-2 text-gray-700">{label}</td>
+                          {activeVariants.map((v) => {
+                            const on = featureFlags[v.id]?.[idx] ?? false;
+                            return (
+                              <td key={v.id} className="px-3 py-2 text-center">
+                                {on
+                                  ? <CheckCircle size={14} className="inline text-emerald-500" />
+                                  : <span className="text-gray-300">—</span>}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Variant selector */}
-        {hasVariants && (
+        {hasVariants && !showPackageCards && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-gray-700">Chọn gói</p>

@@ -17,7 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { r2Url } from "@/lib/utils/image-url";
-import { FolderOpen, Warehouse, Package, GripVertical, X, AlertTriangle, Search } from "lucide-react";
+import { FolderOpen, Warehouse, Package, Wrench, GripVertical, X, AlertTriangle, Search } from "lucide-react";
 import { toast } from "@/components/shared/Toaster";
 import SubCategoryManager from "./SubCategoryManager";
 
@@ -50,6 +50,7 @@ interface SubCategory {
   isActive: boolean;
   showInKhoTaiNguyen: boolean;
   showInTaiNguyenMmo: boolean;
+  showInToolPhanMem: boolean;
 }
 
 interface Category {
@@ -59,6 +60,7 @@ interface Category {
   displayOrder: number;
   showInKhoTaiNguyen: boolean;
   showInTaiNguyenMmo: boolean;
+  showInToolPhanMem: boolean;
   _count: { subCategories: number };
   subCategories: SubCategory[];
 }
@@ -67,30 +69,38 @@ interface Props {
   initialCategories: Category[];
 }
 
-type StoreFilter = "kho" | "mmo";
+// Kho Tài Nguyên đã gộp chung với Nguyên Liệu MMO ở trang public (/tai-nguyen-mmo) — chỉ còn 2 khu vực quản lý
+type StoreFilter = "nguyen-lieu" | "tool";
+type CategoryFlags = { showInKhoTaiNguyen: boolean; showInTaiNguyenMmo: boolean; showInToolPhanMem: boolean };
 
 const inputCls =
   "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-[#7C3AED] focus:outline-none";
 
+const STORE_META: Record<StoreFilter, { label: string; Icon: typeof Warehouse; badgeClass: string; solidClass: string; textClass: string; fields: (keyof CategoryFlags)[] }> = {
+  "nguyen-lieu": { label: "Nguyên Liệu MMO",  Icon: Package, badgeClass: "bg-violet-100 text-violet-700", solidClass: "bg-violet-600 hover:bg-violet-700", textClass: "text-violet-700", fields: ["showInTaiNguyenMmo", "showInKhoTaiNguyen"] },
+  tool:          { label: "Tool - Phần mềm", Icon: Wrench,  badgeClass: "bg-amber-100 text-amber-700",  solidClass: "bg-amber-600 hover:bg-amber-700",  textClass: "text-amber-700",  fields: ["showInToolPhanMem"] },
+};
+
+function storeMatches(cat: CategoryFlags, k: StoreFilter): boolean {
+  return STORE_META[k].fields.some((f) => cat[f]);
+}
+
 // ── Store badge (read-only) ───────────────────────────────────────────────────
-function StoreBadge({ cat }: { cat: { showInKhoTaiNguyen: boolean; showInTaiNguyenMmo: boolean } }) {
-  if (cat.showInKhoTaiNguyen && cat.showInTaiNguyenMmo) {
+function StoreBadge({ cat }: { cat: CategoryFlags }) {
+  const active = (Object.keys(STORE_META) as StoreFilter[]).filter((k) => storeMatches(cat, k));
+  if (active.length === 0) return null;
+  if (active.length > 1) {
     return (
       <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
-        <Warehouse size={9} /><Package size={9} /> Cả 2 kho
+        {active.map((k) => { const Icon = STORE_META[k].Icon; return <Icon key={k} size={9} />; })} {active.length} khu vực
       </span>
     );
   }
-  if (cat.showInKhoTaiNguyen) {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
-        <Warehouse size={9} /> Kho Tài Nguyên
-      </span>
-    );
-  }
+  const only = STORE_META[active[0]!];
+  const Icon = only.Icon;
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700">
-      <Package size={9} /> Nguyên Liệu
+    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${only.badgeClass}`}>
+      <Icon size={9} /> {only.label}
     </span>
   );
 }
@@ -140,10 +150,11 @@ function DeleteModal({
   loading: boolean;
 }) {
   const childCount = cat._count.subCategories;
-  // Nếu danh mục thuộc cả 2 kho → chỉ gỡ khỏi kho hiện tại, không xóa hẳn
-  const isInBothKhos = cat.showInKhoTaiNguyen && cat.showInTaiNguyenMmo;
-  const currentStoreName = storeFilter === "kho" ? "Kho Tài Nguyên" : "Nguyên Liệu";
-  const otherStoreName = storeFilter === "kho" ? "Nguyên Liệu" : "Kho Tài Nguyên";
+  // Nếu danh mục thuộc nhiều hơn 1 khu vực → chỉ gỡ khỏi khu vực hiện tại, không xóa hẳn
+  const activeStores = (Object.keys(STORE_META) as StoreFilter[]).filter((k) => storeMatches(cat, k));
+  const isInBothKhos = activeStores.length > 1;
+  const currentStoreName = STORE_META[storeFilter].label;
+  const otherStoreName = activeStores.filter((k) => k !== storeFilter).map((k) => STORE_META[k].label).join(", ");
 
   return (
     <>
@@ -322,12 +333,12 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
   const [name, setName] = useState("");
   const [iconUrl, setIconUrl] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  // Kho của category đang edit (read-only, không cho đổi sau khi tạo)
-  const [editingCatStore, setEditingCatStore] = useState<StoreFilter>("kho");
+  // Khu vực của category đang edit (read-only, không cho đổi sau khi tạo)
+  const [editingCatStore, setEditingCatStore] = useState<StoreFilter>("nguyen-lieu");
   const [formOpen, setFormOpen] = useState(false);
 
-  const [editShowInKho, setEditShowInKho] = useState(true);
-  const [editShowInMmo, setEditShowInMmo] = useState(false);
+  const [editShowInNguyenLieu, setEditShowInNguyenLieu] = useState(true);
+  const [editShowInTool, setEditShowInTool] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -337,8 +348,8 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
 
-  // Luôn có 1 tab active — mặc định Kho Tài Nguyên
-  const [storeFilter, setStoreFilter] = useState<StoreFilter>("kho");
+  // Luôn có 1 tab active — mặc định Nguyên Liệu MMO
+  const [storeFilter, setStoreFilter] = useState<StoreFilter>("nguyen-lieu");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
   const [deletingCat, setDeletingCat] = useState<Category | null>(null);
@@ -357,11 +368,12 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
   const filteredCategories = categories
     .slice()
     .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name))
-    .filter((c) => storeFilter === "kho" ? c.showInKhoTaiNguyen : c.showInTaiNguyenMmo)
+    .filter((c) => storeMatches(c, storeFilter))
     .filter((c) => !searchTerm || c.name.toLowerCase().includes(searchTerm));
 
-  const khoCount = categories.filter((c) => c.showInKhoTaiNguyen).length;
-  const mmoCount = categories.filter((c) => c.showInTaiNguyenMmo).length;
+  const nguyenLieuCount = categories.filter((c) => storeMatches(c, "nguyen-lieu")).length;
+  const toolCount = categories.filter((c) => storeMatches(c, "tool")).length;
+  const storeCounts: Record<StoreFilter, number> = { "nguyen-lieu": nguyenLieuCount, tool: toolCount };
 
   function toggleExpanded(id: string) {
     setExpandedCats((prev) => {
@@ -379,8 +391,8 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
     setUploadError("");
     setImportUrl("");
     setEditingCatStore(storeFilter);
-    setEditShowInKho(storeFilter === "kho");
-    setEditShowInMmo(storeFilter === "mmo");
+    setEditShowInNguyenLieu(storeFilter === "nguyen-lieu");
+    setEditShowInTool(storeFilter === "tool");
     setFormOpen(true);
   }
 
@@ -388,9 +400,9 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
     setEditingId(cat.id);
     setName(cat.name);
     setIconUrl(cat.iconUrl ?? "");
-    setEditShowInKho(cat.showInKhoTaiNguyen);
-    setEditShowInMmo(cat.showInTaiNguyenMmo);
-    setEditingCatStore(cat.showInKhoTaiNguyen ? "kho" : "mmo");
+    setEditShowInNguyenLieu(cat.showInKhoTaiNguyen || cat.showInTaiNguyenMmo);
+    setEditShowInTool(cat.showInToolPhanMem);
+    setEditingCatStore(storeMatches(cat, "nguyen-lieu") ? "nguyen-lieu" : "tool");
     setError("");
     setUploadError("");
     setFormOpen(true);
@@ -414,22 +426,24 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
       const url = editingId ? `/api/admin/resource-categories/${editingId}` : "/api/admin/resource-categories";
       const method = editingId ? "PATCH" : "POST";
 
-      if (editingId && !editShowInKho && !editShowInMmo) {
-        setError("Danh mục phải thuộc ít nhất 1 trang");
+      if (editingId && !editShowInNguyenLieu && !editShowInTool) {
+        setError("Danh mục phải thuộc ít nhất 1 khu vực");
         return;
       }
       const body = editingId
         ? {
             name: name.trim(),
             iconUrl: iconUrl.trim(),
-            showInKhoTaiNguyen: editShowInKho,
-            showInTaiNguyenMmo: editShowInMmo,
+            showInKhoTaiNguyen: editShowInNguyenLieu,
+            showInTaiNguyenMmo: editShowInNguyenLieu,
+            showInToolPhanMem: editShowInTool,
           }
         : {
             name: name.trim(),
             iconUrl: iconUrl.trim(),
-            showInKhoTaiNguyen: storeFilter === "kho",
-            showInTaiNguyenMmo: storeFilter === "mmo",
+            showInKhoTaiNguyen: storeFilter === "nguyen-lieu",
+            showInTaiNguyenMmo: storeFilter === "nguyen-lieu",
+            showInToolPhanMem: storeFilter === "tool",
           };
 
       const res = await fetch(url, {
@@ -478,24 +492,25 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
     if (!deletingCat) return;
     setDeleteLoading(true);
 
-    const isInBothKhos = deletingCat.showInKhoTaiNguyen && deletingCat.showInTaiNguyenMmo;
+    const activeStores = (Object.keys(STORE_META) as StoreFilter[]).filter((k) => storeMatches(deletingCat, k));
+    const isInBothKhos = activeStores.length > 1;
 
     try {
       if (isInBothKhos) {
-        // Chỉ gỡ khỏi kho đang xem — không xóa hẳn khỏi DB
-        const field = storeFilter === "kho" ? "showInKhoTaiNguyen" : "showInTaiNguyenMmo";
+        // Chỉ gỡ khỏi khu vực đang xem — không xóa hẳn khỏi DB
+        const fields = STORE_META[storeFilter].fields;
+        const patchBody = Object.fromEntries(fields.map((f) => [f, false]));
         const res = await fetch(`/api/admin/resource-categories/${deletingCat.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ [field]: false }),
+          body: JSON.stringify(patchBody),
         });
         const json = (await res.json()) as { error?: string };
         if (!res.ok) { toast.error(json.error ?? "Gỡ thất bại"); return; }
         setCategories((prev) =>
-          prev.map((c) => c.id === deletingCat.id ? { ...c, [field]: false } : c)
+          prev.map((c) => c.id === deletingCat.id ? { ...c, ...patchBody } : c)
         );
-        const storeName = storeFilter === "kho" ? "Kho Tài Nguyên" : "Nguyên Liệu";
-        toast.success(`Đã gỡ khỏi ${storeName}`, deletingCat.name);
+        toast.success(`Đã gỡ khỏi ${STORE_META[storeFilter].label}`, deletingCat.name);
       } else {
         // Xóa hoàn toàn — danh mục chỉ thuộc 1 kho
         const res = await fetch(`/api/admin/resource-categories/${deletingCat.id}`, {
@@ -608,13 +623,13 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
 
   // Kho đang active trong form (create dùng storeFilter, edit dùng kho của cat)
   const activeFormStore = editingId ? editingCatStore : storeFilter;
-  const drawerHeaderClass = activeFormStore === "kho"
-    ? "bg-blue-50 border-blue-200"
-    : "bg-violet-50 border-violet-200";
+  const drawerHeaderClass = activeFormStore === "nguyen-lieu"
+    ? "bg-violet-50 border-violet-200"
+    : "bg-amber-50 border-amber-200";
 
   const drawerTitle = editingId
-    ? `Sửa danh mục · ${activeFormStore === "kho" ? "Kho Tài Nguyên" : "Nguyên Liệu"}`
-    : `Thêm danh mục · ${storeFilter === "kho" ? "Kho Tài Nguyên" : "Nguyên Liệu"}`;
+    ? `Sửa danh mục · ${STORE_META[activeFormStore].label}`
+    : `Thêm danh mục · ${STORE_META[storeFilter].label}`;
 
   return (
     <div className="space-y-6">
@@ -641,36 +656,33 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <input
                   type="checkbox"
-                  checked={editShowInKho}
-                  onChange={(e) => setEditShowInKho(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="flex items-center gap-1.5 text-xs font-medium text-blue-700">
-                  <Warehouse size={13} /> Kho Tài Nguyên
-                </span>
-              </label>
-              <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={editShowInMmo}
-                  onChange={(e) => setEditShowInMmo(e.target.checked)}
+                  checked={editShowInNguyenLieu}
+                  onChange={(e) => setEditShowInNguyenLieu(e.target.checked)}
                   className="w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
                 />
                 <span className="flex items-center gap-1.5 text-xs font-medium text-violet-700">
                   <Package size={13} /> Nguyên Liệu MMO
                 </span>
               </label>
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={editShowInTool}
+                  onChange={(e) => setEditShowInTool(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                />
+                <span className="flex items-center gap-1.5 text-xs font-medium text-amber-700">
+                  <Wrench size={13} /> Tool - Phần mềm
+                </span>
+              </label>
             </div>
           ) : (
             <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${
-              activeFormStore === "kho"
-                ? "bg-blue-50 border-blue-200 text-blue-700"
-                : "bg-violet-50 border-violet-200 text-violet-700"
+              activeFormStore === "nguyen-lieu"
+                ? "bg-violet-50 border-violet-200 text-violet-700"
+                : "bg-amber-50 border-amber-200 text-amber-700"
             }`}>
-              {activeFormStore === "kho"
-                ? <><Warehouse size={13} /> Kho Tài Nguyên</>
-                : <><Package size={13} /> Nguyên Liệu</>
-              }
+              {(() => { const Icon = STORE_META[activeFormStore].Icon; return <><Icon size={13} /> {STORE_META[activeFormStore].label}</>; })()}
             </div>
           )}
 
@@ -810,9 +822,7 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
               type="button"
               onClick={() => void handleSave()}
               disabled={loading}
-              className={`px-4 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-60 transition-colors ${
-                activeFormStore === "kho" ? "bg-blue-600 hover:bg-blue-700" : "bg-violet-600 hover:bg-violet-700"
-              }`}
+              className={`px-4 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-60 transition-colors ${STORE_META[activeFormStore].solidClass}`}
             >
               {loading ? "Đang lưu..." : editingId ? "Cập nhật" : "Thêm danh mục"}
             </button>
@@ -835,45 +845,39 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             {/* Filter tabs */}
             <div className="flex items-center gap-1 bg-white rounded-lg border border-gray-200 p-0.5">
-              <button
-                type="button"
-                onClick={() => setStoreFilter("kho")}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                  storeFilter === "kho" ? "bg-blue-600 text-white shadow-sm" : "text-blue-600 hover:bg-blue-50"
-                }`}
-              >
-                <Warehouse size={12} /> Kho Tài Nguyên ({khoCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setStoreFilter("mmo")}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                  storeFilter === "mmo" ? "bg-violet-600 text-white shadow-sm" : "text-violet-600 hover:bg-violet-50"
-                }`}
-              >
-                <Package size={12} /> Nguyên Liệu ({mmoCount})
-              </button>
+              {(Object.keys(STORE_META) as StoreFilter[]).map((k) => {
+                const meta = STORE_META[k];
+                const Icon = meta.Icon;
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setStoreFilter(k)}
+                    className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                      storeFilter === k ? `${meta.solidClass} text-white shadow-sm` : `${meta.textClass} hover:bg-gray-50`
+                    }`}
+                  >
+                    <Icon size={12} /> {meta.label} ({storeCounts[k]})
+                  </button>
+                );
+              })}
             </div>
 
             {/* Button thêm — theo tab đang active */}
             <button
               type="button"
               onClick={openForm}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold transition-colors ${
-                storeFilter === "kho"
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-violet-600 hover:bg-violet-700"
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold transition-colors ${STORE_META[storeFilter].solidClass}`}
             >
-              {storeFilter === "kho" ? <Warehouse size={14} /> : <Package size={14} />}
-              + Thêm danh mục {storeFilter === "kho" ? "Kho Tài Nguyên" : "Nguyên Liệu"}
+              {(() => { const Icon = STORE_META[storeFilter].Icon; return <Icon size={14} />; })()}
+              + Thêm danh mục {STORE_META[storeFilter].label}
             </button>
           </div>
 
           {/* Count + drag hint + search */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 shrink-0">
-              {filteredCategories.length}/{storeFilter === "kho" ? khoCount : mmoCount} danh mục
+              {filteredCategories.length}/{storeCounts[storeFilter]} danh mục
             </span>
             {!searchTerm && (
               <span className="flex items-center gap-1 text-[10px] text-gray-400 bg-white border border-gray-200 rounded px-1.5 py-0.5">
@@ -894,7 +898,7 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={`Tìm danh mục trong ${storeFilter === "kho" ? "Kho Tài Nguyên" : "Nguyên Liệu"}...`}
+              placeholder={`Tìm danh mục trong ${STORE_META[storeFilter].label}...`}
               className="w-full pl-8 pr-8 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-[#7C3AED]"
             />
             {searchQuery && (
@@ -915,17 +919,15 @@ export default function ResourceCategoryManager({ initialCategories }: Props) {
             <p className="text-sm text-gray-500">
               {searchTerm
                 ? `Không tìm thấy danh mục nào khớp với "${searchQuery}"`
-                : `Chưa có danh mục nào trong ${storeFilter === "kho" ? "Kho Tài Nguyên" : "Nguyên Liệu"}`}
+                : `Chưa có danh mục nào trong ${STORE_META[storeFilter].label}`}
             </p>
             {!searchTerm && (
               <button
                 type="button"
                 onClick={openForm}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors ${
-                  storeFilter === "kho" ? "bg-blue-600 hover:bg-blue-700" : "bg-violet-600 hover:bg-violet-700"
-                }`}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors ${STORE_META[storeFilter].solidClass}`}
               >
-                {storeFilter === "kho" ? <Warehouse size={14} /> : <Package size={14} />}
+                {(() => { const Icon = STORE_META[storeFilter].Icon; return <Icon size={14} />; })()}
                 + Thêm danh mục đầu tiên
               </button>
             )}

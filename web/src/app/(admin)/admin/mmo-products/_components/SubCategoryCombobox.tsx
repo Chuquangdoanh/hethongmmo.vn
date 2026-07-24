@@ -7,13 +7,14 @@ interface SubItem {
   name: string;
   showInKhoTaiNguyen: boolean;
   showInTaiNguyenMmo: boolean;
+  showInToolPhanMem: boolean;
 }
 
 interface Props {
   categoryGroup: string;
   value: string;
   onChange: (value: string) => void;
-  section?: "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN";
+  section?: "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN" | "TOOL_PHAN_MEM";
   required?: boolean;
 }
 
@@ -58,9 +59,10 @@ export default function SubCategoryCombobox({ categoryGroup, value, onChange, se
   }, []);
 
   // Lọc theo khu vực hiển thị trước, rồi mới lọc theo query
+  // Nguyên liệu MMO đã gộp chung với Kho tài nguyên ở trang public — lọc theo cả 2 cờ (OR)
   const sectionFiltered = items.filter((s) => {
-    if (section === "KHO_TAI_NGUYEN") return s.showInKhoTaiNguyen;
-    if (section === "TAI_NGUYEN_MMO") return s.showInTaiNguyenMmo;
+    if (section === "TAI_NGUYEN_MMO") return s.showInTaiNguyenMmo || s.showInKhoTaiNguyen;
+    if (section === "TOOL_PHAN_MEM") return s.showInToolPhanMem;
     return true;
   });
 
@@ -118,7 +120,7 @@ export default function SubCategoryCombobox({ categoryGroup, value, onChange, se
         <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden">
           {sectionFiltered.length === 0 ? (
             <p className="px-3 py-3 text-xs text-gray-400 italic">
-              Chưa có danh mục con nào{section === "KHO_TAI_NGUYEN" ? " trong Kho Tài Nguyên" : section === "TAI_NGUYEN_MMO" ? " trong Nguyên Liệu" : ""} cho nhóm <strong>{categoryGroup}</strong>.<br />
+              Chưa có danh mục con nào{section === "TAI_NGUYEN_MMO" ? " trong Nguyên Liệu" : section === "TOOL_PHAN_MEM" ? " trong Tool - Phần mềm" : ""} cho nhóm <strong>{categoryGroup}</strong>.<br />
               Thêm tại trang <span className="text-[#7C3AED] font-medium">Danh mục tài nguyên</span> hoặc nhập tay bên dưới.
             </p>
           ) : (

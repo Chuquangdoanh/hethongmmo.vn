@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react";
 import { formatVnd } from "@/lib/utils/format";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import {
-  Banknote, Home, GalleryVerticalEnd, GraduationCap, Lightbulb,
+  Banknote, Home, GalleryVerticalEnd, GraduationCap, Lightbulb, Wrench,
   Package, ShoppingBag, User, Settings, LogOut, Bell,
   Heart, Store, ChevronRight, ChevronDown, ArrowLeft, AlertCircle,
   Grid3x3, LayoutDashboard, MessageCircle, BookOpen, RotateCcw, Headphones, Award,
@@ -579,6 +579,16 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
           {hotBadge("/tai-nguyen-mmo")}
           <Package size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Nguyên liệu</span>
+        </Link>
+        <Link
+          href="/tool-phan-mem"
+          prefetch={false}
+          className={`mnav-tab${!isOpen && pathname.startsWith("/tool-phan-mem") ? " mnav-tab--active" : ""}`}
+          onClick={closeWithNav}
+        >
+          {hotBadge("/tool-phan-mem")}
+          <Wrench size={22} className="mnav-tab-icon" />
+          <span className="mnav-tab-label">Tool - PM</span>
         </Link>
         {isLoggedIn ? (
           <button

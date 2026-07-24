@@ -141,6 +141,7 @@ export const PUBLIC_PAGES: PageEntry[] = [
   { key: "khoa-hoc",                label: "Khóa học" },
   { key: "tut-tricks",              label: "Tut & Tricks" },
   { key: "tai-nguyen-mmo",          label: "Tài nguyên MMO" },
+  { key: "tool-phan-mem",           label: "Tool - Phần mềm" },
   { key: "NetWorks",                  label: "NETWORKS" },
   { key: "quang-cao",               label: "Quảng cáo" },
   { key: "chinh-sach",              label: "Chính sách bảo mật" },

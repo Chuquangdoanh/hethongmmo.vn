@@ -20,12 +20,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       select: {
         id: true, name: true, iconUrl: true, displayOrder: true,
-        showInKhoTaiNguyen: true, showInTaiNguyenMmo: true,
+        showInKhoTaiNguyen: true, showInTaiNguyenMmo: true, showInToolPhanMem: true,
         ...(withSubs ? {
           subCategories: {
             where: { isActive: true },
             orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
-            select: { id: true, name: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
+            select: { id: true, name: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true, showInToolPhanMem: true },
           },
         } : {}),
       },
@@ -46,14 +46,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const parsed = createResourceCategorySchema.safeParse(body);
     if (!parsed.success) return apiValidationError(parsed.error.issues);
 
-    const { name, iconUrl, showInKhoTaiNguyen, showInTaiNguyenMmo } = parsed.data;
+    const { name, iconUrl, showInKhoTaiNguyen, showInTaiNguyenMmo, showInToolPhanMem } = parsed.data;
 
     const existing = await prisma.resourceCategory.findUnique({ where: { name } });
     if (existing) {
       // Đã tồn tại trong đúng kho đang thêm → block
       const alreadyInThisStore =
         (showInKhoTaiNguyen && existing.showInKhoTaiNguyen) ||
-        (showInTaiNguyenMmo && existing.showInTaiNguyenMmo);
+        (showInTaiNguyenMmo && existing.showInTaiNguyenMmo) ||
+        (showInToolPhanMem && existing.showInToolPhanMem);
       if (alreadyInThisStore) {
         return apiError("Danh mục đã tồn tại trong kho này", "DUPLICATE", 409);
       }
@@ -64,16 +65,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         data: {
           showInKhoTaiNguyen: existing.showInKhoTaiNguyen || showInKhoTaiNguyen,
           showInTaiNguyenMmo: existing.showInTaiNguyenMmo || showInTaiNguyenMmo,
+          showInToolPhanMem: existing.showInToolPhanMem || showInToolPhanMem,
         },
-        select: { id: true, name: true, iconUrl: true, displayOrder: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
+        select: { id: true, name: true, iconUrl: true, displayOrder: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true, showInToolPhanMem: true },
       });
       await writeAuditLog({
         actorId: me.id,
         action: "UPDATE_RESOURCE_CATEGORY",
         targetType: "ResourceCategory",
         targetId: updated.id,
-        before: { showInKhoTaiNguyen: existing.showInKhoTaiNguyen, showInTaiNguyenMmo: existing.showInTaiNguyenMmo },
-        after: { showInKhoTaiNguyen: updated.showInKhoTaiNguyen, showInTaiNguyenMmo: updated.showInTaiNguyenMmo },
+        before: { showInKhoTaiNguyen: existing.showInKhoTaiNguyen, showInTaiNguyenMmo: existing.showInTaiNguyenMmo, showInToolPhanMem: existing.showInToolPhanMem },
+        after: { showInKhoTaiNguyen: updated.showInKhoTaiNguyen, showInTaiNguyenMmo: updated.showInTaiNguyenMmo, showInToolPhanMem: updated.showInToolPhanMem },
       });
       return apiOk(updated);
     }
@@ -82,8 +84,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const nextOrder = (maxOrder._max.displayOrder ?? 0) + 1;
 
     const category = await prisma.resourceCategory.create({
-      data: { name, iconUrl: iconUrl || null, displayOrder: nextOrder, showInKhoTaiNguyen, showInTaiNguyenMmo },
-      select: { id: true, name: true, iconUrl: true, displayOrder: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true },
+      data: { name, iconUrl: iconUrl || null, displayOrder: nextOrder, showInKhoTaiNguyen, showInTaiNguyenMmo, showInToolPhanMem },
+      select: { id: true, name: true, iconUrl: true, displayOrder: true, showInKhoTaiNguyen: true, showInTaiNguyenMmo: true, showInToolPhanMem: true },
     });
 
     await writeAuditLog({
@@ -91,7 +93,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       action: "CREATE_RESOURCE_CATEGORY",
       targetType: "ResourceCategory",
       targetId: category.id,
-      after: { name, iconUrl: iconUrl || null, showInKhoTaiNguyen, showInTaiNguyenMmo },
+      after: { name, iconUrl: iconUrl || null, showInKhoTaiNguyen, showInTaiNguyenMmo, showInToolPhanMem },
     });
 
     return apiOk(category);

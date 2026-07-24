@@ -24,7 +24,8 @@ const mmoPatchSchema = z.object({
   isActive: z.boolean().optional(),
   requiresAccountType: z.boolean().optional(),
   requiresCccd: z.boolean().optional(),
-  section: z.enum(["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"]).optional(),
+  section: z.enum(["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN", "TOOL_PHAN_MEM"]).optional(),
+  postedByUserId: z.string().uuid().optional(),
 });
 
 // ── PATCH — Update MMO product (Staff+) ──────────────────────────────────────

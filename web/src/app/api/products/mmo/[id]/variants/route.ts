@@ -46,7 +46,7 @@ export async function GET(
 
     const variants = await prisma.mmoProductVariant.findMany({
       where: { productId: id, deletedAt: null },
-      select: { id: true, variantName: true, variantPrice: true, warranty: true, isActive: true, createdAt: true },
+      select: { id: true, variantName: true, variantPrice: true, warranty: true, isActive: true, isPopular: true, createdAt: true },
       orderBy: { createdAt: "asc" },
     });
 

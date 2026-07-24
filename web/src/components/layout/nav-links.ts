@@ -1,5 +1,5 @@
 import {
-  Home, GalleryVerticalEnd, GraduationCap, Lightbulb, FolderOpen, Megaphone, Globe, Info,
+  Home, GalleryVerticalEnd, GraduationCap, Lightbulb, FolderOpen, Wrench, Megaphone, Globe, Info,
   type LucideIcon,
 } from "lucide-react";
 
@@ -16,6 +16,7 @@ export const NAV_LINKS: NavLinkDef[] = [
   { href: "/khoa-hoc",       label: "KHÓA HỌC",       color: "#059669", shadow: "rgba(5,150,105,0.45)"  },
   { href: "/tut-tricks",     label: "TUT MMO",        color: "#dc2626", shadow: "rgba(220,38,38,0.45)"  },
   { href: "/tai-nguyen-mmo", label: "NGUYÊN LIỆU",    color: "#f59e0b", shadow: "rgba(245,158,11,0.45)" },
+  { href: "/tool-phan-mem",  label: "TOOL - PHẦN MỀM", color: "#059669", shadow: "rgba(5,150,105,0.45)" },
   { href: "/quang-cao",      label: "QUẢNG CÁO ADS",  color: "#0891b2", shadow: "rgba(8,145,178,0.45)"  },
   { href: "/NetWorks",       label: "NETWORKS (ADB)",  color: "#dc2626", shadow: "rgba(220,38,38,0.45)"  },
   { href: "/gioi-thieu",     label: "GIỚI THIỆU",      color: "#475569", shadow: "rgba(71,85,105,0.45)"  },
@@ -27,6 +28,7 @@ export const NAV_ICONS: Record<string, { Icon: LucideIcon; bg: string; color: st
   "/khoa-hoc":       { Icon: GraduationCap, bg: "#d1fae5", color: "#059669" },
   "/tut-tricks":     { Icon: Lightbulb,     bg: "#fee2e2", color: "#dc2626" },
   "/tai-nguyen-mmo": { Icon: FolderOpen,    bg: "#fef3c7", color: "#d97706" },
+  "/tool-phan-mem":  { Icon: Wrench,        bg: "#d1fae5", color: "#059669" },
   "/quang-cao":      { Icon: Megaphone,     bg: "#e0f2fe", color: "#0891b2" },
   "/NetWorks":       { Icon: Globe,         bg: "#fee2e2", color: "#dc2626" },
   "/gioi-thieu":     { Icon: Info,          bg: "#f1f5f9", color: "#475569" },

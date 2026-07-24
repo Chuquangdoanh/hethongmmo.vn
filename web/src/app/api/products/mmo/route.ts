@@ -81,7 +81,8 @@ const mmoCreateSchema = z.object({
   isActive: z.boolean().default(true),
   requiresAccountType: z.boolean().default(false),
   requiresCccd: z.boolean().default(false),
-  section: z.enum(["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"]).default("TAI_NGUYEN_MMO"),
+  section: z.enum(["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN", "TOOL_PHAN_MEM"]).default("TAI_NGUYEN_MMO"),
+  postedByUserId: z.string().uuid().optional(),
 });
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -125,6 +126,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         requiresAccountType: data.requiresAccountType,
         requiresCccd: data.requiresCccd,
         section: data.section,
+        ...(data.section === "TOOL_PHAN_MEM" ? { postedByUserId: data.postedByUserId ?? actor.id } : {}),
       },
       select: { id: true, slug: true, name: true },
     });

@@ -9,12 +9,13 @@ interface Category {
   iconUrl: string | null;
   showInKhoTaiNguyen: boolean;
   showInTaiNguyenMmo: boolean;
+  showInToolPhanMem: boolean;
 }
 
 interface Props {
   value: string;
   onChange: (value: string) => void;
-  section?: "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN";
+  section?: "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN" | "TOOL_PHAN_MEM";
   placeholder?: string;
   required?: boolean;
 }
@@ -60,9 +61,10 @@ export default function CategoryCombobox({ value, onChange, section, placeholder
   }, []);
 
   // Lọc theo khu vực hiển thị trước, rồi mới lọc theo query
+  // Nguyên liệu MMO đã gộp chung với Kho tài nguyên ở trang public — lọc theo cả 2 cờ (OR)
   const sectionFiltered = categories.filter((c) => {
-    if (section === "KHO_TAI_NGUYEN") return c.showInKhoTaiNguyen;
-    if (section === "TAI_NGUYEN_MMO") return c.showInTaiNguyenMmo;
+    if (section === "TAI_NGUYEN_MMO") return c.showInTaiNguyenMmo || c.showInKhoTaiNguyen;
+    if (section === "TOOL_PHAN_MEM") return c.showInToolPhanMem;
     return true;
   });
 
@@ -87,6 +89,7 @@ export default function CategoryCombobox({ value, onChange, section, placeholder
           name,
           showInKhoTaiNguyen: section === "KHO_TAI_NGUYEN",
           showInTaiNguyenMmo: section === "TAI_NGUYEN_MMO",
+          showInToolPhanMem: section === "TOOL_PHAN_MEM",
         }),
       });
       const json = await res.json() as { data?: Category; error?: string };
@@ -143,10 +146,10 @@ export default function CategoryCombobox({ value, onChange, section, placeholder
         <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden">
           {sectionFiltered.length === 0 && !query && (
             <p className="px-3 py-2.5 text-xs text-gray-400">
-              {section === "KHO_TAI_NGUYEN"
-                ? "Chưa có danh mục nào trong Kho Tài Nguyên. Nhập tên để tạo mới."
-                : section === "TAI_NGUYEN_MMO"
+              {section === "TAI_NGUYEN_MMO"
                 ? "Chưa có danh mục nào trong Nguyên Liệu. Nhập tên để tạo mới."
+                : section === "TOOL_PHAN_MEM"
+                ? "Chưa có danh mục nào trong Tool - Phần mềm. Nhập tên để tạo mới."
                 : "Chưa có danh mục tài nguyên. Nhập tên để tạo mới."}
             </p>
           )}

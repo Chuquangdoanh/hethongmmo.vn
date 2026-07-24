@@ -18,6 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: base,                       lastModified: now, changeFrequency: "daily",   priority: 1.0 },
     { url: `${base}/dich-vu`,          lastModified: now, changeFrequency: "daily",   priority: 0.9 },
     { url: `${base}/tai-nguyen-mmo`,   lastModified: now, changeFrequency: "daily",   priority: 0.9 },
+    { url: `${base}/tool-phan-mem`,    lastModified: now, changeFrequency: "daily",   priority: 0.9 },
     { url: `${base}/tut-tricks`,       lastModified: now, changeFrequency: "weekly",  priority: 0.8 },
     { url: `${base}/khoa-hoc`,         lastModified: now, changeFrequency: "weekly",  priority: 0.8 },
     { url: `${base}/lien-he`,          lastModified: now, changeFrequency: "monthly", priority: 0.5 },
