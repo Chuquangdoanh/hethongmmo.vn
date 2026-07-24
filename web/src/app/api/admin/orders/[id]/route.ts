@@ -12,7 +12,7 @@ import { createAffiliateCommission, voidAffiliateCommission } from "@/lib/servic
 export const runtime = "nodejs";
 
 const patchSchema = z.object({
-  status: z.enum(["PENDING", "PROCESSING", "DONE", "CANCELLED", "REFUNDED", "DISPUTED"]),
+  status: z.enum(["PENDING", "PROCESSING", "DONE", "CANCELLED", "REFUNDED", "DISPUTED", "FROZEN"]),
   note: z.string().max(500).optional(),
 });
 
