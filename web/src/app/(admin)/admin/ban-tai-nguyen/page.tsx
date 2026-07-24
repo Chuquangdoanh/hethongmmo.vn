@@ -28,12 +28,18 @@ const TYPE_COLORS: Record<string, string> = {
   KHUONGFB_PRODUCT: "bg-[#0891b2]/10 text-[#0891b2]",
 };
 
+// Kho tài nguyên đã gộp chung với Nguyên liệu MMO ở trang public — chỉ còn 2 khu vực lọc
 const STORE_SECTIONS = [
-  { key: "TAI_NGUYEN_MMO", label: "Kho tài nguyên", icon: "🗂️" },
-  { key: "KHO_TAI_NGUYEN", label: "Nguyên liệu",    icon: "🧱" },
+  { key: "NGUYEN_LIEU_MMO", label: "Nguyên liệu MMO", icon: "🧱" },
+  { key: "TOOL_PHAN_MEM",   label: "Tool - Phần mềm", icon: "🧩" },
 ] as const;
 
-const STORE_SECTION_KEYS = ["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] as const;
+const STORE_SECTION_KEYS = ["NGUYEN_LIEU_MMO", "TOOL_PHAN_MEM"] as const;
+
+// "Nguyên liệu MMO" gộp cả 2 giá trị enum cũ (TAI_NGUYEN_MMO + KHO_TAI_NGUYEN)
+function sectionEnumValues(section: string): string[] {
+  return section === "NGUYEN_LIEU_MMO" ? ["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] : ["TOOL_PHAN_MEM"];
+}
 
 export default async function BanTaiNguyenPage({
   searchParams,
@@ -71,18 +77,19 @@ export default async function BanTaiNguyenPage({
 
   // Section filter: chia theo orderType nếu đã chọn, otherwise OR
   if (validSection) {
+    const sectionValues = sectionEnumValues(validSection);
     if (validOrderType === "MMO_PRODUCT") {
-      andConditions.push({ mmoProduct: { section: validSection as never } });
+      andConditions.push({ mmoProduct: { section: { in: sectionValues as never } } });
     } else if (validOrderType === "SELLER_PRODUCT") {
-      andConditions.push({ sellerProduct: { storeType: validSection as never } });
+      andConditions.push({ sellerProduct: { storeType: { in: sectionValues as never } } });
     } else if (validOrderType === "KHUONGFB_PRODUCT") {
-      andConditions.push({ externalProduct: { displaySection: validSection as never } });
+      andConditions.push({ externalProduct: { displaySection: { in: sectionValues as never } } });
     } else {
       andConditions.push({
         OR: [
-          { orderType: "MMO_PRODUCT",      mmoProduct:      { section:        validSection as never } },
-          { orderType: "SELLER_PRODUCT",   sellerProduct:   { storeType:      validSection as never } },
-          { orderType: "KHUONGFB_PRODUCT", externalProduct: { displaySection: validSection as never } },
+          { orderType: "MMO_PRODUCT",      mmoProduct:      { section:        { in: sectionValues as never } } },
+          { orderType: "SELLER_PRODUCT",   sellerProduct:   { storeType:      { in: sectionValues as never } } },
+          { orderType: "KHUONGFB_PRODUCT", externalProduct: { displaySection: { in: sectionValues as never } } },
         ],
       });
     }
