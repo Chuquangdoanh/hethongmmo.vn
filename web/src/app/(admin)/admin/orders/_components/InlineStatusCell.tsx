@@ -5,10 +5,12 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 
 const STATUS_OPTIONS = [
-  { value: "PENDING",    label: "Chờ xử lý",  cls: "bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20" },
-  { value: "PROCESSING", label: "Đang xử lý", cls: "bg-[#7C3AED]/10 text-[#A855F7] border border-[#A855F7]/20" },
-  { value: "DONE",       label: "Hoàn thành", cls: "bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20" },
-  { value: "FROZEN",     label: "Đóng băng",  cls: "bg-[#0891b2]/10 text-[#0891b2] border border-[#0891b2]/20" },
+  { value: "PENDING",    label: "Chờ xử lý",     cls: "bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20" },
+  { value: "PROCESSING", label: "Đang xử lý",    cls: "bg-[#7C3AED]/10 text-[#A855F7] border border-[#A855F7]/20" },
+  { value: "DONE",       label: "Hoàn thành",    cls: "bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20" },
+  { value: "FROZEN",     label: "Đóng băng",     cls: "bg-[#0891b2]/10 text-[#0891b2] border border-[#0891b2]/20" },
+  { value: "REFUNDED",   label: "Đã hoàn tiền",  cls: "bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20" },
+  { value: "CANCELLED",  label: "Hủy đơn",       cls: "bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20" },
 ];
 
 export default function InlineStatusCell({

@@ -7,6 +7,7 @@ import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
 import { checkAutoResolution } from "@/lib/services/complaint-auto-resolve";
 import { sendSellerFirstReplyEmail } from "@/lib/services/email.service";
 import { assertChatAccess, makeChatQuota, getChatSnapshot } from "@/lib/services/chat-stream.service";
+import { checkAndLogChatViolation } from "@/lib/services/chat-moderation.service";
 
 export const runtime = "nodejs";
 
@@ -112,8 +113,29 @@ export async function POST(
       ? `Seller #${me.id.slice(0, 8).toUpperCase()}`
       : (me.fullName ?? me.email);
 
-    // Cập nhật counters + ghi tin nhắn
+    // Admin xử lý khiếu nại cần tự do trao đổi thông tin — loại trừ khỏi kiểm duyệt.
     const isSeller = senderLabel === "Nhà bán hàng";
+    if (senderLabel !== "Admin") {
+      const moderation = await checkAndLogChatViolation({
+        source: "COMPLAINT_CHAT",
+        refId: roomId,
+        senderId: me.id,
+        senderName,
+        senderRole: isSeller ? "SELLER" : "USER",
+        content: parsed.data.content,
+      });
+      if (moderation.blocked) {
+        return NextResponse.json(
+          {
+            error: `Tin nhắn chứa nội dung bị cấm (${moderation.matchedTerm}) — vui lòng chỉnh sửa. Đối phương sẽ không nhận được nội dung này.`,
+            code: "CONTENT_BLOCKED",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Cập nhật counters + ghi tin nhắn
     const newTotalMsgCount = room.totalMsgCount + 1;
     const newUserTurnCount = isSeller ? 0 : room.userTurnCount + 1;
 

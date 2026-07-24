@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Admin — Bán tài nguyên" };
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: "Chờ xử lý", PROCESSING: "Đang xử lý", DONE: "Hoàn thành",
-  FROZEN: "Đóng băng", REFUNDED: "Đã hoàn tiền", CANCELLED: "Đã hủy",
+  FROZEN: "Đóng băng", REFUNDED: "Đã hoàn tiền", CANCELLED: "Hủy đơn",
 };
 
 const PRODUCT_TYPES = [
@@ -329,20 +329,22 @@ export default async function BanTaiNguyenPage({
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-xs text-gray-400 font-medium mr-1">Trạng thái:</span>
         {[
-          { key: "",           label: "Tất cả" },
-          { key: "PROCESSING", label: "Đang xử lý" },
-          { key: "DONE",       label: "Hoàn thành" },
-          { key: "REFUNDED",   label: "Đã hoàn tiền" },
-          { key: "CANCELLED",  label: "Đã hủy" },
-        ].map(({ key, label }) => (
+          { key: "",           label: "Tất cả",       color: "#10B981" },
+          { key: "PROCESSING", label: "Đang xử lý",   color: "#10B981" },
+          { key: "DONE",       label: "Hoàn thành",   color: "#10B981" },
+          { key: "FROZEN",     label: "Đóng băng",    color: "#0891b2" },
+          { key: "REFUNDED",   label: "Đã hoàn tiền", color: "#EF4444" },
+          { key: "CANCELLED",  label: "Hủy đơn",      color: "#EF4444" },
+        ].map(({ key, label, color }) => (
           <Link
             key={key}
             href={buildUrl({ status: key || undefined })}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+            className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors hover:opacity-80"
+            style={
               status === key || (!status && !key)
-                ? "bg-[#10B981] text-white"
-                : "bg-white border border-gray-200 text-gray-500 hover:border-[#10B981] hover:text-[#10B981]"
-            }`}
+                ? { backgroundColor: color, color: "#FFFFFF" }
+                : { backgroundColor: "#FFFFFF", border: "1px solid #E5E7EB", color: "#6B7280" }
+            }
           >
             {label}
           </Link>

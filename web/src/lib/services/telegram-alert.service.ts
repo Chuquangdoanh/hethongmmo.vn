@@ -108,6 +108,30 @@ async function _getKhuongfbProviderLabel(providerId: string): Promise<string> {
   return provider.baseUrl ? `${name} (<code>${escTelegramHtml(provider.baseUrl)}</code>)` : name;
 }
 
+/** Gửi cảnh báo vi phạm chat (SĐT/từ cấm bị chặn) — fire-and-forget, không throw. */
+export function notifyChatViolation(
+  senderName: string,
+  senderRole: "USER" | "SELLER",
+  sourceLabel: string,
+  matchedTerm: string,
+  content: string,
+): void {
+  void (async () => {
+    const preview = content.length > 300 ? `${content.slice(0, 300)}...` : content;
+    const roleLabel = senderRole === "SELLER" ? "Nhà bán hàng" : "Người mua";
+    sendTelegramAlert(
+      [
+        `🚫 <b>Chặn tin nhắn vi phạm</b>`,
+        ``,
+        `👤 Người gửi: ${escTelegramHtml(senderName)} (${roleLabel})`,
+        `📍 Nguồn: ${escTelegramHtml(sourceLabel)}`,
+        `⚠️ Vi phạm: <b>${escTelegramHtml(matchedTerm)}</b>`,
+        `📝 Nội dung: <code>${escTelegramHtml(preview)}</code>`,
+      ].join("\n"),
+    );
+  })();
+}
+
 /** Gửi cảnh báo nạp tiền thành công — fire-and-forget, áp dụng cho mọi user. */
 export function notifyDepositSuccess(
   userId: string,

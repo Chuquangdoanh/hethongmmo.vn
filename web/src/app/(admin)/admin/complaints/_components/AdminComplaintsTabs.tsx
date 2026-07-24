@@ -1,11 +1,12 @@
 import Link from "next/link";
 
-export type ComplaintsAdminTab = "complaints" | "presale" | "support";
+export type ComplaintsAdminTab = "complaints" | "presale" | "support" | "violations";
 
 const TABS: { key: ComplaintsAdminTab; label: string }[] = [
   { key: "complaints", label: "Khiếu nại" },
   { key: "presale", label: "Tin nhắn trước khi mua" },
   { key: "support", label: "Hỗ trợ sau khi mua" },
+  { key: "violations", label: "Vi phạm chat" },
 ];
 
 export default function AdminComplaintsTabs({ active }: { active: ComplaintsAdminTab }) {

@@ -6,6 +6,7 @@ import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
 import { checkRateLimit, apiRatelimit } from "@/lib/security/rate-limit";
 import { sendSupportMessageSchema } from "@/lib/validation/support-ticket.schema";
 import { resolveSupportTicketRole, sendSupportMessage } from "@/lib/services/support-ticket.service";
+import { checkAndLogChatViolation } from "@/lib/services/chat-moderation.service";
 
 export const runtime = "nodejs";
 
@@ -64,6 +65,26 @@ export async function POST(
     if (!parsed.success) return apiValidationError(parsed.error.issues);
 
     const senderName = me.fullName ?? me.email;
+
+    const { role } = await resolveSupportTicketRole(ticketId, me.id);
+    const moderation = await checkAndLogChatViolation({
+      source: "SUPPORT_TICKET",
+      refId: ticketId,
+      senderId: me.id,
+      senderName,
+      senderRole: role,
+      content: parsed.data.content,
+    });
+    if (moderation.blocked) {
+      return NextResponse.json(
+        {
+          error: `Tin nhắn chứa nội dung bị cấm (${moderation.matchedTerm}) — vui lòng chỉnh sửa. Đối phương sẽ không nhận được nội dung này.`,
+          code: "CONTENT_BLOCKED",
+        },
+        { status: 400 },
+      );
+    }
+
     const message = await sendSupportMessage(ticketId, me.id, senderName, parsed.data.content);
 
     return apiOk({ ...message, createdAt: message.createdAt.toISOString() }, 201);

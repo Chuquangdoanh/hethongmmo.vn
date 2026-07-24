@@ -318,6 +318,7 @@ model User {
   preSaleChatsAsBuyer    PreSaleChat[]    @relation("PreSaleChatBuyer")
   preSaleChatsAsSeller   PreSaleChat[]    @relation("PreSaleChatSeller")
   preSaleMessages        PreSaleMessage[]
+  chatViolations         ChatViolation[]
   partnerSupportThreads  PartnerSupportThread[]
   subCategories        UserSubCategory[]
   staffPermissions     StaffPermission[]
@@ -1322,6 +1323,32 @@ model PreSaleMessage {
 
   @@index([chatId, createdAt])
   @@map("presale_messages")
+}
+
+// ====================================================================
+// 20d. CHAT MODERATION (chặn từ cấm / số điện thoại trong chat User↔Seller)
+// ====================================================================
+enum ChatViolationSource {
+  PRESALE_CHAT
+  SUPPORT_TICKET
+  COMPLAINT_CHAT
+}
+
+model ChatViolation {
+  id          String              @id @default(uuid()) @db.Uuid
+  source      ChatViolationSource
+  refId       String              @map("ref_id") @db.Uuid
+  senderId    String              @map("sender_id") @db.Uuid
+  sender      User                @relation(fields: [senderId], references: [id])
+  senderName  String              @map("sender_name")
+  senderRole  String              @map("sender_role") @db.VarChar(10)
+  content     String
+  matchedTerm String              @map("matched_term")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  @@index([source, createdAt])
+  @@index([senderId])
+  @@map("chat_violations")
 }
 
 // ====================================================================

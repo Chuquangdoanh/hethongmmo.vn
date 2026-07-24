@@ -6,6 +6,7 @@ import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
 import { checkRateLimit, apiRatelimit } from "@/lib/security/rate-limit";
 import { sendPreSaleMessageSchema } from "@/lib/validation/pre-sale-chat.schema";
 import { resolvePreSaleChatRole, sendPreSaleMessage } from "@/lib/services/pre-sale-chat.service";
+import { checkAndLogChatViolation } from "@/lib/services/chat-moderation.service";
 
 export const runtime = "nodejs";
 
@@ -66,6 +67,26 @@ export async function POST(
     if (!parsed.success) return apiValidationError(parsed.error.issues);
 
     const senderName = me.fullName ?? me.email;
+
+    const { role } = await resolvePreSaleChatRole(chatId, me.id);
+    const moderation = await checkAndLogChatViolation({
+      source: "PRESALE_CHAT",
+      refId: chatId,
+      senderId: me.id,
+      senderName,
+      senderRole: role,
+      content: parsed.data.content,
+    });
+    if (moderation.blocked) {
+      return NextResponse.json(
+        {
+          error: `Tin nhắn chứa nội dung bị cấm (${moderation.matchedTerm}) — vui lòng chỉnh sửa. Đối phương sẽ không nhận được nội dung này.`,
+          code: "CONTENT_BLOCKED",
+        },
+        { status: 400 },
+      );
+    }
+
     const message = await sendPreSaleMessage(chatId, me.id, senderName, parsed.data.content);
 
     return apiOk({ ...message, createdAt: message.createdAt.toISOString() }, 201);
