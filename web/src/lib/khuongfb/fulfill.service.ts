@@ -158,7 +158,7 @@ export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): P
       },
     });
 
-    notifyPurchaseSuccess(userId, `${product.name} (x${quantity}) qua Khuongfb`, totalPrice.toFixed(0), order.orderCode, { kind: "KHUONGFB" });
+    notifyPurchaseSuccess(userId, `${product.name} (x${quantity}) qua Khuongfb`, totalPrice.toFixed(0), order.orderCode, { kind: "KHUONGFB", providerId: product.provider });
 
     return {
       orderId:         order.id,
@@ -207,7 +207,7 @@ export async function purchaseKhuongfbProduct(params: KhuongfbPurchaseParams): P
 
     const msg = err instanceof Error ? err.message : "Khuongfb không phản hồi";
 
-    notifyKhuongfbRefund(userId, `${product.name} (x${quantity})`, totalPrice.toFixed(0), order.orderCode, msg);
+    notifyKhuongfbRefund(userId, `${product.name} (x${quantity})`, totalPrice.toFixed(0), order.orderCode, msg, product.provider);
 
     throw new AppError(`Đặt hàng thất bại, tiền đã được hoàn vào ví: ${msg}`, "KHUONGFB_FULFILL_ERROR", 502);
   }

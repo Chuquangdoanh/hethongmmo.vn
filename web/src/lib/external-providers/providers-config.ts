@@ -81,10 +81,11 @@ export async function saveProviderConfigs(providers: ProviderEntry[], actorId?: 
   });
 }
 
-export async function loadEnabledAdapters(): Promise<ExternalProductProvider[]> {
+export async function loadEnabledAdapters(excludeProviderTypes: ProviderType[] = []): Promise<ExternalProductProvider[]> {
   const configs = await getProviderConfigs();
   return configs
     .filter(c => c.enabled)
+    .filter(c => !excludeProviderTypes.includes(c.providerType ?? "khuongfb"))
     .map(c => buildAdapter(c));
 }
 

@@ -17,7 +17,8 @@ export type PermissionCode =
   | "content:read"     | "content:create"     | "content:update"     | "content:delete"
   | "sellers:read"     | "sellers:approve"    | "sellers:update"     | "sellers:delete"
   | "seller_products:read" | "seller_products:update" | "seller_products:delete"
-  | "transactions:read" | "audit_logs:read";
+  | "transactions:read" | "audit_logs:read"
+  | "partner_support:read" | "partner_support:reply";
 
 export interface ModuleSeed {
   code: string;
@@ -53,6 +54,7 @@ export const MODULES: ModuleSeed[] = [
   { code: "sellers",          label: "Quản lý Seller",         icon: "store",              sortOrder: 13 },
   { code: "seller_products",  label: "Sản phẩm Seller",        icon: "tag",                sortOrder: 14 },
   { code: "transactions",     label: "Giao dịch & Logs",       icon: "activity",           sortOrder: 15 },
+  { code: "partner_support",  label: "Hỗ trợ đối tác",         icon: "store",              sortOrder: 16 },
 ];
 
 export const PERMISSIONS: PermissionSeed[] = [
@@ -141,6 +143,10 @@ export const PERMISSIONS: PermissionSeed[] = [
   // Transactions & Logs
   { code: "transactions:read", module: "transactions", action: "read", label: "Xem lịch sử giao dịch", sortOrder: 0 },
   { code: "audit_logs:read",   module: "transactions", action: "read", label: "Xem audit log",          sortOrder: 1 },
+
+  // Partner Support (chat hỗ trợ gian hàng đối tác — khuongfb/VNCloud)
+  { code: "partner_support:read",  module: "partner_support", action: "read",  label: "Xem chat hỗ trợ đối tác",     sortOrder: 0 },
+  { code: "partner_support:reply", module: "partner_support", action: "reply", label: "Trả lời / đóng chat đối tác", sortOrder: 1 },
 ];
 
 export const ALL_PERMISSION_CODES: PermissionCode[] = PERMISSIONS.map((p) => p.code);
@@ -200,6 +206,7 @@ export const PERMISSION_DEPENDENCIES: Record<string, PermissionCode[]> = {
   "seller_products:update": ["seller_products:read"],
   "seller_products:delete": ["seller_products:read"],
   "audit_logs:read":        ["transactions:read"],
+  "partner_support:reply":  ["partner_support:read"],
 };
 
 /**

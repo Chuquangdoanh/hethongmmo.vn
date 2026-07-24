@@ -91,7 +91,7 @@ const SECTIONS: NavSection[] = [
     key: "quality", label: "Chất lượng", Icon: ShieldCheck, color: "#94a3b8", bg: "#f1f5f9",
     links: [
       { href: "/admin/complaints", label: "Khiếu nại", Icon: AlertTriangle, color: "#94a3b8", badge: "complaints", permission: "complaints:read" },
-      { href: "/admin/doi-tac-ho-tro", label: "Hỗ trợ đối tác", Icon: Store, color: "#94a3b8", badge: "doiTacHoTro", adminOnly: true },
+      { href: "/admin/doi-tac-ho-tro", label: "Hỗ trợ đối tác", Icon: Store, color: "#94a3b8", badge: "doiTacHoTro", permission: "partner_support:read" },
       { href: "/admin/danh-gia",   label: "Đánh giá",  Icon: Star,          color: "#94a3b8",                      permission: "products:read"    },
       { href: "/admin/tickers",    label: "Ticker",    Icon: Radio,         color: "#94a3b8",                      permission: "content:read"     },
     ],

@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
 import { requireStaff, type AuthenticatedUser } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import { getNotificationSoundUrl } from "@/lib/utils/notification-sound";
@@ -19,6 +20,7 @@ export default async function AdminPartnerSupportDetailPage({
 }) {
   const session = await auth();
   try { requireStaff(session); } catch { redirect("/"); }
+  try { await requirePermission(session, "partner_support:read"); } catch { redirect("/admin"); }
   const me = session!.user as AuthenticatedUser;
 
   const { id } = await params;

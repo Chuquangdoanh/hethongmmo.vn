@@ -187,6 +187,16 @@ export const STAFF_PERMISSION_GROUPS: StaffPermissionGroup[] = [
       { key: "audit_logs:read",   label: "Xem nhật ký audit log",  type: "read" },
     ],
   },
+  {
+    key: "partner_support",
+    label: "Hỗ trợ đối tác",
+    color: "#0d9488",
+    bg: "#f0fdfa",
+    actions: [
+      { key: "partner_support:read",  label: "Xem chat hỗ trợ đối tác",     type: "read"  },
+      { key: "partner_support:reply", label: "Trả lời / đóng chat đối tác", type: "reply" },
+    ],
+  },
 ];
 
 export const ALL_STAFF_PERMISSIONS: StaffPermissionKey[] =

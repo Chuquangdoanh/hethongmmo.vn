@@ -177,6 +177,29 @@ services:
           memory: 32m
           cpus: "0.05"
 
+  khuongfb-cron:
+    image: alpine:3.20
+    container_name: hethongmmo-khuongfb-cron
+    restart: unless-stopped
+    depends_on:
+      - web
+    environment:
+      CRON_SECRET: ${CRON_SECRET}
+    # Gọi /api/cron/khuongfb-sync mỗi 15 phút — đồng bộ provider khuongfb-compatible, loại trừ VNCloud (VPS)
+    command: >
+      sh -c "
+        apk add --no-cache curl --quiet &&
+        while true; do
+          curl -sf http://web:3000/api/cron/khuongfb-sync -H \"x-cron-secret: $$CRON_SECRET\" -o /dev/null
+          sleep 900
+        done
+      "
+    deploy:
+      resources:
+        limits:
+          memory: 32m
+          cpus: "0.05"
+
   backup:
     # alpine:3.20 — script tự cài postgresql-client + rclone khi khởi động
     image: alpine:3.20

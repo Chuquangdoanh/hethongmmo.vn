@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { requireUser } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { apiOk, apiCatch, apiValidationError } from "@/lib/api-response";
 import {
   assertPartnerThreadAccess,
@@ -19,6 +20,7 @@ export async function GET(
   try {
     const session = await auth();
     const me = requireUser(session);
+    if (me.role === "STAFF") await requirePermission(session, "partner_support:read");
     const { id } = await params;
 
     await assertPartnerThreadAccess(id, me.id, me.role);
@@ -45,6 +47,7 @@ export async function POST(
   try {
     const session = await auth();
     const me = requireUser(session);
+    if (me.role === "STAFF") await requirePermission(session, "partner_support:reply");
     const { id } = await params;
 
     const { threadRole, providerName } = await assertPartnerThreadAccess(id, me.id, me.role);

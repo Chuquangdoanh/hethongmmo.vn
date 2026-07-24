@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { logger } from "@/lib/utils/logger";
+import { getProviderConfigs } from "@/lib/external-providers/providers-config";
 
 /**
  * Gửi tin nhắn HTML tới Telegram (dùng chung bot/chat đã cấu hình cho rate-alert).
@@ -93,6 +94,20 @@ async function _getUserName(userId: string): Promise<string> {
   return escTelegramHtml(user.fullName);
 }
 
+/**
+ * Lấy nhãn "Tên gian hàng (link API)" cho tin nhắn Khuongfb — 1 tin cần phân biệt được
+ * gian hàng nào trong nhiều gian hàng khuongfb-compatible đang cấu hình song song.
+ * Chỉ lộ baseUrl (public), KHÔNG BAO GIỜ lộ apiKey.
+ */
+async function _getKhuongfbProviderLabel(providerId: string): Promise<string> {
+  const configs  = await getProviderConfigs();
+  const provider = configs.find(c => c.id === providerId);
+  if (!provider) return escTelegramHtml(providerId);
+
+  const name = escTelegramHtml(provider.name);
+  return provider.baseUrl ? `${name} (<code>${escTelegramHtml(provider.baseUrl)}</code>)` : name;
+}
+
 /** Gửi cảnh báo nạp tiền thành công — fire-and-forget, áp dụng cho mọi user. */
 export function notifyDepositSuccess(
   userId: string,
@@ -141,14 +156,19 @@ export function notifyKhuongfbRefund(
   amount: string,
   orderCode: string,
   errorMsg: string,
+  providerId?: string,
 ): void {
   void (async () => {
-    const label = await _getUserLabel(userId);
+    const [label, providerLabel] = await Promise.all([
+      _getUserLabel(userId),
+      providerId ? _getKhuongfbProviderLabel(providerId) : Promise.resolve(null),
+    ]);
     sendTelegramAlert(
       [
         `⚠️ <b>KhuongFB lỗi — đã hoàn tiền</b>`,
         ``,
         `👤 User: ${label}`,
+        ...(providerLabel ? [`🌐 Gian hàng: ${providerLabel}`] : []),
         `📦 Sản phẩm: ${escTelegramHtml(itemName)}`,
         `💵 Đã hoàn: <b>${amount}đ</b>`,
         `🔖 Mã đơn: <code>${escTelegramHtml(orderCode)}</code>`,
@@ -185,7 +205,7 @@ export function notifyVpsRefund(
 export type OrderSource =
   | { kind: "SYSTEM" }                       // Hệ Thống MMO (service/course/tuttrick/mmo)
   | { kind: "SELLER"; sellerId?: string }    // Nhà bán hàng — kèm tên/email seller
-  | { kind: "KHUONGFB" }                     // KhuongFB
+  | { kind: "KHUONGFB"; providerId?: string } // KhuongFB — nhiều gian hàng cùng loại, kèm providerId để phân biệt
   | { kind: "VPS" };                         // VNCloud VPS
 
 /**
@@ -194,7 +214,10 @@ export type OrderSource =
  * withEmail = false: tin gửi nhóm → chỉ tên seller.
  */
 async function _getSourceLine(source: OrderSource, withEmail: boolean): Promise<string> {
-  if (source.kind === "KHUONGFB") return `🌐 Nguồn: KhuongFB`;
+  if (source.kind === "KHUONGFB") {
+    const providerLabel = source.providerId ? await _getKhuongfbProviderLabel(source.providerId) : "KhuongFB";
+    return `🌐 Nguồn: ${providerLabel}`;
+  }
   if (source.kind === "VPS")      return `🌐 Nguồn: VNCloud VPS`;
   if (source.kind === "SYSTEM")   return `🏢 Nguồn: Hệ Thống MMO`;
 

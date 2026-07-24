@@ -6,9 +6,9 @@ import { logger } from "@/lib/utils/logger";
 
 export const runtime = "nodejs";
 
-// Cron endpoint — gọi định kỳ (vd. mỗi 15 phút) bởi crontab VPS hoặc external scheduler
+// Cron endpoint — gọi định kỳ mỗi 15 phút bởi service "khuongfb-cron" trong docker-compose
 // Bảo vệ bằng CRON_SECRET header để tránh public trigger
-// Đồng bộ TẤT CẢ provider đang bật (không chỉ riêng khuongfb) — dùng chung logic với nút "Đồng bộ ngay" ở admin
+// Đồng bộ provider khuongfb-compatible đang bật — loại trừ VNCloud (VPS) vì VPS sync riêng, không auto-reload định kỳ
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const secret = req.headers.get("x-cron-secret");
   if (secret !== process.env.CRON_SECRET) {
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const adapters = await loadEnabledAdapters();
+    const adapters = await loadEnabledAdapters(["vncloud"]);
     if (adapters.length === 0) {
       return NextResponse.json({ success: true, results: {} });
     }

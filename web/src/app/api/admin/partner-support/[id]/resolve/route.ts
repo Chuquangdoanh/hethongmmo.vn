@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { requireStaff } from "@/lib/auth/rbac";
+import { requirePermission } from "@/lib/auth/permission-guard";
 import { apiSuccess, apiCatch } from "@/lib/api-response";
 import { resolvePartnerThread } from "@/lib/services/partner-support.service";
 
@@ -14,6 +15,7 @@ export async function POST(
   try {
     const session = await auth();
     const me = requireStaff(session);
+    await requirePermission(session, "partner_support:reply");
     const { id } = await params;
 
     await resolvePartnerThread(id, me.id);
