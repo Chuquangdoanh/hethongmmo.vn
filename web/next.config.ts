@@ -29,7 +29,7 @@ const nextConfig: NextConfig = {
 
   // Redirect www → non-www (chỉ production)
   async redirects() {
-    return isDev
+    const wwwRedirect: { source: string; has: { type: "host"; value: string }[]; destination: string; permanent: true }[] = isDev
       ? []
       : [
           {
@@ -39,6 +39,12 @@ const nextConfig: NextConfig = {
             permanent: true,
           },
         ];
+    // /kho-tai-nguyen đã gộp vào /tai-nguyen-mmo — giữ redirect 301 cho link/SEO cũ
+    return [
+      ...wwwRedirect,
+      { source: "/kho-tai-nguyen", destination: "/tai-nguyen-mmo", permanent: true },
+      { source: "/kho-tai-nguyen/:path*", destination: "/tai-nguyen-mmo/:path*", permanent: true },
+    ];
   },
 
   env: {

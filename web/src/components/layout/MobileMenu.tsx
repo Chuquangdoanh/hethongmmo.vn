@@ -7,7 +7,7 @@ import { signOut } from "next-auth/react";
 import { formatVnd } from "@/lib/utils/format";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import {
-  Banknote, Home, GalleryVerticalEnd, GraduationCap, Lightbulb, FolderOpen,
+  Banknote, Home, GalleryVerticalEnd, GraduationCap, Lightbulb,
   Package, ShoppingBag, User, Settings, LogOut, Bell,
   Heart, Store, ChevronRight, ChevronDown, ArrowLeft, AlertCircle,
   Grid3x3, LayoutDashboard, MessageCircle, BookOpen, RotateCcw, Headphones, Award,
@@ -569,16 +569,6 @@ export default function MobileMenu({ navLinks, isLoggedIn, user, balance, avatar
           {hotBadge("/khoa-hoc")}
           <GraduationCap size={22} className="mnav-tab-icon" />
           <span className="mnav-tab-label">Khóa Học</span>
-        </Link>
-        <Link
-          href="/kho-tai-nguyen"
-          prefetch={false}
-          className={`mnav-tab${!isOpen && pathname.startsWith("/kho-tai-nguyen") ? " mnav-tab--active" : ""}`}
-          onClick={closeWithNav}
-        >
-          {hotBadge("/kho-tai-nguyen")}
-          <FolderOpen size={22} className="mnav-tab-icon" />
-          <span className="mnav-tab-label">Tài Nguyên</span>
         </Link>
         <Link
           href="/tai-nguyen-mmo"

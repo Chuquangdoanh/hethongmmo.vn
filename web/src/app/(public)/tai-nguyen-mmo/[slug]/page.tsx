@@ -176,7 +176,7 @@ export default async function MmoProductDetailPage({
       where: {
         categoryGroup: product.categoryGroup,
         id: { not: product.id },
-        isActive: true, deletedAt: null, section: "TAI_NGUYEN_MMO",
+        isActive: true, deletedAt: null, section: { in: ["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] },
         items: { some: { status: "AVAILABLE" } },
       },
       take: 6,
@@ -189,7 +189,7 @@ export default async function MmoProductDetailPage({
     prisma.externalProduct.findMany({
       where: {
         isEnabled: true,
-        displaySection: "TAI_NGUYEN_MMO",
+        displaySection: { in: ["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] },
         resourceCategory: { name: product.categoryGroup },
       },
       take: 6,

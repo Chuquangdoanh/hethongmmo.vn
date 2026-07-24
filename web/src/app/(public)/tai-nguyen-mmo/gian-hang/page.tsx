@@ -80,7 +80,7 @@ export default async function NhaBanHangPage({
             isHidden: false,
             isRestricted: false,
             deletedAt: null,
-            storeType: "TAI_NGUYEN_MMO",
+            storeType: { in: ["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] },
             stockItems: { some: { status: "AVAILABLE" } },
           },
         },
@@ -98,7 +98,7 @@ export default async function NhaBanHangPage({
             isHidden: false,
             isRestricted: false,
             deletedAt: null,
-            storeType: "TAI_NGUYEN_MMO",
+            storeType: { in: ["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] },
           },
           select: {
             id: true,
@@ -215,7 +215,7 @@ export default async function NhaBanHangPage({
 
   // ── External providers (gian hàng đối tác) ─────────────────────
   const externalProducts = await prisma.externalProduct.findMany({
-    where: { isEnabled: true, displaySection: "TAI_NGUYEN_MMO" },
+    where: { isEnabled: true, displaySection: { in: ["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] } },
     select: {
       id: true, provider: true, externalCategory: true,
       resourceCategory: { select: { name: true } },

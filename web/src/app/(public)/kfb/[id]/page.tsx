@@ -178,8 +178,8 @@ export default async function KfbProductDetailPage({
   const hasPrev = reviewPage > 1;
   const hasNext = reviewPage < totalReviewPages;
 
-  const sectionHref  = product.displaySection === "KHO_TAI_NGUYEN" ? "/kho-tai-nguyen" : "/tai-nguyen-mmo";
-  const sectionName  = product.displaySection === "KHO_TAI_NGUYEN" ? "Kho Tài Nguyên" : "Tài nguyên MMO";
+  const sectionHref = "/tai-nguyen-mmo";
+  const sectionName = "Tài nguyên MMO";
   const categoryName = product.resourceCategory?.name ?? product.externalCategory;
 
   const thumbnailSrc = product.thumbnail

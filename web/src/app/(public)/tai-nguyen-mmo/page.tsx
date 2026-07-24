@@ -109,7 +109,7 @@ export default async function TaiNguyenMmoPage({
   ] = await Promise.all([
     prisma.mmoProduct.findMany({
       where: {
-        isActive: true, deletedAt: null, section: "TAI_NGUYEN_MMO", items: { some: { status: "AVAILABLE" } },
+        isActive: true, deletedAt: null, section: { in: ["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] }, items: { some: { status: "AVAILABLE" } },
         ...(category ? { categoryGroup: category } : {}),
         ...(selectedSubcatNames.length > 0 ? { category: { in: selectedSubcatNames } } : {}),
         ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
@@ -125,7 +125,7 @@ export default async function TaiNguyenMmoPage({
       },
     }),
     prisma.mmoProduct.findMany({
-      where: { isActive: true, deletedAt: null, section: "TAI_NGUYEN_MMO", items: { some: { status: "AVAILABLE" } } },
+      where: { isActive: true, deletedAt: null, section: { in: ["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] }, items: { some: { status: "AVAILABLE" } } },
       select: { categoryGroup: true },
       distinct: ["categoryGroup"],
       orderBy: { categoryGroup: "asc" },
@@ -139,11 +139,11 @@ export default async function TaiNguyenMmoPage({
     prisma.sellerProduct.findMany({
       where: {
         isActive: true, isHidden: false, isRestricted: false, approvalStatus: "APPROVED", deletedAt: null,
-        storeType: "TAI_NGUYEN_MMO",
+        storeType: { in: ["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] },
         stockItems: { some: { status: "AVAILABLE" } },
         ...(lockedSellerIds.length > 0 ? { NOT: { sellerId: { in: lockedSellerIds } } } : {}),
         ...(category ? { sellerCategory: category } : {}),
-        ...(selectedSubcatNames.length > 0 ? { subCategory: { name: { in: selectedSubcatNames }, isActive: true, showInTaiNguyenMmo: true } } : {}),
+        ...(selectedSubcatNames.length > 0 ? { subCategory: { name: { in: selectedSubcatNames }, isActive: true, OR: [{ showInTaiNguyenMmo: true }, { showInKhoTaiNguyen: true }] } } : {}),
         ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
         ...(tag ? { sellerCategory: { contains: tag, mode: "insensitive" as const } } : {}),
         ...priceFilter,
@@ -165,7 +165,7 @@ export default async function TaiNguyenMmoPage({
     prisma.sellerProduct.findMany({
       where: {
         isActive: true, isHidden: false, isRestricted: false, approvalStatus: "APPROVED", deletedAt: null,
-        storeType: "TAI_NGUYEN_MMO",
+        storeType: { in: ["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] },
         stockItems: { some: { status: "AVAILABLE" } },
         ...(lockedSellerIds.length > 0 ? { NOT: { sellerId: { in: lockedSellerIds } } } : {}),
       },
@@ -174,12 +174,12 @@ export default async function TaiNguyenMmoPage({
       orderBy: { sellerCategory: "asc" },
     }),
     prisma.resourceCategory.findMany({
-      where: { showInTaiNguyenMmo: true },
+      where: { OR: [{ showInTaiNguyenMmo: true }, { showInKhoTaiNguyen: true }] },
       orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
       select: {
         name: true, iconUrl: true,
         subCategories: {
-          where: { isActive: true, showInTaiNguyenMmo: true },
+          where: { isActive: true, OR: [{ showInTaiNguyenMmo: true }, { showInKhoTaiNguyen: true }] },
           orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
           select: { id: true, name: true },
         },
@@ -188,7 +188,7 @@ export default async function TaiNguyenMmoPage({
     prisma.externalProduct.findMany({
       where: {
         isEnabled:      true,
-        displaySection: "TAI_NGUYEN_MMO",
+        displaySection: { in: ["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] },
         ...(category ? { resourceCategory: { name: category } } : {}),
         ...(selectedSubcatNames.length > 0 ? { subCategory: { name: { in: selectedSubcatNames } } } : {}),
         ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),

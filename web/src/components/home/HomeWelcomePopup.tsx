@@ -34,7 +34,6 @@ interface CategoryCard {
 const CARDS: CategoryCard[] = [
   { title: "DỊCH VỤ",     desc: "MXH, Ads, mở khóa",   accent: "#2563eb", Icon: GalleryVerticalEnd, href: "/dich-vu" },
   { title: "TUT & TRICK", desc: "Bí quyết thực chiến", accent: "#f59e0b", Icon: Lightbulb,          href: "/tut-tricks" },
-  { title: "TÀI NGUYÊN",  desc: "Kho tài nguyên số",   accent: "#f97316", Icon: Package,            href: "/kho-tai-nguyen" },
   { title: "NGUYÊN LIỆU", desc: "Tool, tài khoản số",  accent: "#ea580c", Icon: FolderOpen,         href: "/tai-nguyen-mmo" },
   { title: "KHÓA HỌC",    desc: "Cơ bản đến nâng cao", accent: "#10b981", Icon: GraduationCap,      href: "/khoa-hoc" },
 ];
