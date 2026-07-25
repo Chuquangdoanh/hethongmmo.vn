@@ -115,6 +115,7 @@ export default function LoginForm() {
           <span style={iconStyle}><Mail size={15} /></span>
           <input
             type="text" autoComplete="email" inputMode="email"
+            autoCapitalize="off" autoCorrect="off" spellCheck={false}
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
@@ -152,6 +153,7 @@ export default function LoginForm() {
           <span style={iconStyle}><Lock size={15} /></span>
           <input
             type={showPassword ? "text" : "password"} autoComplete="current-password"
+            autoCapitalize="off" autoCorrect="off" spellCheck={false}
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);

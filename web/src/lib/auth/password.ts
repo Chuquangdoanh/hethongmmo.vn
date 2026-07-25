@@ -10,12 +10,14 @@ const ARGON2_OPTIONS: argon2.Options = {
 };
 
 export async function hashPassword(password: string): Promise<string> {
-  return argon2.hash(password, ARGON2_OPTIONS);
+  return argon2.hash(password.normalize("NFC"), ARGON2_OPTIONS);
 }
 
+// normalize("NFC") tránh mobile IME (Telex/VNI có dấu) sinh Unicode khác dạng
+// so với lúc hash, khiến verify fail dù người dùng gõ đúng mật khẩu.
 export async function verifyPassword(hash: string, password: string): Promise<boolean> {
   if (hash === "$RESET_REQUIRED$") return false;
-  return argon2.verify(hash, password);
+  return argon2.verify(hash, password.normalize("NFC"));
 }
 
 /**

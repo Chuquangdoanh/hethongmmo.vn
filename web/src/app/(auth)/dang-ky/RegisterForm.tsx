@@ -125,6 +125,7 @@ export default function RegisterForm() {
           <span style={iconStyle}><Mail size={15} /></span>
           <input
             type="email" autoComplete="email"
+            autoCapitalize="off" autoCorrect="off" spellCheck={false}
             value={form.email} onChange={set("email")} required
             className={inputCls} style={{ paddingLeft: 38 }}
             placeholder="Nhập email của bạn"
@@ -142,6 +143,7 @@ export default function RegisterForm() {
           <span style={iconStyle}><Lock size={15} /></span>
           <input
             type={showPassword ? "text" : "password"} autoComplete="new-password"
+            autoCapitalize="off" autoCorrect="off" spellCheck={false}
             value={form.password} onChange={set("password")} required minLength={8}
             className={inputCls} style={{ paddingLeft: 38, paddingRight: 40 }}
             placeholder="Tối thiểu 8 ký tự"
@@ -172,6 +174,7 @@ export default function RegisterForm() {
           <span style={iconStyle}><Lock size={15} /></span>
           <input
             type={showConfirm ? "text" : "password"} autoComplete="new-password"
+            autoCapitalize="off" autoCorrect="off" spellCheck={false}
             value={form.confirmPassword} onChange={set("confirmPassword")} required
             className={inputCls} style={{ paddingLeft: 38, paddingRight: 40 }}
             placeholder="Nhập lại mật khẩu"
