@@ -22,12 +22,6 @@ interface Props {
 }
 
 type Tab = "slots" | "shop";
-type Page = "kho" | "nguyen-lieu";
-
-const PAGES: { key: Page; label: string; filter: (s: SubCat) => boolean }[] = [
-  { key: "kho",        label: "Kho tài nguyên", filter: (s) => s.showInKhoTaiNguyen },
-  { key: "nguyen-lieu", label: "Nguyên liệu",    filter: (s) => s.showInTaiNguyenMmo },
-];
 
 export default function UpgradeShopModal({
   packages,
@@ -47,24 +41,22 @@ export default function UpgradeShopModal({
   const [slotSuccess, setSlotSuccess] = useState(false);
 
   // Shop tab state
-  const [activePage, setActivePage] = useState<Page>("kho");
   const [selectedCats, setSelectedCats] = useState<Set<string>>(new Set(initialSelected));
   const [catLoading, setCatLoading] = useState(false);
   const [catError, setCatError] = useState("");
   const [catSuccess, setCatSuccess] = useState(false);
 
-  // Group sub-categories theo categoryName, filter theo activePage
+  // Group sub-categories theo categoryName — Kho tài nguyên đã gộp chung với Nguyên liệu MMO
   const categoryGroups = useMemo(() => {
-    const pageFilter = PAGES.find((p) => p.key === activePage)?.filter ?? (() => true);
     const map = new Map<string, SubCat[]>();
     for (const sub of availableSubCats) {
-      if (!pageFilter(sub)) continue;
+      if (!sub.showInKhoTaiNguyen && !sub.showInTaiNguyenMmo) continue;
       const list = map.get(sub.categoryName) ?? [];
       list.push(sub);
       map.set(sub.categoryName, list);
     }
     return Array.from(map.entries()).map(([name, subs]) => ({ name, subs }));
-  }, [availableSubCats, activePage]);
+  }, [availableSubCats]);
 
   function handleOpen() {
     setSelectedPkg(null);
@@ -72,7 +64,6 @@ export default function UpgradeShopModal({
     setSlotSuccess(false);
     setCatError("");
     setCatSuccess(false);
-    setActivePage("kho");
     setActiveTab("slots");
     setIsOpen(true);
   }
@@ -299,24 +290,6 @@ export default function UpgradeShopModal({
                     <span className={`font-bold ${sellerCategory ? "text-blue-800" : "text-amber-600"}`}>
                       {sellerCategory ?? "Chưa thiết lập"}
                     </span>
-                  </div>
-
-                  {/* Page tabs: Kho tài nguyên / Nguyên liệu */}
-                  <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
-                    {PAGES.map((page) => (
-                      <button
-                        key={page.key}
-                        type="button"
-                        onClick={() => setActivePage(page.key)}
-                        className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                          activePage === page.key
-                            ? "bg-white text-violet-700 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
-                      >
-                        {page.label}
-                      </button>
-                    ))}
                   </div>
 
                   {categoryGroups.length === 0 ? (

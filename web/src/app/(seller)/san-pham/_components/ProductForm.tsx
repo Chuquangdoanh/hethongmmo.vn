@@ -22,12 +22,8 @@ const ORIGIN_OPTIONS: { value: string; label: string }[] = [
 const ORIGIN_DESC_MIN = 30;
 const ORIGIN_DESC_MAX = 500;
 
-type StoreTypeKey = "KHO_TAI_NGUYEN" | "TAI_NGUYEN_MMO";
-
-const STORE_PAGES: { key: StoreTypeKey; label: string; flag: "showInKhoTaiNguyen" | "showInTaiNguyenMmo" }[] = [
-  { key: "KHO_TAI_NGUYEN", label: "Kho tài nguyên", flag: "showInKhoTaiNguyen" },
-  { key: "TAI_NGUYEN_MMO",  label: "Nguyên liệu",    flag: "showInTaiNguyenMmo" },
-];
+// Kho tài nguyên đã gộp chung với Nguyên liệu MMO ở trang public — chỉ còn 1 khu vực, luôn ghi nhận storeType này
+const MERGED_STORE_TYPE = "TAI_NGUYEN_MMO";
 
 interface SubCategoryItem {
   id: string;
@@ -84,28 +80,16 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
   const [subCategoryId, setSubCategoryId] = useState<string | null>(initialData?.subCategoryId ?? null);
 
   // ── Category selector state (khi allSubCats được truyền vào) ─────────────
-  const [storeType, setStoreType] = useState<StoreTypeKey>(() => {
-    const fromInitial = initialData?.storeType as StoreTypeKey | undefined;
-    if (fromInitial) return fromInitial;
-    // Mặc định chọn trang đầu tiên thực sự có danh mục cha cho seller này —
-    // tránh mở form vào tab rỗng khiến khối "Danh mục cha" bị ẩn.
-    const firstPageWithCats = STORE_PAGES.find((pg) => allSubCats?.some((s) => s[pg.flag]));
-    return firstPageWithCats?.key ?? "KHO_TAI_NGUYEN";
-  });
   const [sellerCat, setSellerCat] = useState(initialData?.productSellerCategory ?? "");
 
-  const currentPageDef = useMemo(
-    () => STORE_PAGES.find((p) => p.key === storeType) ?? STORE_PAGES[0]!,
-    [storeType],
-  );
   const parentCats = useMemo(() => {
     if (!allSubCats) return [];
-    return [...new Set(allSubCats.filter((s) => s[currentPageDef.flag]).map((s) => s.categoryName))].sort();
-  }, [allSubCats, storeType]);
+    return [...new Set(allSubCats.filter((s) => s.showInKhoTaiNguyen || s.showInTaiNguyenMmo).map((s) => s.categoryName))].sort();
+  }, [allSubCats]);
   const filteredSubCats = useMemo(() => {
     if (!allSubCats || !sellerCat) return [];
-    return allSubCats.filter((s) => s[currentPageDef.flag] && s.categoryName === sellerCat);
-  }, [allSubCats, storeType, sellerCat]);
+    return allSubCats.filter((s) => (s.showInKhoTaiNguyen || s.showInTaiNguyenMmo) && s.categoryName === sellerCat);
+  }, [allSubCats, sellerCat]);
 
   // ── Nguồn gốc sản phẩm (bắt buộc cả khi tạo mới lẫn khi sửa) ───────────────
   const [originType, setOriginType] = useState(initialData?.originType ?? "");
@@ -312,7 +296,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
         sellerCategory: resolvedSellerCategory,
         subCategoryId: subCategoryId ?? null,
       };
-      if (allSubCats) body.storeType = storeType;
+      if (allSubCats) body.storeType = MERGED_STORE_TYPE;
       if (mode === "create") body.stockItems = stockItems;
       // Nguồn gốc — gửi ở cả tạo mới lẫn sửa
       body.originType = originType;
@@ -420,23 +404,7 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
   // ── Category selector (3 tầng) — chỉ hiển thị khi allSubCats được truyền ──
   const categorySelector = allSubCats && allSubCats.length > 0 ? (
     <div className="space-y-3">
-      <label className="block text-xs font-medium text-gray-500">Trang & Danh mục *</label>
-
-      {/* Page tabs */}
-      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
-        {STORE_PAGES.map((page) => (
-          <button
-            key={page.key}
-            type="button"
-            onClick={() => { setStoreType(page.key); setSellerCat(""); setSubCategoryId(null); }}
-            className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              storeType === page.key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {page.label}
-          </button>
-        ))}
-      </div>
+      <label className="block text-xs font-medium text-gray-500">Danh mục *</label>
 
       {/* Parent category */}
       {parentCats.length > 0 && (
@@ -461,10 +429,10 @@ export default function ProductForm({ mode, sellerCategory, subCategories = [], 
         </div>
       )}
 
-      {/* Empty state — trang được chọn không có danh mục cha nào hiển thị */}
+      {/* Empty state — chưa có danh mục cha nào được cấu hình hiển thị */}
       {parentCats.length === 0 && (
         <p className="text-xs text-gray-400">
-          Chưa có danh mục cha nào được cấu hình hiển thị cho trang này. Vui lòng chọn trang khác.
+          Chưa có danh mục cha nào được cấu hình hiển thị. Vui lòng liên hệ admin.
         </p>
       )}
 

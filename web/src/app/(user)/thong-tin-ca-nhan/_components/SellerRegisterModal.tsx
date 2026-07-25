@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { FolderOpen, Package } from "lucide-react";
 import { formatVnd } from "@/lib/utils/format";
 
 const BANKS = [
@@ -32,7 +31,6 @@ interface Props {
 }
 
 type Step = 1 | 2;
-type StoreType = "TAI_NGUYEN_MMO" | "KHO_TAI_NGUYEN";
 
 async function uploadFile(file: File, type: "cccd" | "portrait"): Promise<string> {
   const fd = new FormData();
@@ -66,7 +64,6 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
   const [dbCategories, setDbCategories] = useState<ResourceCategory[]>([]);
 
   // Step 1 state
-  const [storeType, setStoreType] = useState<StoreType>("TAI_NGUYEN_MMO");
   const [category, setCategory] = useState("");
   const [categoryDetail, setCategoryDetail] = useState("");
   const [selectedSubIds, setSelectedSubIds] = useState<string[]>([]);
@@ -116,7 +113,6 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
 
   function handleOpen() {
     setStep(1);
-    setStoreType("TAI_NGUYEN_MMO");
     setCategory("");
     setCategoryDetail("");
     setSelectedSubIds([]);
@@ -186,7 +182,7 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
       const registerRes = await fetch("/api/seller/register", { credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category: finalCategory, subCategoryIds: selectedSubIds, storeType }),
+        body: JSON.stringify({ category: finalCategory, subCategoryIds: selectedSubIds }),
       });
       const registerJson = await registerRes.json() as { error?: string };
       if (!registerRes.ok) {
@@ -274,42 +270,6 @@ export default function SellerRegisterModal({ fullName, phone, email, balance, i
 
               {step === 1 ? (
                 <>
-                  {/* Marketplace toggle */}
-                  <div>
-                    <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide block mb-2">
-                      Đăng ký bán tại <span className="text-red-500">*</span>
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(["TAI_NGUYEN_MMO", "KHO_TAI_NGUYEN"] as StoreType[]).map((type) => {
-                        const isActive = storeType === type;
-                        const label = type === "TAI_NGUYEN_MMO" ? "Nguyên Liệu MMO" : "Kho Tài Nguyên";
-                        const Icon  = type === "TAI_NGUYEN_MMO" ? FolderOpen : Package;
-                        return (
-                          <button
-                            key={type}
-                            type="button"
-                            onClick={() => setStoreType(type)}
-                            className={`flex flex-col items-center gap-1.5 rounded-xl border-2 py-3 px-2 transition-all ${
-                              isActive
-                                ? "border-blue-500 bg-blue-50"
-                                : "border-gray-200 bg-white hover:border-blue-300"
-                            }`}
-                          >
-                            <span className={`flex items-center justify-center w-9 h-9 rounded-xl ${isActive ? "bg-blue-100" : "bg-gray-100"}`}>
-                              <Icon size={20} strokeWidth={1.75} className={isActive ? "text-blue-600" : "text-gray-500"} />
-                            </span>
-                            <span className={`text-xs font-semibold text-center leading-tight ${isActive ? "text-blue-700" : "text-gray-600"}`}>
-                              {label}
-                            </span>
-                            {isActive && (
-                              <span className="text-[9px] font-bold text-blue-500 uppercase tracking-wide">Đã chọn</span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
                   {/* Step 1: Basic info */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
