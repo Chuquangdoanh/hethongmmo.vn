@@ -4,10 +4,13 @@ import { auth } from "@/auth";
 import { requireAdmin, requireStaff } from "@/lib/auth/rbac";
 import { requirePermission } from "@/lib/auth/permission-guard";
 import { prisma } from "@/lib/db/prisma";
-import { NotFoundError } from "@/lib/errors";
+import { NotFoundError, ValidationError } from "@/lib/errors";
 import { apiSuccess, apiCatch, apiValidationError } from "@/lib/api-response";
 import { logger } from "@/lib/utils/logger";
 import { createAffiliateCommission, voidAffiliateCommission } from "@/lib/services/affiliate-commission.service";
+import { getSellerTierConfig } from "@/lib/services/seller.service";
+
+const REVENUE_VOIDING_STATUSES = new Set(["CANCELLED", "REFUNDED", "FROZEN"]);
 
 export const runtime = "nodejs";
 
@@ -39,6 +42,58 @@ export async function PATCH(
     const { status, note } = parsed.data;
 
     await prisma.$transaction(async (tx) => {
+      // Lock order row trước khi đọc withdrawn/sellerId — tránh race với luồng seller rút tiền
+      await tx.$queryRaw`SELECT id FROM orders WHERE id = ${id}::uuid FOR UPDATE`;
+      const lockedOrder = await tx.order.findUnique({
+        where: { id },
+        select: { status: true, sellerId: true, withdrawn: true, createdAt: true, finalPrice: true },
+      });
+      if (!lockedOrder) throw new NotFoundError("Order");
+
+      // Đơn đã DONE (tính doanh số/khả rút cho seller) và admin đang hủy/hoàn tiền/đóng băng
+      if (lockedOrder.sellerId && lockedOrder.status === "DONE" && REVENUE_VOIDING_STATUSES.has(status)) {
+        const seller = await tx.user.findUnique({
+          where: { id: lockedOrder.sellerId },
+          select: { sellerTier: true },
+        });
+        const tierCfg = await getSellerTierConfig(seller?.sellerTier ?? "STANDARD");
+        const holdDate = new Date(Date.now() - tierCfg.hold_days * 24 * 60 * 60 * 1000);
+
+        // Quá hold day (seller đã/đủ điều kiện rút) — chặn đổi trạng thái qua kênh này
+        if (lockedOrder.createdAt < holdDate) {
+          throw new ValidationError(
+            `Đơn hàng đã quá thời hạn giữ tiền (${tierCfg.hold_days} ngày) của seller — không thể chuyển trạng thái qua đây. Vui lòng xử lý qua kênh khiếu nại.`,
+          );
+        }
+
+        // Phòng hờ: nếu seller đã rút tiền trong lúc còn hold day (race hiếm), trừ lại balance
+        if (lockedOrder.withdrawn) {
+          const refundAmt = Number(lockedOrder.finalPrice);
+          const sellerRows = await tx.$queryRaw<Array<{ balance: string }>>`
+            SELECT balance::text FROM users WHERE id = ${lockedOrder.sellerId}::uuid FOR UPDATE
+          `;
+          const sellerBalanceBefore = parseFloat(sellerRows[0]?.balance ?? "0");
+          if (sellerBalanceBefore < refundAmt) {
+            throw new ValidationError(
+              `Ví seller không đủ để trừ lại (cần ${refundAmt}, hiện có ${sellerBalanceBefore}). Vui lòng xử lý thủ công.`,
+            );
+          }
+          const sellerBalanceAfter = sellerBalanceBefore - refundAmt;
+          await tx.user.update({ where: { id: lockedOrder.sellerId }, data: { balance: sellerBalanceAfter } });
+          await tx.transaction.create({
+            data: {
+              userId: lockedOrder.sellerId,
+              orderId: id,
+              type: "COMPLAINT_DEDUCTION",
+              amount: -refundAmt,
+              description: `Trừ tiền seller do admin chuyển trạng thái đơn hàng sang ${status}`,
+              balanceBefore: sellerBalanceBefore,
+              balanceAfter: sellerBalanceAfter,
+            },
+          });
+        }
+      }
+
       await tx.order.update({
         where: { id },
         data: {
