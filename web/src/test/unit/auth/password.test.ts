@@ -58,6 +58,44 @@ describe("hashPassword / verifyPassword", () => {
     const h2 = await hashPassword("Same@Password1!");
     expect(h1).not.toBe(h2);
   });
+
+  // Mobile keyboard/autocomplete có thể chèn ký tự vô hình hoặc khoảng trắng
+  // thừa đầu-cuối khi ô mật khẩu ở chế độ hiển thị (type="text") lúc đăng ký,
+  // nhưng không chèn khi ở chế độ ẩn (type="password") lúc đăng nhập.
+  it("verifies correctly when hash-time password has a trailing space (mobile autocomplete artifact)", async () => {
+    const hash = await hashPassword("Test@Password1! ");
+    expect(await verifyPassword(hash, "Test@Password1!")).toBe(true);
+  });
+
+  it("verifies correctly when verify-time password has a leading space", async () => {
+    const hash = await hashPassword("Test@Password1!");
+    expect(await verifyPassword(hash, " Test@Password1!")).toBe(true);
+  });
+
+  it("verifies correctly when a zero-width space is injected at hash time", async () => {
+    const hash = await hashPassword("Test@Password1!​");
+    expect(await verifyPassword(hash, "Test@Password1!")).toBe(true);
+  });
+
+  it("verifies correctly when a BOM/zero-width char is injected at verify time", async () => {
+    const hash = await hashPassword("Test@Password1!");
+    expect(await verifyPassword(hash, "﻿Test@Password1!")).toBe(true);
+  });
+
+  it("verifies correctly with CR/tab padding from a mobile form submit", async () => {
+    const hash = await hashPassword("Test@Password1!\r\n");
+    expect(await verifyPassword(hash, "\tTest@Password1!")).toBe(true);
+  });
+
+  it("still distinguishes passwords that differ by an internal space (not stripped)", async () => {
+    const hash = await hashPassword("Test @Password1!");
+    expect(await verifyPassword(hash, "Test@Password1!")).toBe(false);
+  });
+
+  it("still rejects a genuinely wrong password after sanitization", async () => {
+    const hash = await hashPassword(" Test@Password1! ");
+    expect(await verifyPassword(hash, "Different@Password1!")).toBe(false);
+  });
 });
 
 describe("generateSecureToken", () => {

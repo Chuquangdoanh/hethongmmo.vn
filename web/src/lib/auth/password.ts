@@ -9,15 +9,30 @@ const ARGON2_OPTIONS: argon2.Options = {
   parallelism: 4,
 };
 
+// Bàn phím ảo mobile (Gboard/Samsung Keyboard/iOS) ở chế độ nhập thường (type="text",
+// dùng ở form đăng ký để user tự soi lại mật khẩu) có thể chèn ký tự vô hình
+// (zero-width space, BOM) hoặc khoảng trắng/CR/tab thừa ở đầu-cuối khi gõ/chạm gợi ý —
+// điều không xảy ra ở chế độ nhập bảo mật (type="password", dùng ở form đăng nhập).
+// Cùng một mật khẩu người dùng gõ có thể lệch nhau đúng các ký tự này giữa lúc hash và
+// lúc verify, khiến argon2 báo sai dù mật khẩu "đúng". Loại bỏ đối xứng ở cả 2 chiều.
+const INVISIBLE_CHARS_REGEX = /[\u200B-\u200D\uFEFF]/g;
+
+function sanitizePasswordInput(password: string): string {
+  return password
+    .normalize("NFC")
+    .replace(INVISIBLE_CHARS_REGEX, "")
+    .replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, "");
+}
+
 export async function hashPassword(password: string): Promise<string> {
-  return argon2.hash(password.normalize("NFC"), ARGON2_OPTIONS);
+  return argon2.hash(sanitizePasswordInput(password), ARGON2_OPTIONS);
 }
 
 // normalize("NFC") tránh mobile IME (Telex/VNI có dấu) sinh Unicode khác dạng
 // so với lúc hash, khiến verify fail dù người dùng gõ đúng mật khẩu.
 export async function verifyPassword(hash: string, password: string): Promise<boolean> {
   if (hash === "$RESET_REQUIRED$") return false;
-  return argon2.verify(hash, password.normalize("NFC"));
+  return argon2.verify(hash, sanitizePasswordInput(password));
 }
 
 /**
