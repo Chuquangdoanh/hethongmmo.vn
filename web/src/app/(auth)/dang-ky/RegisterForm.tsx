@@ -12,8 +12,10 @@ export default function RegisterForm() {
     email: "", fullName: "", phone: "", password: "", confirmPassword: "",
   });
   const [captchaToken, setCaptchaToken]     = useState("");
-  const [showPassword, setShowPassword]     = useState(false);
-  const [showConfirm, setShowConfirm]       = useState(false);
+  // Mặc định hiện chữ mật khẩu để user tự mắt xác nhận đúng chuỗi đã gõ —
+  // phát hiện ngay nếu trình duyệt/bàn phím lỡ thay bằng gợi ý mật khẩu ngẫu nhiên
+  const [showPassword, setShowPassword]     = useState(true);
+  const [showConfirm, setShowConfirm]       = useState(true);
   const [agreed, setAgreed]                 = useState(false);
   const [loading, setLoading]               = useState(false);
   const [error, setError]                   = useState("");
