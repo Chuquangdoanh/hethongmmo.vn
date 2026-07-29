@@ -12,10 +12,11 @@ export default function RegisterForm() {
     email: "", fullName: "", phone: "", password: "", confirmPassword: "",
   });
   const [captchaToken, setCaptchaToken]     = useState("");
-  // Mặc định hiện chữ mật khẩu để user tự mắt xác nhận đúng chuỗi đã gõ —
-  // phát hiện ngay nếu trình duyệt/bàn phím lỡ thay bằng gợi ý mật khẩu ngẫu nhiên
-  const [showPassword, setShowPassword]     = useState(true);
-  const [showConfirm, setShowConfirm]       = useState(true);
+  // Mặc định ẩn mật khẩu (type="password"), đồng bộ với form đăng nhập —
+  // bàn phím ảo mobile chạy chế độ nhập bảo mật giống hệt lúc đăng nhập,
+  // tránh autocorrect/autocapitalize/gợi ý từ chèn ký tự khác nhau giữa 2 bước
+  const [showPassword, setShowPassword]     = useState(false);
+  const [showConfirm, setShowConfirm]       = useState(false);
   const [agreed, setAgreed]                 = useState(false);
   const [loading, setLoading]               = useState(false);
   const [error, setError]                   = useState("");
