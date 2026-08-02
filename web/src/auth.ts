@@ -11,6 +11,7 @@ import { verifyPassword } from "@/lib/auth/password";
 import { loginSchema } from "@/lib/validation/user.schema";
 import { logger } from "@/lib/utils/logger";
 import { isSessionDenied } from "@/lib/auth/session-denylist";
+import { consumePostRegisterToken } from "@/lib/auth/post-register-token";
 import { linkCustomerToAffiliate } from "@/lib/services/affiliate.service";
 import type { Role, AccountStatus, SellerStatus, AffiliateStatus } from "@prisma/client";
 
@@ -129,6 +130,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         email: {},
         password: {},
         captchaToken: {},
+        postRegisterToken: {},
       },
       async authorize(credentials, request) {
         const ip =
@@ -139,11 +141,17 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const { email, password, captchaToken } = parsed.data;
+        const { email, password, captchaToken, postRegisterToken } = parsed.data;
+
+        // Auto-login ngay sau khi đăng ký thành công (captcha đã xác minh ở bước
+        // /api/auth/register rồi) — bỏ qua captcha nếu có token dùng-1-lần hợp lệ,
+        // vẫn phải qua đủ bước kiểm tra mật khẩu bên dưới như đăng nhập thường.
+        const skipCaptchaForPostRegister =
+          !!postRegisterToken && (await consumePostRegisterToken(email, postRegisterToken));
 
         // Fail-closed: khi Turnstile đã cấu hình, bắt buộc phải có token hợp lệ
         const turnstileConfigured = !!process.env.TURNSTILE_SECRET;
-        if (turnstileConfigured) {
+        if (turnstileConfigured && !skipCaptchaForPostRegister) {
           if (!captchaToken) throw new CaptchaFailedError();
           const captchaOk = await verifyCaptcha(captchaToken, ip);
           if (!captchaOk) throw new CaptchaFailedError();

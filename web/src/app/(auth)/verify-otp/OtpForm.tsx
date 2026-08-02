@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 const OTP_LENGTH = 6;
-const CAPTCHA_ENABLED = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 export default function OtpForm() {
   const router = useRouter();
@@ -87,7 +86,7 @@ export default function OtpForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const json = await res.json() as { success: boolean; error?: string };
+      const json = await res.json() as { success: boolean; error?: string; postRegisterToken?: string };
       if (!res.ok || !json.success) {
         setError(json.error ?? "Mã OTP không đúng hoặc đã hết hạn.");
         return;
@@ -97,18 +96,19 @@ export default function OtpForm() {
         sessionStorage.removeItem("__reg_pwd");
 
         // Auto-login bằng đúng password vừa tạo tài khoản — tránh bắt user gõ lại
-        // (nguồn gốc phổ biến của lỗi "sai mật khẩu" ngay sau khi đăng ký thành công)
-        if (!CAPTCHA_ENABLED) {
-          const result = await signIn("credentials", {
-            email,
-            password,
-            redirect: false,
-          });
-          if (!result?.error) {
-            router.push("/");
-            router.refresh();
-            return;
-          }
+        // (nguồn gốc phổ biến của lỗi "sai mật khẩu" ngay sau khi đăng ký thành công,
+        // đặc biệt trên bàn phím ảo mobile). postRegisterToken cho phép bỏ qua bước
+        // captcha lần này vì captcha đã được xác minh ở bước /api/auth/register rồi.
+        const result = await signIn("credentials", {
+          email,
+          password,
+          postRegisterToken: json.postRegisterToken ?? "",
+          redirect: false,
+        });
+        if (!result?.error) {
+          router.push("/");
+          router.refresh();
+          return;
         }
 
         router.push("/dang-nhap");

@@ -8,6 +8,7 @@ import {
 } from "@/lib/auth/password";
 import { verifyOtp } from "@/lib/services/otp.service";
 import { linkCustomerToAffiliate } from "@/lib/services/affiliate.service";
+import { createPostRegisterToken } from "@/lib/auth/post-register-token";
 import { logger } from "@/lib/utils/logger";
 import bcrypt from "bcryptjs";
 
@@ -203,5 +204,10 @@ export async function POST(req: NextRequest) {
   }
 
   logger.info({ email }, "New user registered successfully");
-  return NextResponse.json({ success: true });
+
+  // Cấp token dùng 1 lần để frontend auto-login ngay mà không cần user gõ lại
+  // mật khẩu trên trang đăng nhập (captcha đã xác minh ở bước /api/auth/register).
+  const postRegisterToken = await createPostRegisterToken(email);
+
+  return NextResponse.json({ success: true, postRegisterToken });
 }

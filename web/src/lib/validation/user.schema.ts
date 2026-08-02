@@ -15,6 +15,7 @@ export const loginSchema = z.object({
   email: z.string().min(1).trim().toLowerCase(),
   password: z.string().min(1),
   captchaToken: z.string().optional(),
+  postRegisterToken: z.string().optional(),
 });
 
 const newPasswordRules = z
