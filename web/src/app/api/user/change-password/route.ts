@@ -85,17 +85,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const newHash = await hashPassword(newPassword);
 
-    // Update password and invalidate DB sessions
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: me.id },
-        data: { passwordHash: newHash, failedLoginCount: 0, lockedUntil: null },
-      }),
-      prisma.session.deleteMany({ where: { userId: me.id } }),
-    ]);
+    await prisma.user.update({
+      where: { id: me.id },
+      data: { passwordHash: newHash, failedLoginCount: 0, lockedUntil: null },
+    });
 
     logger.info({ userId: me.id }, "Password changed successfully");
-    return NextResponse.json({ success: true, message: "Đổi mật khẩu thành công. Vui lòng đăng nhập lại." });
+    return NextResponse.json({ success: true, message: "Đổi mật khẩu thành công." });
   } catch (err) {
     if (err instanceof AppAuthError) {
       return NextResponse.json({ error: err.message, code: err.code }, { status: err.statusCode });

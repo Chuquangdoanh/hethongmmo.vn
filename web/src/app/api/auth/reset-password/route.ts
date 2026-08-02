@@ -49,20 +49,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Verify OTP và mark as used
-  const otpResult = await verifyOtp(email, "RESET_PASSWORD", code);
-  if (!otpResult.success) {
-    return NextResponse.json(
-      {
-        error: otpResult.error ?? "Mã OTP không đúng hoặc đã hết hạn.",
-        code: otpResult.attemptsRemaining !== undefined ? "INVALID_OTP" : "OTP_EXPIRED",
-        ...(otpResult.attemptsRemaining !== undefined && { attemptsRemaining: otpResult.attemptsRemaining }),
-      },
-      { status: 400 },
-    );
-  }
-
-  // Check HaveIBeenPwned
+  // Check HaveIBeenPwned BEFORE consuming the OTP (fail open — only block if explicitly pwned).
+  // Phải chạy trước verifyOtp: nếu mật khẩu rò rỉ mà đốt mã OTP thì user kẹt, phải xin mã mới
+  // dù mã cũ vẫn còn hợp lệ (trang đặt lại mật khẩu không có cách xin lại OTP tại chỗ).
   try {
     await checkPwnedPassword(newPassword);
   } catch (e: unknown) {
@@ -76,6 +65,19 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+  }
+
+  // Verify OTP và mark as used
+  const otpResult = await verifyOtp(email, "RESET_PASSWORD", code);
+  if (!otpResult.success) {
+    return NextResponse.json(
+      {
+        error: otpResult.error ?? "Mã OTP không đúng hoặc đã hết hạn.",
+        code: otpResult.attemptsRemaining !== undefined ? "INVALID_OTP" : "OTP_EXPIRED",
+        ...(otpResult.attemptsRemaining !== undefined && { attemptsRemaining: otpResult.attemptsRemaining }),
+      },
+      { status: 400 },
+    );
   }
 
   const passwordHash = await hashPassword(newPassword);

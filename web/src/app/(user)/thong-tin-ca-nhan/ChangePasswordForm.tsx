@@ -93,7 +93,7 @@ export default function ChangePasswordForm() {
       {success && (
         <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 mb-4">
           <CheckCircle size={13} className="text-emerald-600 shrink-0" />
-          <p className="text-xs text-emerald-700">Đổi mật khẩu thành công! Vui lòng đăng nhập lại.</p>
+          <p className="text-xs text-emerald-700">Đổi mật khẩu thành công!</p>
         </div>
       )}
 
