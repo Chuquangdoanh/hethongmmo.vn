@@ -45,6 +45,9 @@ export default function LoginForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Chặn double-submit khi bấm liên tục trên mobile trước khi nút kịp disable —
+    // request trùng lặp có thể gây lệch CSRF cookie/token (MissingCSRF).
+    if (loading) return;
     setError("");
     const err = validateEmail(email);
     if (err) { setEmailError(err); setEmailTouched(true); return; }
@@ -82,7 +85,14 @@ export default function LoginForm() {
         // Reset captcha sau mỗi lần đăng nhập thất bại để user có thể thử lại
         setCaptchaToken("");
         captchaRef.current?.reset();
-        setError("Email hoặc mật khẩu không đúng.");
+        // code === "credentials" là giá trị NextAuth trả khi authorize() trả về null
+        // (đúng nghĩa sai email/mật khẩu). Các lỗi khác (vd. MissingCSRF do submit
+        // trùng lặp/cookie desync trên mobile) không nên bị hiển thị nhầm thành sai mật khẩu.
+        setError(
+          code === "credentials"
+            ? "Email hoặc mật khẩu không đúng."
+            : "Có lỗi xảy ra, vui lòng tải lại trang và thử lại.",
+        );
         return;
       }
       router.push(callbackUrl);
