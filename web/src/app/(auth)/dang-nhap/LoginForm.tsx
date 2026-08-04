@@ -188,7 +188,15 @@ export default function LoginForm() {
         )}
       </div>
 
-      <CaptchaWidget ref={captchaRef} onVerify={setCaptchaToken} onExpire={() => setCaptchaToken("")} />
+      <CaptchaWidget
+        ref={captchaRef}
+        onVerify={setCaptchaToken}
+        onExpire={() => setCaptchaToken("")}
+        onError={() => {
+          setCaptchaToken("");
+          setError("Không tải được xác minh bảo mật. Vui lòng kiểm tra kết nối mạng và tải lại trang.");
+        }}
+      />
 
       {/* Error */}
       {error && (
