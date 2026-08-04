@@ -43,6 +43,23 @@ export default function LoginForm() {
 
   const captchaEnabled = !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
+  // Các code lỗi đã biết rõ nguyên nhân (kể cả "credentials" = đúng nghĩa sai
+  // email/mật khẩu). Lỗi ngoài danh sách này (vd. MissingCSRF do cookie CSRF
+  // chưa kịp đồng bộ trên mobile) là lỗi thoáng qua — thử lại ngầm trước khi báo.
+  const KNOWN_ERROR_CODES = new Set([
+    "credentials", "ACCOUNT_BANNED", "ACCOUNT_LOCKED", "REQUIRE_OTP",
+    "CAPTCHA_FAILED", "PASSWORD_RESET_REQUIRED",
+  ]);
+
+  function attemptSignIn() {
+    return signIn("credentials", {
+      email: email.trim().toLowerCase(),
+      password,
+      captchaToken,
+      redirect: false,
+    });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     // Chặn double-submit khi bấm liên tục trên mobile trước khi nút kịp disable —
@@ -56,12 +73,13 @@ export default function LoginForm() {
     if (captchaEnabled && !captchaToken) { setError("Vui lòng xác minh captcha."); return; }
     setLoading(true);
     try {
-      const result = await signIn("credentials", {
-        email: email.trim().toLowerCase(),
-        password,
-        captchaToken,
-        redirect: false,
-      });
+      let result = await attemptSignIn();
+
+      if (result?.error && !KNOWN_ERROR_CODES.has(result.code ?? "")) {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        result = await attemptSignIn();
+      }
+
       if (result?.error) {
         const code = result.code;
         if (code === "ACCOUNT_BANNED" || code === "ACCOUNT_LOCKED") {
