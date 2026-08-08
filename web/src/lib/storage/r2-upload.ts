@@ -43,8 +43,6 @@ const MIME_TO_EXT: Record<AllowedMimeType, string> = {
   "audio/wav":     "wav",
 };
 
-const AUDIO_MIME_TYPES = new Set(["audio/mpeg", "audio/ogg", "audio/wav"]);
-
 // ---------------------------------------------------------------------------
 // Upload purposes — controls R2 key namespace (first path segment)
 // ---------------------------------------------------------------------------
@@ -209,18 +207,11 @@ export async function uploadToR2(params: {
     throw new Error("Invalid userId format");
   }
 
-  // Convert raster images to WebP (SVG, GIF, and audio files are excluded)
-  let finalBuffer = buffer;
-  let finalMime   = mimeType as AllowedMimeType;
-  if (mimeType !== "image/svg+xml" && mimeType !== "image/gif" && !AUDIO_MIME_TYPES.has(mimeType)) {
-    // Lazy import — tránh top-level import fail khi native binary chưa sẵn sàng ở standalone mode
-    const sharp = (await import("sharp")).default;
-    finalBuffer = await sharp(buffer)
-      .resize({ width: 600, withoutEnlargement: true })
-      .webp({ quality: 82 })
-      .toBuffer();
-    finalMime = "image/webp";
-  }
+  // Upload nguyên file gốc — không resize/convert qua sharp trên VPS.
+  // CPU ảo hoá 1 số VPS (thiếu SSE4.2/SIMD) không chạy được sharp (kể cả bản WASM),
+  // nên bỏ bước xử lý ảnh phía server, để nguyên file client gửi lên R2.
+  const finalBuffer = buffer;
+  const finalMime   = mimeType as AllowedMimeType;
 
   const bucket = getR2Bucket();
   const ext    = MIME_TO_EXT[finalMime];

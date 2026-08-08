@@ -15,12 +15,6 @@ WORKDIR /app
 COPY web/package.json web/pnpm-lock.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store,id=pnpm-store \
     pnpm install --frozen-lockfile --ignore-scripts --node-linker=hoisted
-# sharp prebuilt binary (@img/sharp-*) yêu cầu CPU x86-64-v2 (SSE4.2/SSSE3/POPCNT).
-# Một số VPS host CPU model tối giản (vd "Common KVM processor" trên vài nhà cung cấp KVM)
-# không hỗ trợ → import sharp throw ở module-level → route upload ảnh trả 500.
-# Build lại sharp, link libvips hệ thống (qua pkg-config) thay vì dùng binary dựng sẵn.
-RUN apk add --no-cache vips-dev build-base python3 pkgconfig \
-    && pnpm rebuild sharp
 
 # ── builder ───────────────────────────────────────────────────────────
 FROM deps AS builder
@@ -55,9 +49,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Runtime lib cho sharp build từ source (xem ghi chú ở stage deps)
-RUN apk add --no-cache vips
-
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
@@ -65,11 +56,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Prisma runtime — query engine + generated client (needed for DB queries)
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-
-# sharp native binaries — @vercel/nft không trace được .node binary qua optionalDeps
-# Thiếu @img thì import sharp throw ở module-level → upload route trả "Internal Server Error" text
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/sharp ./node_modules/sharp
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@img ./node_modules/@img
 
 # fetch-cache cần writeable — Next.js tạo thư mục này lúc runtime
 RUN mkdir -p /app/.next/cache && chown nextjs:nodejs /app/.next/cache
