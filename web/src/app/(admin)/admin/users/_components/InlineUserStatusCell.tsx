@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 const STATUS_OPTIONS = [
   { value: "ACTIVE",   label: "Hoạt động", cls: "bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20" },
   { value: "BANNED",   label: "Đã khóa",   cls: "bg-[#EF4444]/10 text-[#EF4444] border border-[#EF4444]/20" },
-  { value: "INACTIVE", label: "Không HĐ",  cls: "bg-gray-100 text-gray-500 border border-gray-200" },
 ];
 
 export default function InlineUserStatusCell({
