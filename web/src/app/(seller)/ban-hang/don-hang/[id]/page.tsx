@@ -8,9 +8,10 @@ import { formatVnd, formatDate } from "@/lib/utils/format";
 import { decrypt } from "@/lib/security/encryption";
 import {
   ArrowLeft, Package, FileText, Clock,
-  CheckCircle, XCircle, AlertTriangle, Snowflake,
+  CheckCircle, XCircle, AlertTriangle, Snowflake, MessageCircle,
 } from "lucide-react";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
+import { getOrderConversationLinks } from "@/lib/services/order-conversation.service";
 
 export const metadata: Metadata = { title: "Chi tiết đơn hàng — Seller" };
 
@@ -77,6 +78,7 @@ export default async function SellerOrderDetailPage({
   }
 
   const fee = Number(order.originalPrice) - Number(order.finalPrice);
+  const conversationLink = (await getOrderConversationLinks([order.id])).get(order.id);
 
   return (
     <>
@@ -148,6 +150,22 @@ export default async function SellerOrderDetailPage({
               </div>
             </div>
           </div>
+
+          {/* Khiếu nại / Chat hỗ trợ liên quan đơn này */}
+          {conversationLink && (
+            <Link
+              href={`/ban-hang/khieu-nai?id=${conversationLink}`}
+              className="flex items-center gap-2.5 bg-white rounded-2xl border border-gray-200 shadow-sm p-4 hover:border-violet-300 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center shrink-0">
+                <MessageCircle size={15} className="text-violet-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-800">Xem khiếu nại / chat hỗ trợ đơn này</p>
+                <p className="text-xs text-gray-400">Mở hội thoại với người mua trong trang Khiếu nại</p>
+              </div>
+            </Link>
+          )}
 
           {/* Nội dung sản phẩm đã giao */}
           {(order.status === "DONE" || order.status === "FROZEN" || order.status === "DISPUTED") && (

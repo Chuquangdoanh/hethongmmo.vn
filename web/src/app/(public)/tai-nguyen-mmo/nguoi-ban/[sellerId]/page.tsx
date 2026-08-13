@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
+import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatVnd, formatDate } from "@/lib/utils/format";
 import { r2Url } from "@/lib/utils/image-url";
 import { getSiteContent, SITE_CONTENT_KEYS } from "@/lib/services/site-content.service";
+import MessageSellerButton from "@/components/shared/MessageSellerButton";
 import { FaTelegramPlane, FaFacebook } from "react-icons/fa";
 import {
   Store, BadgeCheck, ShoppingCart, Star,
@@ -87,11 +90,13 @@ export default async function SellerProfilePage({
   params: Promise<{ sellerId: string }>;
   searchParams: Promise<{ category?: string; sort?: string }>;
 }) {
-  const [{ sellerId }, sp, cmsData] = await Promise.all([
+  const [{ sellerId }, sp, cmsData, session] = await Promise.all([
     params,
     searchParams,
     getSiteContent<Record<string, unknown>>(SITE_CONTENT_KEYS.PAGE_TAI_NGUYEN),
+    auth(),
   ]);
+  const me = session?.user as AuthenticatedUser | undefined;
 
   const contactTitle        = String(cmsData.contactTitle        ?? "Chăm sóc khách hàng Hệ Thống MMO");
   const contactTelegramUrl  = String(cmsData.contactTelegramUrl  ?? "https://t.me/BossMeta789");
@@ -245,7 +250,13 @@ export default async function SellerProfilePage({
           </div>
 
           {/* Action buttons */}
-          
+          <div className="shrink-0 self-center w-44">
+            <MessageSellerButton
+              sellerId={seller.id}
+              isLoggedIn={!!me}
+              isOwnProduct={me?.id === seller.id}
+            />
+          </div>
         </div>
       </div>
 

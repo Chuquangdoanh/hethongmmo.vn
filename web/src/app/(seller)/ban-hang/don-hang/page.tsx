@@ -4,10 +4,11 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { AuthenticatedUser } from "@/lib/auth/rbac";
 import { formatVnd, formatDate } from "@/lib/utils/format";
-import { ShoppingBag, ChevronRight } from "lucide-react";
+import { ShoppingBag, ChevronRight, MessageCircle } from "lucide-react";
 import Pagination from "@/components/shared/Pagination";
 import SellerProfileHero from "@/components/shared/SellerProfileHero";
 import { getSellerTierConfig } from "@/lib/services/seller.service";
+import { getOrderConversationLinks } from "@/lib/services/order-conversation.service";
 
 export const metadata: Metadata = { title: "Đơn hàng — Seller" };
 
@@ -74,6 +75,8 @@ export default async function SellerDonHangPage({
     prisma.order.count({ where }),
   ]);
 
+  const conversationLinks = await getOrderConversationLinks(orders.map((o) => o.id));
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
@@ -129,6 +132,7 @@ export default async function SellerDonHangPage({
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Trạng thái</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Tình trạng rút tiền</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Ngày</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500">Hỗ trợ</th>
                       <th className="px-4 py-3 w-10" />
                     </tr>
                   </thead>
@@ -153,6 +157,18 @@ export default async function SellerDonHangPage({
                               : <span className="text-gray-300">—</span>}
                           </td>
                           <td className="px-4 py-3 text-xs text-gray-400">{formatDate(order.createdAt)}</td>
+                          <td className="px-4 py-3">
+                            {conversationLinks.has(order.id) ? (
+                              <Link
+                                href={`/ban-hang/khieu-nai?id=${conversationLinks.get(order.id)}`}
+                                className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-600 hover:text-violet-700"
+                              >
+                                <MessageCircle size={12} /> Xem chat
+                              </Link>
+                            ) : (
+                              <span className="text-gray-300">—</span>
+                            )}
+                          </td>
                           <td className="px-4 py-3">
                             <Link
                               href={`/ban-hang/don-hang/${order.id}`}
